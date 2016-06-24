@@ -1,0 +1,13 @@
+{
+    "name": "f5-cloud-node-libs",
+    "version": "1.0.0",
+    "description": "Common library code for deploying a BIG-IP in a cloud environment",
+    "main": "index.js",
+    "dependencies": {
+        "icontrol": ">=0.1.5"
+    },
+    "devDependencies": {
+        "jshint": "latest",
+        "nodeunit": "^0.9"
+    }
+}
