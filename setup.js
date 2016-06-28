@@ -1,10 +1,7 @@
+var options = require("commander");
 var BigIp = require('./lib/bigIp');
 
-var host = '10.146.1.141';
-var user = 'admin';
-var password = 'admin';
-
-var bigIp = new BigIp(host, user, password);
+var bigIp;
 
 var createVirtualAndPool = function() {
     var pool;
@@ -39,6 +36,19 @@ var createVirtualAndPool = function() {
         console.log("createVirtualAndPool failed: " + error.message);
     });
 };
+
+var collect = function(val, collection) {
+    collection.push(val);
+    return collection;
+};
+
+options
+    .option('-h, --host <ip_address>', 'BIG-IP management IP')
+    .option('-u, --user <user>', 'BIG-IP admin user')
+    .option('-p, --password <password>', 'BIG-IP admin user password')
+    .parse(process.argv);
+
+bigIp = new BigIp(options.host, options.user, options.password);
 
 bigIp.ready()
     .then(function() {

@@ -4,7 +4,8 @@
     "description": "Common library code for deploying a BIG-IP in a cloud environment",
     "main": "index.js",
     "dependencies": {
-        "icontrol": ">=0.1.5"
+        "commander": "^2.9.0",
+        "icontrol": "^0.1.5"
     },
     "devDependencies": {
         "jshint": "latest",
