@@ -46,6 +46,8 @@ options
     .option('-h, --host <ip_address>', 'BIG-IP management IP')
     .option('-u, --user <user>', 'BIG-IP admin user')
     .option('-p, --password <password>', 'BIG-IP admin user password')
+    .option('-l, --license <license_key>', 'BIG-IP license key')
+    .option('-a, --add-on <add-on keys>', 'Add on license keys')
     .parse(process.argv);
 
 bigIp = new BigIp(options.host, options.user, options.password);
@@ -69,6 +71,23 @@ bigIp.ready()
                 }
             }
         );
+    })
+    .then(function() {
+        var registrationKey = options.license;
+        var addOnKeys = options.addOn;
+
+        if (registrationKey || addOnKeys) {
+            console.log("Licensing...");
+
+            return bigIp.license(
+                {
+                    registrationKey: registrationKey,
+                    addOnKeys: addOnKeys
+                }
+            );
+        }
+
+        return Promise.resolve();
     })
     .then(function() {
         console.log("BIG-IP setup complete.");
