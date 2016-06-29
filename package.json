@@ -5,7 +5,8 @@
     "main": "index.js",
     "dependencies": {
         "commander": "^2.9.0",
-        "icontrol": "^0.1.5"
+        "icontrol": "^0.1.5",
+        "q": "^1.4.1"
     },
     "devDependencies": {
         "jshint": "latest",

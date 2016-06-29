@@ -1,4 +1,5 @@
 var options = require("commander");
+var q = require("q");
 var BigIp = require('./lib/bigIp');
 
 var bigIp;
@@ -92,7 +93,7 @@ bigIp.ready()
             );
         }
 
-        return Promise.resolve();
+        return q();
     })
     .then(function(response) {
         if (response) {
@@ -102,6 +103,6 @@ bigIp.ready()
         console.log("BIG-IP setup complete.");
     })
     .catch(function(err) {
-        console.log("BIG-IP setup failed: " + err);
-    }
-);
+        console.log("BIG-IP setup failed: " + (typeof err === 'object' ? err.message : err));
+    })
+    .done();
