@@ -43,18 +43,20 @@ var collect = function(val, collection) {
 };
 
 options
-    .option('-h, --host <ip_address>', 'BIG-IP management IP')
+    .option('--host <ip_address>', 'BIG-IP management IP')
     .option('-u, --user <user>', 'BIG-IP admin user')
     .option('-p, --password <password>', 'BIG-IP admin user password')
     .option('-l, --license <license_key>', 'BIG-IP license key')
-    .option('-a, --add-on <add-on keys>', 'Add on license keys')
+    .option('-a, --add-on <add-on keys>', 'Add on license keys', collect, [])
     .parse(process.argv);
 
 bigIp = new BigIp(options.host, options.user, options.password);
 
+console.log("Waiting for BIG-IP to be ready...");
 bigIp.ready()
     .then(function() {
-        console.log("BIG-IP is ready. Performing initial setup...");
+        console.log("BIG-IP is ready.");
+        console.log("Performing initial setup...");
 
         var nameServers = ["10.133.20.70", "10.133.20.71"];
         var timezone = 'UTC';
@@ -73,6 +75,8 @@ bigIp.ready()
         );
     })
     .then(function() {
+        console.log("Initial setup complete.");
+
         var registrationKey = options.license;
         var addOnKeys = options.addOn;
 
@@ -89,7 +93,11 @@ bigIp.ready()
 
         return Promise.resolve();
     })
-    .then(function() {
+    .then(function(response) {
+        if (response) {
+            console.log(response);
+        }
+
         console.log("BIG-IP setup complete.");
     })
     .catch(function(err) {
