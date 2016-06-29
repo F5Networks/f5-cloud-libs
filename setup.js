@@ -64,6 +64,7 @@ bigIp.ready()
 
         return bigIp.initialSetup(
             {
+                guiSetup: false,
                 dns: {
                     nameServers: nameServers
                 },
@@ -80,7 +81,7 @@ bigIp.ready()
         var registrationKey = options.license;
         var addOnKeys = options.addOn;
 
-        if (registrationKey || addOnKeys) {
+        if (registrationKey || addOnKeys.length > 0) {
             console.log("Licensing...");
 
             return bigIp.license(
