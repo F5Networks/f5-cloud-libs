@@ -44,11 +44,12 @@ var collect = function(val, collection) {
 };
 
 options
-    .option('--host <ip_address>', 'BIG-IP management IP')
-    .option('-u, --user <user>', 'BIG-IP admin user')
-    .option('-p, --password <password>', 'BIG-IP admin user password')
-    .option('-l, --license <license_key>', 'BIG-IP license key')
-    .option('-a, --add-on <add-on keys>', 'Add on license keys', collect, [])
+    .option('--host <ip_address>', 'BIG-IP management IP.')
+    .option('-u, --user <user>', 'BIG-IP admin user.')
+    .option('-p, --password <password>', 'BIG-IP admin user password.')
+    .option('-n, --host-name <hostname>', 'Hostname to set on BIG-IP.')
+    .option('-l, --license <license_key>', 'BIG-IP license key.')
+    .option('-a, --add-on <add-on keys>', 'Add on license keys.', collect, [])
     .parse(process.argv);
 
 bigIp = new BigIp(options.host, options.user, options.password);
@@ -72,7 +73,8 @@ bigIp.ready()
                 ntp: {
                     timezone: timezone,
                     servers: ntpServers
-                }
+                },
+                hostname: options.hostName
             }
         );
     })
