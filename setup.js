@@ -4,6 +4,7 @@ var BigIp = require('./lib/bigIp');
 var globalSettings = {
     guiSetup: 'disabled'
 };
+var dbVars = {};
 
 var bigIp;
 
@@ -25,6 +26,7 @@ options
     .option('-a, --add-on <add-on keys>', 'Add on license keys.', collect, [])
     .option('-n, --host-name <hostname>', 'Set BIG-IP hostname')
     .option('-g, --global-settings <name: value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
+    .option('-d, --db <name: value>', 'A db variable name/value pair. For multiple settings, use multiple -d entries', map, dbVars)
     .parse(process.argv);
 
 bigIp = new BigIp(options.host, options.user, options.password);
@@ -53,8 +55,23 @@ bigIp.ready()
             }
         );
     })
-    .then(function() {
-        console.log("Initial setup complete.");
+    .then(function(response) {
+        if (response) {
+            console.log(response);
+        }
+
+        if (Object.keys(dbVars).length > 0) {
+            console.log("Setting DB vars");
+            return bigIp.setDbVars(dbVars);
+        }
+        else {
+            return q();
+        }
+    })
+    .then(function(response) {
+        if (response) {
+            console.log(response);
+        }
 
         var registrationKey = options.license;
         var addOnKeys = options.addOn;
