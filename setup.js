@@ -5,7 +5,7 @@ var globalSettings = {
     guiSetup: 'disabled'
 };
 var dbVars = {};
-
+var previousOperationMessage;
 var bigIp;
 
 var collect = function(val, collection) {
@@ -55,22 +55,21 @@ bigIp.ready()
             }
         );
     })
-    .then(function(response) {
-        if (response) {
-            console.log(response);
-        }
+    .then(function() {
+        console.log("Initial setup complete.");
 
         if (Object.keys(dbVars).length > 0) {
             console.log("Setting DB vars");
+            previousOperationMessage = "Db vars set";
             return bigIp.setDbVars(dbVars);
         }
         else {
             return q();
         }
     })
-    .then(function(response) {
-        if (response) {
-            console.log(response);
+    .then(function() {
+        if (previousOperationMessage) {
+            console.log(previousOperationMessage);
         }
 
         var registrationKey = options.license;
