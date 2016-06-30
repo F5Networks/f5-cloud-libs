@@ -23,6 +23,7 @@ options
     .option('-p, --password <password>', 'BIG-IP admin user password.')
     .option('-l, --license <license_key>', 'BIG-IP license key.')
     .option('-a, --add-on <add-on keys>', 'Add on license keys.', collect, [])
+    .option('-n, --host-name <hostname>', 'Set BIG-IP hostname')
     .option('-g, --global-settings <name: value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
     .parse(process.argv);
 
@@ -47,6 +48,7 @@ bigIp.ready()
                     timezone: timezone,
                     servers: ntpServers
                 },
+                hostname: options.hostName,
                 globalSettings: globalSettings
             }
         );
