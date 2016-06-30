@@ -35,28 +35,37 @@ console.log("Waiting for BIG-IP to be ready...");
 bigIp.ready()
     .then(function() {
         console.log("BIG-IP is ready.");
-        console.log("Performing initial setup...");
 
         var nameServers = ["10.133.20.70", "10.133.20.71"];
         var timezone = 'UTC';
         var ntpServers = ["0.us.pool.ntp.org", "1.us.pool.ntp.org"];
 
-        return bigIp.initialSetup(
-            {
-                dns: {
-                    nameServers: nameServers
-                },
-                ntp: {
-                    timezone: timezone,
-                    servers: ntpServers
-                },
-                hostname: options.hostName,
-                globalSettings: globalSettings
-            }
-        );
+        var initialConfig = {
+            dns: {
+                nameServers: nameServers
+            },
+            ntp: {
+                timezone: timezone,
+                servers: ntpServers
+            },
+            hostname: options.hostName,
+            globalSettings: globalSettings
+        };
+
+        if (Object.keys(initialConfig).length) {
+            console.log("Performing initial setup...");
+            previousOperationMessage = "Initial setup complete";
+            return bigIp.initialSetup(initialConfig);
+        }
+        else {
+            return q();
+        }
     })
     .then(function() {
-        console.log("Initial setup complete.");
+        if (previousOperationMessage) {
+            console.log(previousOperationMessage);
+            previousOperationMessage = '';
+        }
 
         if (Object.keys(dbVars).length > 0) {
             console.log("Setting DB vars");
@@ -70,6 +79,7 @@ bigIp.ready()
     .then(function() {
         if (previousOperationMessage) {
             console.log(previousOperationMessage);
+            previousOperationMessage = '';
         }
 
         var registrationKey = options.license;
