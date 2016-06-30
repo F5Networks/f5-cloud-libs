@@ -1,6 +1,9 @@
 var options = require("commander");
 var q = require("q");
 var BigIp = require('./lib/bigIp');
+var globalSettings = {
+    guiSetup: 'disabled'
+};
 
 var bigIp;
 
@@ -9,13 +12,18 @@ var collect = function(val, collection) {
     return collection;
 };
 
+var map = function(pair, map) {
+    var nameVal = pair.split(':');
+    map[nameVal[0].trim()] = nameVal[1].trim();
+};
+
 options
     .option('--host <ip_address>', 'BIG-IP management IP.')
     .option('-u, --user <user>', 'BIG-IP admin user.')
     .option('-p, --password <password>', 'BIG-IP admin user password.')
-    .option('-n, --host-name <hostname>', 'Hostname to set on BIG-IP.')
     .option('-l, --license <license_key>', 'BIG-IP license key.')
     .option('-a, --add-on <add-on keys>', 'Add on license keys.', collect, [])
+    .option('-g, --global-settings <name: value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
     .parse(process.argv);
 
 bigIp = new BigIp(options.host, options.user, options.password);
@@ -32,7 +40,6 @@ bigIp.ready()
 
         return bigIp.initialSetup(
             {
-                guiSetup: false,
                 dns: {
                     nameServers: nameServers
                 },
@@ -40,7 +47,7 @@ bigIp.ready()
                     timezone: timezone,
                     servers: ntpServers
                 },
-                hostname: options.hostName
+                globalSettings: globalSettings
             }
         );
     })
