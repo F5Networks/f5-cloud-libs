@@ -5,6 +5,7 @@ var globalSettings = {
     guiSetup: 'disabled'
 };
 var dbVars = {};
+var modules = {};
 var previousOperationMessage;
 var bigIp;
 
@@ -27,6 +28,7 @@ options
     .option('-n, --host-name <hostname>', 'Set BIG-IP hostname')
     .option('-g, --global-settings <name: value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
     .option('-d, --db <name: value>', 'A db variable name/value pair. For multiple settings, use multiple -d entries', map, dbVars)
+    .option('-m, --module <name: value>', 'A module provisioning module/level pair. For multiple modules, use multiple -m entries', map, modules)
     .parse(process.argv);
 
 bigIp = new BigIp(options.host, options.user, options.password);
@@ -97,6 +99,19 @@ bigIp.ready()
         }
 
         return q();
+    })
+    .then(function(response) {
+        if (response) {
+            console.log(response);
+        }
+
+        if (Object.keys(modules).length > 0) {
+            console.log("Provisioning modules: " + JSON.stringify(modules, null, 4));
+            return bigIp.provision(modules);
+        }
+        else {
+            return q();
+        }
     })
     .then(function(response) {
         if (response) {
