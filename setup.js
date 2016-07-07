@@ -6,6 +6,7 @@ var globalSettings = {
 };
 var dbVars = {};
 var modules = {};
+
 var previousOperationMessage;
 var bigIp;
 
@@ -30,6 +31,18 @@ options
     .option('-d, --db <name: value>', 'A db variable name/value pair. For multiple settings, use multiple -d entries', map, dbVars)
     .option('-m, --module <name: value>', 'A module provisioning module/level pair. For multiple modules, use multiple -m entries', map, modules)
     .parse(process.argv);
+
+console.log(process.argv[1] + " called with" +
+    (options.host ? "\n\thost: " + options.host : "") +
+    (options.user ? "\n\tuser: " + options.user : "") +
+    (options.password ? "\n\tpassword: ******" : "") +
+    (options.license ? "\n\tlicense: " + options.license : "") +
+    (options.addOn.length > 0 ? "\n\tadd-on keys: " + options.addOn : "") +
+    (options.hostName ? "\n\thostName: " + options.hostName : "") +
+    (Object.keys(globalSettings).length > 0 ? "\n\tglobal settings: " + JSON.stringify(globalSettings) : "") +
+    (Object.keys(dbVars).length > 0 ? "\n\tdb vars: " + JSON.stringify(dbVars) : "") +
+    (Object.keys(modules).length > 0 ? "\n\tmodules: " + JSON.stringify(modules) : ""));
+
 
 bigIp = new BigIp(options.host, options.user, options.password);
 
