@@ -47,7 +47,7 @@ console.log(process.argv[1] + " called with" +
 bigIp = new BigIp(options.host, options.user, options.password);
 
 console.log("Waiting for BIG-IP to be ready...");
-bigIp.ready()
+bigIp.ready(30, 10000)
     .then(function() {
         console.log("BIG-IP is ready.");
 
