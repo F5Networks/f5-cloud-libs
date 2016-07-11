@@ -46,8 +46,9 @@ console.log(process.argv[1] + " called with" +
 
 bigIp = new BigIp(options.host, options.user, options.password);
 
+console.log("Setup starting at: " + new Date().toUTCString());
 console.log("Waiting for BIG-IP to be ready...");
-bigIp.ready(30, 10000)
+bigIp.ready(60, 10000) // 10 minutes
     .then(function() {
         console.log("BIG-IP is ready.");
 
@@ -136,4 +137,7 @@ bigIp.ready(30, 10000)
     .catch(function(err) {
         console.log("BIG-IP setup failed: " + (typeof err === 'object' ? err.message : err));
     })
-    .done();
+    .done(function() {
+        console.log("Setup finished at: " + new Date().toUTCString());
+    });
+
