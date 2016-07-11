@@ -1,3 +1,5 @@
+var fs = require('fs');
+var childProcess = require("child_process");
 var options = require("commander");
 var q = require("q");
 var BigIp = require('./lib/bigIp');
@@ -7,8 +9,13 @@ var globalSettings = {
 var dbVars = {};
 var modules = {};
 
+var logFile = fs.openSync('/var/log/setup.log', 'w');
+
 var previousOperationMessage;
 var bigIp;
+
+var args;
+var myChild;
 
 var collect = function(val, collection) {
     collection.push(val);
@@ -30,19 +37,33 @@ options
     .option('-g, --global-settings <name: value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
     .option('-d, --db <name: value>', 'A db variable name/value pair. For multiple settings, use multiple -d entries', map, dbVars)
     .option('-m, --module <name: value>', 'A module provisioning module/level pair. For multiple modules, use multiple -m entries', map, modules)
+    .option('-f, --foreground', 'Do the work - otherwise spawn a background process to do the work.')
     .parse(process.argv);
 
-console.log(process.argv[1] + " called with" +
-    (options.host ? "\n\thost: " + options.host : "") +
-    (options.user ? "\n\tuser: " + options.user : "") +
-    (options.password ? "\n\tpassword: ******" : "") +
-    (options.license ? "\n\tlicense: " + options.license : "") +
-    (options.addOn.length > 0 ? "\n\tadd-on keys: " + options.addOn : "") +
-    (options.hostName ? "\n\thostName: " + options.hostName : "") +
-    (Object.keys(globalSettings).length > 0 ? "\n\tglobal settings: " + JSON.stringify(globalSettings) : "") +
-    (Object.keys(dbVars).length > 0 ? "\n\tdb vars: " + JSON.stringify(dbVars) : "") +
-    (Object.keys(modules).length > 0 ? "\n\tmodules: " + JSON.stringify(modules) : ""));
+console.log(process.argv[1] + " called with" + process.argv.slice().join(" "));
 
+if (!options.foreground) {
+
+    if (process.argv.length > 100) {
+        console.log("Too many arguments - maybe we're stuck in a restart loop?");
+    }
+    else {
+        console.log("Spawning child process to do the work.");
+        args = process.argv.slice(1);
+        args.push('--foreground');
+        myChild = childProcess.spawn(
+            process.argv[0],
+            args,
+            {
+                detached: true,
+                stdio: ['ignore', logFile, logFile]
+            }
+        );
+        myChild.unref();
+    }
+
+    process.exit();
+}
 
 bigIp = new BigIp(options.host, options.user, options.password);
 
