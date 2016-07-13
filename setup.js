@@ -28,18 +28,28 @@ var map = function(pair, map) {
     map[nameVal[0].trim()] = nameVal[1].trim();
 };
 
+var writeResponse = function(response) {
+    if (response && options.verbose) {
+        console.log(response);
+    }
+};
+
 options
     .option('--host <ip_address>', 'BIG-IP management IP.')
     .option('-u, --user <user>', 'BIG-IP admin user.')
     .option('-p, --password <password>', 'BIG-IP admin user password.')
+    .option('--ntp <ntp-server>', 'NTP server. For multiple NTP servers, use multiple --ntp entries', collect, [])
+    .option('--tz <timezone>', 'Timezone for NTP setting')
+    .option('--dns <DNS server>', 'DNS server. For multiple DNS severs, use multiple --dns entries', collect, [])
     .option('-l, --license <license_key>', 'BIG-IP license key.')
-    .option('-a, --add-on <add-on keys>', 'Add on license keys.', collect, [])
+    .option('-a, --add-on <add-on keys>', 'Add on license key. For multiple keys, use multiple -a entries', collect, [])
     .option('-n, --host-name <hostname>', 'Set BIG-IP hostname')
     .option('-g, --global-settings <name: value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
     .option('-d, --db <name: value>', 'A db variable name/value pair. For multiple settings, use multiple -d entries', map, dbVars)
     .option('-m, --module <name: value>', 'A module provisioning module/level pair. For multiple modules, use multiple -m entries', map, modules)
     .option('-f, --foreground', 'Do the work - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
     .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + logFileName)
+    .option('--verbose', 'Turn on verbose output')
     .parse(process.argv);
 
 logFileName = options.output || logFileName;
@@ -80,20 +90,53 @@ try {
     console.log("Waiting for BIG-IP to be ready...");
     bigIp.ready(60, 10000) // 10 minutes
         .then(function() {
+            var ntpBody;
+
             console.log("BIG-IP is ready.");
 
-            var nameServers = ["10.133.20.70", "10.133.20.71"];
-            var timezone = 'UTC';
-            var ntpServers = ["0.us.pool.ntp.org", "1.us.pool.ntp.org"];
+            if (options.ntp || options.tz) {
+                console.log("Setting up NTP.");
+
+                ntpBody = {};
+
+                if (options.ntp) {
+                    ntpBody.servers = options.ntp;
+                }
+
+                if (options.tz) {
+                    ntpBody.timezone = options.tz;
+                }
+
+                return bigIp.modify(
+                    '/tm/sys/ntp',
+                    ntpBody
+                );
+            }
+            else {
+                return q();
+            }
+        })
+        .then(function(response) {
+            writeResponse(response);
+
+            if (options.dns) {
+                console.log("Setting up DNS.");
+
+                return bigIp.modify(
+                    '/tm/sys/dns',
+                    {
+                        'name-servers': options.dns
+                    }
+                );
+            }
+            else {
+                return q();
+            }
+        })
+        .then(function(response) {
+            writeResponse(response);
 
             var initialConfig = {
-                dns: {
-                    nameServers: nameServers
-                },
-                ntp: {
-                    timezone: timezone,
-                    servers: ntpServers
-                },
                 hostname: options.hostName,
                 globalSettings: globalSettings
             };
@@ -145,9 +188,7 @@ try {
             return q();
         })
         .then(function(response) {
-            if (response) {
-                console.log(response);
-            }
+            writeResponse(response);
 
             if (Object.keys(modules).length > 0) {
                 console.log("Provisioning modules: " + JSON.stringify(modules, null, 4));
@@ -158,9 +199,7 @@ try {
             }
         })
         .then(function(response) {
-            if (response) {
-                console.log(response);
-            }
+            writeResponse(response);
 
             console.log("BIG-IP setup complete.");
         })
