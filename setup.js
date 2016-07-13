@@ -57,7 +57,7 @@ logFileName = options.output || logFileName;
 try {
     logFile = fs.openSync(logFileName, 'a');
 
-    console.log(process.argv[1] + " called with" + process.argv.slice().join(" "));
+    console.log(process.argv[1] + " called with " + process.argv.slice().join(" "));
 
     // When running in cloud init, we need to exit so that cloud init can complete and
     // allow the Big-IP services to start
