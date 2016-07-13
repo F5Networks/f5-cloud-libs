@@ -94,7 +94,7 @@ try {
 
             console.log("BIG-IP is ready.");
 
-            if (options.ntp || options.tz) {
+            if (options.ntp.length > 0 || options.tz) {
                 console.log("Setting up NTP.");
 
                 ntpBody = {};
@@ -119,7 +119,7 @@ try {
         .then(function(response) {
             writeResponse(response);
 
-            if (options.dns) {
+            if (options.dns.length > 0) {
                 console.log("Setting up DNS.");
 
                 return bigIp.modify(
