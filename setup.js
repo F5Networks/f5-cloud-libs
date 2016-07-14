@@ -18,6 +18,8 @@ var bigIp;
 var args;
 var myChild;
 
+var i;
+
 var collect = function(val, collection) {
     collection.push(val);
     return collection;
@@ -57,6 +59,15 @@ logFileName = options.output || logFileName;
 try {
     logFile = fs.openSync(logFileName, 'a');
 
+    // Log the input, but don't log the password
+    if (options.password) {
+        for (i = 0; i < process.argv.length; ++i) {
+            if (process.argv[i] === '--password' || process.argv[i] === '-p') {
+                process.argv[i + 1] = "*******";
+                break;
+            }
+        }
+    }
     console.log(process.argv[1] + " called with " + process.argv.slice().join(" "));
 
     // When running in cloud init, we need to exit so that cloud init can complete and
