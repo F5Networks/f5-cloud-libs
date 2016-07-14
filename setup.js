@@ -23,6 +23,7 @@ var globalSettings = {
 };
 var dbVars = {};
 var modules = {};
+var passwords = {};
 
 var logFileName = '/tmp/setup.log';
 var logFile;
@@ -39,9 +40,9 @@ var collect = function(val, collection) {
     return collection;
 };
 
-var map = function(pair, map) {
+var map = function(pair, container) {
     var nameVal = pair.split(':');
-    map[nameVal[0].trim()] = nameVal[1].trim();
+    container[nameVal[0].trim()] = nameVal[1].trim();
 };
 
 var writeResponse = function(response) {
@@ -62,6 +63,7 @@ options
     .option('-n, --host-name <hostname>', 'Set BIG-IP hostname')
     .option('-g, --global-settings <name: value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
     .option('-d, --db <name: value>', 'A db variable name/value pair. For multiple settings, use multiple -d entries', map, dbVars)
+    .option('--set-password <user: newPassword[,oldPassword]>', 'Set user password to newPassword. When setting password for root user, oldPassword is required. For multiple users, use multiple --set-password entries.', map, passwords)
     .option('-m, --module <name: value>', 'A module provisioning module/level pair. For multiple modules, use multiple -m entries', map, modules)
     .option('-f, --foreground', 'Do the work - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
     .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + logFileName)
@@ -124,9 +126,35 @@ try {
     console.log("Waiting for BIG-IP to be ready...");
     bigIp.ready(60, 10000) // 10 minutes
         .then(function() {
-            var ntpBody;
+            var promises = [];
+            var user;
+            var passwordPair;
+            var newPassword;
+            var oldPassword;
 
             console.log("BIG-IP is ready.");
+
+            if (Object.keys(passwords).length > 0) {
+                console.log("Setting password(s)");
+                for (user in passwords) {
+                    passwordPair = passwords[user].split(/,(.+)/);
+                    newPassword = passwordPair[0].trim();
+                    if (passwordPair.length > 1) {
+                        oldPassword = passwordPair[1].trim();
+                    }
+                    promises.push(bigIp.password(user, newPassword, oldPassword));
+                }
+
+                return q.all(promises);
+            }
+            else {
+                return q();
+            }
+        })
+        .then(function(response) {
+            var ntpBody;
+
+            writeResponse(response);
 
             if (options.ntp.length > 0 || options.tz) {
                 console.log("Setting up NTP.");
