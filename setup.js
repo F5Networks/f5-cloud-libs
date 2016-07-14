@@ -1,3 +1,18 @@
+/**
+ * Copyright 2016 F5 Networks, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 var fs = require('fs');
 var childProcess = require("child_process");
 var options = require("commander");
@@ -12,7 +27,6 @@ var modules = {};
 var logFileName = '/tmp/setup.log';
 var logFile;
 
-var previousOperationMessage;
 var bigIp;
 
 var args;
@@ -59,19 +73,8 @@ logFileName = options.output || logFileName;
 try {
     logFile = fs.openSync(logFileName, 'a');
 
-    // Log the input, but don't log the password
-    if (options.password) {
-        for (i = 0; i < process.argv.length; ++i) {
-            if (process.argv[i] === '--password' || process.argv[i] === '-p') {
-                process.argv[i + 1] = "*******";
-                break;
-            }
-        }
-    }
-    console.log(process.argv[1] + " called with " + process.argv.slice().join(" "));
-
     // When running in cloud init, we need to exit so that cloud init can complete and
-    // allow the Big-IP services to start
+    // allow the BIG-IP services to start
     if (!options.foreground) {
 
         if (process.argv.length > 100) {
@@ -95,7 +98,27 @@ try {
         process.exit();
     }
 
+    // Log the input, but don't log the password
+    if (options.password) {
+        for (i = 0; i < process.argv.length; ++i) {
+            if (process.argv[i] === '--password' || process.argv[i] === '-p') {
+                process.argv[i + 1] = "*******";
+                break;
+            }
+        }
+    }
+    console.log(process.argv[1] + " called with " + process.argv.slice().join(" "));
+
     bigIp = new BigIp(options.host, options.user, options.password);
+
+    // Use hostName if both hostName and global-settings hostName are set
+    if (globalSettings && options.hostName) {
+        if (globalSettings.hostname || globalSettings.hostName) {
+            console.log("Using host-name option to override global-settings host name");
+            delete globalSettings.hostName;
+            delete globalSettings.hostname;
+        }
+    }
 
     console.log("Setup starting at: " + new Date().toUTCString());
     console.log("Waiting for BIG-IP to be ready...");
@@ -147,40 +170,38 @@ try {
         .then(function(response) {
             writeResponse(response);
 
-            var initialConfig = {
-                hostname: options.hostName,
-                globalSettings: globalSettings
-            };
-
-            if (Object.keys(initialConfig).length) {
-                console.log("Performing initial setup...");
-                previousOperationMessage = "Initial setup complete";
-                return bigIp.initialSetup(initialConfig);
+            if (options.hostName) {
+                console.log("Setting host name.");
+                return bigIp.hostName(options.hostName);
             }
             else {
                 return q();
             }
         })
-        .then(function() {
-            if (previousOperationMessage) {
-                console.log(previousOperationMessage);
-                previousOperationMessage = '';
+        .then(function(response) {
+            writeResponse(response);
+
+            if (globalSettings) {
+                console.log("Setting global settings.");
+                return bigIp.globalSettings(globalSettings);
             }
+            else {
+                return q();
+            }
+        })
+        .then(function(response) {
+            writeResponse(response);
 
             if (Object.keys(dbVars).length > 0) {
                 console.log("Setting DB vars");
-                previousOperationMessage = "Db vars set";
                 return bigIp.setDbVars(dbVars);
             }
             else {
                 return q();
             }
         })
-        .then(function() {
-            if (previousOperationMessage) {
-                console.log(previousOperationMessage);
-                previousOperationMessage = '';
-            }
+        .then(function(response) {
+            writeResponse(response);
 
             var registrationKey = options.license;
             var addOnKeys = options.addOn;
