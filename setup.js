@@ -46,7 +46,7 @@ var map = function(pair, map) {
 
 var writeResponse = function(response) {
     if (response && options.verbose) {
-        console.log(response);
+        console.log((typeof response === 'object' ? JSON.stringify(response, null, 4) : "  " + response));
     }
 };
 
@@ -216,8 +216,9 @@ try {
                     }
                 );
             }
-
-            return q();
+            else {
+                return q();
+            }
         })
         .then(function(response) {
             writeResponse(response);
