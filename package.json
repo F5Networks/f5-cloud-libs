@@ -1,5 +1,5 @@
 {
-    "name": "f5-cloud-node-libs",
+    "name": "f5-cloud-libs",
     "version": "1.0.0",
     "description": "Common library code for deploying a BIG-IP in a cloud environment",
     "main": "index.js",
