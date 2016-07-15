@@ -49,16 +49,18 @@ var collect = function(val, collection) {
 
 /**
  * Parses a ':' deliminated key-value pair and stores them
- * in a container
+ * in a container.
+ *   - Key is the part before the first ':',
+ *   - Value is everything after.
+ *   - Leading and trailing spaces are removed from keys and values
  *
  * Typically used by the option parser for collecting
  * multiple key-value pairs for a command line option
  */
 var map = function(pair, container) {
-    var nameVal = pair.split(':');
+    var nameVal = pair.split(/:(.+)/);
     container[nameVal[0].trim()] = nameVal[1].trim();
 };
-
 
 /**
  * Special case of map. Used to parse root password options in the form of
