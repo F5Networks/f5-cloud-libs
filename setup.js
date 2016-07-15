@@ -301,7 +301,11 @@ try {
         })
         .then(function(response) {
             writeResponse(response);
-
+            console.log("Saving config.");
+            return bigIp.save();
+        })
+        .then(function(response) {
+            writeResponse(response);
             console.log("BIG-IP setup complete.");
         })
         .catch(function(err) {
