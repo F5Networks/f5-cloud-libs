@@ -36,6 +36,7 @@ var myChild;
 
 var i;
 
+var PASSWORD_OPTION_KEYS = ['-p', '--password', '--set-password', '--set-root-password'];
 /**
  * Adds value to an array
  *
@@ -134,11 +135,10 @@ try {
     }
 
     // Log the input, but don't log the password
-    if (options.password) {
+    if (options.password || Object.keys(passwords).lentgh > 0 || Object.keys(rootPasswords).length > 0) {
         for (i = 0; i < process.argv.length; ++i) {
-            if (process.argv[i] === '--password' || process.argv[i] === '-p') {
+            if (PASSWORD_OPTION_KEYS.indexOf(process.argv[i]) !== -1) {
                 process.argv[i + 1] = "*******";
-                break;
             }
         }
     }
