@@ -24,6 +24,7 @@ var globalSettings = {
 var dbVars = {};
 var modules = {};
 var passwords = {};
+var rootPasswords = {};
 
 var logFileName = '/tmp/setup.log';
 var logFile;
@@ -35,14 +36,43 @@ var myChild;
 
 var i;
 
+/**
+ * Adds value to an array
+ *
+ * Typically used by the option parser for collecting
+ * multiple values for a command line option
+ */
 var collect = function(val, collection) {
     collection.push(val);
     return collection;
 };
 
+/**
+ * Parses a ':' deliminated key-value pair and stores them
+ * in a container
+ *
+ * Typically used by the option parser for collecting
+ * multiple key-value pairs for a command line option
+ */
 var map = function(pair, container) {
     var nameVal = pair.split(':');
     container[nameVal[0].trim()] = nameVal[1].trim();
+};
+
+
+/**
+ * Special case of map. Used to parse root password options in the form of
+ *     old:oldRootPassword,new:newRootPassword
+ * Since passwords can contain any character, a delimiter is difficult to find.
+ * Compromise by looking for ',new:' as a delimeter
+ */
+var parseRootPasswords = function(passwordsValue, container) {
+    var set = passwordsValue.split(",new:");
+
+    if (set.length == 2) {
+        container.old = set[0].split("old:")[1];
+        container.new = set[1];
+    }
 };
 
 var writeResponse = function(response) {
@@ -61,10 +91,11 @@ options
     .option('-l, --license <license_key>', 'BIG-IP license key.')
     .option('-a, --add-on <add-on keys>', 'Add on license key. For multiple keys, use multiple -a entries', collect, [])
     .option('-n, --host-name <hostname>', 'Set BIG-IP hostname')
-    .option('-g, --global-settings <name: value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
-    .option('-d, --db <name: value>', 'A db variable name/value pair. For multiple settings, use multiple -d entries', map, dbVars)
-    .option('--set-password <user: newPassword[,oldPassword]>', 'Set user password to newPassword. When setting password for root user, oldPassword is required. For multiple users, use multiple --set-password entries.', map, passwords)
-    .option('-m, --module <name: value>', 'A module provisioning module/level pair. For multiple modules, use multiple -m entries', map, modules)
+    .option('-g, --global-settings <name:value>', 'A global setting name/value pair. For multiple settings, use multiple -g entries', map, globalSettings)
+    .option('-d, --db <name:value>', 'A db variable name/value pair. For multiple settings, use multiple -d entries', map, dbVars)
+    .option('--set-password <user:newPassword>', 'Set user password to newPassword. For multiple users, use multiple --set-password entries.', map, passwords)
+    .option('--set-root-password <old:oldPassword,new:newPassword>', 'Set the password for the root user from oldPassword to newPassword', parseRootPasswords, rootPasswords)
+    .option('-m, --module <name:value>', 'A module provisioning module/level pair. For multiple modules, use multiple -m entries', map, modules)
     .option('-f, --foreground', 'Do the work - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
     .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + logFileName)
     .option('--verbose', 'Turn on verbose output')
@@ -128,24 +159,31 @@ try {
         .then(function() {
             var promises = [];
             var user;
-            var passwordPair;
-            var newPassword;
-            var oldPassword;
 
             console.log("BIG-IP is ready.");
 
             if (Object.keys(passwords).length > 0) {
-                console.log("Setting password(s)");
+                console.log("Setting password(s).");
                 for (user in passwords) {
-                    passwordPair = passwords[user].split(/,(.+)/);
-                    newPassword = passwordPair[0].trim();
-                    if (passwordPair.length > 1) {
-                        oldPassword = passwordPair[1].trim();
-                    }
-                    promises.push(bigIp.password(user, newPassword, oldPassword));
+                    promises.push(bigIp.password(user, passwords[user]));
                 }
 
                 return q.all(promises);
+            }
+            else {
+                return q();
+            }
+        })
+        .then(function(response) {
+            writeResponse(response);
+
+            if (Object.keys(rootPasswords).length > 0) {
+                if (!rootPasswords.old || !rootPasswords.new) {
+                    return q.reject("Old or new password missing for root user. Specify with --set-root-password old:old_root_password,new:new_root_password");
+                }
+
+                console.log("Setting rootPassword.");
+                return bigIp.password('root', rootPasswords.new, rootPasswords.old);
             }
             else {
                 return q();
