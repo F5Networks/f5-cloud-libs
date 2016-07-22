@@ -22,7 +22,7 @@ npm install q
 pushd node_modules > /dev/null
 curl -o node-icontrol.tar.gz --location https://github.com/seattlevine/node-icontrol/archive/develop.tar.gz
 tar -xzf node-icontrol.tar.gz
-mv node-icontrol-develop node-icontrol
+mv node-icontrol-develop icontrol
 popd > /dev/null
 
 tar -xzf $1.tar.gz
