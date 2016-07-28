@@ -12,7 +12,7 @@
 
 # If our mods to node-icontrol are pushed to npm, we can push
 # f5-cloud-libs to npm as well and use npm here instead
-curl -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/archive/f5-cloud-libs.tar.gz
+curl -s -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/archive/f5-cloud-libs.tar.gz
 
 tar -xzf f5-cloud-libs.tar.gz
 cd f5-cloud-libs
