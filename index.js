@@ -16,6 +16,5 @@
 'use strict';
 
 module.exports = {
-    bigIp: require("./lib/bigIp"),
-    logger: require("./lib/logger")
+    bigIp: require("./lib/bigIp.js")
 };

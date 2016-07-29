@@ -15,9 +15,9 @@
  */
 (function() {
 
-    var onBoarder = {};
+    var onboarder = {};
 
-    exports.run = onBoarder.run = function(argv, testOpts) {
+    exports.run = onboarder.run = function(argv, testOpts) {
 
         var fs = require('fs');
         var childProcess = require("child_process");
@@ -334,6 +334,6 @@
     // If we're called from the command line, run
     // This allows for test code to call us as a module
     if (!module.parent) {
-        onBoarder.run(process.argv);
+        onboarder.run(process.argv);
     }
 })();
