@@ -178,8 +178,8 @@
 
                 // Start processing...
                 writeOutput("Onboard starting at: " + new Date().toUTCString());
-                writeOutput("Waiting for BIG-IP to be ready...");
-                bigIp.ready(60, 10000) // 10 minutes
+                writeOutput("Waiting for BIG-IP to be ready.");
+                bigIp.ready()
                     .then(function() {
                         var promises = [];
                         var user;
@@ -297,7 +297,7 @@
                         var addOnKeys = options.addOn;
 
                         if (registrationKey || addOnKeys.length > 0) {
-                            writeOutput("Licensing...");
+                            writeOutput("Licensing.");
 
                             return bigIp.license(
                                 {
