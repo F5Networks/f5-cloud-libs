@@ -329,6 +329,13 @@
                     .then(function(response) {
                         writeResponse(response);
                         writeOutput("BIG-IP onboard complete.");
+                        return bigIp.rebootRequired();
+                    })
+                    .then(function(response) {
+                        if (response) {
+                            writeOutput('Reboot required. Rebooting...');
+                            return bigIp.reboot();
+                        }
                     })
                     .catch(function(err) {
                         writeOutput("BIG-IP onboard failed: " + (typeof err === 'object' ? err.message : err));

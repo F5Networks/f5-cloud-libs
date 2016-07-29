@@ -27,6 +27,10 @@ var bigIpMock = {
 
     save: function() {
         return q();
+    },
+
+    rebootRequired: function() {
+        return q();
     }
 };
 
