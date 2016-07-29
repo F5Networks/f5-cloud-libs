@@ -31,6 +31,7 @@ var bigIpMock = {
 };
 
 var argv;
+var testOptions = {bigIp: bigIpMock};
 
 module.exports = {
     setUp: function(callback) {
@@ -38,17 +39,33 @@ module.exports = {
         callback();
     },
 
+    testCollect: function(test) {
+        argv.push('--ntp', 'one', '--ntp', 'two');
+        onboard.run(argv, testOptions);
+        test.strictEqual(onboard.getOptions().ntp.length, 2);
+        test.done();
+    },
+
     testMapSimple: function(test) {
-        argv.push('--global-setting', 'myName:myVal');
-        onboard.run(argv, {bigIp: bigIpMock});
-        test.strictEqual(onboard.getGlobalSettings().myName, 'myVal');
+        argv.push('--global-setting', 'name1:value1');
+        onboard.run(argv, testOptions);
+        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
         test.done();
     },
 
     testMapSpaces: function(test) {
-        argv.push('--global-setting', 'myName : myVal');
-        onboard.run(argv, {bigIp: bigIpMock});
-        test.strictEqual(onboard.getGlobalSettings().myName, 'myVal');
+        argv.push('--global-setting', ' name1 : value1 ');
+        onboard.run(argv, testOptions);
+        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
+        test.done();
+    },
+
+    testMapMultiple: function(test) {
+        argv.push('--global-setting', 'name1:value1');
+        argv.push('--global-setting', 'name2:value2');
+        onboard.run(argv, testOptions);
+        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
+        test.strictEqual(onboard.getGlobalSettings().name2, 'value2');
         test.done();
     }
 };
