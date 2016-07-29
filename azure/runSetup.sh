@@ -16,4 +16,4 @@ curl -s -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/archiv
 
 tar -xzf f5-cloud-libs.tar.gz
 cd f5-cloud-libs
-f5-rest-node setup.js "$@"
+f5-rest-node onboard.js "$@"
