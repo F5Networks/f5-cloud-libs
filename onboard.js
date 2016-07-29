@@ -15,6 +15,8 @@
  */
 (function() {
 
+    var options = require('commander');
+
     var onboarder;
 
     var globalSettings = {
@@ -28,7 +30,6 @@
             var fs = require('fs');
             var childProcess = require("child_process");
             var q = require("q");
-            var options = require('commander');
             var BigIp = require('./lib/bigIp');
             var dbVars = {};
             var modules = {};
@@ -343,6 +344,10 @@
 
         getGlobalSettings: function() {
             return globalSettings;
+        },
+
+        getOptions: function() {
+            return options;
         }
     };
 
