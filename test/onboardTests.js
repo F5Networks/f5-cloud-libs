@@ -34,7 +34,7 @@ var argv;
 
 module.exports = {
     setUp: function(callback) {
-        argv = ['node', 'onboard', '--foreground'];
+        argv = ['node', 'onboard', '--foreground', '--silent'];
         callback();
     },
 

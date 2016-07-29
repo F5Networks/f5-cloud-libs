@@ -90,9 +90,15 @@
                 }
             };
 
+            var writeOutput = function(message) {
+                if (options.verbose || !options.silent) {
+                    console.log(message);
+                }
+            };
+
             var writeResponse = function(response) {
                 if (response && options.verbose) {
-                    console.log((typeof response === 'object' ? JSON.stringify(response, null, 4) : "  " + response));
+                    writeOutput((typeof response === 'object' ? JSON.stringify(response, null, 4) : "  " + response));
                 }
             };
 
@@ -113,7 +119,8 @@
                 .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', map, modules)
                 .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
                 .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + logFileName)
-                .option('--verbose', 'Turn on verbose output.')
+                .option('--silent', 'Turn off all output.')
+                .option('--verbose', 'Turn on verbose output (overrides --silent).')
                 .parse(argv);
 
             logFileName = options.output || logFileName;
@@ -126,10 +133,10 @@
                 if (!options.foreground) {
 
                     if (process.argv.length > 100) {
-                        console.log("Too many arguments - maybe we're stuck in a restart loop?");
+                        writeOutput("Too many arguments - maybe we're stuck in a restart loop?");
                     }
                     else {
-                        console.log("Spawning child process to do the work. Output will be in " + logFileName);
+                        writeOutput("Spawning child process to do the work. Output will be in " + logFileName);
                         args = process.argv.slice(1);
                         args.push('--foreground');
                         myChild = childProcess.spawn(
@@ -154,7 +161,7 @@
                         }
                     }
                 }
-                console.log(process.argv[1] + " called with " + process.argv.slice().join(" "));
+                writeOutput(process.argv[1] + " called with " + process.argv.slice().join(" "));
 
                 // Create the bigIp client object
                 bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password);
@@ -162,24 +169,24 @@
                 // Use hostName if both hostName and global-settings hostName are set
                 if (globalSettings && options.hostName) {
                     if (globalSettings.hostname || globalSettings.hostName) {
-                        console.log("Using host-name option to override global-settings host name");
+                        writeOutput("Using host-name option to override global-settings host name");
                         delete globalSettings.hostName;
                         delete globalSettings.hostname;
                     }
                 }
 
                 // Start processing...
-                console.log("Onboard starting at: " + new Date().toUTCString());
-                console.log("Waiting for BIG-IP to be ready...");
+                writeOutput("Onboard starting at: " + new Date().toUTCString());
+                writeOutput("Waiting for BIG-IP to be ready...");
                 bigIp.ready(60, 10000) // 10 minutes
                     .then(function() {
                         var promises = [];
                         var user;
 
-                        console.log("BIG-IP is ready.");
+                        writeOutput("BIG-IP is ready.");
 
                         if (Object.keys(passwords).length > 0) {
-                            console.log("Setting password(s).");
+                            writeOutput("Setting password(s).");
                             for (user in passwords) {
                                 promises.push(bigIp.password(user, passwords[user]));
                             }
@@ -198,7 +205,7 @@
                                 return q.reject("Old or new password missing for root user. Specify with --set-root-password old:old_root_password,new:new_root_password");
                             }
 
-                            console.log("Setting rootPassword.");
+                            writeOutput("Setting rootPassword.");
                             return bigIp.password('root', rootPasswords.new, rootPasswords.old);
                         }
                         else {
@@ -211,7 +218,7 @@
                         writeResponse(response);
 
                         if (options.ntp.length > 0 || options.tz) {
-                            console.log("Setting up NTP.");
+                            writeOutput("Setting up NTP.");
 
                             ntpBody = {};
 
@@ -236,7 +243,7 @@
                         writeResponse(response);
 
                         if (options.dns.length > 0) {
-                            console.log("Setting up DNS.");
+                            writeOutput("Setting up DNS.");
 
                             return bigIp.modify(
                                 '/tm/sys/dns',
@@ -253,7 +260,7 @@
                         writeResponse(response);
 
                         if (options.hostName) {
-                            console.log("Setting host name.");
+                            writeOutput("Setting host name.");
                             return bigIp.hostName(options.hostName);
                         }
                         else {
@@ -264,7 +271,7 @@
                         writeResponse(response);
 
                         if (globalSettings) {
-                            console.log("Setting global settings.");
+                            writeOutput("Setting global settings.");
                             return bigIp.globalSettings(globalSettings);
                         }
                         else {
@@ -275,7 +282,7 @@
                         writeResponse(response);
 
                         if (Object.keys(dbVars).length > 0) {
-                            console.log("Setting DB vars");
+                            writeOutput("Setting DB vars");
                             return bigIp.setDbVars(dbVars);
                         }
                         else {
@@ -289,7 +296,7 @@
                         var addOnKeys = options.addOn;
 
                         if (registrationKey || addOnKeys.length > 0) {
-                            console.log("Licensing...");
+                            writeOutput("Licensing...");
 
                             return bigIp.license(
                                 {
@@ -306,7 +313,7 @@
                         writeResponse(response);
 
                         if (Object.keys(modules).length > 0) {
-                            console.log("Provisioning modules: " + JSON.stringify(modules, null, 4));
+                            writeOutput("Provisioning modules: " + JSON.stringify(modules, null, 4));
                             return bigIp.provision(modules);
                         }
                         else {
@@ -315,18 +322,18 @@
                     })
                     .then(function(response) {
                         writeResponse(response);
-                        console.log("Saving config.");
+                        writeOutput("Saving config.");
                         return bigIp.save();
                     })
                     .then(function(response) {
                         writeResponse(response);
-                        console.log("BIG-IP onboard complete.");
+                        writeOutput("BIG-IP onboard complete.");
                     })
                     .catch(function(err) {
-                        console.log("BIG-IP onboard failed: " + (typeof err === 'object' ? err.message : err));
+                        writeOutput("BIG-IP onboard failed: " + (typeof err === 'object' ? err.message : err));
                     })
                     .done(function() {
-                        console.log("Onboard finished at: " + new Date().toUTCString());
+                        writeOutput("Onboard finished at: " + new Date().toUTCString());
                     });
             }
             finally {
