@@ -5,10 +5,10 @@
 # commands is to put them in a script and run the script.
 # This is that script.
 
-# The arguments to this script are passed to setup.js as is.
+# The arguments to this script are passed to onboard.js as is.
 
 # Example:
-# runSetup.sh --host 127.0.0.1 --user admin --license ...
+# runOnboard.sh --host 127.0.0.1 --user admin --license ...
 
 # If our mods to node-icontrol are pushed to npm, we can push
 # f5-cloud-libs to npm as well and use npm here instead
