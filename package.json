@@ -18,6 +18,6 @@
         "nodeunit": "^0.9"
     },
     "scripts": {
-        "test": "node_modules/nodeunit/bin/nodeunit test"
+        "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test/*"
     }
 }
