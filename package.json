@@ -16,5 +16,8 @@
     "devDependencies": {
         "jshint": "latest",
         "nodeunit": "^0.9"
+    },
+    "scripts": {
+        "test": "node_modules/nodeunit/bin/nodeunit test"
     }
 }
