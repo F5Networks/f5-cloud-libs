@@ -1,5 +1,6 @@
 var onboard = require('../onboard');
 var q = require('q');
+
 var bigIpMock = {
     list: function() {
         return q();
@@ -30,16 +31,23 @@ var bigIpMock = {
     },
 
     rebootRequired: function() {
+        return q('reboot');
+    },
+
+    reboot: function() {
+        rebootRequested = true;
         return q();
     }
 };
 
-var argv;
 var testOptions = {bigIp: bigIpMock};
+var argv;
+var rebootRequested;
 
 module.exports = {
     setUp: function(callback) {
         argv = ['node', 'onboard', '--foreground', '--silent'];
+        rebootRequested = false;
         callback();
     },
 
@@ -71,5 +79,20 @@ module.exports = {
         test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
         test.strictEqual(onboard.getGlobalSettings().name2, 'value2');
         test.done();
+    },
+
+    testReboot: function(test) {
+        onboard.run(argv, testOptions, function() {
+            test.ok(rebootRequested);
+            test.done();
+        });
+    },
+
+    testNoReboot: function(test) {
+        argv.push('--no-reboot');
+        onboard.run(argv, testOptions, function() {
+            test.ifError(rebootRequested);
+            test.done();
+        });
     }
 };

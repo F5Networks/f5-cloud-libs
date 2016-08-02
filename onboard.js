@@ -25,7 +25,15 @@
 
     module.exports = onboarder = {
 
-        run: function(argv, testOpts) {
+        /**
+         * Runs the onboarding script
+         *
+         * @param {String[]} argv - The process arguments
+         * @param {Object}   testOpts - Options used during testing
+         * @param {Object}   testOpts.bigIp - BigIp object to use for testing
+         * @param {Function} cb - Optional cb to call when done
+         */
+        run: function(argv, testOpts, cb) {
 
             var fs = require('fs');
             var childProcess = require("child_process");
@@ -103,6 +111,7 @@
                 }
             };
 
+            options.reboot = true;
             options
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
                 .option('-u, --user <user>', 'Current BIG-IP admin user.')
@@ -118,6 +127,7 @@
                 .option('--set-password <user:new_password>', 'Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.', map, passwords)
                 .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords, rootPasswords)
                 .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', map, modules)
+                .option('--no-reboot', 'Skip reboot even if it is recommended')
                 .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
                 .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + logFileName)
                 .option('--silent', 'Turn off all output.')
@@ -333,8 +343,13 @@
                     })
                     .then(function(response) {
                         if (response) {
-                            writeOutput('Reboot required. Rebooting...');
-                            return bigIp.reboot();
+                            if (options.reboot) {
+                                writeOutput('Reboot required. Rebooting...');
+                                return bigIp.reboot();
+                            }
+                            else {
+                                writeOutput('Reboot required. Skipping due to --no-reboot option.');
+                            }
                         }
                     })
                     .catch(function(err) {
@@ -342,6 +357,9 @@
                     })
                     .done(function() {
                         writeOutput("Onboard finished at: " + new Date().toUTCString());
+                        if (cb) {
+                            cb();
+                        }
                     });
             }
             finally {
