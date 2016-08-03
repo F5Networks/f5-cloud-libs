@@ -1,69 +1,85 @@
+var q = require('q');
 var BigIp = require('../../lib/bigIp');
 
-var recordCall = function(method, path, opts) {
-    lastMethod = method;
-    lastPath = path;
-    lastOpts = opts;
+var recordCall = function(method, path, body, opts) {
+    lastCall.method = method;
+    lastCall.path = path;
+    lastCall.body = body;
+    lastCall.opts = opts;
 };
 
 var icontrolMock = {
     list: function(path, opts, cb) {
-        recordCall('list', path, opts);
+        recordCall('list', path, null, opts);
         cb(false, true);
     },
 
-    create: function(path, opts, cb) {
-        recordCall('create', path, opts);
+    create: function(path, body, opts, cb) {
+        recordCall('create', path, body, opts);
         cb(false, true);
     },
 
-    modify: function(path, opts, cb) {
-        recordCall('modify', path, opts);
+    modify: function(path, body, opts, cb) {
+        recordCall('modify', path, body, opts);
         cb(false, true);
     },
 
     delete: function(path, opts, cb) {
-        recordCall('delete', path, opts);
+        recordCall('delete', path, null, opts);
         cb(false, true);
     }
 };
 
 var bigIp = new BigIp('host', 'user', 'password', {icontrol: icontrolMock});
+bigIp.ready = function() {
+    return q();
+};
 
-var lastMethod;
-var lastPath;
-var lastOpts;
+var lastCall = {};
 
 module.exports = {
     setUp: function(callback) {
-        lastMethod = '';
-        lastPath = '';
-        lastOpts = {};
+        lastCall.method = '';
+        lastCall.path = '';
+        lastCall.body = null;
+        lastCall.opts = {};
 
         callback();
     },
 
     testListSuccess: function(test) {
         bigIp.list();
-        test.strictEqual(lastMethod, 'list');
+        test.strictEqual(lastCall.method, 'list');
         test.done();
     },
 
     testLoadNoFile: function(test) {
-        bigIp.load();
-        test.strictEqual(lastMethod, 'create');
-        test.strictEqual(lastPath, '/tm/sys/config');
-        test.strictEqual(lastOpts.command, 'load');
-        test.strictEqual(lastOpts.name, 'default');
-        test.done();
+        bigIp.load()
+            .then(function() {
+                test.strictEqual(lastCall.method, 'create');
+                test.strictEqual(lastCall.path, '/tm/sys/config');
+                test.strictEqual(lastCall.body.command, 'load');
+                test.strictEqual(lastCall.body.name, 'default');
+                test.done();
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+                test.done();
+            });
     },
 
     testLoadFile: function(test) {
         var fileName = 'foobar';
 
-        bigIp.load(fileName);
-        test.strictEqual(lastOpts.options[0].file, fileName);
-        test.done();
+        bigIp.load(fileName)
+            .then(function() {
+                test.strictEqual(lastCall.body.options[0].file, fileName);
+                test.done();
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+                test.done();
+            });
     },
 
     testLoadOptions: function(test) {
@@ -72,21 +88,34 @@ module.exports = {
             hello: 'world'
         };
 
-        bigIp.load(null, options);
-        test.strictEqual(lastOpts.options[0].foo, options.foo);
-        test.strictEqual(lastOpts.options[1].hello, options.hello);
-        test.done();
+        bigIp.load(null, options)
+            .then(function() {
+                test.strictEqual(lastCall.body.options[0].foo, options.foo);
+                test.strictEqual(lastCall.body.options[1].hello, options.hello);
+                test.done();
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+                test.done();
+            });
+
     },
 
     testPasswordNonRoot: function(test) {
         var user = 'someuser';
         var newPassword = 'abc123';
 
-        bigIp.password(user, newPassword);
-        test.strictEqual(lastMethod, 'modify');
-        test.strictEqual(lastPath, '/tm/auth/user/' + user);
-        test.strictEqual(lastOpts.password, newPassword);
-        test.done();
+        bigIp.password(user, newPassword)
+            .then(function() {
+                test.strictEqual(lastCall.method, 'modify');
+                test.strictEqual(lastCall.path, '/tm/auth/user/' + user);
+                test.strictEqual(lastCall.body.password, newPassword);
+                test.done();
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+                test.done();
+            });
     },
 
     testPasswordRoot: function(test) {
@@ -94,11 +123,17 @@ module.exports = {
         var newPassword = 'abc123';
         var oldPassword = 'def456';
 
-        bigIp.password(user, newPassword, oldPassword);
-        test.strictEqual(lastMethod, 'create');
-        test.strictEqual(lastPath, '/shared/authn/root');
-        test.strictEqual(lastOpts.newPassword, newPassword);
-        test.strictEqual(lastOpts.oldPassword, oldPassword);
-        test.done();
+        bigIp.password(user, newPassword, oldPassword)
+            .then(function() {
+                test.strictEqual(lastCall.method, 'create');
+                test.strictEqual(lastCall.path, '/shared/authn/root');
+                test.strictEqual(lastCall.body.newPassword, newPassword);
+                test.strictEqual(lastCall.body.oldPassword, oldPassword);
+                test.done();
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+                test.done();
+            });
     }
 };
