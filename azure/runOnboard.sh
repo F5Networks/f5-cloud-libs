@@ -12,8 +12,13 @@
 
 # If our mods to node-icontrol are pushed to npm, we can push
 # f5-cloud-libs to npm as well and use npm here instead
-curl -s -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/archive/f5-cloud-libs.tar.gz
 
+cd /config
+curl -sk -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/archive/f5-cloud-libs.tar.gz
 tar -xzf f5-cloud-libs.tar.gz
+rm f5-cloud-libs.tar.gz
+rm -f /var/log/onboard.log
 cd f5-cloud-libs
-f5-rest-node onboard.js "$@"
+azure/postOnboard.sh &
+pidToSignal=$!
+f5-rest-node onboard.js "$@" --no-reboot --signal $pidToSignal

@@ -129,6 +129,7 @@
                 .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', map, modules)
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
+                .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
                 .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + logFileName)
                 .option('--silent', 'Turn off all output.')
                 .option('--verbose', 'Turn on verbose output (overrides --silent).')
@@ -357,6 +358,17 @@
                     })
                     .done(function() {
                         writeOutput("Onboard finished at: " + new Date().toUTCString());
+
+                        if (options.signal) {
+                            writeOutput("Signalling " + options.signal);
+                            try {
+                                process.kill(options.signal, 'SIGUSR1');
+                            }
+                            catch (err) {
+                                writeOutput("Signal failed: " + err.message);
+                            }
+                        }
+
                         if (cb) {
                             cb();
                         }
