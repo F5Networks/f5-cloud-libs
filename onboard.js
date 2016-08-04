@@ -200,7 +200,7 @@
                         if (Object.keys(passwords).length > 0) {
                             writeOutput("Setting password(s).");
                             for (user in passwords) {
-                                promises.push(bigIp.password(user, passwords[user]));
+                                promises.push(bigIp.onboard.password(user, passwords[user]));
                             }
 
                             return q.all(promises);
@@ -218,7 +218,7 @@
                             }
 
                             writeOutput("Setting rootPassword.");
-                            return bigIp.password('root', rootPasswords.new, rootPasswords.old);
+                            return bigIp.onboard.password('root', rootPasswords.new, rootPasswords.old);
                         }
                         else {
                             return q();
@@ -273,7 +273,7 @@
 
                         if (options.hostName) {
                             writeOutput("Setting host name.");
-                            return bigIp.hostName(options.hostName);
+                            return bigIp.onboard.hostName(options.hostName);
                         }
                         else {
                             return q();
@@ -284,7 +284,7 @@
 
                         if (globalSettings) {
                             writeOutput("Setting global settings.");
-                            return bigIp.globalSettings(globalSettings);
+                            return bigIp.onboard.globalSettings(globalSettings);
                         }
                         else {
                             return q();
@@ -295,7 +295,7 @@
 
                         if (Object.keys(dbVars).length > 0) {
                             writeOutput("Setting DB vars");
-                            return bigIp.setDbVars(dbVars);
+                            return bigIp.onboard.setDbVars(dbVars);
                         }
                         else {
                             return q();
@@ -310,7 +310,7 @@
                         if (registrationKey || addOnKeys.length > 0) {
                             writeOutput("Licensing.");
 
-                            return bigIp.license(
+                            return bigIp.onboard.license(
                                 {
                                     registrationKey: registrationKey,
                                     addOnKeys: addOnKeys
@@ -326,7 +326,7 @@
 
                         if (Object.keys(modules).length > 0) {
                             writeOutput("Provisioning modules: " + JSON.stringify(modules, null, 4));
-                            return bigIp.provision(modules);
+                            return bigIp.onboard.provision(modules);
                         }
                         else {
                             return q();

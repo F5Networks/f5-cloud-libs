@@ -17,80 +17,14 @@
 
 var q = require('q');
 var BigIp = require('../../lib/bigIp');
-var util = require('../../lib/util');
-var icontrolMock = require('../testUtil/icontrolMock');
+var icontrolMock = require('../util/icontrolMock');
 
-var bigIp = new BigIp('host', 'user', 'password');
-bigIp.icontrol = icontrolMock;
+var bigIp = new BigIp('host', 'user', 'password', {icontrol: icontrolMock});
 bigIp.ready = function() {
     return q();
 };
 
 module.exports = {
-    testHostName: function(test) {
-        var oldHostname = 'yourOldHostname';
-        var newHostname = 'myNewHostName';
-
-        icontrolMock.when(
-            'list',
-            '/tm/cm/device',
-            [
-                {
-                    name: oldHostname
-                }
-            ]
-        );
-
-        bigIp.onboard.hostname(newHostname)
-            .then(function() {
-                test.deepEqual(icontrolMock.getRequest(
-                    'create',
-                    '/tm/cm/device'),
-                    {
-                        command: 'mv',
-                        name: oldHostname,
-                        target: newHostname
-                    }
-                );
-                test.deepEqual(icontrolMock.getRequest(
-                    'modify',
-                    '/tm/sys/global-settings'),
-                    {
-                        hostname: newHostname
-                    }
-                );
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
-    },
-
-    testLicense: {
-        testIdentical: function(test) {
-            var regKey = "1234-5678-ABCD-EFGH";
-            icontrolMock.when(
-                'list',
-                '/tm/shared/licensing/registration',
-                {
-                    registrationKey: regKey
-                });
-
-            bigIp.onboard.license({registrationKey: regKey})
-                .then(function(response) {
-                    test.notStrictEqual(response.indexOf("Identical license"), -1);
-                })
-                .catch(function(err) {
-                    test.ok(false, err.message);
-                })
-                .finally(function() {
-                    test.done();
-                });
-        }
-    },
-
     testPasswordNonRoot: function(test) {
         var user = 'someuser';
         var newPassword = 'abc123';
@@ -100,11 +34,10 @@ module.exports = {
                 test.strictEqual(icontrolMock.lastCall.method, 'modify');
                 test.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user/' + user);
                 test.strictEqual(icontrolMock.lastCall.body.password, newPassword);
+                test.done();
             })
             .catch(function(err) {
                 test.ok(false, err.message);
-            })
-            .finally(function() {
                 test.done();
             });
     },
@@ -120,11 +53,10 @@ module.exports = {
                 test.strictEqual(icontrolMock.lastCall.path, '/shared/authn/root');
                 test.strictEqual(icontrolMock.lastCall.body.newPassword, newPassword);
                 test.strictEqual(icontrolMock.lastCall.body.oldPassword, oldPassword);
+                test.done();
             })
             .catch(function(err) {
                 test.ok(false, err.message);
-            })
-            .finally(function() {
                 test.done();
             });
     },
@@ -134,7 +66,6 @@ module.exports = {
             var TRANSACTION_PATH = '/tm/transaction/';
             var TRANSACTION_ID = '1234';
 
-            icontrolMock.reset();
             icontrolMock.when(
                 'create',
                 TRANSACTION_PATH,
@@ -150,25 +81,6 @@ module.exports = {
                     state: 'COMPLETED'
                 }
             );
-
-            icontrolMock.when(
-                'list',
-                '/tm/cm/failover-status',
-                {
-                    entries: {
-                        'https://localhost/mgmt/tm/cm/failover-status/0': {
-                            nestedStats: {
-                                entries: {
-                                    status: {
-                                        description: 'ACTIVE'
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            );
-
             callback();
         },
 
@@ -196,16 +108,15 @@ module.exports = {
             bigIp.onboard.provision(provisionSettings)
                 .then(function() {
                     test.deepEqual(
-                        icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
+                        icontrolMock.requestMap['modify_/tm/sys/provision/mod1'],
                         {
                             level: 'level2'
                         }
                     );
+                    test.done();
                 })
                 .catch(function(err) {
-                    test.ok(false, err.message);
-                })
-                .finally(function() {
+                    test.ok(false, err);
                     test.done();
                 });
         },
@@ -226,88 +137,16 @@ module.exports = {
                 ]
             );
 
-            bigIp.onboard.provision(provisionSettings, util.NO_RETRY)
+            bigIp.onboard.provision(provisionSettings)
                 .then(function() {
                     test.ok(false, "Should have thrown as not provisionable.");
+                    test.done();
                 })
                 .catch(function(err) {
                     test.notEqual(err.message.indexOf('foo'), -1);
                     test.notEqual(err.message.indexOf('not provisionable'), -1);
-                })
-                .finally(function() {
                     test.done();
                 });
-        }
-    },
-
-    testSslPort: {
-        setUp: function(callback) {
-            icontrolMock.when(
-                'list',
-                '/tm/net/self-allow',
-                {
-                    defaults: [
-                        'tcp:123'
-                    ]
-                }
-            );
-            callback();
-        },
-
-        testNotInDefaults: function(test) {
-            var portToAdd = 456;
-            bigIp.onboard.sslPort(portToAdd, null, true)
-            .then(function() {
-                var newDefaults = icontrolMock.getRequest('modify', '/tm/net/self-allow').defaults;
-                test.notStrictEqual(newDefaults.indexOf('tcp:' + portToAdd), -1);
-                test.notStrictEqual(newDefaults.indexOf('tcp:123'), -1);
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
-        },
-
-        testAlreadyInDefaults: function(test) {
-            var portToAdd = 123;
-            bigIp.onboard.sslPort(portToAdd, null, true)
-            .then(function() {
-                test.strictEqual(icontrolMock.lastCall.method, 'list');
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
-        },
-
-        testRemove443: function(test) {
-            var portToAdd = 456;
-
-            icontrolMock.when(
-                'list',
-                '/tm/net/self-allow',
-                {
-                    defaults: [
-                        'tcp:443'
-                    ]
-                }
-            );
-
-            bigIp.onboard.sslPort(portToAdd, null, true)
-            .then(function() {
-                var newDefaults = icontrolMock.getRequest('modify', '/tm/net/self-allow').defaults;
-                test.strictEqual(newDefaults.indexOf('tcp:443'), -1);
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
         }
     }
 };
