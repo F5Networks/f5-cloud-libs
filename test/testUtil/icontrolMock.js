@@ -15,29 +15,25 @@
  */
 'use strict';
 
-var q = require('q');
-
-var FAIL_REQUEST = "FAIL_REQUEST";
-
 module.exports = {
-    list: function(path, opts) {
-        this.recordRequest('list', path, null, opts);
-        return this.respond('list', path);
+    list: function(path, opts, cb) {
+        this.recordCall('list', path, null, opts);
+        this.respond('list', path, cb);
     },
 
-    create: function(path, body, opts) {
-        this.recordRequest('create', path, body, opts);
-        return this.respond('create', path);
+    create: function(path, body, opts, cb) {
+        this.recordCall('create', path, body, opts);
+        this.respond('create', path, cb);
     },
 
-    modify: function(path, body, opts) {
-        this.recordRequest('modify', path, body, opts);
-        return this.respond('modify', path);
+    modify: function(path, body, opts, cb) {
+        this.recordCall('modify', path, body, opts);
+        this.respond('modify', path, cb);
     },
 
-    delete: function(path, opts) {
-        this.recordRequest('delete', path, null, opts);
-        return this.respond('delete', path);
+    delete: function(path, opts, cb) {
+        this.recordCall('delete', path, null, opts);
+        this.respond('delete', path, cb);
     },
 
     requestMap: {},
@@ -50,10 +46,6 @@ module.exports = {
         this.responseMap[method + '_' + path] = response;
     },
 
-    fail: function(method, path) {
-        this.responseMap[method + '_' + path] = FAIL_REQUEST;
-    },
-
     reset: function() {
         this.responseMap = {};
 
@@ -64,34 +56,16 @@ module.exports = {
         this.lastCall.opts = {};
     },
 
-    recordRequest: function(method, path, body, opts) {
-        var key = method + '_' + path;
-        if (!this.requestMap[key]) {
-            this.requestMap[key] = [];
-        }
-        this.requestMap[key].unshift(body);
+    recordCall: function(method, path, body, opts) {
+        this.requestMap[method + '_' + path] = body;
         this.lastCall.method = method;
         this.lastCall.path = path;
         this.lastCall.body = body;
         this.lastCall.opts = opts;
     },
 
-    getRequest: function(method, path) {
-        var key = method + '_' + path;
-        if (this.requestMap[key]) {
-            return this.requestMap[key].pop();
-        }
-    },
-
-    respond: function(method, path) {
-        var response = this.responseMap[method + '_' + path];
-
-        if (response === FAIL_REQUEST) {
-            return q.reject();
-        }
-        else {
-            return q(response || true);
-        }
+    respond: function(method, path, cb) {
+        cb(false, this.responseMap[method + '_' + path] || true);
     }
 };
 
