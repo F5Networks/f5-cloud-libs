@@ -1,32 +1,56 @@
 var q = require('q');
 var BigIp = require('../../lib/bigIp');
 
-var recordCall = function(method, path, body, opts) {
-    lastCall.method = method;
-    lastCall.path = path;
-    lastCall.body = body;
-    lastCall.opts = opts;
-};
+var requestMap = {};
+var lastCall = {};
 
 var icontrolMock = {
+    responseMap: {},
+
     list: function(path, opts, cb) {
-        recordCall('list', path, null, opts);
-        cb(false, true);
+        this.recordCall('list', path, null, opts);
+        this.respond('list', path, cb);
     },
 
     create: function(path, body, opts, cb) {
-        recordCall('create', path, body, opts);
-        cb(false, true);
+        this.recordCall('create', path, body, opts);
+        this.respond('create', path, cb);
     },
 
     modify: function(path, body, opts, cb) {
-        recordCall('modify', path, body, opts);
-        cb(false, true);
+        this.recordCall('modify', path, body, opts);
+        this.respond('modify', path, cb);
     },
 
     delete: function(path, opts, cb) {
-        recordCall('delete', path, null, opts);
-        cb(false, true);
+        this.recordCall('delete', path, null, opts);
+        this.respond('delete', path, cb);
+    },
+
+    when: function(method, path, response) {
+        this.responseMap[method + '_' + path] = response;
+    },
+
+    reset: function() {
+        this.responseMap = {};
+
+        requestMap = {};
+        lastCall.method = '';
+        lastCall.path = '';
+        lastCall.body = null;
+        lastCall.opts = {};
+    },
+
+    recordCall: function(method, path, body, opts) {
+        requestMap[method + '_' + path] = body;
+        lastCall.method = method;
+        lastCall.path = path;
+        lastCall.body = body;
+        lastCall.opts = opts;
+    },
+
+    respond: function(method, path, cb) {
+        cb(false, this.responseMap[method + '_' + path] || true);
     }
 };
 
@@ -35,15 +59,9 @@ bigIp.ready = function() {
     return q();
 };
 
-var lastCall = {};
-
 module.exports = {
     setUp: function(callback) {
-        lastCall.method = '';
-        lastCall.path = '';
-        lastCall.body = null;
-        lastCall.opts = {};
-
+        icontrolMock.reset();
         callback();
     },
 
@@ -135,5 +153,94 @@ module.exports = {
                 test.ok(false, err.message);
                 test.done();
             });
+    },
+
+    testProvision: {
+        setUp: function(callback) {
+            var TRANSACTION_PATH = '/tm/transaction/';
+            var TRANSACTION_ID = '1234';
+
+            icontrolMock.when(
+                'create',
+                TRANSACTION_PATH,
+                {
+                    transId: TRANSACTION_ID
+                }
+            );
+
+            icontrolMock.when(
+                'modify',
+                TRANSACTION_PATH + TRANSACTION_ID,
+                {
+                    state: 'COMPLETED'
+                }
+            );
+            callback();
+        },
+
+        testBasic: function(test) {
+            var provisionSettings = {
+                mod1: 'level2',
+                mod2: 'level2'
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/provision/',
+                [
+                    {
+                        name: 'mod1',
+                        level: 'level1'
+                    },
+                    {
+                        name: 'mod2',
+                        level: 'level2'
+                    }
+                ]
+            );
+
+            bigIp.provision(provisionSettings)
+                .then(function() {
+                    test.deepEqual(
+                        requestMap['modify_/tm/sys/provision/mod1'],
+                        {
+                            level: 'level2'
+                        }
+                    );
+                    test.done();
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                    test.done();
+                });
+        },
+
+        testNotProvisionable: function(test) {
+            var provisionSettings = {
+                foo: 'bar'
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/provision/',
+                [
+                    {
+                        name: 'mod1',
+                        level: 'level1'
+                    }
+                ]
+            );
+
+            bigIp.provision(provisionSettings)
+                .then(function() {
+                    test.ok(false, "Should have thrown as not provisionable.");
+                    test.done();
+                })
+                .catch(function(err) {
+                    test.notEqual(err.message.indexOf('foo'), -1);
+                    test.notEqual(err.message.indexOf('not provisionable'), -1);
+                    test.done();
+                });
+        }
     }
 };
