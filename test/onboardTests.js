@@ -22,10 +22,6 @@ var bigIpMock = {
         return q();
     },
 
-    globalSettings: function() {
-        return q();
-    },
-
     save: function() {
         return q();
     },
@@ -37,6 +33,12 @@ var bigIpMock = {
     reboot: function() {
         rebootRequested = true;
         return q();
+    },
+
+    onboard: {
+        globalSettings: function() {
+            return q();
+        }
     }
 };
 
