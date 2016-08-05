@@ -18,8 +18,8 @@
         "nodeunit": "^0.9"
     },
     "scripts": {
-        "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test test/lib",
+        "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test test/lib test/scripts",
         "predeployAzure": "npm test",
-        "deployAzure": "azure/deploy.sh"
+        "deployAzure": "scripts/azure/deploy.sh"
     }
 }

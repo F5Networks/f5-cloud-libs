@@ -1,3 +1,5 @@
+#!/bin/bash
+
 LOG_FILE='/var/log/postOnboard.log'
 echo "Waiting..." > $LOG_FILE
 
@@ -8,7 +10,7 @@ checkForReboot() {
     grep "Reboot required" /var/log/onboard.log
     if [ $? -eq 0 ]; then
         chmod +w /config/startup
-        echo "/config/azure/postReboot.sh" >> /config/startup
+        echo "/config/f5-cloud-libs/scripts/azure/postReboot.sh" >> /config/startup
         echo "Rebooting..." >>$LOG_FILE
         reboot
     else

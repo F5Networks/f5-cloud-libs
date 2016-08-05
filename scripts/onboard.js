@@ -38,7 +38,7 @@
             var fs = require('fs');
             var childProcess = require("child_process");
             var q = require("q");
-            var BigIp = require('./lib/bigIp');
+            var BigIp = require('../lib/bigIp');
             var dbVars = {};
             var modules = {};
             var passwords = {};
@@ -313,7 +313,8 @@
                             return bigIp.onboard.license(
                                 {
                                     registrationKey: registrationKey,
-                                    addOnKeys: addOnKeys
+                                    addOnKeys: addOnKeys,
+                                    overwrite: true
                                 }
                             );
                         }

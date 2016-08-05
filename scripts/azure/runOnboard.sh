@@ -19,6 +19,6 @@ tar -xzf f5-cloud-libs.tar.gz
 rm f5-cloud-libs.tar.gz
 rm -f /var/log/onboard.log
 cd f5-cloud-libs
-azure/postOnboard.sh &
+scripts/azure/postOnboard.sh &
 pidToSignal=$!
-f5-rest-node onboard.js "$@" --no-reboot --signal $pidToSignal
+f5-rest-node scripts/onboard.js "$@" --no-reboot --signal $pidToSignal

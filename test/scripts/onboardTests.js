@@ -1,4 +1,4 @@
-var onboard = require('../onboard');
+var onboard = require('../../scripts/onboard');
 var q = require('q');
 
 var bigIpMock = {
