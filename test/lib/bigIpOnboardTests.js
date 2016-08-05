@@ -34,10 +34,11 @@ module.exports = {
                 test.strictEqual(icontrolMock.lastCall.method, 'modify');
                 test.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user/' + user);
                 test.strictEqual(icontrolMock.lastCall.body.password, newPassword);
-                test.done();
             })
             .catch(function(err) {
                 test.ok(false, err.message);
+            })
+            .finally(function() {
                 test.done();
             });
     },
@@ -53,10 +54,11 @@ module.exports = {
                 test.strictEqual(icontrolMock.lastCall.path, '/shared/authn/root');
                 test.strictEqual(icontrolMock.lastCall.body.newPassword, newPassword);
                 test.strictEqual(icontrolMock.lastCall.body.oldPassword, oldPassword);
-                test.done();
             })
             .catch(function(err) {
                 test.ok(false, err.message);
+            })
+            .finally(function() {
                 test.done();
             });
     },
@@ -113,10 +115,11 @@ module.exports = {
                             level: 'level2'
                         }
                     );
-                    test.done();
                 })
                 .catch(function(err) {
-                    test.ok(false, err);
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
                     test.done();
                 });
         },
@@ -140,11 +143,12 @@ module.exports = {
             bigIp.onboard.provision(provisionSettings)
                 .then(function() {
                     test.ok(false, "Should have thrown as not provisionable.");
-                    test.done();
                 })
                 .catch(function(err) {
                     test.notEqual(err.message.indexOf('foo'), -1);
                     test.notEqual(err.message.indexOf('not provisionable'), -1);
+                })
+                .finally(function() {
                     test.done();
                 });
         }
