@@ -15,15 +15,15 @@
  */
 (function() {
 
+    var DEFAULT_LOG_FILE = '/tmp/onboard.log';
+
     var options = require('commander');
-
-    var onboarder;
-
     var globalSettings = {
         guiSetup: 'disabled'
     };
+    var runner;
 
-    module.exports = onboarder = {
+    module.exports = runner = {
 
         /**
          * Runs the onboarding script
@@ -44,8 +44,8 @@
             var passwords = {};
             var rootPasswords = {};
 
-            var logFileName = '/tmp/onboard.log';
             var logFile;
+            var logFileName;
 
             var args;
             var myChild;
@@ -54,7 +54,7 @@
 
             var i;
 
-            var PASSWORD_OPTION_KEYS = ['-p', '--password', '--set-password', '--set-root-password'];
+            var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
 
             testOpts = testOpts || {};
 
@@ -130,12 +130,12 @@
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
-                .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + logFileName)
+                .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .option('--silent', 'Turn off all output.')
                 .option('--verbose', 'Turn on verbose output (overrides --silent).')
                 .parse(argv);
 
-            logFileName = options.output || logFileName;
+            logFileName = options.output || DEFAULT_LOG_FILE;
 
             try {
                 logFile = fs.openSync(logFileName, 'a');
@@ -168,7 +168,7 @@
                 // Log the input, but don't log passwords
                 if (options.password || Object.keys(passwords).lentgh > 0 || Object.keys(rootPasswords).length > 0) {
                     for (i = 0; i < process.argv.length; ++i) {
-                        if (PASSWORD_OPTION_KEYS.indexOf(process.argv[i]) !== -1) {
+                        if (KEYS_TO_MASK.indexOf(process.argv[i]) !== -1) {
                             process.argv[i + 1] = "*******";
                         }
                     }
@@ -392,6 +392,6 @@
     // If we're called from the command line, run
     // This allows for test code to call us as a module
     if (!module.parent) {
-        onboarder.run(process.argv);
+        runner.run(process.argv);
     }
 })();
