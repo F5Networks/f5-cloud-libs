@@ -39,12 +39,11 @@ module.exports = {
                     test.strictEqual(icontrolMock.lastCall.body.type, type);
                     test.strictEqual(icontrolMock.lastCall.body.devices, devices);
                     test.strictEqual(icontrolMock.lastCall.body.autoSync, 'disabled');
-                    test.strictEqual(icontrolMock.lastCall.body.fullSync, 'disabled');
+                    test.strictEqual(icontrolMock.lastCall.body.fullLoadOnSync, false);
                     test.strictEqual(icontrolMock.lastCall.body.asmSync, 'disabled');
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
-                    test.done();
                 })
                 .finally(function() {
                     test.done();
@@ -55,13 +54,15 @@ module.exports = {
             var name = 'groupFoo';
             var type = 'sync-failover';
             var devices =['device1', 'device2'];
-            var autoSync = true;
-            var saveOnAutoSync = true;
-            var networkFailover = true;
-            var fullSync = true;
-            var asmSync = true;
+            var options = {
+                autoSync: true,
+                saveOnAutoSync: true,
+                networkFailover: true,
+                fullLoadOnSync: true,
+                asmSync: true
+            };
 
-            bigIp.cluster.createDeviceGroup(name, type, devices, autoSync, saveOnAutoSync, networkFailover, fullSync, asmSync)
+            bigIp.cluster.createDeviceGroup(name, type, devices, options)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group');
@@ -69,12 +70,39 @@ module.exports = {
                     test.strictEqual(icontrolMock.lastCall.body.type, type);
                     test.strictEqual(icontrolMock.lastCall.body.devices, devices);
                     test.strictEqual(icontrolMock.lastCall.body.autoSync, 'enabled');
-                    test.strictEqual(icontrolMock.lastCall.body.fullSync, 'enabled');
+                    test.strictEqual(icontrolMock.lastCall.body.saveOnAutoSync, true);
+                    test.strictEqual(icontrolMock.lastCall.body.fullLoadOnSync, true);
                     test.strictEqual(icontrolMock.lastCall.body.asmSync, 'enabled');
+                    test.strictEqual(icontrolMock.lastCall.body.networkFailover, 'enabled');
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
+                })
+                .finally(function() {
                     test.done();
+                });
+        },
+
+        testSyncOnly: function(test) {
+            bigIp.cluster.createDeviceGroup('abc', 'sync-only', [])
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.body.type, 'sync-only');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoName: function(test) {
+            bigIp.cluster.createDeviceGroup()
+                .then(function() {
+                    test.ok(false, 'Should have thrown no name');
+                })
+                .catch(function(err) {
+                    test.notEqual(err.message.indexOf('name is required'), -1);
                 })
                 .finally(function() {
                     test.done();
@@ -88,6 +116,32 @@ module.exports = {
                 })
                 .catch(function(err) {
                     test.notEqual(err.message.indexOf('type must be'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoType: function(test) {
+            bigIp.cluster.createDeviceGroup('abc')
+                .then(function() {
+                    test.ok(false, 'Should have thrown no type');
+                })
+                .catch(function(err) {
+                    test.notEqual(err.message.indexOf('type must be'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoDevices: function(test) {
+            bigIp.cluster.createDeviceGroup('abc', 'sync-failover', [])
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.body.devices.length, 0);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
                 })
                 .finally(function() {
                     test.done();
