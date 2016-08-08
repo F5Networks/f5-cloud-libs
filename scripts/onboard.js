@@ -53,33 +53,7 @@
             testOpts = testOpts || {};
 
             /**
-             * Adds value to an array
-             *
-             * Typically used by the option parser for collecting
-             * multiple values for a command line option
-             */
-            var collect = function(val, collection) {
-                collection.push(val);
-                return collection;
-            };
-
-            /**
-             * Parses a ':' deliminated key-value pair and stores them
-             * in a container.
-             *   - Key is the part before the first ':',
-             *   - Value is everything after.
-             *   - Leading and trailing spaces are removed from keys and values
-             *
-             * Typically used by the option parser for collecting
-             * multiple key-value pairs for a command line option
-             */
-            var map = function(pair, container) {
-                var nameVal = pair.split(/:(.+)/);
-                container[nameVal[0].trim()] = nameVal[1].trim();
-            };
-
-            /**
-             * Special case of map. Used to parse root password options in the form of
+             * Special case of util.map. Used to parse root password options in the form of
              *     old:oldRootPassword,new:newRootPassword
              * Since passwords can contain any character, a delimiter is difficult to find.
              * Compromise by looking for ',new:' as a delimeter
@@ -116,17 +90,17 @@
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
                 .option('-u, --user <user>', 'Current BIG-IP admin user.')
                 .option('-p, --password <password>', 'Current BIG-IP admin user password.')
-                .option('--ntp <ntp-server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', collect, [])
+                .option('--ntp <ntp-server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
                 .option('--tz <timezone>', 'Set timezone for NTP setting.')
-                .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', collect, [])
+                .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', util.collect, [])
                 .option('-l, --license <license_key>', 'License BIG-IP with <license_key>.')
-                .option('-a, --add-on <add_on_key>', 'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.', collect, [])
+                .option('-a, --add-on <add_on_key>', 'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.', util.collect, [])
                 .option('-n, --host-name <hostname>', 'Set BIG-IP hostname.')
-                .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', map, globalSettings)
-                .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', map, dbVars)
-                .option('--set-password <user:new_password>', 'Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.', map, passwords)
+                .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.map, globalSettings)
+                .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.map, dbVars)
+                .option('--set-password <user:new_password>', 'Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.', util.map, passwords)
                 .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords, rootPasswords)
-                .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', map, modules)
+                .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
