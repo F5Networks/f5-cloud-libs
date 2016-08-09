@@ -63,7 +63,6 @@
                 }
             };
 
-            options.reboot = true;
             options
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
                 .option('-u, --user <user>', 'Current BIG-IP admin user.')
@@ -82,9 +81,8 @@
                 .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
                 .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password')
                 .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join')
-                .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
-                .option('--signal <pid>', 'Process ID to send USR1 to when clustering is complete (but before rebooting if we are rebooting).')
+                .option('--signal <pid>', 'Process ID to send USR1 to when clustering is complete.')
                 .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .option('--silent', 'Turn off all output.')
                 .option('--verbose', 'Turn on verbose output (overrides --silent).')
