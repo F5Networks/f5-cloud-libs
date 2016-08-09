@@ -266,5 +266,29 @@ module.exports = {
                     test.done();
                 });
         }
+    },
+
+    testConfigSyncIp: function(test) {
+        var ip = '1.2.3.4';
+        icontrolMock.reset();
+        icontrolMock.when('list',
+                          '/shared/identified-devices/config/device-info',
+                          {
+                              hostname: localHostname
+                          });
+
+        bigIp.cluster.configSyncIp(ip)
+            .then(function() {
+                test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device/~Common~' + localHostname);
+                test.deepEqual(icontrolMock.lastCall.body, {configsyncIp: ip});
+                test.done();
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
     }
 };
