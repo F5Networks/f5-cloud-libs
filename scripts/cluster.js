@@ -68,14 +68,20 @@
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
                 .option('-u, --user <user>', 'Current BIG-IP admin user.')
                 .option('-p, --password <password>', 'Current BIG-IP admin user password.')
-                .option('--device-group <device_group_name>', 'Name of the device group to use for sync.')
-                .option('--sync-type <sync_type>', 'Type of sync this cluster is for ("sync-only" | "sync-failover").')
-                .option('--device <device_name>', 'A device name to add to the group. For devices, use multiple --device entries.', util.collect, [])
-                .option('--autoSync', 'Turn on auto sync.')
-                .option('--saveOnAutoSync', 'Save on sync if auto sync is enabled.')
-                .option('--fullLoadOnSync', 'Turn on full load on sync.')
-                .option('--asmSync', 'Turn on ASM sync.')
-                .option('--networkFailover', 'Turn on network failover.')
+                .option('--create-group', 'Create a device group with the options:')
+                .option('    --device-group <device_group>', '    Name of the device group.')
+                .option('    --sync-type <sync_type>', '    Type of sync this cluster is for ("sync-only" | "sync-failover").')
+                .option('    --device <device_name>', '    A device name to add to the group. For multiple devices, use multiple --device entries.', util.collect, [])
+                .option('    --autoSync', '    Enable auto sync.')
+                .option('    --saveOnAutoSync', '    Enable save on sync if auto sync is enabled.')
+                .option('    --fullLoadOnSync', '    Enable full load on sync.')
+                .option('    --asmSync', '    Enable ASM sync.')
+                .option('    --networkFailover', '    Enable network failover.')
+                .option('--join-group', 'Join a device group with the options:')
+                .option('    --remote-host <remote_ip_address>', '    Managemnt IP for the BIG-IP on which the group exists.')
+                .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
+                .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password')
+                .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join')
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when clustering is complete (but before rebooting if we are rebooting).')
@@ -99,10 +105,6 @@
 
             writeOutput(process.argv[1] + " called with " + process.argv.slice().join(" "));
 
-            if (!options.deviceGroup || !options.syncType) {
-                throw new Error("deviceGroup and syncType are both required");
-            }
-
             // Create the bigIp client object
             bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password);
 
@@ -111,17 +113,24 @@
             writeOutput("Waiting for BIG-IP to be ready.");
             bigIp.ready()
                 .then(function() {
-                    var deviceGroupOptions = {
-                        autoSync: options.autoSync,
-                        saveOnAutoSync: options.saveOnAutoSync,
-                        fullLoadOnSync: options.fullLoadOnSync,
-                        asmSync: options.asmSync,
-                        networkFailover: options.networkFailover
-                    };
+                    var deviceGroupOptions = {};
 
                     writeOutput("BIG-IP is ready.");
 
-                    if (options.deviceGroup && options.syncType) {
+                    if (options.createGroup) {
+                        if (!options.deviceGroup || !options.syncType) {
+                            throw new Error('When creating a device group, both device-group and sync-type are required.');
+                        }
+
+                        writeOutput("Creating group " + options.deviceGroup + ".");
+                        deviceGroupOptions = {
+                            autoSync: options.autoSync,
+                            saveOnAutoSync: options.saveOnAutoSync,
+                            fullLoadOnSync: options.fullLoadOnSync,
+                            asmSync: options.asmSync,
+                            networkFailover: options.networkFailover
+                        };
+
                         return bigIp.cluster.createDeviceGroup(options.deviceGroup, options.syncType, options.device, deviceGroupOptions);
                     }
                     else {
@@ -130,6 +139,22 @@
                 })
                 .then(function(response) {
                     writeResponse(response);
+
+                    if (options.joinGroup) {
+                        if (!options.deviceGroup || !options.remoteHost || !options.remoteUser || !options.remotePassword) {
+                            throw new Error('When joinging a device group, device-group, remote-host, remote-user, and remote-password are required.');
+                        }
+
+                        writeOutput("Adding to remote trust group.");
+                        return bigIp.cluster.addToRemoteTrust(options.remoteHost, options.remoteUser, options.remotePassword)
+                            .then(function() {
+                                writeOutput("Adding to remote device group.");
+                                return bigIp.cluster.addToRemoteDeviceGroup(options.remoteHost, options.remoteUser, options.remotePassword, options.deviceGroup);
+                            });
+                    }
+                    else {
+                        return q();
+                    }
                 })
                 .catch(function(err) {
                     writeOutput("BIG-IP cluster failed: " + (typeof err === 'object' ? err.message : err));

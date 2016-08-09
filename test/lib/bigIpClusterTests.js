@@ -24,7 +24,126 @@ bigIp.ready = function() {
     return q();
 };
 
+var localHostname = 'localhostname';
+var deviceGroup = 'testDeviceGroup';
+
 module.exports = {
+    testAddToRemoteTrust: {
+        setUp: function(callback) {
+            icontrolMock.reset();
+            icontrolMock.when('list',
+                              '/shared/identified-devices/config/device-info',
+                              {
+                                  hostname: localHostname
+                              });
+
+            callback();
+        },
+
+        testNotInTrust: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/~Common~Root',
+                              {
+                                  caDevices: ['/Common/someOtherDevice']
+                              });
+            bigIp.cluster.addToRemoteTrust('host', 'user', 'pass')
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/add-to-trust');
+                    test.strictEqual(icontrolMock.lastCall.body.deviceName, localHostname);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testAlreadyInTrust: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/~Common~Root',
+                              {
+                                  caDevices: ['/Common/someOtherDevice', '/Common/' + localHostname]
+                              });
+            bigIp.cluster.addToRemoteTrust('host', 'user', 'pass')
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain/~Common~Root');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testAddToRemoteDeviceGroup: {
+        setUp: function(callback) {
+            icontrolMock.reset();
+            icontrolMock.when('list',
+                              '/shared/identified-devices/config/device-info',
+                              {
+                                  hostname: localHostname
+                              });
+
+            icontrolMock.when('list',
+                             '/tm/cm/device-group/' + deviceGroup,
+                             {});
+
+            callback();
+        },
+
+        testNotInDeviceGroup: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/~Common~' + deviceGroup + '/devices',
+                              [
+                                   {
+                                       name: 'notTheLocalDevice'
+                                   }
+                              ]
+                            );
+
+            bigIp.cluster.addToRemoteDeviceGroup('host', 'user', 'pass', deviceGroup)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/~Common~' + deviceGroup + '/devices');
+                    test.deepEqual(icontrolMock.lastCall.body, {name: localHostname});
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testAlreadyInDeviceGroup: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/~Common~' + deviceGroup + '/devices',
+                              [
+                                   {
+                                       name: localHostname
+                                   }
+                              ]
+                            );
+
+            bigIp.cluster.addToRemoteDeviceGroup('host', 'user', 'pass', deviceGroup)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/~Common~' + deviceGroup + '/devices');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
     testCreateDeviceGroup: {
         testDefaults: function(test) {
             var name = 'groupFoo';
@@ -34,7 +153,7 @@ module.exports = {
             bigIp.cluster.createDeviceGroup(name, type, devices)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
                     test.strictEqual(icontrolMock.lastCall.body.name, name);
                     test.strictEqual(icontrolMock.lastCall.body.type, type);
                     test.strictEqual(icontrolMock.lastCall.body.devices, devices);
@@ -65,7 +184,7 @@ module.exports = {
             bigIp.cluster.createDeviceGroup(name, type, devices, options)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
                     test.strictEqual(icontrolMock.lastCall.body.name, name);
                     test.strictEqual(icontrolMock.lastCall.body.type, type);
                     test.strictEqual(icontrolMock.lastCall.body.devices, devices);
