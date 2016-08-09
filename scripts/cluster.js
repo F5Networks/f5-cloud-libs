@@ -67,6 +67,7 @@
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
                 .option('-u, --user <user>', 'Current BIG-IP admin user.')
                 .option('-p, --password <password>', 'Current BIG-IP admin user password.')
+                .option('--config-sync-ip <config_sync_ip>', 'IP address for config sync.')
                 .option('--create-group', 'Create a device group with the options:')
                 .option('    --device-group <device_group>', '    Name of the device group.')
                 .option('    --sync-type <sync_type>', '    Type of sync this cluster is for ("sync-only" | "sync-failover").')
@@ -111,9 +112,18 @@
             writeOutput("Waiting for BIG-IP to be ready.");
             bigIp.ready()
                 .then(function() {
-                    var deviceGroupOptions = {};
-
                     writeOutput("BIG-IP is ready.");
+
+                    if (options.configSyncIp) {
+                        writeOutput("Setting config sync ip.");
+                        return bigIp.cluster.configSyncIp(options.configSyncIp);
+                    }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function() {
+                    var deviceGroupOptions = {};
 
                     if (options.createGroup) {
                         if (!options.deviceGroup || !options.syncType) {
