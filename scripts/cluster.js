@@ -42,6 +42,8 @@
             var logFile;
             var logFileName;
             var bigIp;
+            var remoteBigIp;
+            var hostname;
 
             testOpts = testOpts || {};
 
@@ -77,11 +79,12 @@
                 .option('    --full-load-on-sync', '    Enable full load on sync.')
                 .option('    --asm-sync', '    Enable ASM sync.')
                 .option('    --network-failover', '    Enable network failover.')
-                .option('--join-group', 'Join a device group with the options:')
+                .option('--join-group', 'Join a remote device group with the options:')
                 .option('    --remote-host <remote_ip_address>', '    Managemnt IP for the BIG-IP on which the group exists.')
                 .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
                 .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password')
                 .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join')
+                .option('    --sync', '    Tell the remote to sync to us after joining the group.')
                 .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when clustering is complete.')
                 .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
@@ -146,6 +149,10 @@
                     }
                 })
                 .then(function(response) {
+                    var getRemoteDeviceGroup = function(remoteBigIp, deviceGroup) {
+                        return remoteBigIp.list('/tm/cm/device-group/' + deviceGroup);
+                    };
+
                     writeResponse(response);
 
                     if (options.joinGroup) {
@@ -153,12 +160,55 @@
                             throw new Error('When joinging a device group, device-group, remote-host, remote-user, and remote-password are required.');
                         }
 
-                        writeOutput("Adding to remote trust group.");
-                        return bigIp.cluster.addToRemoteTrust(options.remoteHost, options.remoteUser, options.remotePassword)
-                            .then(function() {
-                                writeOutput("Adding to remote device group.");
-                                return bigIp.cluster.addToRemoteDeviceGroup(options.remoteHost, options.remoteUser, options.remotePassword, options.deviceGroup);
-                            });
+                        writeOutput("Checking device group on remote host.");
+
+                        remoteBigIp = testOpts.bigIp || new BigIp(options.remoteHost, options.remoteUser, options.remotePassword);
+
+                        return util.tryUntil(this, 60, 10000, getRemoteDeviceGroup, [remoteBigIp, options.deviceGroup]);
+                    }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+
+                    if (options.joinGroup) {
+                        writeOutput("Getting local host name for trust.");
+                        return bigIp.deviceInfo();
+                    }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+
+                    if (options.joinGroup) {
+                        writeOutput("Adding to remote trust.");
+                        hostname = response.hostname;
+                        return remoteBigIp.cluster.addToTrust(hostname, options.host, options.user, options.password);
+                    }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+
+                    if (options.joinGroup) {
+                        writeOutput("Adding to remote device group.");
+                        return remoteBigIp.cluster.addToDeviceGroup(hostname, options.deviceGroup);
+                    }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+
+                    if (options.sync) {
+                        writeOutput("Telling remote to sync.");
                     }
                     else {
                         return q();
