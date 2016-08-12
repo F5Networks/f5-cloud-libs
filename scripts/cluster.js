@@ -238,24 +238,22 @@
                     writeResponse(response);
 
                     if (syncingDatasyncGlobalDg) {
-                        writeOutput("Setting sync leader.");
-                        return bigIp.modify(
-                            '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
-                            {
-                                "set-sync-leader": true
-                            }
-                        );
-                    }
-                    else {
-                        return q();
-                    }
-                })
-                .then(function(response) {
-                    writeResponse(response);
+                        // If the previous promise was resolved, that means the datasync-global-dg group
+                        // exists.
 
-                    if (syncingDatasyncGlobalDg) {
-                        // On 12.1.1 and above, when syncing the datasync-global-dg, we also need to force a full load
-                        if (util.versionCompare(version, '12.1.1') >= 0) {
+                        // Prior to 12.1, set the sync leader
+                        if (util.versionCompare(version, '12.1.0') < 0) {
+                            writeOutput("Setting sync leader.");
+                            return bigIp.modify(
+                                '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
+                                {
+                                    "set-sync-leader": true
+                                }
+                            );
+                        }
+
+                        // On 12.1 and later, do a full sync
+                        else {
                             writeOutput("Telling remote to sync datasync-global-dg.");
                             return remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true);
                         }
@@ -266,6 +264,13 @@
                 })
                 .then(function(response) {
                     writeResponse(response);
+
+                    syncingDatasyncGlobalDg = false;
+
+                    if (options.joinGroup && options.sync) {
+                        writeOutput("Checking that sync is complete.");
+                    }
+
                     return q();
                 })
                 .catch(function(err) {

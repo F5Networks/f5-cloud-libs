@@ -44,6 +44,7 @@ module.exports = {
 
         test.strictEqual(util.versionCompare("12.0.0-hf1", "12.0.0-hf2"), -1);
         test.strictEqual(util.versionCompare("12.0.1-hf1", "12.0.0-hf3"), 1);
+        test.strictEqual(util.versionCompare("12.1.0", "12.0.0-hf1"), 1);
 
         test.done();
     }
