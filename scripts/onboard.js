@@ -162,9 +162,6 @@
 
                         return q.all(promises);
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -176,9 +173,6 @@
 
                         writeOutput("Setting rootPassword.");
                         return bigIp.onboard.password('root', rootPasswords.new, rootPasswords.old);
-                    }
-                    else {
-                        return q();
                     }
                 })
                 .then(function(response) {
@@ -204,9 +198,6 @@
                             ntpBody
                         );
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -221,9 +212,6 @@
                             }
                         );
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -231,9 +219,6 @@
                     if (options.hostName) {
                         writeOutput("Setting host name.");
                         return bigIp.onboard.hostName(options.hostName);
-                    }
-                    else {
-                        return q();
                     }
                 })
                 .then(function(response) {
@@ -243,9 +228,6 @@
                         writeOutput("Setting global settings.");
                         return bigIp.onboard.globalSettings(globalSettings);
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -253,9 +235,6 @@
                     if (Object.keys(dbVars).length > 0) {
                         writeOutput("Setting DB vars");
                         return bigIp.onboard.setDbVars(dbVars);
-                    }
-                    else {
-                        return q();
                     }
                 })
                 .then(function(response) {
@@ -275,9 +254,6 @@
                             }
                         );
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -285,9 +261,6 @@
                     if (Object.keys(modules).length > 0) {
                         writeOutput("Provisioning modules: " + JSON.stringify(modules, null, 4));
                         return bigIp.onboard.provision(modules);
-                    }
-                    else {
-                        return q();
                     }
                 })
                 .then(function(response) {

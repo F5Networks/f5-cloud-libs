@@ -36,7 +36,6 @@
         run: function(argv, testOpts, cb) {
 
             var fs = require('fs');
-            var q = require('q');
             var BigIp = require('../lib/bigIp');
             var util = require('../lib/util');
             var logFile;
@@ -123,9 +122,6 @@
                         writeOutput("Setting config sync ip.");
                         return bigIp.cluster.configSyncIp(options.configSyncIp);
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function() {
                     var deviceGroupOptions = {};
@@ -146,9 +142,6 @@
 
                         return bigIp.cluster.createDeviceGroup(options.deviceGroup, options.syncType, options.device, deviceGroupOptions);
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     var getRemoteDeviceGroup = function(remoteBigIp, deviceGroup) {
@@ -168,9 +161,6 @@
 
                         return util.tryUntil(this, 60, 10000, getRemoteDeviceGroup, [remoteBigIp, options.deviceGroup]);
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -178,9 +168,6 @@
                     if (options.joinGroup) {
                         writeOutput("Getting local host name for trust.");
                         return bigIp.deviceInfo();
-                    }
-                    else {
-                        return q();
                     }
                 })
                 .then(function(response) {
@@ -192,9 +179,6 @@
                         version = response.version; // we need this later when we sync the datasync-global-dg group
                         return remoteBigIp.cluster.addToTrust(hostname, options.host, options.user, options.password);
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -203,9 +187,6 @@
                         writeOutput("Adding to remote device group.");
                         return remoteBigIp.cluster.addToDeviceGroup(hostname, options.deviceGroup);
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -213,9 +194,6 @@
                     if (options.joinGroup && options.sync) {
                         writeOutput("Telling remote to sync.");
                         return remoteBigIp.cluster.sync('to-group', options.deviceGroup);
-                    }
-                    else {
-                        return q();
                     }
                 })
                 .then(function(response) {
@@ -229,9 +207,6 @@
                         writeOutput("Checking for datasync-global-dg.");
                         syncingDatasyncGlobalDg = true;
                         return bigIp.list('/tm/cm/device-group/datasync-global-dg');
-                    }
-                    else {
-                        return q();
                     }
                 })
                 .then(function(response) {
@@ -258,9 +233,6 @@
                             return remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true);
                         }
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -271,9 +243,6 @@
                         writeOutput("Waiting for sync to complete.");
                         return util.tryUntil(bigIp.cluster, 60, 10000, bigIp.cluster.syncComplete);
                     }
-                    else {
-                        return q();
-                    }
                 })
                 .then(function(response) {
                     writeResponse(response);
@@ -281,9 +250,6 @@
                     if (options.joinGroup && options.sync) {
                         writeOutput("Waiting for remote sync to complete.");
                         return util.tryUntil(remoteBigIp.cluster, 60, 10000, remoteBigIp.cluster.syncComplete);
-                    }
-                    else {
-                        return q();
                     }
                 })
                 .catch(function(err) {
