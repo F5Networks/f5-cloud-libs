@@ -86,7 +86,7 @@
                 .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password')
                 .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join')
                 .option('    --sync', '    Tell the remote to sync to us after joining the group.')
-                .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
+                .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when clustering is complete.')
                 .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .option('--silent', 'Turn off all output.')
@@ -97,7 +97,7 @@
 
             // When running in cloud init, we need to exit so that cloud init can complete and
             // allow the BIG-IP services to start
-            if (!options.foreground) {
+            if (options.background) {
                 writeOutput("Spawning child process to do the work. Output will be in " + logFileName);
                 util.runInBackgroundAndExit(process, logFileName);
             }
