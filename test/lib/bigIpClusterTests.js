@@ -305,6 +305,64 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
+
+        testSyncComplete: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/sync-status',
+                              {
+                                  entries: {
+                                      "https://localhost/mgmt/tm/cm/sync-status/0": {
+                                          nestedStats: {
+                                              entries: {
+                                                  color: {
+                                                      description: "green"
+                                                  }
+                                              }
+                                          }
+                                      }
+                                  }
+                              });
+
+            bigIp.cluster.syncComplete()
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testSyncNotComplete: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/sync-status',
+                              {
+                                  entries: {
+                                      "https://localhost/mgmt/tm/cm/sync-status/0": {
+                                          nestedStats: {
+                                              entries: {
+                                                  color: {
+                                                      description: "red"
+                                                  }
+                                              }
+                                          }
+                                      }
+                                  }
+                              });
+
+            bigIp.cluster.syncComplete()
+                .then(function() {
+                    test.ok(false, "syncComplete should have thrown.");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     }
 };

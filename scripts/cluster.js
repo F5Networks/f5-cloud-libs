@@ -268,15 +268,29 @@
                     syncingDatasyncGlobalDg = false;
 
                     if (options.joinGroup && options.sync) {
-                        writeOutput("Checking that sync is complete.");
+                        writeOutput("Waiting for sync to complete.");
+                        return util.tryUntil(bigIp.cluster, 60, 10000, bigIp.cluster.syncComplete);
                     }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
 
-                    return q();
+                    if (options.joinGroup && options.sync) {
+                        writeOutput("Waiting for remote sync to complete.");
+                        return util.tryUntil(remoteBigIp.cluster, 60, 10000, remoteBigIp.cluster.syncComplete);
+                    }
+                    else {
+                        return q();
+                    }
                 })
                 .catch(function(err) {
-                    writeOutput("BIG-IP cluster failed: " + (typeof err === 'object' ? err.message : err));
+                    writeOutput("BIG-IP cluster failed: " + (typeof err === 'object' ? options.verbose ? err.stack : err.message : err));
                 })
-                .done(function() {
+                .done(function(response) {
+                    writeResponse(response);
                     writeOutput("Cluster finished at: " + new Date().toUTCString());
 
                     if (options.signal) {
