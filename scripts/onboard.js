@@ -102,7 +102,7 @@
                 .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords, rootPasswords)
                 .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
-                .option('-f, --foreground', 'Do the work in the foreground - otherwise spawn a background process to do the work. If you are running in cloud init, you probably do not want this option.')
+                .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
                 .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .option('--silent', 'Turn off all output.')
@@ -113,7 +113,7 @@
 
             // When running in cloud init, we need to exit so that cloud init can complete and
             // allow the BIG-IP services to start
-            if (!options.foreground) {
+            if (options.background) {
                 writeOutput("Spawning child process to do the work. Output will be in " + logFileName);
                 util.runInBackgroundAndExit(process, logFileName);
             }
@@ -123,7 +123,7 @@
             }
 
             // Log the input, but don't log passwords
-            if (options.password || Object.keys(passwords).lentgh > 0 || Object.keys(rootPasswords).length > 0) {
+            if (options.password || Object.keys(passwords).length > 0 || Object.keys(rootPasswords).length > 0) {
                 for (i = 0; i < process.argv.length; ++i) {
                     if (KEYS_TO_MASK.indexOf(process.argv[i]) !== -1) {
                         process.argv[i + 1] = "*******";
