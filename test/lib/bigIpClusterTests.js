@@ -28,6 +28,11 @@ var localHostname = 'localhostname';
 var deviceGroup = 'testDeviceGroup';
 
 module.exports = {
+    setUp: function(callback) {
+        icontrolMock.reset();
+        callback();
+    },
+
     testAddToTrust: {
         testNotInTrust: function(test) {
             icontrolMock.when('list',
@@ -242,26 +247,64 @@ module.exports = {
         }
     },
 
-    testConfigSyncIp: function(test) {
-        var ip = '1.2.3.4';
-        icontrolMock.reset();
-        icontrolMock.when('list',
-                          '/shared/identified-devices/config/device-info',
-                          {
-                              hostname: localHostname
-                          });
+    testConfigSync: {
+        testSetConfigSyncIp: function(test) {
+            var ip = '1.2.3.4';
 
-        bigIp.cluster.configSyncIp(ip)
-            .then(function() {
-                test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device/~Common~' + localHostname);
-                test.deepEqual(icontrolMock.lastCall.body, {configsyncIp: ip});
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
+            icontrolMock.when('list',
+                              '/shared/identified-devices/config/device-info',
+                              {
+                                  hostname: localHostname
+                              });
+
+            bigIp.cluster.configSyncIp(ip)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device/~Common~' + localHostname);
+                    test.deepEqual(icontrolMock.lastCall.body, {configsyncIp: ip});
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testSyncBasic: function(test) {
+            var deviceGroup = 'someDeviceGroup';
+
+            bigIp.cluster.sync('to-group', deviceGroup)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm');
+                    test.strictEqual(icontrolMock.lastCall.body.command, 'run');
+                    test.strictEqual(icontrolMock.lastCall.body.utilCmdArgs, 'config-sync  to-group ' + deviceGroup);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testSyncForceFullLoadPush: function(test) {
+            var deviceGroup = 'someDeviceGroup';
+
+            bigIp.cluster.sync('to-group', deviceGroup, true)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm');
+                    test.strictEqual(icontrolMock.lastCall.body.command, 'run');
+                    test.strictEqual(icontrolMock.lastCall.body.utilCmdArgs, 'config-sync force-full-load-push to-group ' + deviceGroup);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     }
 };

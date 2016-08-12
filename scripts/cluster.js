@@ -44,6 +44,8 @@
             var bigIp;
             var remoteBigIp;
             var hostname;
+            var version;
+            var syncingDatasyncGlobalDg;
 
             testOpts = testOpts || {};
 
@@ -187,6 +189,7 @@
                     if (options.joinGroup) {
                         writeOutput("Adding to remote trust.");
                         hostname = response.hostname;
+                        version = response.version; // we need this later when we sync the datasync-global-dg group
                         return remoteBigIp.cluster.addToTrust(hostname, options.host, options.user, options.password);
                     }
                     else {
@@ -207,12 +210,63 @@
                 .then(function(response) {
                     writeResponse(response);
 
-                    if (options.sync) {
+                    if (options.joinGroup && options.sync) {
                         writeOutput("Telling remote to sync.");
+                        return remoteBigIp.cluster.sync('to-group', options.deviceGroup);
                     }
                     else {
                         return q();
                     }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+
+                    // If the group datasync-global-dg is present (which it likely is if ASM is provisioned)
+                    // we need to force a sync of it as well. Otherwise we will not be able to determine
+                    // the overall sync status because there is no way to get the sync status
+                    // of a single device group
+                    if (options.joinGroup && options.sync) {
+                        writeOutput("Checking for datasync-global-dg.");
+                        syncingDatasyncGlobalDg = true;
+                        return bigIp.list('/tm/cm/device-group/datasync-global-dg');
+                    }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+
+                    if (syncingDatasyncGlobalDg) {
+                        writeOutput("Setting sync leader.");
+                        return bigIp.modify(
+                            '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
+                            {
+                                "set-sync-leader": true
+                            }
+                        );
+                    }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+
+                    if (syncingDatasyncGlobalDg) {
+                        // On 12.1.1 and above, when syncing the datasync-global-dg, we also need to force a full load
+                        if (util.versionCompare(version, '12.1.1') >= 0) {
+                            writeOutput("Telling remote to sync datasync-global-dg.");
+                            return remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true);
+                        }
+                    }
+                    else {
+                        return q();
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+                    return q();
                 })
                 .catch(function(err) {
                     writeOutput("BIG-IP cluster failed: " + (typeof err === 'object' ? err.message : err));
