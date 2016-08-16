@@ -50,12 +50,10 @@ module.exports = {
 
         icontrolMock.when(
             'list',
-            '/tm/cm/device',
-            [
-                {
-                    name: oldHostname
-                }
-            ]
+            '/shared/identified-devices/config/device-info',
+            {
+                hostname: oldHostname
+            }
         );
 
         bigIp.onboard.hostname(newHostname)
