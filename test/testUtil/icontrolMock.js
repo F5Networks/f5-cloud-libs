@@ -17,22 +17,22 @@
 
 module.exports = {
     list: function(path, opts, cb) {
-        this.recordCall('list', path, null, opts);
+        this.recordRequest('list', path, null, opts);
         this.respond('list', path, cb);
     },
 
     create: function(path, body, opts, cb) {
-        this.recordCall('create', path, body, opts);
+        this.recordRequest('create', path, body, opts);
         this.respond('create', path, cb);
     },
 
     modify: function(path, body, opts, cb) {
-        this.recordCall('modify', path, body, opts);
+        this.recordRequest('modify', path, body, opts);
         this.respond('modify', path, cb);
     },
 
     delete: function(path, opts, cb) {
-        this.recordCall('delete', path, null, opts);
+        this.recordRequest('delete', path, null, opts);
         this.respond('delete', path, cb);
     },
 
@@ -56,12 +56,16 @@ module.exports = {
         this.lastCall.opts = {};
     },
 
-    recordCall: function(method, path, body, opts) {
+    recordRequest: function(method, path, body, opts) {
         this.requestMap[method + '_' + path] = body;
         this.lastCall.method = method;
         this.lastCall.path = path;
         this.lastCall.body = body;
         this.lastCall.opts = opts;
+    },
+
+    getRequest: function(method, path) {
+        return this.requestMap[method + '_' + path];
     },
 
     respond: function(method, path, cb) {

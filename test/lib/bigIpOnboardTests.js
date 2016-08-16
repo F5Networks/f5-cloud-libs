@@ -25,6 +25,58 @@ bigIp.ready = function() {
 };
 
 module.exports = {
+    testHostName: function(test) {
+        var oldHostname = 'yourOldHostname';
+        var newHostname = 'myNewHostName';
+
+        var TRANSACTION_PATH = '/tm/transaction/';
+        var TRANSACTION_ID = '1234';
+
+        icontrolMock.when(
+            'create',
+            TRANSACTION_PATH,
+            {
+                transId: TRANSACTION_ID
+            }
+        );
+
+        icontrolMock.when(
+            'modify',
+            TRANSACTION_PATH + TRANSACTION_ID,
+            {
+                state: 'COMPLETED'
+            }
+        );
+
+        icontrolMock.when(
+            'list',
+            '/tm/cm/device',
+            [
+                {
+                    name: oldHostname
+                }
+            ]
+        );
+
+        bigIp.onboard.hostname(newHostname)
+            .then(function() {
+                test.deepEqual(icontrolMock.getRequest(
+                    'create',
+                    '/tm/cm/device'),
+                    {
+                        command: 'mv',
+                        name: oldHostname,
+                        target: newHostname
+                    });
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
     testPasswordNonRoot: function(test) {
         var user = 'someuser';
         var newPassword = 'abc123';
@@ -110,7 +162,7 @@ module.exports = {
             bigIp.onboard.provision(provisionSettings)
                 .then(function() {
                     test.deepEqual(
-                        icontrolMock.requestMap['modify_/tm/sys/provision/mod1'],
+                        icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
                         {
                             level: 'level2'
                         }

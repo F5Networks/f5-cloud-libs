@@ -166,7 +166,7 @@
                     writeResponse(response);
 
                     if (options.joinGroup) {
-                        writeOutput("Getting local host name for trust.");
+                        writeOutput("Getting local hostname for trust.");
                         return bigIp.deviceInfo();
                     }
                 })
