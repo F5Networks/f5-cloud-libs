@@ -95,7 +95,7 @@
                 .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', util.collect, [])
                 .option('-l, --license <license_key>', 'License BIG-IP with <license_key>.')
                 .option('-a, --add-on <add_on_key>', 'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.', util.collect, [])
-                .option('-n, --host-name <hostname>', 'Set BIG-IP hostname.')
+                .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
                 .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.map, globalSettings)
                 .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.map, dbVars)
                 .option('--set-password <user:new_password>', 'Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.', util.map, passwords)
@@ -135,10 +135,10 @@
             // Create the bigIp client object
             bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password);
 
-            // Use hostName if both hostName and global-settings hostName are set
-            if (globalSettings && options.hostName) {
+            // Use hostname if both hostname and global-settings hostname are set
+            if (globalSettings && options.hostname) {
                 if (globalSettings.hostname || globalSettings.hostName) {
-                    writeOutput("Using host-name option to override global-settings host name");
+                    writeOutput("Using host-name option to override global-settings hostname");
                     delete globalSettings.hostName;
                     delete globalSettings.hostname;
                 }
@@ -216,9 +216,9 @@
                 .then(function(response) {
                     writeResponse(response);
 
-                    if (options.hostName) {
-                        writeOutput("Setting host name.");
-                        return bigIp.onboard.hostName(options.hostName);
+                    if (options.hostname) {
+                        writeOutput("Setting hostname.");
+                        return bigIp.onboard.hostname(options.hostname);
                     }
                 })
                 .then(function(response) {

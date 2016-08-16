@@ -19,6 +19,8 @@
     },
     "scripts": {
         "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test test/lib test/scripts",
+        "predeployAWS": "npm test",
+        "deployAWS": "scripts/aws/deploy.sh",
         "predeployAzure": "npm test",
         "deployAzure": "scripts/azure/deploy.sh"
     }

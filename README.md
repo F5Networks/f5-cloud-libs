@@ -14,7 +14,7 @@
       --dns <DNS server>                                       Set DNS server. For multiple DNS severs, use multiple --dns entries.
       -l, --license <license_key>                              License BIG-IP with <license_key>.
       -a, --add-on <add_on_key>                                License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.
-      -n, --host-name <hostname>                               Set BIG-IP hostname.
+      -n, --hostname <hostname>                                Set BIG-IP hostname.
       -g, --global-setting <name:value>                        Set global setting <name> to <value>. For multiple settings, use multiple -g entries.
       -d, --db <name:value>                                    Set db variable <name> to <value>. For multiple settings, use multiple -d entries.
       --set-password <user:new_password>                       Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.
@@ -57,4 +57,3 @@
       -o, --output <file>                            Full path for log file if background process is spawned. Default is /tmp/cluster.log
       --silent                                       Turn off all output.
       --verbose                                      Turn on verbose output (overrides --silent).
-
