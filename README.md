@@ -1,6 +1,19 @@
 # Library code and scripts for deploying BIG-IP in a cloud
 
-## onboard.js
+This project consists of two main parts
+- scripts
+    - Command line scripts for configuring BIG-IP
+    - These are meant to be called either directly from the command line or from cloud deployment templates
+    - See usage below
+
+- lib
+    - Library code for controlling a BIG-IP
+    - Called from the scripts
+    - Documentation at go/f5-cloud-libs
+
+## Scripts
+
+### onboard.js
     Usage: onboard [options]
 
     Options:
@@ -27,7 +40,7 @@
       --silent                                                 Turn off all output.
       --verbose                                                Turn on verbose output (overrides --silent).
 
-## cluster.js
+### cluster.js
     Usage: cluster [options]
 
     Options:

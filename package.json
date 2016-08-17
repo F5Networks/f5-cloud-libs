@@ -22,6 +22,7 @@
         "predeployAWS": "npm test",
         "deployAWS": "scripts/aws/deploy.sh",
         "predeployAzure": "npm test",
-        "deployAzure": "scripts/azure/deploy.sh"
+        "deployAzure": "scripts/azure/deploy.sh",
+        "doc": "jsdoc -c jsdoc.conf"
     }
 }
