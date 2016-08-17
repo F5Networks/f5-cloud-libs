@@ -29,31 +29,14 @@ module.exports = {
         var oldHostname = 'yourOldHostname';
         var newHostname = 'myNewHostName';
 
-        var TRANSACTION_PATH = '/tm/transaction/';
-        var TRANSACTION_ID = '1234';
-
-        icontrolMock.when(
-            'create',
-            TRANSACTION_PATH,
-            {
-                transId: TRANSACTION_ID
-            }
-        );
-
-        icontrolMock.when(
-            'modify',
-            TRANSACTION_PATH + TRANSACTION_ID,
-            {
-                state: 'COMPLETED'
-            }
-        );
-
         icontrolMock.when(
             'list',
-            '/shared/identified-devices/config/device-info',
-            {
-                hostname: oldHostname
-            }
+            '/tm/cm/device',
+            [
+                {
+                    name: oldHostname
+                }
+            ]
         );
 
         bigIp.onboard.hostname(newHostname)
@@ -65,7 +48,15 @@ module.exports = {
                         command: 'mv',
                         name: oldHostname,
                         target: newHostname
-                    });
+                    }
+                );
+                test.deepEqual(icontrolMock.getRequest(
+                    'modify',
+                    '/tm/sys/global-settings'),
+                    {
+                        hostname: newHostname
+                    }
+                );
             })
             .catch(function(err) {
                 test.ok(false, err.message);

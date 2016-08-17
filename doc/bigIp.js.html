@@ -44,9 +44,9 @@
  'use strict';
 
 var q = require('q');
-var IControl = require('./iControl');
+var IControl = require('icontrol');
 var util = require('./util');
-var Logger = require('./logger');
+
 var BigIpCluster = require('./bigIpCluster');
 var BigIpOnboard = require('./bigIpOnboard');
 
@@ -54,24 +54,27 @@ var BigIpOnboard = require('./bigIpOnboard');
  * Creates the BIG-IP client
  * @class
  *
- * @param {String} host               - Host name or IP address.
- * @param {String} user               - User with admin rights.
- * @param {String} password           - Password for user.
- * @param {Object} [options]          - Optional parameters.
- * @param {Number} [options.port]     - Port to connect to. Default 443.
- * @param {Object} [options.logger]   - A logger to use. Default to no logging.
+ * @param {String} host - Host name or IP address.
+ * @param {String} user - User with admin rights.
+ * @param {String} password - Password for user.
+ * @param {Object} [testOpts] - Options used during testing.
  */
-function BigIp(host, user, password, options) {
+function BigIp(host, user, password, testOpts) {
+    this.host = host;
+    this.user = user;
+    this.password = password;
 
-    options = options || {};
+    testOpts = testOpts || {};
 
-    this.logger = options.logger || Logger.getLogger({logLevel: 'none'});
-    util.logger = this.logger;
+    if (testOpts.icontrol) {
+        this.icontrol = testOpts.icontrol;
+    }
+    else {
+        this.init(this.host, this.user, this.password);
+    }
 
-    this.init(host, user, password, options.port || 443);
-
-    this.cluster = new BigIpCluster(this, {logger: this.logger});
-    this.onboard = new BigIpOnboard(this, {logger: this.logger});
+    this.cluster = new BigIpCluster(this, testOpts);
+    this.onboard = new BigIpOnboard(this, testOpts);
 }
 
 /**
@@ -79,20 +82,13 @@ function BigIp(host, user, password, options) {
  *
  * @param {String} host     - Host to connect to.
  * @param {String} user     - User (with admin rights).
- * @param {String} password - Password for the user.
- * @param {Number} port     - Port to connect to
+ # @param {String} password - Password for the user.
  */
-BigIp.prototype.init = function(host, user, password, port) {
-    this.host = host;
-    this.user = user;
-    this.password = password;
-    this.port = port;
-
+BigIp.prototype.init = function(host, user, password) {
     this.icontrol = new IControl({
         host: host,
-        port: port,
         user: user,
-        password: password,
+        pass: password,
         basePath: '/mgmt',
         strict: false
     });
@@ -105,111 +101,119 @@ BigIp.prototype.init = function(host, user, password, port) {
 /**
  * Submits a list (GET) request
  *
- * @param {String}  path                           - The path to get.
- * @param {Object}  [options]                      - Options for IControl.
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String} path - The path to get.
+ * @param {Object} options - See iControl list options.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIp.prototype.list = function (path, options, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIp.prototype.list = function (path, options) {
+    var deferred = q.defer();
 
-    var func = function() {
-        this.logger.debug("list", path);
-        return this.icontrol.list(path, options)
-            .then(function(response) {
-                this.logger.debug(response);
-                return response;
-            }.bind(this));
-    };
+    try {
+        this.icontrol.list(path, options, function(err, response) {
+            if (err) {
+                deferred.reject(err);
+            }
+            else {
+                deferred.resolve(response);
+            }
+        });
+    }
+    catch (err) {
+        deferred.reject(err);
+    }
 
-    return util.tryUntil(this, retryOptions, func);
+    return deferred.promise;
 };
 
 /**
  * Submits a create (POST) request
  *
- * @param {String}  path                           - The path to get.
- * @param {Object}  body                           - The body for the POST request.
- * @param {Object}  [options]                      - Options for IControl.
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String} path - The path to get.
+ * @param {Object} body - The body for the POST request.
+ * @param {Object} options - See iControl create options.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIp.prototype.create = function(path, body, options, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIp.prototype.create = function(path, body, options) {
+    var deferred = q.defer();
 
-    var func = function() {
-        this.logger.debug("create", path, body);
-        return this.icontrol.create(path, body, options)
-            .then(function(response) {
-                this.logger.debug(response);
-                return response;
-            }.bind(this));
-    };
+    try {
+        this.icontrol.create(path, body, options, function(err, response) {
+            if (err) {
+                deferred.reject(err);
+            }
+            else {
+                deferred.resolve(response);
+            }
+        });
+    }
+    catch (err) {
+        deferred.reject(err);
+    }
 
-    return util.tryUntil(this, retryOptions, func);
+    return deferred.promise;
 };
 
 /**
  * Submits a modify (PATCH) request
  *
- * @param {String}  path                           - The path to get.
- * @param {Object}  body                           - The body for the patch request.
- * @param {Object}  [options]                      - Options for IControl.
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String} path - The path to get.
+ * @param {Object} body - The body for the patch request.
+ * @param {Object} options - See iControl modify options.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIp.prototype.modify = function(path, body, options, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIp.prototype.modify = function(path, body, options) {
+    var deferred = q.defer();
 
-    var func = function() {
-        this.logger.debug("modify", path, body);
-        return this.icontrol.modify(path, body, options)
-            .then(function(response) {
-                this.logger.debug(response);
-                return response;
-            }.bind(this));
-    };
+    try {
+        this.icontrol.modify(path, body, options, function(err, response) {
+            if (err) {
+                deferred.reject(err);
+            }
+            else {
+                deferred.resolve(response);
+            }
+        });
+    }
+    catch (err) {
+        deferred.reject(err);
+    }
 
-    return util.tryUntil(this, retryOptions, func);
+    return deferred.promise;
 };
 
 /**
  * Submits a delete (DELETE) request
  *
- * @param {String}  path                           - The path to get.
- * @param {Object}  [options]                      - Options for IControl.
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String} path - The path to get.
+ * @param {Object} options - See iControl delete options.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIp.prototype.delete = function(path, options, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIp.prototype.delete = function(path, options) {
+    var deferred = q.defer();
 
-    var func = function() {
-        this.logger.debug("delete", path);
-        return this.icontrol.delete(path, options)
-            .then(function(response) {
-                this.logger.debug(response);
-                return response;
-            }.bind(this));
-    };
+    try {
+        this.icontrol.delete(path, options, function(err, response) {
+            if (err) {
+                deferred.reject(err);
+            }
+            else {
+                deferred.resolve(response);
+            }
+        });
+    }
+    catch (err) {
+        deferred.reject(err);
+    }
 
-    return util.tryUntil(this, retryOptions, func);
+    return deferred.promise;
 };
 
 /**
@@ -217,160 +221,50 @@ BigIp.prototype.delete = function(path, options, retryOptions) {
  */
 
 /**
- * Determines if the BIG-IP status is active
- *
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved when the status is active.
- */
-BigIp.prototype.active = function(retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        var deferred = q.defer();
-
-        this.ready()
-            .then(function() {
-                return this.list('/tm/cm/failover-status', undefined, util.NO_RETRY);
-            }.bind(this))
-            .then(function(response) {
-                var state = response.entries["https://localhost/mgmt/tm/cm/failover-status/0"].nestedStats.entries.status.description;
-                this.logger.debug("Current state:", state);
-                if (state === 'ACTIVE') {
-                    deferred.resolve();
-                }
-                else {
-                    deferred.reject();
-                }
-            }.bind(this))
-            .catch(function(err) {
-                deferred.reject(err);
-            })
-            .done();
-
-        return deferred.promise;
-    };
-
-    return util.tryUntil(this, retryOptions, func);
-};
-
-/**
  * Gets the device info
- *
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIp.prototype.deviceInfo = function(retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        return this.list('/shared/identified-devices/config/device-info', undefined, util.NO_RETRY);
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+BigIp.prototype.deviceInfo = function() {
+    return this.list('/shared/identified-devices/config/device-info');
 };
 
 /**
  * Loads sys config
  *
- * @param {String}  [file]                         - Full path on BIG-IP of file to load. Default is to load the default config.
- * @param {Object}  [options]                      - Object map of load options (for example, {merge: true})
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String} [file] - Full path on BIG-IP of file to load. Default is to load the default config.
+ * @param {Object} [options] - Object map of load options (for example, {merge: true})
  *
  * @returns {Promise} A promise which is resolved when the config has been
  *                    loaded or rejected if an error occurs.
  */
-BigIp.prototype.load = function(file, options, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        return this.ready()
-            .then(function() {
-                var commandBody = {
-                    command: "load",
-                    options: []
-                };
-                var option;
-                var optionBody;
-                if (file) {
-                    commandBody.options.push({file: file});
-                }
-                else {
-                    commandBody.name = 'default';
-                }
-                if (options) {
-                    for (option in options) {
-                        if (options.hasOwnProperty(option)) {
-                            optionBody = {};
-                            optionBody[option] = options[option];
-                            commandBody.options.push(optionBody);
-                        }
+BigIp.prototype.load = function(file, options) {
+    return this.ready()
+        .then(function() {
+            var commandBody = {
+                command: "load",
+                options: []
+            };
+            var option;
+            var optionBody;
+            if (file) {
+                commandBody.options.push({file: file});
+            }
+            else {
+                commandBody.name = 'default';
+            }
+            if (options) {
+                for (option in options) {
+                    if (options.hasOwnProperty(option)) {
+                        optionBody = {};
+                        optionBody[option] = options[option];
+                        commandBody.options.push(optionBody);
                     }
                 }
-                return this.create('/tm/sys/config', commandBody, undefined, util.NO_RETRY);
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
-};
-
-/**
- * Pings a given address once
- *
- * @param {String}  address                        - IP address or hostname to ping.
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved if the ping succeeds
- *                    or rejected if an error occurs.
- */
-BigIp.prototype.ping = function(address, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    if (!address) {
-        return q.reject('Address is required for ping.');
-    }
-
-    var func = function() {
-        return this.ready()
-            .then(function() {
-                var pingCommand = {
-                    command: 'run',
-                    utilCmdArgs: address + ' -c 1'
-                };
-                return this.create('/tm/util/ping', pingCommand, undefined, util.NO_RETRY);
-            }.bind(this))
-            .then(function(response) {
-                var receivedRegex = new RegExp(/transmitted, (\d+) received/);
-                var receivedCheck = receivedRegex.exec(response.commandResult);
-                var packetsReceived;
-
-                if (receivedCheck.length > 0) {
-                    packetsReceived = receivedCheck[1];
-                    this.logger.verbose("Ping reveived", packetsReceived, "packet(s).");
-                    if (packetsReceived > 0) {
-                        return true;
-                    }
-                    else {
-                        return q.reject();
-                    }
-                }
-                else {
-                    return q.reject();
-                }
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+            }
+            return this.create('/tm/sys/config', commandBody);
+        }.bind(this));
 };
 
 /**
@@ -379,22 +273,21 @@ BigIp.prototype.ping = function(address, retryOptions) {
  * BIG-IP is determined to be ready when the nodejs echo-js worker
  * is ready.
  *
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {Number} [maxRetries] - Number of calls to BIG-IP to try. Default is 10.
+ * @param {Number} [retryIntervalMs] = Milliseconds to wait between retries. Default is 1000.
  *
  * @returns {Promise} A Promise which is resolved when BIG-IP is ready
  *                    or rejected after trying a fixed number of times.
  */
-BigIp.prototype.ready = function(retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIp.prototype.ready = function(maxRetries, retryIntervalMs) {
+    maxRetries = 60;
+    retryIntervalMs = retryIntervalMs || 10000;
 
-    var func = function() {
+    var isReady = function() {
         var promises = [];
 
         var availabilityChecks = [
             '/shared/echo-js/available',
-            '/shared/identified-devices/config/device-info/available',
             '/tm/sys/available',
             '/tm/cm/available'
         ];
@@ -402,7 +295,7 @@ BigIp.prototype.ready = function(retryOptions) {
         var mcpCheck = function() {
             var deferred = q.defer();
 
-            this.list('/tm/sys/mcp-state/', undefined, util.NO_RETRY)
+            this.list('/tm/sys/mcp-state/')
                 .then(function(response) {
                     var entries = response.entries;
                     var allRunning = true;
@@ -433,7 +326,7 @@ BigIp.prototype.ready = function(retryOptions) {
         var i;
 
         for (i = 0; i &lt; availabilityChecks.length; ++i) {
-            promises.push(this.list(availabilityChecks[i], undefined, util.NO_RETRY));
+            promises.push(this.list(availabilityChecks[i]));
         }
 
         promises.push(mcpCheck());
@@ -441,7 +334,7 @@ BigIp.prototype.ready = function(retryOptions) {
         return q.all(promises);
     }.bind(this);
 
-    return util.tryUntil(this, retryOptions, func);
+    return util.tryUntil(this, maxRetries, retryIntervalMs, isReady);
 };
 
 /**
@@ -450,83 +343,65 @@ BigIp.prototype.ready = function(retryOptions) {
 BigIp.prototype.reboot = function() {
     return this.ready()
         .then(function() {
-            return this.create('/tm/sys', {command: "reboot"}, undefined, util.NO_RETRY);
+            return this.create('/tm/sys', {command: "reboot"});
         }.bind(this));
 };
 
 /**
  * Checks to see if the BIG-IP needs to be rebooted
  *
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
  * @returns {Promise} A promise which is resolved with 'true' if reboot is
  * required and resolved with 'false' otherwise.
  */
-BigIp.prototype.rebootRequired = function(retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIp.prototype.rebootRequired = function() {
+    var deferred = q.defer();
 
-    var func = function() {
-        var deferred = q.defer();
+    this.ready()
+        .then(function() {
+            this.list('/tm/sys/db/provision.action')
+                .then(function(response) {
+                    if (response.value) {
+                        deferred.resolve(response.value === 'reboot');
+                    }
+                    else {
+                        deferred.reject(new Error('no value in response'));
+                    }
+                })
+                .catch(function(err) {
+                    deferred.reject(err);
+                })
+                .done();
+        }.bind(this));
 
-        this.ready()
-            .then(function() {
-                this.list('/tm/sys/db/provision.action', undefined, util.NO_RETRY)
-                    .then(function(response) {
-                        if (response.value) {
-                            deferred.resolve(response.value === 'reboot');
-                        }
-                        else {
-                            deferred.reject(new Error('no value in response'));
-                        }
-                    })
-                    .catch(function(err) {
-                        deferred.reject(err);
-                    })
-                    .done();
-            }.bind(this));
-
-        return deferred.promise;
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+    return deferred.promise;
 };
 
 /**
  * Saves sys config
  *
- * @param {String}  [file]                         - File to save to. Default is bigip.conf
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String} [file] - File to save to. Default is bigip.conf
  *
  * @returns {Promise} A promise which is resolved when the licensing
  *                    is complete or rejected if an error occurs.
  */
-BigIp.prototype.save = function(file, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIp.prototype.save = function(file) {
 
-    var func = function() {
-        return this.ready()
-            .then(function() {
-                var commandBody = {
-                    command: "save"
-                };
+    return this.ready()
+        .then(function() {
+            var commandBody = {
+                command: "save"
+            };
 
-                if (file) {
-                    commandBody.options = [
-                        {
-                            file: file
-                        }
-                    ];
-                }
+            if (file) {
+                commandBody.options = [
+                    {
+                        file: file
+                    }
+                ];
+            }
 
-                return this.create('/tm/sys/config', commandBody, undefined, util.NO_RETRY);
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+            return this.create('/tm/sys/config', commandBody);
+        }.bind(this));
 };
 
 /**
@@ -548,14 +423,14 @@ BigIp.prototype.transaction = function(commands) {
     var i;
 
     var startTransaction = function() {
-        return this.create(TRANSACTION_PATH, {}, undefined, util.NO_RETRY)
+        return this.create(TRANSACTION_PATH, {})
             .then(function(response) {
                 return response.transId;
             });
     }.bind(this);
 
     var commitTransaction = function() {
-        return this.modify(TRANSACTION_PATH + transactionId, { "state":"VALIDATING" }, undefined, util.NO_RETRY)
+        return this.modify(TRANSACTION_PATH + transactionId, { "state":"VALIDATING" })
             .then(function(response) {
                 if (response.state !== 'COMPLETED') {
                     return q.reject('Transaction state not completed (' + response.state + ')');
@@ -622,13 +497,13 @@ module.exports = BigIp;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Aug 17 2016 11:44:40 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

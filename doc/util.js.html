@@ -44,41 +44,27 @@
  'use strict';
 
 var q = require("q");
-var Logger = require('./logger');
 
 /**
  * @module
  */
 module.exports = {
 
-    logger: Logger.getLogger({logLevel: 'none'}),
-
-    DEFAULT_RETRY: {
-        maxRetries: 90,
-        retryIntervalMs: 10000
-    },
-
-    NO_RETRY: {
-        maxRetries: 0,
-        retryIntervalMs: 0
-    },
-
     /**
      * Tries a method until it succeeds or reaches a maximum number of retries.
      *
-     * @param {Object}   thisArg                      - The 'this' argument to pass to the called function
-     * @param {Object}   retryOptions                 - Options for retrying the request.
-     * @param {Integer}  retryOptions.maxRetries      - Number of times to retry if first try fails. 0 to not retry. Default 60.
-     * @param {Integer}  retryOptions.retryIntervalMs - Milliseconds between retries. Default 10000.
-     * @param {Function} funcToTry                    - Function to try. Function should return a
-     *                                                  Promise which is later resolved or rejected.
-     * @param {String[]} args                         - Array of arguments to pass to funcToTry
+     * @param {Object}   thisArg     - The 'this' argument to pass to the called function
+     * @param {Number}   maxRetries  - Max times to retry the function.
+     * @param {Number}   interval    - Delay between retries in milliseconds.
+     * @param {Function} funcToTry   - Function to try. Function should return a
+     *                                 Promise which is later resolved or rejected.
+     * @param {String[]} args        - Array of arguments to pass to funcToTry
      *
      * @returns {Promise} A promise which is resolved if funcToTry is resolved
      *                    within maxRetries.
      */
-    tryUntil: function(thisArg, retryOptions, funcToTry, args) {
-        var _tryUntil = function(maxRetries, interval, funcToTry, deferred) {
+    tryUntil: function(thisArg, maxRetries, interval, funcToTry, args) {
+        var _tryUntil = function(maxRetries, interval, funcToTry, deferred, resolve, reject) {
 
             if (!deferred) {
                 deferred = q.defer();
@@ -87,29 +73,28 @@ module.exports = {
             funcToTry.apply(thisArg, args)
                 .then(function(response) {
                     deferred.resolve(response);
-                }.bind(this))
-                .catch(function(err) {
-                    this.logger.verbose('tryUntil', err, 'tries left:', maxRetries);
+                })
+                .catch(function() {
                     if (maxRetries > 0) {
                         --maxRetries;
-                        setTimeout(_tryUntil, interval, maxRetries, interval, funcToTry, deferred);
+                        setTimeout(_tryUntil, interval, maxRetries, interval, funcToTry, deferred, resolve, reject);
                     }
                     else {
                         deferred.reject('Giving up after max tries');
                     }
-                }.bind(this))
+                })
                 .done();
 
             return deferred.promise;
-        }.bind(this);
+        };
 
-        return _tryUntil(retryOptions.maxRetries, retryOptions.retryIntervalMs, funcToTry);
+        return _tryUntil(maxRetries, interval, funcToTry);
     },
 
     /**
      * Calls an array of promises in serial.
      *
-     * @param {Object}   thisArg  - The 'this' argument to pass to the called function
+     * @param {Object} thisArg - The 'this' argument to pass to the called function
      * @param {Object[]} promises - An array of promise definitions. Each
      *                              definition should be:
      *                              {
@@ -117,17 +102,10 @@ module.exports = {
      *                                  arguments: Array of arguments to pass to the function,
      *                                  message: An optional message to display at the start of this promise
      *                              }
-     * @param {Integer}  [delay]  - Delay in milliseconds to use between calls.
+     * @param {String} [successMessage] - Message to resolve with upon success
      */
-    callInSerial: function(thisArg, promises, delay) {
-        delay = delay || 0;
-
-        var _callInSerial = function(thisArg, promises, delay, index) {
-
-            if (index === promises.length) {
-                deferred.resolve();
-                return;
-            }
+    callInSerial: function(thisArg, promises, successMessage) {
+        var _callInSerial = function(index) {
 
             if (promises[index].message) {
                 console.log(promises[index].message);
@@ -136,10 +114,10 @@ module.exports = {
             promises[index].promise.apply(thisArg, promises[index].arguments)
                 .then(function() {
                     if (index &lt; promises.length - 1) {
-                        setTimeout(_callInSerial, delay, thisArg, promises, delay, ++index);
+                        _callInSerial(++index);
                     }
                     else {
-                        deferred.resolve();
+                        deferred.resolve(successMessage);
                     }
                 })
                 .catch(function(err) {
@@ -149,7 +127,7 @@ module.exports = {
 
         var deferred = q.defer();
 
-        _callInSerial(thisArg, promises, delay, 0);
+        _callInSerial(0);
 
         return deferred.promise;
     },
@@ -179,15 +157,11 @@ module.exports = {
             }
 
             // capture output in a log file
-            if (args.indexOf('--output') === -1) {
-                args.push('--output', logFileName);
-            }
-
+            args.push('--output', logFileName);
             myChild = childProcess.spawn(
                 process.argv[0],
                 args,
                 {
-                    stdio: 'ignore',
                     detached: true
                 }
             );
@@ -221,56 +195,6 @@ module.exports = {
     map: function(pair, container) {
         var nameVal = pair.split(/:(.+)/);
         container[nameVal[0].trim()] = nameVal[1].trim();
-    },
-
-    /**
-     * Downloads a file from a URL
-     *
-     * @param {String} url - URL to download from
-     *
-     * @returns {Promise} A promise which is resolved with the file name the file was downloaded to
-     *                    or rejected if an error occurs.
-     */
-    download: function(url) {
-        var http = require('http');
-        var https = require('https');
-        var fs = require('fs');
-        var URL = require('url');
-        var deferred = q.defer();
-        var parsedUrl;
-        var executor;
-        var file;
-        var fileName;
-        var request;
-
-        parsedUrl = URL.parse(url);
-        if (parsedUrl.protocol === 'http:') {
-            executor = http;
-        }
-        else if (parsedUrl.protocol === 'https:') {
-            executor = https;
-        }
-        else {
-            deferred.reject('Unhandled protocol: ' + parsedUrl.protocol);
-            return;
-        }
-
-        fileName = '/tmp/f5-cloud-libs_' + Date.now();
-        file = fs.createWriteStream(fileName);
-        request = executor.get(url, function(response) {
-            response.pipe(file);
-            file.on('finish', function() {
-                file.close(function() {
-                    deferred.resolve(fileName);
-                });
-            });
-        })
-        .on('error', function(err) {
-            fs.unlink(file);
-            deferred.reject(err);
-        });
-
-        return deferred.promise;
     },
 
     /**
@@ -389,13 +313,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Aug 17 2016 11:44:40 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -217,7 +217,7 @@
                     writeResponse(response);
 
                     if (options.hostname) {
-                        writeOutput("Setting hostname.");
+                        writeOutput("Setting hostname to " + options.hostname);
                         return bigIp.onboard.hostname(options.hostname);
                     }
                 })

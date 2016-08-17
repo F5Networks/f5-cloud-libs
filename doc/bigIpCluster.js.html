@@ -44,744 +44,228 @@
 'use strict';
 
 var q = require('q');
-var util = require('./util');
-var Logger = require('./logger');
 
 var DEVICE_GROUP_PATH = '/tm/cm/device-group/';
-var TRUST_DOMAIN_NAME = 'Root';
 
 /**
  * Provides clustering functionality to a base BigIp object
  * @class
  *
- * @param {Object} bigIpCore          - Base BigIp object.
- * @param {Object} [options]          - Optional parameters.
- * @param {Object} [options.logger]   - A logger to use. Default to no logging.
+ * @param {Object} bigIpCore  - Base BigIp object.
+ * @param {Object} [testOpts] - Options used during testing.
  */
-function BigIpCluster(bigIpCore, options) {
-    options = options || {};
-    this.logger = options.logger || Logger.getLogger({logLevel: 'none'});
+function BigIpCluster(bigIpCore, testOpts) {
     this.core = bigIpCore;
-
-    util.logger = this.logger;
+    this.testOpts = testOpts || {};
 }
 
 /**
- * Adds a device to the trust group.
+ * Adds this device to the trust group on another device.
  *
- * @param {String}  deviceName                     - Device name to add.
- * @param {String}  remoteHost                     - IP address of remote host to add
- * @param {String}  remoteUser                     - Admin user name on remote host
- * @param {String}  remotePassword                 - Admin user password on remote host
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String} hostname       - Hostname to add.
+ * @param {String} remoteHost     - IP address of remote host to add
+ * @param {String} remoteUser     - Admin user name on remote host
+ * @param {String} remotePassword - Admin user password on remote host
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIpCluster.prototype.addToTrust = function(deviceName, remoteHost, remoteUser, remotePassword, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIpCluster.prototype.addToTrust = function(hostname, remoteHost, remoteUser, remotePassword) {
+    return this.core.ready()
+        .then(function() {
+            // Check to see if host is in the trust domain already
+            return this.core.list('/tm/cm/trust-domain/~Common~Root');
+        }.bind(this))
+        .then(function(response) {
+            var containsHost = function(hosts) {
+                return hosts.findIndex(function(element) {
+                    return element.indexOf(hostname) !== -1;
+                }) >= 0 ? true : false;
+            };
 
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                // Check to see if host is in the trust domain already
-                return this.isInTrustGroup(deviceName);
-            }.bind(this))
-            .then(function(isInGroup) {
-                if (!isInGroup) {
-                    return this.core.create(
-                       '/tm/cm/add-to-trust',
-                       {
-                            command: 'run',
-                            name: TRUST_DOMAIN_NAME,
-                            caDevice: true,
-                            device: remoteHost,
-                            deviceName: deviceName,
-                            username: remoteUser,
-                            password: remotePassword
-                       },
-                       undefined,
-                       util.NO_RETRY);
-                }
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+            if (containsHost(response.caDevices)) {
+                return;
+            }
+            else {
+                return this.core.create(
+                   '/tm/cm/add-to-trust',
+                   {
+                        command: 'run',
+                        name: 'Root',
+                        caDevice: true,
+                        device: remoteHost,
+                        deviceName: hostname,
+                        username: remoteUser,
+                        password: remotePassword
+                   });
+            }
+        }.bind(this));
 };
 
 /**
- * Adds a device to a device group.
+ * Adds this device to a device group on another device.
  *
- * @param {String}  deviceName                     - Device name to add.
- * @param {String}  deviceGroup                    - Name of the device group to add device to.
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * Assumes that the device group on the remote device is already
+ * created or in the process of being created.
+ *
+ * @param {String} remoteHost     - IP address of remote host.
+ * @param {String} remoteUser     - Admin user on remote host.
+ * @param {String} remotePassword - Password for remote admin user.
+ * @param {String} deviceGroup    - Name of the remote device group to join.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIpCluster.prototype.addToDeviceGroup = function(deviceName, deviceGroup, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIpCluster.prototype.addToDeviceGroup = function(hostname, deviceGroup) {
+    return this.core.ready()
+        .then(function() {
+            // Check to see if host is already in the device group
+            return this.core.list(DEVICE_GROUP_PATH + '~Common~' + deviceGroup + '/devices');
+        }.bind(this))
+        .then(function(response) {
+            var containsHost = function(devices) {
+                return devices.findIndex(function(element) {
+                    return element.name.indexOf(hostname) !== -1;
+                }) >= 0 ? true : false;
+            };
 
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                return this.isInDeviceGroup(deviceName, deviceGroup);
-            }.bind(this))
-            .then(function(isInGroup) {
-                if (!isInGroup) {
-                    return this.core.create(
-                        DEVICE_GROUP_PATH + '~Common~' + deviceGroup + '/devices',
-                        {
-                            name: deviceName
-                        },
-                        undefined,
-                        util.NO_RETRY
-                    );
-                }
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
-};
-
-/**
- * Checks to see if a device is in a device group
- *
- * @param {String[]} deviceNames                    - Device names to check for.
- * @param {String}   deviceGroup                    - Device group to look in.
- * @param {Object}   [retryOptions]                 - Options for retrying the request.
- * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved with an array of names that are in the device group
- *                    and in deviceNames, or rejected if an error occurs.
- */
-BigIpCluster.prototype.areInDeviceGroup = function(deviceNames, deviceGroup, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                return this.core.list(DEVICE_GROUP_PATH + deviceGroup + '/devices', undefined, util.NO_RETRY);
-            }.bind(this))
-            .then(function(currentDevices) {
-                var devicesInGroup = [];
-                currentDevices.forEach(function(currentDevice) {
-                    if (deviceNames.indexOf(currentDevice.name) !== -1) {
-                        devicesInGroup.push(currentDevice.name);
-                    }
-                });
-
-                return devicesInGroup;
-            }.bind(this));
-        };
-
-    return util.tryUntil(this, retryOptions, func);
-};
-
-/**
- * Checks to see if a device is in the trust group
- *
- * @param {String[]} deviceNames                    - Device names to check for.
- * @param {Object}   [retryOptions]                 - Options for retrying the request.
- * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved with an array of names that are in the trust group
- *                    and in deviceNames, or rejected if an error occurs.
- */
-BigIpCluster.prototype.areInTrustGroup = function(deviceNames, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                return this.core.list('/tm/cm/trust-domain/' + TRUST_DOMAIN_NAME, undefined, util.NO_RETRY);
-            }.bind(this))
-            .then(function(response) {
-                var i = deviceNames.length - 1;
-
-                if (response &amp;&amp; response.caDevices) {
-                    while (i >= 0) {
-                        if (response.caDevices.indexOf('/Common/' + deviceNames[i]) === -1) {
-                            deviceNames.splice(i, 1);
-                        }
-                        --i;
-                    }
-                }
-
-                return deviceNames;
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
-};
-
-/**
- * Sets the config sync ip
- *
- * @param {String}   configSyncIp                   - The IP address to use for config sync.
- * @param {Object}   [retryOptions]                 - Options for retrying the request.
- * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved when the request is complete
- *                    or rejected if an error occurs.
- */
-BigIpCluster.prototype.configSyncIp = function(configSyncIp, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                return this.core.deviceInfo(util.NO_RETRY);
-            }.bind(this))
-            .then(function(response) {
-                return this.core.modify(
-                    '/tm/cm/device/~Common~' + response.hostname,
+            if (response.length === 0 || !containsHost(response)) {
+                return this.core.create(
+                    DEVICE_GROUP_PATH + '~Common~' + deviceGroup + '/devices',
                     {
-                        configsyncIp: configSyncIp
+                        name: hostname
                     }
                 );
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+            }
+        }.bind(this));
 };
 
 /**
  * Creates a device group
  *
- * @param {String}          deviceGroup                    - Name for device group.
- * @param {String}          type                           - Type of device group. Must be 'sync-only' || 'sync-failover'.
- * @param {String|String[]} [deviceNames]                  - Device name or array of names to add to the group.
- * @param {Object}          [options]                      - Object containg device group options.
- * @param {Boolean}         [options.autoSync]             - Whether or not to autoSync. Default false.
- * @param {Boolean}         [options.saveOnAutoSync]       - If autoSync is eanbled, whether or not to save on
-                                                             autoSync. Default false.
- * @param {Boolean}         [options.networkFailover]      - Whether or not to use network fail-over. Default false.
- * @param {Boolean}         [options.fullLoadOnSync]       - Whether or not to do a full sync. Default false.
- * @param {Boolean}         [options.asmSync]              - Whether or not do to ASM sync. Default false.
- * @param {Object}          [retryOptions]                 - Options for retrying the request.
- * @param {Integer}         [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}         [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String}   name                      - Name for device group.
+ * @param {String}   type                      - Type of device group. Must be 'sync-only' || 'sync-failover'.
+ * @param {String[]} [devices]                 - Array of device names to add to the group.
+ * @param {Object}   [options]                 - Object containg device group options.
+ * @param {Boolean}  [options.autoSync]        - Whether or not to autoSync. Default false.
+ * @param {Boolean}  [options.saveOnAutoSync]  - If autoSync is eanbled, whether or not to save on
+                                                 autoSync. Default false.
+ * @param {Boolean}  [options.networkFailover] - Whether or not to use network fail-over. Default false.
+ * @param {Boolean}  [options.fullLoadOnSync]  - Whether or not to do a full sync. Default false.
+ * @param {Boolean}  [options.asmSync]         - Whether or not do to ASM sync. Default false.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIpCluster.prototype.createDeviceGroup = function(deviceGroup, type, deviceNames, options, retryOptions) {
+BigIpCluster.prototype.createDeviceGroup = function(name, type, devices, options) {
 
-    if (!deviceGroup) {
-        return q.reject(new Error("deviceGroup is required"));
+    if (!name) {
+        return q.reject(new Error("name is required"));
     }
 
     if (type !== 'sync-only' &amp;&amp; type !== 'sync-failover') {
         return q.reject(new Error("type must be 'sync-only' or 'sync-failover'"));
     }
 
-    if (!Array.isArray(deviceNames)) {
-        deviceNames = [deviceNames];
-    }
+    return this.core.ready()
+        .then(function() {
+            var groupSettings = {
+                name: name,
+                type: type,
+                devices: devices || []
+            };
 
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+            options = options || {};
 
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                // Check to see if the device group already exists
-                return this.core.list(DEVICE_GROUP_PATH);
-            }.bind(this))
-            .then(function(response) {
-                var groupSettings;
+            groupSettings.autoSync = options.autoSync ? 'enabled' : 'disabled';
+            groupSettings.fullLoadOnSync = options.fullLoadOnSync ? true : false;
+            groupSettings.asmSync = options.asmSync ? 'enabled' : 'disabled';
 
-                var containsGroup = function(deviceGroups) {
-                    var i;
+            if (groupSettings.autoSync === 'enabled') {
+                groupSettings.saveOnAutoSync = options.saveOnAutoSync ? true : false;
+            }
 
-                    for (i = 0; i &lt; deviceGroups.length; ++i) {
-                        if (deviceGroups[i].name === deviceGroup) {
-                            return true;
-                        }
-                    }
-                };
+            if (type === 'sync-failover') {
+                groupSettings.networkFailover = options.networkFailover ? 'enabled' : 'disabled';
+            }
 
-                if (response) {
-                    if (!containsGroup(response)) {
-                        groupSettings = {
-                            name: deviceGroup,
-                            type: type,
-                            devices: deviceNames || []
-                        };
-
-                        options = options || {};
-
-                        groupSettings.autoSync = options.autoSync ? 'enabled' : 'disabled';
-                        groupSettings.fullLoadOnSync = options.fullLoadOnSync ? true : false;
-                        groupSettings.asmSync = options.asmSync ? 'enabled' : 'disabled';
-
-                        if (groupSettings.autoSync === 'enabled') {
-                            groupSettings.saveOnAutoSync = options.saveOnAutoSync ? true : false;
-                        }
-
-                        if (type === 'sync-failover') {
-                            groupSettings.networkFailover = options.networkFailover ? 'enabled' : 'disabled';
-                        }
-
-                        return this.core.create(DEVICE_GROUP_PATH, groupSettings, undefined, util.NO_RETRY);
-                    }
-                    else {
-                        // If the device group exists, check that the requested devices are in it
-                        return this.areInDeviceGroup(deviceNames, deviceGroup, retryOptions)
-                            .then(function(devicesInGroup) {
-                                var promises = [];
-
-                                deviceNames.forEach(function(deviceName) {
-                                    if (devicesInGroup.indexOf(deviceName) === -1) {
-                                        promises.push(
-                                            {
-                                                promise: this.addToDeviceGroup,
-                                                arguments: [deviceName, deviceGroup]
-                                            }
-                                        );
-                                    }
-                                }.bind(this));
-
-                                return util.callInSerial(this, promises);
-                            }.bind(this));
-                    }
-                }
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+            return this.core.create(DEVICE_GROUP_PATH, groupSettings);
+        }.bind(this));
 };
 
 /**
- * Checks to see if a device is device group
+ * Sets the config sync ip
  *
- * @param {String}   deviceName                     - Device name to check for.
- * @param {String}   deviceGroup                    - Device group to check in.
- * @param {Object}   [retryOptions]                 - Options for retrying the request.
- * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved with true or false
- *                    or rejected if an error occurs.
- */
-BigIpCluster.prototype.isInDeviceGroup = function(deviceName, deviceGroup, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                return this.core.list(DEVICE_GROUP_PATH + deviceGroup + '/devices', undefined, util.NO_RETRY);
-            }.bind(this))
-            .then(function(response) {
-                var containsHost = function(devices) {
-                    var i;
-                    for (i = 0; i &lt; devices.length; ++i) {
-                        if (devices[i].name.indexOf(deviceName) !== -1) {
-                            return true;
-                        }
-                    }
-                };
-
-                return containsHost(response);
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
-};
-
-/**
- * Checks to see if a device is in the trust group
- *
- * @param {String}   deviceName                     - Device name to check for.
- * @param {Object}   [retryOptions]                 - Options for retrying the request.
- * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved with true or false
- *                    or rejected if an error occurs.
- */
-BigIpCluster.prototype.isInTrustGroup = function(deviceName, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                return this.core.list('/tm/cm/trust-domain/' + TRUST_DOMAIN_NAME, undefined, util.NO_RETRY);
-            }.bind(this))
-            .then(function(response) {
-                if (response &amp;&amp; response.caDevices) {
-                    return response.caDevices.indexOf('/Common/' + deviceName) !== -1;
-                }
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
-};
-
-/**
- * Joins a cluster and optionally syncs.
- *
- * This is a just a higher level function that calls other funcitons in this
- * and other bigIp* files:
- *     - Add to trust on remote host
- *     - Add to remote device group
- *     - Sync remote device group
- *     - Check for datasync-global-dg and sync that as well if it is present
- *       (this is necessary so that we know when syncing is complete)
- * The device group must already exist on the remote host.
- *
- *
- * @param {String}  deviceGroup          - Name of device group to join.
- * @param {String}  remoteHost           - Managemnt IP for the remote BIG-IP on which the group exists.
- * @param {String}  remoteUser           - Remote BIG-IP admin user name.
- * @param {String}  remotePassword       - Remote BIG-IP admin user password.
- * @param {Object}  [options]            - Optional arguments.
- * @param {Number}  [options.remotePort] - Remote BIG-IP port to connect to. Default the port of this BIG-IP instance.
- * @param {Boolean} [options.sync]       - Whether or not to perform a sync. Default true.
+ * @param {String} configSyncIp - The IP address to use for config sync.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUser, remotePassword, options) {
-    var BigIp = require('./bigIp');
-    var remoteBigIp;
-    var hostname;
-    var version;
-
-    options = options || {};
-    options.remotePort = options.remotePort || this.core.port;
-
-    if (typeof options.sync === 'undefined') {
-        options.sync = true;
-    }
-
-    if (!deviceGroup || !remoteHost || !remoteUser || !remotePassword) {
-        throw new Error('When joining a device group, device-group, remote-host, remote-user, and remote-password are required.');
-    }
-
-    remoteBigIp = new BigIp(remoteHost,
-                            remoteUser,
-                            remotePassword,
-                            {
-                                port: options.remotePort,
-                                logger: this.logger
-                            });
-
-    this.logger.info("Checking device group on remote host.");
-
-    return remoteBigIp.list('/tm/cm/device-group/' + deviceGroup, undefined, {maxRetries: 120, retryIntervalMs: 10000})
-        .then(function(response) {
-            this.logger.debug(response);
-            this.logger.info("Getting local hostname for trust.");
+BigIpCluster.prototype.configSyncIp = function(configSyncIp) {
+    return this.core.ready()
+        .then(function() {
             return this.core.deviceInfo();
         }.bind(this))
         .then(function(response) {
-            this.logger.debug(response);
-            this.logger.info("Adding to remote trust.");
-            hostname = response.hostname;
-            version = response.version; // we need this later when we sync the datasync-global-dg group
-            return remoteBigIp.cluster.addToTrust(hostname, this.core.host, this.core.user, this.core.password);
-        }.bind(this))
-        .then(function(response) {
-            this.logger.debug(response);
-            this.logger.info("Adding to remote device group.");
-            return remoteBigIp.cluster.addToDeviceGroup(hostname, deviceGroup);
-        }.bind(this))
-        .then(function(response) {
-            this.logger.debug(response);
-
-            if (options.sync) {
-                // If the group datasync-global-dg is present (which it likely is if ASM is provisioned)
-                // we need to force a sync of it as well. Otherwise we will not be able to determine
-                // the overall sync status because there is no way to get the sync status
-                // of a single device group
-                this.logger.info("Checking for datasync-global-dg.");
-                return this.core.list('/tm/cm/device-group');
-            }
-        }.bind(this))
-        .then(function(response) {
-
-            // Sometimes sync just fails silently, so we retry all of the sync commands until both
-            // local and remote devices report that they are in sync
-            var syncAndCheck = function(datasyncGlobalDgResponse) {
-                var deferred = q.defer();
-                var remoteSyncPromise = q.defer();
-
-                var SYNC_COMPLETE_RETRY = {
-                    maxRetries: 3,
-                    retryIntervalMs: 10000
-                };
-
-                this.logger.info("Telling remote to sync.");
-
-                // We need to wait some time (30 sec?) between issuing sync commands or else sync
-                // never completes.
-                remoteBigIp.cluster.sync('to-group', deviceGroup, false, util.NO_RETRY)
-                    .then(function() {
-                        setTimeout(function() {
-                            remoteSyncPromise.resolve();
-                        }, 30000);
-                    })
-                    .done();
-
-                remoteSyncPromise.promise
-                    .then(function() {
-                        var i;
-                        for (i = 0; i &lt; datasyncGlobalDgResponse.length; ++i) {
-                            if (datasyncGlobalDgResponse[i].name === 'datasync-global-dg') {
-                                // Prior to 12.1, set the sync leader
-                                if (util.versionCompare(version, '12.1.0') &lt; 0) {
-                                    this.logger.info("Setting sync leader.");
-                                    return this.core.modify(
-                                        '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
-                                        {
-                                            "set-sync-leader": true
-                                        },
-                                        undefined,
-                                        util.NO_RETRY
-                                    );
-                                }
-
-                                // On 12.1 and later, do a full sync
-                                else {
-                                    this.logger.info("Telling remote to sync datasync-global-dg request.");
-                                    return remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true, util.NO_RETRY);
-                                }
-                            }
-                        }
-                    }.bind(this))
-                    .then(function() {
-                        var syncCompleteChecks = [];
-                        this.logger.info("Waiting for sync to complete.");
-                        syncCompleteChecks.push(this.syncComplete(SYNC_COMPLETE_RETRY), remoteBigIp.cluster.syncComplete(SYNC_COMPLETE_RETRY));
-                        return q.all(syncCompleteChecks);
-                    }.bind(this))
-                    .then(function() {
-                        this.logger.info("Sync complete.");
-                        deferred.resolve();
-                    }.bind(this))
-                    .catch(function() {
-                        this.logger.info("Sync not yet complete.");
-                        deferred.reject();
-                    }.bind(this))
-                    .done();
-
-                return deferred.promise;
-            };
-
-            this.logger.debug(response);
-
-            if (options.sync) {
-                return util.tryUntil(this, {maxRetries: 10, retryIntervalMs: 30000}, syncAndCheck, [response]);
-            }
-        }.bind(this));
-};
-
-/**
- * Removes a device from cluster
- *
- * This is a just a higher level function that calls other funcitons in this
- * and other bigIp* files:
- *     - Remove from device group
- *     - Remove from trust
- *
- * @param {String|String[]} deviceNames    - Name or array of names of devices to remove
- * @param {String}  deviceGroup            - Name of device group to join.
- *
- * @returns {Promise} A promise which is resolved when the request is complete
- *                    or rejected if an error occurs.
- */
-BigIpCluster.prototype.removeFromCluster = function(deviceNames, deviceGroup) {
-
-    if (!Array.isArray(deviceNames)) {
-        deviceNames = [deviceNames];
-    }
-
-    return this.core.ready()
-        .then(function() {
-            this.logger.info("Removing from device group.");
-            return this.removeFromDeviceGroup(deviceNames, deviceGroup);
-        }.bind(this))
-        .then(function(response) {
-            this.logger.debug(response);
-
-            this.logger.info("Removing from trust.");
-            return this.removeFromTrust(deviceNames);
-        }.bind(this));
-};
-
-/**
- * Removes a device from a device group
- *
- * @param {String|String[]} deviceNames                    - Name or array of names of devices to remove
- * @param {Object}          [retryOptions]                 - Options for retrying the request.
- * @param {Integer}         [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}         [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved when the request is complete
- *                    or rejected if an error occurs.
- */
-BigIpCluster.prototype.removeFromDeviceGroup = function(deviceNames, deviceGroup, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    if (!Array.isArray(deviceNames)) {
-        deviceNames = [deviceNames];
-    }
-
-    var func = function() {
-         return this.core.ready()
-             .then(function() {
-                 return this.core.list(DEVICE_GROUP_PATH + deviceGroup + '/devices', undefined, util.NO_RETRY);
-             }.bind(this))
-             .then(function(currentDevices) {
-                 var devicesToKeep = [];
-                 currentDevices.forEach(function(currentDevice) {
-                     if (deviceNames.indexOf(currentDevice.name) === -1) {
-                         devicesToKeep.push(currentDevice.name);
-                     }
-                 });
-
-                if (devicesToKeep.length !== currentDevices.length) {
-                     return this.core.modify(
-                         DEVICE_GROUP_PATH + deviceGroup,
-                         {
-                            devices: devicesToKeep
-                         }
-                     );
-                 }
-             }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
-};
-
-/**
- * Removes a device from the device trust
- *
- * @param {String|String[]} deviceNames            - Name or array of names of devices to remove
- * @param {Object}  [retryOptions]                 - Options for retrying the request.
- * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
- * @returns {Promise} A promise which is resolved when the request is complete
- *                    or rejected if an error occurs.
- */
-BigIpCluster.prototype.removeFromTrust = function(deviceNames, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    if (!Array.isArray(deviceNames)) {
-        deviceNames = [deviceNames];
-    }
-
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                // Check to see if host is in the trust domain already
-                return this.areInTrustGroup(deviceNames);
-            }.bind(this))
-            .then(function(devicesInGroup) {
-                var promises = [];
-
-                devicesInGroup.forEach(function(deviceName) {
-                    promises.push(
-                        this.core.create(
-                        '/tm/cm/remove-from-trust',
-                        {
-                            command: 'run',
-                            name: 'Root',
-                            caDevice: true,
-                            deviceName: deviceName
-                        },
-                        undefined,
-                        util.NO_RETRY));
-                }.bind(this));
-
-                if (promises.length !== 0) {
-                    return q.all(promises);
+            return this.core.modify(
+                '/tm/cm/device/~Common~' + response.hostname,
+                {
+                    configsyncIp: configSyncIp
                 }
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+            );
+        }.bind(this));
 };
 
 /**
  * Syncs to/from device group
  *
- * @param {String}   direction                      - 'to-group' || 'from-group'
- * @param {String}   deviceGroup                    - Name of the device group to sync.
- * @param {Boolean}  [forceFullLoadPush]            - Whether or not to use the force-full-load-push option. Default false.
- * @param {Object}   [retryOptions]                 - Options for retrying the request.
- * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String}   direction          - 'to-group' || 'from-group'
+ * @param {String}   deviceGroup        - Name of the device group to sync.
+ * @param {Boolean} [forceFullLoadPush] - Whether or not to use the force-full-load-push option. Default false.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIpCluster.prototype.sync = function(direction, deviceGroup, forceFullLoadPush, retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
-
-    var func = function() {
-        return this.core.ready()
-            .then(function() {
-                return this.core.create(
-                       '/tm/cm',
-                       {
-                           command: "run",
-                           utilCmdArgs: ["config-sync", forceFullLoadPush ? 'force-full-load-push' : '', direction, deviceGroup].join(" ")
-                       },
-                       undefined,
-                       util.NO_RETRY
-                );
-            }.bind(this));
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+BigIpCluster.prototype.sync = function(direction, deviceGroup, forceFullLoadPush) {
+    return this.core.ready()
+        .then(function() {
+            return this.core.create(
+                   '/tm/cm',
+                   {
+                       command: "run",
+                       utilCmdArgs: ["config-sync", forceFullLoadPush ? 'force-full-load-push' : '', direction, deviceGroup].join(" ")
+                   }
+            );
+        }.bind(this));
 };
 
 /**
  * Checks sync status to see if it is complete
  *
- * @param {Object}   [retryOptions]                 - Options for retrying the request.
- * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
- *
  * @returns {Promise} A promise which is resolved if sync is complete,
  *                    or rejected if not or on error.
  */
-BigIpCluster.prototype.syncComplete = function(retryOptions) {
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+BigIpCluster.prototype.syncComplete = function() {
+    var deferred = q.defer();
 
-    var func = function() {
-        var deferred = q.defer();
-        this.core.ready()
-            .then(function() {
-                return this.core.list('/tm/cm/sync-status', undefined, util.NO_RETRY);
-            }.bind(this))
-            .then(function(response) {
-                if (response.entries["https://localhost/mgmt/tm/cm/sync-status/0"].nestedStats.entries.color.description === 'green') {
-                    deferred.resolve();
-                }
-                else {
-                    deferred.reject();
-                }
-            })
-            .catch(function(err) {
-                deferred.reject(err);
-            })
-            .done();
+    this.core.ready()
+        .then(function() {
+            return this.core.list('/tm/cm/sync-status');
+        }.bind(this))
+        .then(function(response) {
+            if (response.entries["https://localhost/mgmt/tm/cm/sync-status/0"].nestedStats.entries.color.description === 'green') {
+                deferred.resolve();
+            }
+            else {
+                deferred.reject();
+            }
+        })
+        .catch(function(err) {
+            deferred.reject(err);
+        })
+        .done();
 
-        return deferred.promise;
-    };
-
-    return util.tryUntil(this, retryOptions, func);
+    return deferred.promise;
 };
 
 module.exports = BigIpCluster;
@@ -795,13 +279,13 @@ module.exports = BigIpCluster;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Aug 17 2016 11:44:40 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

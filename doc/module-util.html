@@ -61,7 +61,7 @@
 
     
 
-    <h4 class="name" id=".callInSerial"><span class="type-signature">(static) </span>callInSerial<span class="signature">(thisArg, promises, delay<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".callInSerial"><span class="type-signature">(static) </span>callInSerial<span class="signature">(thisArg, promises, successMessage<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
     
 
@@ -174,13 +174,13 @@
 
         <tr>
             
-                <td class="name"><code>delay</code></td>
+                <td class="name"><code>successMessage</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Integer</span>
+<span class="param-type">String</span>
 
 
             
@@ -200,7 +200,7 @@
 
             
 
-            <td class="description last">Delay in milliseconds to use between calls.</td>
+            <td class="description last">Message to resolve with upon success</td>
         </tr>
 
     
@@ -241,7 +241,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="util.js.html">util.js</a>, <a href="util.js.html#line94">line 94</a>
+        <a href="util.js.html">util.js</a>, <a href="util.js.html#line79">line 79</a>
     </li></ul></dd>
     
 
@@ -326,7 +326,7 @@ multiple values for a command line option
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="util.js.html">util.js</a>, <a href="util.js.html#line178">line 178</a>
+        <a href="util.js.html">util.js</a>, <a href="util.js.html#line152">line 152</a>
     </li></ul></dd>
     
 
@@ -349,160 +349,6 @@ multiple values for a command line option
 
 
 
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id=".download"><span class="type-signature">(static) </span>download<span class="signature">(url)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Downloads a file from a URL
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>url</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">URL to download from</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="util.js.html">util.js</a>, <a href="util.js.html#line206">line 206</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    A promise which is resolved with the file name the file was downloaded to
-                   or rejected if an error occurs.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
 
 
 
@@ -569,7 +415,7 @@ multiple key-value pairs for a command line option
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="util.js.html">util.js</a>, <a href="util.js.html#line193">line 193</a>
+        <a href="util.js.html">util.js</a>, <a href="util.js.html#line167">line 167</a>
     </li></ul></dd>
     
 
@@ -723,7 +569,7 @@ multiple key-value pairs for a command line option
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="util.js.html">util.js</a>, <a href="util.js.html#line134">line 134</a>
+        <a href="util.js.html">util.js</a>, <a href="util.js.html#line112">line 112</a>
     </li></ul></dd>
     
 
@@ -754,7 +600,7 @@ multiple key-value pairs for a command line option
 
     
 
-    <h4 class="name" id=".tryUntil"><span class="type-signature">(static) </span>tryUntil<span class="signature">(thisArg, retryOptions, funcToTry, args)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id=".tryUntil"><span class="type-signature">(static) </span>tryUntil<span class="signature">(thisArg, maxRetries, interval, funcToTry, args)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -820,55 +666,13 @@ multiple key-value pairs for a command line option
 
         <tr>
             
-                <td class="name"><code>retryOptions</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">Options for retrying the request.
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
                 <td class="name"><code>maxRetries</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Integer</span>
+<span class="param-type">Number</span>
 
 
             
@@ -878,20 +682,20 @@ multiple key-value pairs for a command line option
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last">Max times to retry the function.</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>retryIntervalMs</code></td>
+                <td class="name"><code>interval</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Integer</span>
+<span class="param-type">Number</span>
 
 
             
@@ -901,14 +705,7 @@ multiple key-value pairs for a command line option
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
+            <td class="description last">Delay between retries in milliseconds.</td>
         </tr>
 
     
@@ -932,7 +729,7 @@ multiple key-value pairs for a command line option
             
 
             <td class="description last">Function to try. Function should return a
-                                                 Promise which is later resolved or rejected.</td>
+                                Promise which is later resolved or rejected.</td>
         </tr>
 
     
@@ -996,7 +793,7 @@ multiple key-value pairs for a command line option
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="util.js.html">util.js</a>, <a href="util.js.html#line52">line 52</a>
+        <a href="util.js.html">util.js</a>, <a href="util.js.html#line38">line 38</a>
     </li></ul></dd>
     
 
@@ -1238,7 +1035,7 @@ This function is based on https://gist.github.com/TheDistantSea/8021359
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="util.js.html">util.js</a>, <a href="util.js.html#line272">line 272</a>
+        <a href="util.js.html">util.js</a>, <a href="util.js.html#line196">line 196</a>
     </li></ul></dd>
     
 
@@ -1306,13 +1103,13 @@ This function is based on https://gist.github.com/TheDistantSea/8021359
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Aug 17 2016 11:44:40 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
