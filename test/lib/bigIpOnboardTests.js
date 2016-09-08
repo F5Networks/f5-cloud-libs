@@ -17,6 +17,7 @@
 
 var q = require('q');
 var BigIp = require('../../lib/bigIp');
+var util = require('../../lib/util');
 var icontrolMock = require('../testUtil/icontrolMock');
 
 var bigIp = new BigIp('host', 'user', 'password', {icontrol: icontrolMock});
@@ -109,6 +110,7 @@ module.exports = {
             var TRANSACTION_PATH = '/tm/transaction/';
             var TRANSACTION_ID = '1234';
 
+            icontrolMock.reset();
             icontrolMock.when(
                 'create',
                 TRANSACTION_PATH,
@@ -181,7 +183,7 @@ module.exports = {
                 ]
             );
 
-            bigIp.onboard.provision(provisionSettings)
+            bigIp.onboard.provision(provisionSettings, util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Should have thrown as not provisionable.");
                 })
