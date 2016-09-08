@@ -171,7 +171,7 @@
 
                         remoteBigIp = testOpts.bigIp || new BigIp(options.remoteHost, options.remoteUser, options.remotePassword);
 
-                        return util.tryUntil(this, 120, 10000, getRemoteDeviceGroup, [remoteBigIp, options.deviceGroup]);
+                        return util.tryUntil(this, {maxRetries: 120, retryIntervalMs: 10000}, getRemoteDeviceGroup, [remoteBigIp, options.deviceGroup]);
                     }
                 })
                 .then(function(response) {
@@ -257,8 +257,9 @@
                                 // Prior to 12.1, set the sync leader
                                 if (util.versionCompare(version, '12.1.0') < 0) {
                                     writeOutput("Delaying for sync to complete before setting sync leader.");
-                                    // Until we can check group specific sync status, there is no
+                                    // Since we can't check group specific sync status, there is no
                                     // way around this delay. We need to wait some time for the remote sync.
+                                    // If we could check the sync status of the Sync group, we would not need this
                                     return setSyncLeaderAfterDelay();
                                 }
 
@@ -276,7 +277,7 @@
 
                     if (options.joinGroup && options.sync) {
                         writeOutput("Waiting for sync to complete.");
-                        return util.tryUntil(bigIp.cluster, 60, 10000, bigIp.cluster.syncComplete);
+                        return bigIp.cluster.syncComplete();
                     }
                 })
                 .then(function(response) {
@@ -284,7 +285,7 @@
 
                     if (options.joinGroup && options.sync) {
                         writeOutput("Waiting for remote sync to complete.");
-                        return util.tryUntil(remoteBigIp.cluster, 60, 10000, remoteBigIp.cluster.syncComplete);
+                        return remoteBigIp.cluster.syncComplete();
                     }
                 })
                 .catch(function(err) {

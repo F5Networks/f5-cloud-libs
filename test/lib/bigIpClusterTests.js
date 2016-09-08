@@ -17,6 +17,7 @@
 
 var q = require('q');
 var BigIp = require('../../lib/bigIp');
+var util = require('../../lib/util');
 var icontrolMock = require('../testUtil/icontrolMock');
 
 var bigIp = new BigIp('host', 'user', 'password', {icontrol: icontrolMock});
@@ -353,7 +354,7 @@ module.exports = {
                                   }
                               });
 
-            bigIp.cluster.syncComplete()
+            bigIp.cluster.syncComplete(util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "syncComplete should have thrown.");
                 })
