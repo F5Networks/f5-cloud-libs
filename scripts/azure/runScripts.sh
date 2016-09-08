@@ -19,6 +19,7 @@ eval set -- "$ARGS"
 # Defaults for optional argutments
 onboardArgs=''
 clusterArgs=''
+signalArgs=''
 
 # Parse the command line arguments
 while true; do
@@ -41,6 +42,12 @@ tar -xzf f5-cloud-libs.tar.gz
 rm f5-cloud-libs.tar.gz
 rm -f /var/log/onboard.log
 cd f5-cloud-libs
-scripts/azure/runCluster.sh $clusterArgs &
-pidToSignal=$!
-f5-rest-node scripts/onboard.js $onboardArgs --no-reboot --signal $pidToSignal
+
+if [ -n "$clusterArgs" ]; then
+    scripts/azure/runCluster.sh $clusterArgs &
+    signalArgs="--signal $!"
+fi
+
+if [ -n "$onboardArgs" ]; then
+    f5-rest-node scripts/onboard.js $onboardArgs --no-reboot $signalArgs
+fi
