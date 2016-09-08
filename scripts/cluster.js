@@ -36,6 +36,7 @@
         run: function(argv, testOpts, cb) {
 
             var fs = require('fs');
+            var q = require('q');
             var BigIp = require('../lib/bigIp');
             var util = require('../lib/util');
             var logFile;
@@ -44,7 +45,10 @@
             var remoteBigIp;
             var hostname;
             var version;
-            var syncingDatasyncGlobalDg;
+            var state;
+            var i;
+
+            var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
 
             testOpts = testOpts || {};
 
@@ -106,6 +110,14 @@
                 logFile = fs.createWriteStream(logFileName);
             }
 
+            // Log the input, but don't log passwords
+            if (options.password) {
+                for (i = 0; i < process.argv.length; ++i) {
+                    if (KEYS_TO_MASK.indexOf(process.argv[i]) !== -1) {
+                        process.argv[i + 1] = "*******";
+                    }
+                }
+            }
             writeOutput(process.argv[1] + " called with " + process.argv.slice().join(" "));
 
             // Create the bigIp client object
@@ -159,7 +171,7 @@
 
                         remoteBigIp = testOpts.bigIp || new BigIp(options.remoteHost, options.remoteUser, options.remotePassword);
 
-                        return util.tryUntil(this, 60, 10000, getRemoteDeviceGroup, [remoteBigIp, options.deviceGroup]);
+                        return util.tryUntil(this, 120, 10000, getRemoteDeviceGroup, [remoteBigIp, options.deviceGroup]);
                     }
                 })
                 .then(function(response) {
@@ -205,39 +217,62 @@
                     // of a single device group
                     if (options.joinGroup && options.sync) {
                         writeOutput("Checking for datasync-global-dg.");
-                        syncingDatasyncGlobalDg = true;
-                        return bigIp.list('/tm/cm/device-group/datasync-global-dg');
+                        state = 'syncingDatasyncGlobalDg';
+                        return bigIp.list('/tm/cm/device-group');
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
+                    var i;
 
-                    if (syncingDatasyncGlobalDg) {
-                        // If the previous promise was resolved, that means the datasync-global-dg group
-                        // exists.
+                    var setSyncLeaderAfterDelay = function() {
+                        var deferred = q.defer();
 
-                        // Prior to 12.1, set the sync leader
-                        if (util.versionCompare(version, '12.1.0') < 0) {
+                        var setSyncLeader = function() {
                             writeOutput("Setting sync leader.");
-                            return bigIp.modify(
+
+                            bigIp.modify(
                                 '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
                                 {
                                     "set-sync-leader": true
                                 }
-                            );
-                        }
+                            )
+                            .then(function() {
+                                deferred.resolve();
+                            });
+                        };
 
-                        // On 12.1 and later, do a full sync
-                        else {
-                            writeOutput("Telling remote to sync datasync-global-dg.");
-                            return remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true);
+                        setTimeout(setSyncLeader, 30000);
+
+                        return deferred.promise;
+                    };
+
+                    writeResponse(response);
+
+                    if (state === 'syncingDatasyncGlobalDg') {
+
+                        state = undefined;
+
+                        for (i = 0; i < response.length; ++i) {
+                            if (response[i].name === 'datasync-global-dg') {
+                                // Prior to 12.1, set the sync leader
+                                if (util.versionCompare(version, '12.1.0') < 0) {
+                                    writeOutput("Delaying for sync to complete before setting sync leader.");
+                                    // Until we can check group specific sync status, there is no
+                                    // way around this delay. We need to wait some time for the remote sync.
+                                    return setSyncLeaderAfterDelay();
+                                }
+
+                                // On 12.1 and later, do a full sync
+                                else {
+                                    writeOutput("Telling remote to sync datasync-global-dg.");
+                                    return remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true);
+                                }
+                            }
                         }
                     }
                 })
                 .then(function(response) {
                     writeResponse(response);
-
-                    syncingDatasyncGlobalDg = false;
 
                     if (options.joinGroup && options.sync) {
                         writeOutput("Waiting for sync to complete.");
