@@ -45,7 +45,6 @@
             var remoteBigIp;
             var hostname;
             var version;
-            var state;
             var i;
 
             var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
@@ -199,89 +198,76 @@
                 .then(function(response) {
                     writeResponse(response);
 
-                    if (options.joinGroup && options.sync) {
-                        writeOutput("Telling remote to sync.");
-                        return remoteBigIp.cluster.sync('to-group', options.deviceGroup);
-                    }
-                })
-                .then(function(response) {
-                    writeResponse(response);
-
                     // If the group datasync-global-dg is present (which it likely is if ASM is provisioned)
                     // we need to force a sync of it as well. Otherwise we will not be able to determine
                     // the overall sync status because there is no way to get the sync status
                     // of a single device group
                     if (options.joinGroup && options.sync) {
                         writeOutput("Checking for datasync-global-dg.");
-                        state = 'syncingDatasyncGlobalDg';
                         return bigIp.list('/tm/cm/device-group');
                     }
                 })
                 .then(function(response) {
+                    // Sometimes sync just fails silently, so we retry all of the sync commands until both
+                    // local and remote devices report that they are in sync
+
+                    var syncChecks = [];
+                    var syncCompleteChecks = [];
                     var i;
 
-                    var setSyncLeaderAfterDelay = function() {
+                    var syncAndCheck = function() {
                         var deferred = q.defer();
 
-                        var setSyncLeader = function() {
-                            writeOutput("Setting sync leader.");
-
-                            bigIp.modify(
-                                '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
-                                {
-                                    "set-sync-leader": true
-                                }
-                            )
+                        writeOutput("Trying sync requests.");
+                        q.all(syncChecks)
                             .then(function() {
+                                writeOutput("Waiting for sync to complete.");
+                                return q.all(syncCompleteChecks);
+                            })
+                            .then(function() {
+                                writeOutput("Sync complete.");
                                 deferred.resolve();
-                            });
-                        };
-
-                        setTimeout(setSyncLeader, 30000);
+                            })
+                            .catch(function() {
+                                writeOutput("Sync not yet complete.");
+                                deferred.reject();
+                            })
+                            .done();
 
                         return deferred.promise;
                     };
 
                     writeResponse(response);
 
-                    if (state === 'syncingDatasyncGlobalDg') {
-
-                        state = undefined;
+                    if (options.joinGroup && options.sync) {
+                        writeOutput("Adding remote sync request.");
+                        syncChecks.push(remoteBigIp.cluster.sync('to-group', options.deviceGroup));
 
                         for (i = 0; i < response.length; ++i) {
                             if (response[i].name === 'datasync-global-dg') {
                                 // Prior to 12.1, set the sync leader
                                 if (util.versionCompare(version, '12.1.0') < 0) {
-                                    writeOutput("Delaying for sync to complete before setting sync leader.");
-                                    // Since we can't check group specific sync status, there is no
-                                    // way around this delay. We need to wait some time for the remote sync.
-                                    // If we could check the sync status of the Sync group, we would not need this
-                                    return setSyncLeaderAfterDelay();
+                                    writeOutput("Adding set sync leader request.");
+                                    syncChecks.push(
+                                        bigIp.modify(
+                                            '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
+                                            {
+                                                "set-sync-leader": true
+                                            }
+                                        )
+                                    );
                                 }
 
                                 // On 12.1 and later, do a full sync
                                 else {
-                                    writeOutput("Telling remote to sync datasync-global-dg.");
-                                    return remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true);
+                                    writeOutput("Adding remote sync datasync-global-dg request.");
+                                    syncChecks.push(remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true));
                                 }
                             }
                         }
-                    }
-                })
-                .then(function(response) {
-                    writeResponse(response);
 
-                    if (options.joinGroup && options.sync) {
-                        writeOutput("Waiting for sync to complete.");
-                        return bigIp.cluster.syncComplete();
-                    }
-                })
-                .then(function(response) {
-                    writeResponse(response);
-
-                    if (options.joinGroup && options.sync) {
-                        writeOutput("Waiting for remote sync to complete.");
-                        return remoteBigIp.cluster.syncComplete();
+                        syncCompleteChecks.push(bigIp.cluster.syncComplete(), remoteBigIp.cluster.syncComplete());
+                        return util.tryUntil(this, util.DEFAULT_RETRY, syncAndCheck);
                     }
                 })
                 .catch(function(err) {
