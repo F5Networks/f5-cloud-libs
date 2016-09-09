@@ -156,10 +156,6 @@
                     }
                 })
                 .then(function(response) {
-                    var getRemoteDeviceGroup = function(remoteBigIp, deviceGroup) {
-                        return remoteBigIp.list('/tm/cm/device-group/' + deviceGroup);
-                    };
-
                     writeResponse(response);
 
                     if (options.joinGroup) {
@@ -171,7 +167,7 @@
 
                         remoteBigIp = testOpts.bigIp || new BigIp(options.remoteHost, options.remoteUser, options.remotePassword);
 
-                        return util.tryUntil(this, {maxRetries: 120, retryIntervalMs: 10000}, getRemoteDeviceGroup, [remoteBigIp, options.deviceGroup]);
+                        return remoteBigIp.list('/tm/cm/device-group/' + options.deviceGroup, undefined, {maxRetries: 120, retryIntervalMs: 10000});
                     }
                 })
                 .then(function(response) {
