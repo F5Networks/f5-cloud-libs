@@ -210,18 +210,49 @@
                 .then(function(response) {
                     // Sometimes sync just fails silently, so we retry all of the sync commands until both
                     // local and remote devices report that they are in sync
-
-                    var syncChecks = [];
-                    var syncCompleteChecks = [];
-                    var i;
-
-                    var syncAndCheck = function() {
+                    var syncAndCheck = function(datasyncGlobalDgResponse) {
                         var deferred = q.defer();
+                        var syncRequests = [];
+                        var syncCompleteChecks = [];
+                        var SYNC_COMPLETE_RETRY = {
+                            maxRetries: 3,
+                            retryIntervalMs: 10000
+                        };
+                        var i;
+
+                        writeOutput("Adding remote sync request.");
+                        syncRequests.push(remoteBigIp.cluster.sync('to-group', options.deviceGroup, false, util.NO_RETRY));
+
+                        for (i = 0; i < datasyncGlobalDgResponse.length; ++i) {
+                            if (datasyncGlobalDgResponse[i].name === 'datasync-global-dg') {
+                                // Prior to 12.1, set the sync leader
+                                if (util.versionCompare(version, '12.1.0') < 0) {
+                                    writeOutput("Adding set sync leader request.");
+                                    syncRequests.push(
+                                        bigIp.modify(
+                                            '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
+                                            {
+                                                "set-sync-leader": true
+                                            },
+                                            undefined,
+                                            util.NO_RETRY
+                                        )
+                                    );
+                                }
+
+                                // On 12.1 and later, do a full sync
+                                else {
+                                    writeOutput("Adding remote sync datasync-global-dg request.");
+                                    syncRequests.push(remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true, util.NO_RETRY));
+                                }
+                            }
+                        }
 
                         writeOutput("Trying sync requests.");
-                        q.all(syncChecks)
+                        q.all(syncRequests)
                             .then(function() {
                                 writeOutput("Waiting for sync to complete.");
+                                syncCompleteChecks.push(bigIp.cluster.syncComplete(SYNC_COMPLETE_RETRY), remoteBigIp.cluster.syncComplete(SYNC_COMPLETE_RETRY));
                                 return q.all(syncCompleteChecks);
                             })
                             .then(function() {
@@ -240,34 +271,7 @@
                     writeResponse(response);
 
                     if (options.joinGroup && options.sync) {
-                        writeOutput("Adding remote sync request.");
-                        syncChecks.push(remoteBigIp.cluster.sync('to-group', options.deviceGroup));
-
-                        for (i = 0; i < response.length; ++i) {
-                            if (response[i].name === 'datasync-global-dg') {
-                                // Prior to 12.1, set the sync leader
-                                if (util.versionCompare(version, '12.1.0') < 0) {
-                                    writeOutput("Adding set sync leader request.");
-                                    syncChecks.push(
-                                        bigIp.modify(
-                                            '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
-                                            {
-                                                "set-sync-leader": true
-                                            }
-                                        )
-                                    );
-                                }
-
-                                // On 12.1 and later, do a full sync
-                                else {
-                                    writeOutput("Adding remote sync datasync-global-dg request.");
-                                    syncChecks.push(remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true));
-                                }
-                            }
-                        }
-
-                        syncCompleteChecks.push(bigIp.cluster.syncComplete(), remoteBigIp.cluster.syncComplete());
-                        return util.tryUntil(this, util.DEFAULT_RETRY, syncAndCheck);
+                        return util.tryUntil(this, {maxRetries: 10, retryIntervalMs: 30000}, syncAndCheck, [response]);
                     }
                 })
                 .catch(function(err) {
