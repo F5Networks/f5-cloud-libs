@@ -150,7 +150,7 @@ module.exports = {
                 ]
             );
 
-            bigIp.onboard.provision(provisionSettings)
+            bigIp.onboard.provision(provisionSettings, false)
                 .then(function() {
                     test.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
@@ -183,7 +183,7 @@ module.exports = {
                 ]
             );
 
-            bigIp.onboard.provision(provisionSettings, util.NO_RETRY)
+            bigIp.onboard.provision(provisionSettings, false, util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Should have thrown as not provisionable.");
                 })
