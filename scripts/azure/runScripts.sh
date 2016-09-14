@@ -36,6 +36,9 @@ while true; do
     esac
 done
 
+# In Azure, mysql takes extra time to start
+sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql
+
 cd /config
 curl -sk -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/archive/f5-cloud-libs.tar.gz
 tar -xzf f5-cloud-libs.tar.gz
