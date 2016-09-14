@@ -86,7 +86,6 @@
             };
 
             options.reboot = true;
-            options.wait = true;
             options
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
                 .option('-u, --user <user>', 'Current BIG-IP admin user.')
@@ -102,7 +101,6 @@
                 .option('--set-password <user:new_password>', 'Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.', util.map, passwords)
                 .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords, rootPasswords)
                 .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
-                .option('--no-wait', 'Don\'t wait for BIG-IP status to be Active after provisioning.')
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
@@ -262,7 +260,7 @@
 
                     if (Object.keys(modules).length > 0) {
                         writeOutput("Provisioning modules: " + JSON.stringify(modules, null, 4));
-                        return bigIp.onboard.provision(modules, options.wait);
+                        return bigIp.onboard.provision(modules);
                     }
                 })
                 .then(function(response) {
