@@ -126,6 +126,25 @@ module.exports = {
                     state: 'COMPLETED'
                 }
             );
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/failover-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/failover-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    status: {
+                                        description: 'ACTIVE'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
             callback();
         },
 
@@ -150,7 +169,7 @@ module.exports = {
                 ]
             );
 
-            bigIp.onboard.provision(provisionSettings, false)
+            bigIp.onboard.provision(provisionSettings)
                 .then(function() {
                     test.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
@@ -183,7 +202,7 @@ module.exports = {
                 ]
             );
 
-            bigIp.onboard.provision(provisionSettings, false, util.NO_RETRY)
+            bigIp.onboard.provision(provisionSettings, util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Should have thrown as not provisionable.");
                 })

@@ -17,6 +17,7 @@
 
 var q = require('q');
 var BigIp = require('../../lib/bigIp');
+var util = require('../../lib/util');
 var icontrolMock = require('../testUtil/icontrolMock');
 
 var bigIp = new BigIp('host', 'user', 'password', {icontrol: icontrolMock});
@@ -28,6 +29,68 @@ module.exports = {
     setUp: function(callback) {
         icontrolMock.reset();
         callback();
+    },
+
+    testActive: function(test) {
+        icontrolMock.when(
+            'list',
+            '/tm/cm/failover-status',
+            {
+                entries: {
+                    'https://localhost/mgmt/tm/cm/failover-status/0': {
+                        nestedStats: {
+                            entries: {
+                                status: {
+                                    description: 'ACTIVE'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+
+        bigIp.active()
+            .then(function() {
+                test.ok(true);
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testNotActive: function(test) {
+        icontrolMock.when(
+            'list',
+            '/tm/cm/failover-status',
+            {
+                entries: {
+                    'https://localhost/mgmt/tm/cm/failover-status/0': {
+                        nestedStats: {
+                            entries: {
+                                status: {
+                                    description: 'FOOBAR'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+
+        bigIp.active(util.NO_RETRY)
+            .then(function() {
+                test.ok(false, "BIG-IP should not be active.");
+            })
+            .catch(function() {
+                test.ok(true);
+            })
+            .finally(function() {
+                test.done();
+            });
     },
 
     testListSuccess: function(test) {
@@ -43,10 +106,11 @@ module.exports = {
                 test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
                 test.strictEqual(icontrolMock.lastCall.body.command, 'load');
                 test.strictEqual(icontrolMock.lastCall.body.name, 'default');
-                test.done();
             })
             .catch(function(err) {
                 test.ok(false, err.message);
+            })
+            .finally(function() {
                 test.done();
             });
     },
@@ -57,10 +121,11 @@ module.exports = {
         bigIp.load(fileName)
             .then(function() {
                 test.strictEqual(icontrolMock.lastCall.body.options[0].file, fileName);
-                test.done();
             })
             .catch(function(err) {
                 test.ok(false, err.message);
+            })
+            .finally(function() {
                 test.done();
             });
     },
@@ -75,12 +140,12 @@ module.exports = {
             .then(function() {
                 test.strictEqual(icontrolMock.lastCall.body.options[0].foo, options.foo);
                 test.strictEqual(icontrolMock.lastCall.body.options[1].hello, options.hello);
-                test.done();
             })
             .catch(function(err) {
                 test.ok(false, err.message);
+            })
+            .finally(function() {
                 test.done();
             });
-
     }
 };
