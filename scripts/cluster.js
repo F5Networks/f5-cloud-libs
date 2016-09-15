@@ -221,6 +221,9 @@
                         };
 
                         writeOutput("Telling remote to sync.");
+
+                        // We need to wait some time (30 sec?) between issuing sync commands or else sync
+                        // never completes.
                         remoteBigIp.cluster.sync('to-group', options.deviceGroup, false, util.NO_RETRY)
                             .then(function() {
                                 setTimeout(function() {
