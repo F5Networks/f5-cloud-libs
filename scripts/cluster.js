@@ -36,15 +36,11 @@
         run: function(argv, testOpts, cb) {
 
             var fs = require('fs');
-            var q = require('q');
             var BigIp = require('../lib/bigIp');
             var util = require('../lib/util');
             var logFile;
             var logFileName;
             var bigIp;
-            var remoteBigIp;
-            var hostname;
-            var version;
             var i;
 
             var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
@@ -86,7 +82,7 @@
                 .option('--join-group', 'Join a remote device group with the options:')
                 .option('    --remote-host <remote_ip_address>', '    Managemnt IP for the BIG-IP on which the group exists.')
                 .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
-                .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password')
+                .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password.')
                 .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join')
                 .option('    --sync', '    Tell the remote to sync to us after joining the group.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
@@ -158,129 +154,16 @@
                     writeResponse(response);
 
                     if (options.joinGroup) {
-                        if (!options.deviceGroup || !options.remoteHost || !options.remoteUser || !options.remotePassword) {
-                            throw new Error('When joinging a device group, device-group, remote-host, remote-user, and remote-password are required.');
-                        }
-
-                        writeOutput("Checking device group on remote host.");
-
-                        remoteBigIp = testOpts.bigIp || new BigIp(options.remoteHost, options.remoteUser, options.remotePassword);
-
-                        return remoteBigIp.list('/tm/cm/device-group/' + options.deviceGroup, undefined, {maxRetries: 120, retryIntervalMs: 10000});
-                    }
-                })
-                .then(function(response) {
-                    writeResponse(response);
-
-                    if (options.joinGroup) {
-                        writeOutput("Getting local hostname for trust.");
-                        return bigIp.deviceInfo();
-                    }
-                })
-                .then(function(response) {
-                    writeResponse(response);
-
-                    if (options.joinGroup) {
-                        writeOutput("Adding to remote trust.");
-                        hostname = response.hostname;
-                        version = response.version; // we need this later when we sync the datasync-global-dg group
-                        return remoteBigIp.cluster.addToTrust(hostname, options.host, options.user, options.password);
-                    }
-                })
-                .then(function(response) {
-                    writeResponse(response);
-
-                    if (options.joinGroup) {
-                        writeOutput("Adding to remote device group.");
-                        return remoteBigIp.cluster.addToDeviceGroup(hostname, options.deviceGroup);
-                    }
-                })
-                .then(function(response) {
-                    writeResponse(response);
-
-                    // If the group datasync-global-dg is present (which it likely is if ASM is provisioned)
-                    // we need to force a sync of it as well. Otherwise we will not be able to determine
-                    // the overall sync status because there is no way to get the sync status
-                    // of a single device group
-                    if (options.joinGroup && options.sync) {
-                        writeOutput("Checking for datasync-global-dg.");
-                        return bigIp.list('/tm/cm/device-group');
-                    }
-                })
-                .then(function(response) {
-
-                    // Sometimes sync just fails silently, so we retry all of the sync commands until both
-                    // local and remote devices report that they are in sync
-                    var syncAndCheck = function(datasyncGlobalDgResponse) {
-                        var deferred = q.defer();
-                        var remoteSyncPromise = q.defer();
-
-                        var SYNC_COMPLETE_RETRY = {
-                            maxRetries: 3,
-                            retryIntervalMs: 10000
-                        };
-
-                        writeOutput("Telling remote to sync.");
-
-                        // We need to wait some time (30 sec?) between issuing sync commands or else sync
-                        // never completes.
-                        remoteBigIp.cluster.sync('to-group', options.deviceGroup, false, util.NO_RETRY)
-                            .then(function() {
-                                setTimeout(function() {
-                                    remoteSyncPromise.resolve();
-                                }, 30000);
-                            })
-                            .done();
-
-                        remoteSyncPromise.promise
-                            .then(function() {
-                                var i;
-                                for (i = 0; i < datasyncGlobalDgResponse.length; ++i) {
-                                    if (datasyncGlobalDgResponse[i].name === 'datasync-global-dg') {
-                                        // Prior to 12.1, set the sync leader
-                                        if (util.versionCompare(version, '12.1.0') < 0) {
-                                            writeOutput("Setting sync leader.");
-                                            return bigIp.modify(
-                                                '/tm/cm/device-group/datasync-global-dg/devices/' + hostname,
-                                                {
-                                                    "set-sync-leader": true
-                                                },
-                                                undefined,
-                                                util.NO_RETRY
-                                            );
-                                        }
-
-                                        // On 12.1 and later, do a full sync
-                                        else {
-                                            writeOutput("Telling remote to sync datasync-global-dg request.");
-                                            return remoteBigIp.cluster.sync('to-group', 'datasync-global-dg', true, util.NO_RETRY);
-                                        }
-                                    }
-                                }
-                            })
-                            .then(function() {
-                                var syncCompleteChecks = [];
-                                writeOutput("Waiting for sync to complete.");
-                                syncCompleteChecks.push(bigIp.cluster.syncComplete(SYNC_COMPLETE_RETRY), remoteBigIp.cluster.syncComplete(SYNC_COMPLETE_RETRY));
-                                return q.all(syncCompleteChecks);
-                            })
-                            .then(function() {
-                                writeOutput("Sync complete.");
-                                deferred.resolve();
-                            })
-                            .catch(function() {
-                                writeOutput("Sync not yet complete.");
-                                deferred.reject();
-                            })
-                            .done();
-
-                        return deferred.promise;
-                    };
-
-                    writeResponse(response);
-
-                    if (options.joinGroup && options.sync) {
-                        return util.tryUntil(this, {maxRetries: 10, retryIntervalMs: 30000}, syncAndCheck, [response]);
+                        return bigIp.cluster.joinRemoteDeviceGroup(options.deviceGroup,
+                                                                   options.remoteHost,
+                                                                   options.remoteUser,
+                                                                   options.remotePassword,
+                                                                   options.sync,
+                                                                   {
+                                                                        verbose: options.verbose,
+                                                                        silent: options.silent,
+                                                                        logFile: logFile
+                                                                   });
                     }
                 })
                 .catch(function(err) {
