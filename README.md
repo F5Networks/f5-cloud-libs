@@ -62,8 +62,8 @@ This project consists of two main parts
       --join-group                                   Join a remote device group with the options:
           --remote-host <remote_ip_address>              Managemnt IP for the BIG-IP on which the group exists.
           --remote-user <remote_user                     Remote BIG-IP admin user name.
-          --remote-password <remote_password>            Remote BIG-IP admin user password
-          --device-group <remote_device_group_name>      Name of existing device group on remote BIG-IP to join
+          --remote-password <remote_password>            Remote BIG-IP admin user password.
+          --device-group <remote_device_group_name>      Name of existing device group on remote BIG-IP to join.
           --sync                                         Tell the remote to sync to us after joining the group.
       --background                                   Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
       --signal <pid>                                 Process ID to send USR1 to when clustering is complete.
