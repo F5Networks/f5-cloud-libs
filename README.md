@@ -65,6 +65,9 @@ This project consists of two main parts
           --remote-password <remote_password>            Remote BIG-IP admin user password.
           --device-group <remote_device_group_name>      Name of existing device group on remote BIG-IP to join.
           --sync                                         Tell the remote to sync to us after joining the group.
+      --remove-from-cluster                          Remove a device from the cluster
+          --device-group <device_group>                  Name of the device group.
+          --device <device_name>                         Device name to remove.
       --background                                   Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
       --signal <pid>                                 Process ID to send USR1 to when clustering is complete.
       -o, --output <file>                            Full path for log file if background process is spawned. Default is /tmp/cluster.log

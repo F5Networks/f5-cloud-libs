@@ -44,6 +44,7 @@
 'use strict';
 
 var q = require('q');
+var util = require('./util');
 
 /**
  * Provides onboarding functionality to a base BigIp object
@@ -60,32 +61,41 @@ function BigIpOnboard(bigIpCore) {
  *
  * If settings include hostname, a CM move of hostname is also performed.
  *
- * @param {Object} globalSettings - An object containing the global settings
+ * @param {Object}  globalSettings                 - An object containing the global settings
+ * @param {Object}  [retryOptions]                 - Options for retrying the request.
+ * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
+ * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
  * @returns {Promise} A promise which is resolved when the global settings
  *                    are set or rejected if an error occurs.
  */
-BigIpOnboard.prototype.globalSettings = function(globalSettings) {
-    var hostname;
+BigIpOnboard.prototype.globalSettings = function(globalSettings, retryOptions) {
+    retryOptions = retryOptions || this.core.DEFAULT_RETRY_OPTIONS;
 
-    return this.core.ready()
-        .then(function() {
-            // if hostname is set, pull it out and use the hostname method
-            if (globalSettings.hostname) {
-                hostname = globalSettings.hostname;
-                delete globalSettings.hostname;
-            }
+    var func = function() {
+        var hostname;
 
-            return this.core.modify('/tm/sys/global-settings', globalSettings);
-        }.bind(this))
-        .then(function(response) {
-            if (hostname) {
-                return this.hostname(hostname);
-            }
-            else {
-                return q(response);
-            }
-        }.bind(this));
+        return this.core.ready()
+            .then(function() {
+                // if hostname is set, pull it out and use the hostname method
+                if (globalSettings.hostname) {
+                    hostname = globalSettings.hostname;
+                    delete globalSettings.hostname;
+                }
+
+                return this.core.modify('/tm/sys/global-settings', globalSettings, undefined, util.NO_RETRY);
+            }.bind(this))
+            .then(function(response) {
+                if (hostname) {
+                    return this.hostname(hostname);
+                }
+                else {
+                    return q(response);
+                }
+            }.bind(this));
+    };
+
+    return util.tryUntil(this, retryOptions, func);
 };
 
 /**
@@ -94,169 +104,200 @@ BigIpOnboard.prototype.globalSettings = function(globalSettings) {
  * Sets the global settings host-name and also does a cm mv from
  * old hostname to new.
  *
- * @param {String} hostname - The hostname to set
+ * @param {String}  hostname                       - The hostname to set
+ * @param {Object}  [retryOptions]                 - Options for retrying the request.
+ * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
+ * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
  * @returns {Promise} A promise which is resolved when the hostname
  *                    is set or rejected if an error occurs.
  */
-BigIpOnboard.prototype.hostname = function(hostname) {
-    return this.core.ready()
-        .then(function() {
-            return this.core.list('/tm/cm/device');
-        }.bind(this))
-        .then(function(response) {
-            var oldName = response[0].name;
-            var newName = hostname;
-            var commands = [];
-            if (oldName !== newName) {
-                commands.push(
-                    {
-                        method: 'create',
-                        path: '/tm/cm/device',
-                        body: {
+BigIpOnboard.prototype.hostname = function(hostname, retryOptions) {
+    retryOptions = retryOptions || this.core.DEFAULT_RETRY_OPTIONS;
+
+    var func = function() {
+        return this.core.ready()
+            .then(function() {
+                return this.core.list('/tm/cm/device', undefined, util.NO_RETRY);
+            }.bind(this))
+            .then(function(response) {
+                var oldName = response[0].name;
+                var newName = hostname;
+
+                if (oldName !== newName) {
+                    return this.core.create(
+                        '/tm/cm/device',
+                        {
                             command: 'mv',
                             name: oldName,
                             target: newName
-                        }
-                    }
-                );
-                commands.push(
-                    {
-                        method: 'modify',
-                        path:  '/tm/sys/global-settings',
-                        body: {
-                            hostname: hostname
-                        }
-                    }
-                );
-                return this.core.transaction(commands);
-            }
-            else {
-                return q('New hostname matches existing hostname');
-            }
-        }.bind(this));
+                        },
+                        undefined,
+                        util.NO_RETRY
+                    )
+                    .then(function() {
+                        return this.core.modify(
+                            '/tm/sys/global-settings',
+                            {
+                                hostname: hostname
+                            },
+                            undefined,
+                            util.NO_RETRY
+                        );
+                    }.bind(this));
+
+                }
+                else {
+                    return q('New hostname matches existing hostname');
+                }
+            }.bind(this));
+    };
+
+    return util.tryUntil(this, retryOptions, func);
 };
 
 /**
  * Licenses the BIG-IP
  *
- * @param {Object}   options - Licensing options
- * @param {Boolean}  [options.overwrite] - Whether or not to overwrite an
- *                                         existing license file if it exists.
- *                                         Default is false
- * @param {String}   [options.registrationKey] - The registration key
- * @param {String[]} [options.addOnKeys] - Array of add on keys.
+ * @param {Object}   options                        - Licensing options
+ * @param {Boolean}  [options.overwrite]            - Whether or not to overwrite an
+ *                                                    existing license file if it exists.
+ *                                                    Default is false
+ * @param {String}   [options.registrationKey]      - The registration key
+ * @param {String[]} [options.addOnKeys]            - Array of add on keys.
+ * @param {Object}   [retryOptions]                 - Options for retrying the request.
+ * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
+ * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
  * @returns {Promise} A promise which is resolved when the licensing
  *                    is complete or rejected if an error occurs.
  */
-BigIpOnboard.prototype.license = function(options) {
-    var alreadyLicensed;
+BigIpOnboard.prototype.license = function(options, retryOptions) {
+
     if (!(options.registrationKey || options.addOnKeys)) {
         return q('No registration key or add on keys. Nothing to do.');
     }
-    return this.core.ready()
-        .then(function() {
-            return this.core.list('/tm/shared/licensing/registration');
-        }.bind(this))
-        .then(function(response) {
-            if (response.registrationKey &amp;&amp; !options.addOnKeys.length &amp;&amp; !options.overwrite) {
-                alreadyLicensed = true;
-                return;
-            }
-            // If we are going to license, we first need to save sys config, otherwise
-            // we lose any mods we have made but not yet saved
-            return this.core.save();
-        }.bind(this))
-        .then(function() {
-            var licenseBody;
-            if (!alreadyLicensed) {
-                licenseBody = {
-                    command: 'install'
-                };
-                if (options.registrationKey) {
-                    licenseBody.registrationKey = options.registrationKey;
+
+    retryOptions = retryOptions || this.core.DEFAULT_RETRY_OPTIONS;
+
+    var func = function() {
+        var alreadyLicensed;
+
+        return this.core.ready()
+            .then(function() {
+                return this.core.list('/tm/shared/licensing/registration', undefined, util.NO_RETRY);
+            }.bind(this))
+            .then(function(response) {
+                if (response.registrationKey &amp;&amp; !options.addOnKeys.length &amp;&amp; !options.overwrite) {
+                    alreadyLicensed = true;
+                    return;
                 }
-                if (options.addOnKeys.length > 0) {
-                    licenseBody.addOnKeys = options.addOnKeys;
+                // If we are going to license, we first need to save sys config, otherwise
+                // we lose any mods we have made but not yet saved
+                return this.core.save();
+            }.bind(this))
+            .then(function() {
+                var licenseBody;
+                if (!alreadyLicensed) {
+                    licenseBody = {
+                        command: 'install'
+                    };
+                    if (options.registrationKey) {
+                        licenseBody.registrationKey = options.registrationKey;
+                    }
+                    if (options.addOnKeys.length > 0) {
+                        licenseBody.addOnKeys = options.addOnKeys;
+                    }
+                    return this.core.create('/tm/sys/license', licenseBody, undefined, util.NO_RETRY);
                 }
-                return this.core.create('/tm/sys/license', licenseBody);
-            }
-        }.bind(this))
-        .then(function(response) {
-            var message;
-            if (alreadyLicensed) {
-                message = 'BIG-IP already licensed. Use overwrite option to re-license.';
-                return q(message);
-            }
-            else {
-                message = response.commandResult.trim();
-                if (message.indexOf("New license installed") === -1) {
-                    return q.reject(message);
-                }
-                else {
+            }.bind(this))
+            .then(function(response) {
+                var message;
+                if (alreadyLicensed) {
+                    message = 'BIG-IP already licensed. Use overwrite option to re-license.';
                     return q(message);
                 }
-            }
-        }.bind(this));
+                else {
+                    message = response.commandResult.trim();
+                    if (message.indexOf("New license installed") === -1) {
+                        return q.reject(message);
+                    }
+                    else {
+                        return q(message);
+                    }
+                }
+            }.bind(this));
+    };
+
+    return util.tryUntil(this, retryOptions, func);
 };
 
 /**
  * Sets the password for a user
  *
- * @param {String} user - The user for whom to set the password
- * @param {String} newPassword - The password to set
- * @param {String} [oldPassword] - The old password for the user. Only
- *                                 required for the root user. Ignored
- *                                 otherwise;
+ * @param {String}  user                           - The user for whom to set the password
+ * @param {String}  newPassword                    - The password to set
+ * @param {String}  [oldPassword]                  - The old password for the user. Only
+ *                                                   required for the root user. Ignored
+ *                                                   otherwise;
+ * @param {Object}  [retryOptions]                 - Options for retrying the request.
+ * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
+ * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
  * @returns {Promise} A promise which is resolved when the password
  *                    has been set, or rejected if an error occurs.
  */
-BigIpOnboard.prototype.password = function(user, newPassword, oldPassword) {
-    var deferred = q.defer();
-    var promise;
-    this.core.ready()
-        .then(function() {
-            if (user === 'root') {
-                promise = this.core.create(
-                    '/shared/authn/root',
-                    {
-                        oldPassword: oldPassword,
-                        newPassword: newPassword
-                    }
-                );
-            }
-            else {
-                promise = this.core.modify(
-                    '/tm/auth/user/' + user,
-                    {
-                        password: newPassword
-                    }
-                );
-            }
-            promise
-                .then(function(response) {
-                    // If we're setting the password for our user, we need to
-                    // re-initialize the bigIp core
-                    if (user === this.user) {
-                        this.core.init(this.host, this.user, newPassword);
-                    }
-                    deferred.resolve(response);
-                }.bind(this))
-                .catch(function(err) {
-                    deferred.reject(err);
-                })
-                .done();
-        }.bind(this));
-    return deferred.promise;
+BigIpOnboard.prototype.password = function(user, newPassword, oldPassword, retryOptions) {
+    retryOptions = retryOptions || this.core.DEFAULT_RETRY_OPTIONS;
+
+    var func = function() {
+        var deferred = q.defer();
+        var promise;
+
+        this.core.ready()
+            .then(function() {
+                if (user === 'root') {
+                    promise = this.core.create(
+                        '/shared/authn/root',
+                        {
+                            oldPassword: oldPassword,
+                            newPassword: newPassword
+                        }
+                    );
+                }
+                else {
+                    promise = this.core.modify(
+                        '/tm/auth/user/' + user,
+                        {
+                            password: newPassword
+                        }
+                    );
+                }
+                promise
+                    .then(function(response) {
+                        // If we're setting the password for our user, we need to
+                        // re-initialize the bigIp core
+                        if (user === this.user) {
+                            this.core.init(this.host, this.user, newPassword);
+                        }
+                        deferred.resolve(response);
+                    }.bind(this))
+                    .catch(function(err) {
+                        deferred.reject(err);
+                    })
+                    .done();
+            }.bind(this));
+        return deferred.promise;
+    };
+
+    return util.tryUntil(this, retryOptions, func);
 };
 
 /**
  * Provisions modules
  *
- * @param {Object} provisionSettings - Object map of module to provisioning level
- *                                     ['dedicated', 'nominial', 'minimum', 'none']
+ * @param {Object}  provisionSettings              - Object map of module to provisioning level
+ *                                                  ['dedicated', 'nominial', 'minimum', 'none']
  *
  * @returns {Promise} A promise which is resolved when the modules have
  *                    been provisioned, or rejected if an error occurs.
@@ -264,7 +305,10 @@ BigIpOnboard.prototype.password = function(user, newPassword, oldPassword) {
 BigIpOnboard.prototype.provision = function(provisionSettings) {
     var modulesToProvision = Object.keys(provisionSettings);
     var PROVISION_PATH = '/tm/sys/provision/';
+    var DELAY_BETWEEN_PROVISION_COMMANDS = 10000;
+
     if (modulesToProvision.length > 0) {
+
         return this.core.ready()
             .then(function() {
                 // Get list of provisionable modules
@@ -291,16 +335,22 @@ BigIpOnboard.prototype.provision = function(provisionSettings) {
                     if (provisionSettings[module] !== currentProvisioning[module]) {
                         provisioningCommands.push(
                             {
-                                method: 'modify',
-                                path: PROVISION_PATH + module,
-                                body: {
-                                    level: provisionSettings[module]
-                                }
+                                promise: this.core.modify,
+                                arguments: [
+                                    PROVISION_PATH + module,
+                                    {
+                                        level: provisionSettings[module]
+                                    }
+                                ]
                             }
                         );
                     }
-                });
-                return this.core.transaction(provisioningCommands);
+                }.bind(this));
+
+                return util.callInSerial(this.core, provisioningCommands, DELAY_BETWEEN_PROVISION_COMMANDS);
+            }.bind(this))
+            .then(function() {
+                return this.core.active();
             }.bind(this));
     }
 };
@@ -309,26 +359,36 @@ BigIpOnboard.prototype.provision = function(provisionSettings) {
  * Updates db variables
  *
  * @param {Object} dbVars - Object map of db variable to value
+ * @param {Object}  [retryOptions]                 - Options for retrying the request.
+ * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
+ * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
  * @returns {Promise} A promise which is resolved when the db variables
  *                    have been set, or rejected if an error occurs.
  */
-BigIpOnboard.prototype.setDbVars = function(dbVars) {
-    var dbVarKeys = Object.keys(dbVars);
-    var promises = [];
-    var i;
-    for (i = 0; i &lt; dbVarKeys.length; ++i) {
-        promises.push(this.core.modify(
-            '/tm/sys/db/' + dbVarKeys[i],
-            {
-                value: dbVars[dbVarKeys[i]]
-            }
-        ));
-    }
-    return this.core.ready()
-        .then(function() {
-            return q.all(promises);
-        });
+BigIpOnboard.prototype.setDbVars = function(dbVars, retryOptions) {
+    retryOptions = retryOptions || this.core.DEFAULT_RETRY_OPTIONS;
+
+    var func = function() {
+        var dbVarKeys = Object.keys(dbVars);
+        var promises = [];
+        var i;
+
+        for (i = 0; i &lt; dbVarKeys.length; ++i) {
+            promises.push(this.core.modify(
+                '/tm/sys/db/' + dbVarKeys[i],
+                {
+                    value: dbVars[dbVarKeys[i]]
+                }
+            ));
+        }
+        return this.core.ready()
+            .then(function() {
+                return q.all(promises);
+            });
+    };
+
+    return util.tryUntil(this, retryOptions, func);
 };
 
 module.exports = BigIpOnboard;
@@ -348,7 +408,7 @@ module.exports = BigIpOnboard;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Aug 17 2016 11:44:40 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Sep 16 2016 13:29:49 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -140,7 +140,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line26">line 26</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line27">line 27</a>
     </li></ul></dd>
     
 
@@ -189,7 +189,7 @@
 
     
 
-    <h4 class="name" id="globalSettings"><span class="type-signature"></span>globalSettings<span class="signature">(globalSettings)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="globalSettings"><span class="type-signature"></span>globalSettings<span class="signature">(globalSettings, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -222,6 +222,8 @@ If settings include hostname, a CM move of hostname is also performed.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -247,10 +249,145 @@ If settings include hostname, a CM move of hostname is also performed.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">An object containing the global settings</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Options for retrying the request.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>maxRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryIntervalMs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Milliseconds between retries. Default 10000.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -291,7 +428,7 @@ If settings include hostname, a CM move of hostname is also performed.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line40">line 40</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line44">line 44</a>
     </li></ul></dd>
     
 
@@ -345,7 +482,7 @@ If settings include hostname, a CM move of hostname is also performed.
 
     
 
-    <h4 class="name" id="hostname"><span class="type-signature"></span>hostname<span class="signature">(hostname)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="hostname"><span class="type-signature"></span>hostname<span class="signature">(hostname, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -379,6 +516,8 @@ old hostname to new.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -404,10 +543,145 @@ old hostname to new.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The hostname to set</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Options for retrying the request.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>maxRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryIntervalMs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Milliseconds between retries. Default 10000.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -448,7 +722,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line74">line 74</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line87">line 87</a>
     </li></ul></dd>
     
 
@@ -502,7 +776,7 @@ old hostname to new.
 
     
 
-    <h4 class="name" id="license"><span class="type-signature"></span>license<span class="signature">(options)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="license"><span class="type-signature"></span>license<span class="signature">(options, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -533,6 +807,8 @@ old hostname to new.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -557,6 +833,14 @@ old hostname to new.
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -616,8 +900,8 @@ old hostname to new.
             
 
             <td class="description last">Whether or not to overwrite an
-                                        existing license file if it exists.
-                                        Default is false</td>
+                                                   existing license file if it exists.
+                                                   Default is false</td>
         </tr>
 
     
@@ -694,6 +978,133 @@ old hostname to new.
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>retryOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Options for retrying the request.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>maxRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryIntervalMs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Milliseconds between retries. Default 10000.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -731,7 +1142,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line125">line 125</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line147">line 147</a>
     </li></ul></dd>
     
 
@@ -785,7 +1196,7 @@ old hostname to new.
 
     
 
-    <h4 class="name" id="password"><span class="type-signature"></span>password<span class="signature">(user, newPassword, oldPassword<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="password"><span class="type-signature"></span>password<span class="signature">(user, newPassword, oldPassword<span class="signature-attributes">opt</span>, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -919,8 +1330,135 @@ old hostname to new.
             
 
             <td class="description last">The old password for the user. Only
-                                required for the root user. Ignored
-                                otherwise;</td>
+                                                  required for the root user. Ignored
+                                                  otherwise;</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Options for retrying the request.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>maxRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryIntervalMs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Milliseconds between retries. Default 10000.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -961,7 +1499,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line188">line 188</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line222">line 222</a>
     </li></ul></dd>
     
 
@@ -1075,7 +1613,7 @@ old hostname to new.
             
 
             <td class="description last">Object map of module to provisioning level
-                                    ['dedicated', 'nominial', 'minimum', 'none']</td>
+                                                 ['dedicated', 'nominial', 'minimum', 'none']</td>
         </tr>
 
     
@@ -1116,7 +1654,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line236">line 236</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line277">line 277</a>
     </li></ul></dd>
     
 
@@ -1170,7 +1708,7 @@ old hostname to new.
 
     
 
-    <h4 class="name" id="setDbVars"><span class="type-signature"></span>setDbVars<span class="signature">(dbVars)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="setDbVars"><span class="type-signature"></span>setDbVars<span class="signature">(dbVars, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -1201,6 +1739,8 @@ old hostname to new.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -1226,10 +1766,145 @@ old hostname to new.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">Object map of db variable to value</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Options for retrying the request.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>maxRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryIntervalMs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Milliseconds between retries. Default 10000.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -1270,7 +1945,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line288">line 288</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line341">line 341</a>
     </li></ul></dd>
     
 
@@ -1341,7 +2016,7 @@ old hostname to new.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Aug 17 2016 11:44:40 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Sep 16 2016 13:29:49 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
