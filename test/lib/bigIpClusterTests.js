@@ -37,7 +37,7 @@ module.exports = {
     testAddToTrust: {
         testNotInTrust: function(test) {
             icontrolMock.when('list',
-                              '/tm/cm/trust-domain/~Common~Root',
+                              '/tm/cm/trust-domain/Root',
                               {
                                   caDevices: ['/Common/someOtherDevice']
                               });
@@ -57,14 +57,14 @@ module.exports = {
 
         testAlreadyInTrust: function(test) {
             icontrolMock.when('list',
-                              '/tm/cm/trust-domain/~Common~Root',
+                              '/tm/cm/trust-domain/Root',
                               {
                                   caDevices: ['/Common/someOtherDevice', '/Common/' + localHostname]
                               });
             bigIp.cluster.addToTrust(localHostname, 'host', 'user', 'pass')
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain/~Common~Root');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain/Root');
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
@@ -78,7 +78,7 @@ module.exports = {
     testAddToDeviceGroup: {
         testNotInDeviceGroup: function(test) {
             icontrolMock.when('list',
-                              '/tm/cm/device-group/~Common~' + deviceGroup + '/devices',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
                               [
                                    {
                                        name: 'notTheLocalDevice'
@@ -102,7 +102,7 @@ module.exports = {
 
         testAlreadyInDeviceGroup: function(test) {
             icontrolMock.when('list',
-                              '/tm/cm/device-group/~Common~' + deviceGroup + '/devices',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
                               [
                                    {
                                        name: localHostname
@@ -113,7 +113,7 @@ module.exports = {
             bigIp.cluster.addToDeviceGroup(localHostname, deviceGroup)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/~Common~' + deviceGroup + '/devices');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup + '/devices');
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
@@ -360,6 +360,156 @@ module.exports = {
                 })
                 .catch(function() {
                     test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testIsInDeviceGroup: {
+        testInGroup: function(test) {
+            var deviceGroup = 'myDeviceGroup';
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                  {
+                                      name: localHostname
+                                  }
+                              ]
+                            );
+
+              bigIp.cluster.isInDeviceGroup(localHostname, deviceGroup)
+                    .then(function(isInGroup) {
+                        test.ok(isInGroup);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err.message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+        },
+
+        testNotInGroup: function(test) {
+            var deviceGroup = 'myDeviceGroup';
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                  {
+                                      name: 'someOtherDevice'
+                                  }
+                              ]
+                            );
+
+              bigIp.cluster.isInDeviceGroup(localHostname, deviceGroup)
+                    .then(function(isInGroup) {
+                        test.ok(!isInGroup);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err.message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+        }
+    },
+
+    testIsInTrustGroup: {
+        testInGroup: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/Root',
+                              {
+                                  caDevices: ['/Common/' + localHostname]
+                              });
+
+            bigIp.cluster.isInTrustGroup(localHostname)
+                .then(function(isInGroup) {
+                    test.ok(isInGroup);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNotInGroup: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/Root',
+                              {
+                                  caDevices: ['/Common/notMe']
+                              });
+
+            bigIp.cluster.isInTrustGroup(localHostname)
+                .then(function(isInGroup) {
+                    test.ok(!isInGroup);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testRemoveFromDeviceGroup: {
+        testInGroup: function(test) {
+            var device1 = 'device1';
+            var device2 = 'device2';
+            var deviceGroup = 'myDeviceGroup';
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                   {
+                                       name: device1
+                                   },
+                                   {
+                                       name: device2
+                                   }
+                              ]
+                            );
+
+            bigIp.cluster.removeFromDeviceGroup(device1, deviceGroup)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+
+        },
+
+        testNotInGroup: function(test) {
+            var device1 = 'device1';
+            var device2 = 'device2';
+            var deviceGroup = 'myDeviceGroup';
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                   {
+                                       name: device2
+                                   }
+                              ]
+                            );
+
+            bigIp.cluster.removeFromDeviceGroup(device1, deviceGroup)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup + '/devices');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
                 })
                 .finally(function() {
                     test.done();

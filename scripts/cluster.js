@@ -85,6 +85,9 @@
                 .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password.')
                 .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join.')
                 .option('    --sync', '    Tell the remote to sync to us after joining the group.')
+                .option('--remove-from-cluster', 'Remove a device from the cluster')
+                .option('    --device-group <device_group>', '    Name of the device group.')
+                .option('    --device <device_name>', '    Device name to remove.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when clustering is complete.')
                 .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
@@ -154,16 +157,30 @@
                     writeResponse(response);
 
                     if (options.joinGroup) {
-                        return bigIp.cluster.joinRemoteDeviceGroup(options.deviceGroup,
-                                                                   options.remoteHost,
-                                                                   options.remoteUser,
-                                                                   options.remotePassword,
-                                                                   options.sync,
-                                                                   {
-                                                                        verbose: options.verbose,
-                                                                        silent: options.silent,
-                                                                        logFile: logFile
-                                                                   });
+                        return bigIp.cluster.joinCluster(options.deviceGroup,
+                                                         options.remoteHost,
+                                                         options.remoteUser,
+                                                         options.remotePassword,
+                                                         options.sync,
+                                                         {
+                                                              verbose: options.verbose,
+                                                              silent: options.silent,
+                                                              logFile: logFile
+                                                         });
+                    }
+                })
+                .then(function(response) {
+                    writeResponse(response);
+
+                    writeOutput("Removing " + options.device + " from " + options.deviceGroup);
+                    if (options.removeFromCluster) {
+                        return bigIp.cluster.removeFromCluster(options.device,
+                                                               options.deviceGroup,
+                                                               {
+                                                                    verbose: options.verbose,
+                                                                    silent: options.silent,
+                                                                    logFile: logFile
+                                                               });
                     }
                 })
                 .catch(function(err) {
