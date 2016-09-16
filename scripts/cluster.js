@@ -172,8 +172,8 @@
                 .then(function(response) {
                     writeResponse(response);
 
-                    writeOutput("Removing " + options.device + " from " + options.deviceGroup);
                     if (options.removeFromCluster) {
+                        writeOutput("Removing " + options.device + " from " + options.deviceGroup);
                         return bigIp.cluster.removeFromCluster(options.device,
                                                                options.deviceGroup,
                                                                {

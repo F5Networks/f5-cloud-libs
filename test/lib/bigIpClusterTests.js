@@ -125,6 +125,30 @@ module.exports = {
     },
 
     testCreateDeviceGroup: {
+        testAlreadyExists: function(test) {
+            var name = 'groupFoo';
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/',
+                              [
+                                  {
+                                      name: name
+                                  }
+                              ]);
+
+            bigIp.cluster.createDeviceGroup(name, 'sync-only', ['someDevice'])
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
         testDefaults: function(test) {
             var name = 'groupFoo';
             var type = 'sync-failover';
