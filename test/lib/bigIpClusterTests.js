@@ -124,6 +124,63 @@ module.exports = {
         }
     },
 
+    testAreInTrustGroup: {
+        setUp: function(callback) {
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/Root',
+                              {
+                                  caDevices: ['/Common/device1', '/Common/device2']
+                              }
+                              );
+            callback();
+        },
+
+        testNoneInGroup: function(test) {
+            var devices = ['device3', 'device4'];
+            bigIp.cluster.areInTrustGroup(devices)
+                .then(function(devicesInGroup) {
+                    test.strictEqual(devicesInGroup.length, 0);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testSomeInGroup: function(test) {
+            var devices = ['device1', 'device3'];
+            bigIp.cluster.areInTrustGroup(devices)
+                .then(function(devicesInGroup) {
+                    test.strictEqual(devicesInGroup.length, 1);
+                    test.strictEqual(devicesInGroup.indexOf('device1'), 0);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testAllInGroup: function(test) {
+            var devices = ['device1', 'device2'];
+            bigIp.cluster.areInTrustGroup(devices)
+                .then(function(devicesInGroup) {
+                    test.strictEqual(devicesInGroup.length, 2);
+                    test.strictEqual(devicesInGroup.indexOf('device1'), 0);
+                    test.strictEqual(devicesInGroup.indexOf('device2'), 1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
     testCreateDeviceGroup: {
         testAlreadyExists: function(test) {
             var name = 'groupFoo';
@@ -503,6 +560,11 @@ module.exports = {
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'modify');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup);
+                    test.deepEqual(icontrolMock.lastCall.body,
+                                   {
+                                       devices: [device2]
+                                   }
+                    );
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
@@ -510,7 +572,45 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
 
+        testArrayInGroup: function(test) {
+            var device1 = 'device1';
+            var device2 = 'device2';
+            var keepMe = 'keepMe';
+            var deviceGroup = 'myDeviceGroup';
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                   {
+                                       name: device1
+                                   },
+                                   {
+                                       name: device2
+                                   },
+                                   {
+                                       name: keepMe
+                                   }
+                              ]
+                            );
+
+            bigIp.cluster.removeFromDeviceGroup(['device1', 'device2'], deviceGroup)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup);
+                    test.deepEqual(icontrolMock.lastCall.body,
+                                   {
+                                       devices: [keepMe]
+                                   }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
         testNotInGroup: function(test) {
@@ -531,6 +631,92 @@ module.exports = {
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup + '/devices');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testRemoveFromTrust: {
+        testInTrust: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/Root',
+                              {
+                                  caDevices: ['/Common/someOtherDevice', '/Common/' + localHostname]
+                              });
+
+            icontrolMock.when ('create',
+                               '/tm/cm/remove-from-trust',
+                               {});
+
+            bigIp.cluster.removeFromTrust(localHostname)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/remove-from-trust');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testArrayInTrust: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/Root',
+                              {
+                                  caDevices: ['/Common/device1', '/Common/device2', '/Common/someOtherDevice']
+                              });
+
+            icontrolMock.when ('create',
+                               '/tm/cm/remove-from-trust',
+                               {});
+
+            bigIp.cluster.removeFromTrust(['device1', 'device2'])
+                .then(function() {
+                    var request = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
+                    test.deepEqual(request,
+                                   {
+                                       command: "run",
+                                       name: "Root",
+                                       caDevice: true,
+                                       deviceName: "device1"
+                                   }
+                    );
+                    request = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
+                    test.deepEqual(request,
+                                   {
+                                       command: "run",
+                                       name: "Root",
+                                       caDevice: true,
+                                       deviceName: "device2"
+                                   }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNotInTrust: function(test) {
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/Root',
+                              {
+                                  caDevices: ['/Common/someOtherDevice']
+                              });
+
+            bigIp.cluster.removeFromTrust(localHostname)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain/Root');
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
