@@ -57,7 +57,11 @@ module.exports = {
     },
 
     recordRequest: function(method, path, body, opts) {
-        this.requestMap[method + '_' + path] = body;
+        var key = method + '_' + path;
+        if (!this.requestMap[key]) {
+            this.requestMap[key] = [];
+        }
+        this.requestMap[key].unshift(body);
         this.lastCall.method = method;
         this.lastCall.path = path;
         this.lastCall.body = body;
@@ -65,7 +69,10 @@ module.exports = {
     },
 
     getRequest: function(method, path) {
-        return this.requestMap[method + '_' + path];
+        var key = method + '_' + path;
+        if (this.requestMap[key]) {
+            return this.requestMap[key].pop();
+        }
     },
 
     respond: function(method, path, cb) {
