@@ -48,7 +48,7 @@ var rebootRequested;
 
 module.exports = {
     setUp: function(callback) {
-        argv = ['node', 'onboard', '--silent'];
+        argv = ['node', 'onboard', '--log-level', 'none'];
         rebootRequested = false;
         callback();
     },
