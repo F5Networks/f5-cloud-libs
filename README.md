@@ -36,9 +36,8 @@ This project consists of two main parts
       --no-reboot                                              Skip reboot even if it is recommended.
       --background                                             Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
       --signal <pid>                                           Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).
-      -o, --output <file>                                      Full path for log file if background process is spawned. Default is /tmp/onboard.log
-      --silent                                                 Turn off all output.
-      --verbose                                                Turn on verbose output (overrides --silent).
+      --log-level <level>                                      Log level (none, error, warn, info, verbose, debug, silly). Default is info.
+      -o, --output <file>                                      Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log
 
 ### cluster.js
     Usage: cluster [options]
@@ -70,6 +69,5 @@ This project consists of two main parts
           --device <device_name>                         Device name to remove.
       --background                                   Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
       --signal <pid>                                 Process ID to send USR1 to when clustering is complete.
-      -o, --output <file>                            Full path for log file if background process is spawned. Default is /tmp/cluster.log
-      --silent                                       Turn off all output.
-      --verbose                                      Turn on verbose output (overrides --silent).
+      --log-level <level>                            Log level (none, error, warn, info, verbose, debug, silly). Default is info.
+      -o, --output <file>                            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/cluster.log

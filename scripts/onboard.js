@@ -34,16 +34,16 @@
          * @param {Function} cb - Optional cb to call when done
          */
         run: function(argv, testOpts, cb) {
-
-            var fs = require('fs');
             var q = require("q");
             var BigIp = require('../lib/bigIp');
+            var Logger = require('../lib/logger');
             var util = require('../lib/util');
             var dbVars = {};
             var modules = {};
             var passwords = {};
             var rootPasswords = {};
-            var logFile;
+            var loggerOptions = {};
+            var logger;
             var logFileName;
             var bigIp;
             var i;
@@ -67,24 +67,7 @@
                 }
             };
 
-            var writeOutput = function(message) {
-                if (options.verbose || !options.silent) {
-                    message += '\n';
-                    if (logFile) {
-                        logFile.write(message);
-                    }
-                    else {
-                        process.stdout.write(message);
-                    }
-                }
-            };
-
-            var writeResponse = function(response) {
-                if (response && options.verbose) {
-                    writeOutput((typeof response === 'object' ? JSON.stringify(response, null, 4) : "  " + response));
-                }
-            };
-
+            options.logLevel = 'info';
             options.reboot = true;
             options
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
@@ -104,22 +87,26 @@
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
-                .option('-o, --output <file>', 'Full path for log file if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
-                .option('--silent', 'Turn off all output.')
-                .option('--verbose', 'Turn on verbose output (overrides --silent).')
+                .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.')
+                .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .parse(argv);
 
-            logFileName = options.output || DEFAULT_LOG_FILE;
+
+            loggerOptions.console = true;
+            loggerOptions.logLevel = options.logLevel;
+
+            if (options.output) {
+                loggerOptions.fileName = options.output;
+            }
+
+            logger = Logger.getLogger(loggerOptions);
 
             // When running in cloud init, we need to exit so that cloud init can complete and
             // allow the BIG-IP services to start
             if (options.background) {
-                writeOutput("Spawning child process to do the work. Output will be in " + logFileName);
+                logFileName = options.output || DEFAULT_LOG_FILE;
+                logger.info("Spawning child process to do the work. Output will be in", logFileName);
                 util.runInBackgroundAndExit(process, logFileName);
-            }
-
-            if (options.output) {
-                logFile = fs.createWriteStream(logFileName);
             }
 
             // Log the input, but don't log passwords
@@ -130,32 +117,32 @@
                     }
                 }
             }
-            writeOutput(process.argv[1] + " called with " + process.argv.slice().join(" "));
+            logger.info(process.argv[1] + " called with", process.argv.slice().join(" "));
 
             // Create the bigIp client object
-            bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password);
+            bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password, logger);
 
             // Use hostname if both hostname and global-settings hostname are set
             if (globalSettings && options.hostname) {
                 if (globalSettings.hostname || globalSettings.hostName) {
-                    writeOutput("Using host-name option to override global-settings hostname");
+                    logger.info("Using host-name option to override global-settings hostname");
                     delete globalSettings.hostName;
                     delete globalSettings.hostname;
                 }
             }
 
             // Start processing...
-            writeOutput("Onboard starting at: " + new Date().toUTCString());
-            writeOutput("Waiting for BIG-IP to be ready.");
+            logger.info("Onboard starting");
+            logger.info("Waiting for BIG-IP to be ready.");
             bigIp.ready()
                 .then(function() {
                     var promises = [];
                     var user;
 
-                    writeOutput("BIG-IP is ready.");
+                    logger.info("BIG-IP is ready.");
 
                     if (Object.keys(passwords).length > 0) {
-                        writeOutput("Setting password(s).");
+                        logger.info("Setting password(s).");
                         for (user in passwords) {
                             promises.push(bigIp.onboard.password(user, passwords[user]));
                         }
@@ -164,24 +151,24 @@
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
+                    logger.debug(response);
 
                     if (Object.keys(rootPasswords).length > 0) {
                         if (!rootPasswords.old || !rootPasswords.new) {
                             return q.reject("Old or new password missing for root user. Specify with --set-root-password old:old_root_password,new:new_root_password");
                         }
 
-                        writeOutput("Setting rootPassword.");
+                        logger.info("Setting rootPassword.");
                         return bigIp.onboard.password('root', rootPasswords.new, rootPasswords.old);
                     }
                 })
                 .then(function(response) {
                     var ntpBody;
 
-                    writeResponse(response);
+                    logger.debug(response);
 
                     if (options.ntp.length > 0 || options.tz) {
-                        writeOutput("Setting up NTP.");
+                        logger.info("Setting up NTP.");
 
                         ntpBody = {};
 
@@ -200,10 +187,10 @@
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
+                    logger.debug(response);
 
                     if (options.dns.length > 0) {
-                        writeOutput("Setting up DNS.");
+                        logger.info("Setting up DNS.");
 
                         return bigIp.modify(
                             '/tm/sys/dns',
@@ -214,37 +201,37 @@
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
+                    logger.debug(response);
 
                     if (options.hostname) {
-                        writeOutput("Setting hostname to " + options.hostname);
+                        logger.info("Setting hostname to", options.hostname);
                         return bigIp.onboard.hostname(options.hostname);
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
+                    logger.debug(response);
 
                     if (globalSettings) {
-                        writeOutput("Setting global settings.");
+                        logger.info("Setting global settings.");
                         return bigIp.onboard.globalSettings(globalSettings);
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
+                    logger.debug(response);
 
                     if (Object.keys(dbVars).length > 0) {
-                        writeOutput("Setting DB vars");
+                        logger.info("Setting DB vars");
                         return bigIp.onboard.setDbVars(dbVars);
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
+                    logger.debug(response);
 
                     var registrationKey = options.license;
                     var addOnKeys = options.addOn;
 
                     if (registrationKey || addOnKeys.length > 0) {
-                        writeOutput("Licensing.");
+                        logger.info("Licensing.");
 
                         return bigIp.onboard.license(
                             {
@@ -256,52 +243,48 @@
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
+                    logger.debug(response);
 
                     if (Object.keys(modules).length > 0) {
-                        writeOutput("Provisioning modules: " + JSON.stringify(modules, null, 4));
+                        logger.info("Provisioning modules", modules);
                         return bigIp.onboard.provision(modules);
                     }
                 })
                 .then(function(response) {
-                    writeResponse(response);
-                    writeOutput("Saving config.");
+                    logger.debug(response);
+                    logger.info("Saving config.");
                     return bigIp.save();
                 })
                 .then(function(response) {
-                    writeResponse(response);
-                    writeOutput("BIG-IP onboard complete.");
+                    logger.debug(response);
+                    logger.info("BIG-IP onboard complete.");
                     return bigIp.rebootRequired();
                 })
                 .then(function(response) {
                     if (response) {
                         if (options.reboot) {
-                            writeOutput('Reboot required. Rebooting...');
+                            logger.warn('Reboot required. Rebooting...');
                             return bigIp.reboot();
                         }
                         else {
-                            writeOutput('Reboot required. Skipping due to --no-reboot option.');
+                            logger.warn('Reboot required. Skipping due to --no-reboot option.');
                         }
                     }
                 })
                 .catch(function(err) {
-                    writeOutput("BIG-IP onboard failed: " + (typeof err === 'object' ? err.message : err));
+                    logger.error("BIG-IP onboard failed", err);
                 })
                 .done(function() {
-                    writeOutput("Onboard finished at: " + new Date().toUTCString());
+                    logger.info("Onboard finished");
 
                     if (options.signal) {
-                        writeOutput("Signalling " + options.signal);
+                        logger.info("Signalling", options.signal);
                         try {
                             process.kill(options.signal, 'SIGUSR1');
                         }
                         catch (err) {
-                            writeOutput("Signal failed: " + err.message);
+                            logger.error("Signal failed:", err.message);
                         }
-                    }
-
-                    if (logFile) {
-                        logFile.end();
                     }
 
                     if (cb) {
