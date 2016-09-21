@@ -44,9 +44,9 @@
  'use strict';
 
 var q = require('q');
-var IControl = require('icontrol');
+var IControl = require('./iControl');
 var util = require('./util');
-
+var Logger = require('./logger');
 var BigIpCluster = require('./bigIpCluster');
 var BigIpOnboard = require('./bigIpOnboard');
 
@@ -54,12 +54,17 @@ var BigIpOnboard = require('./bigIpOnboard');
  * Creates the BIG-IP client
  * @class
  *
- * @param {String} host - Host name or IP address.
- * @param {String} user - User with admin rights.
- * @param {String} password - Password for user.
+ * @param {String} host       - Host name or IP address.
+ * @param {String} user       - User with admin rights.
+ * @param {String} password   - Password for user.
+ * @param {Object} [logger]   - A logger to use. Default to no logging.
  * @param {Object} [testOpts] - Options used during testing.
  */
-function BigIp(host, user, password, testOpts) {
+function BigIp(host, user, password, logger, testOpts) {
+
+    this.logger = logger || Logger.getLogger({logLevel: 'none'});
+    util.logger = this.logger;
+
     this.DEFAULT_RETRIES = 60;
     this.DEFAULT_RETRY_INTERVAL = 10000;
     this.DEFAULT_RETRY_OPTIONS = {
@@ -80,8 +85,8 @@ function BigIp(host, user, password, testOpts) {
         this.init(this.host, this.user, this.password);
     }
 
-    this.cluster = new BigIpCluster(this, testOpts);
-    this.onboard = new BigIpOnboard(this, testOpts);
+    this.cluster = new BigIpCluster(this, logger, testOpts);
+    this.onboard = new BigIpOnboard(this, logger, testOpts);
 }
 
 /**
@@ -95,7 +100,7 @@ BigIp.prototype.init = function(host, user, password) {
     this.icontrol = new IControl({
         host: host,
         user: user,
-        pass: password,
+        password: password,
         basePath: '/mgmt',
         strict: false
     });
@@ -109,7 +114,7 @@ BigIp.prototype.init = function(host, user, password) {
  * Submits a list (GET) request
  *
  * @param {String}  path                           - The path to get.
- * @param {Object}  options                        - See iControl list options.
+ * @param {Object}  [options]                      - Options for IControl.
  * @param {Object}  [retryOptions]                 - Options for retrying the request.
  * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
  * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
@@ -121,23 +126,12 @@ BigIp.prototype.list = function (path, options, retryOptions) {
     retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
 
     var func = function() {
-        var deferred = q.defer();
-
-        try {
-            this.icontrol.list(path, options, function(err, response) {
-                if (err) {
-                    deferred.reject(err);
-                }
-                else {
-                    deferred.resolve(response);
-                }
-            });
-        }
-        catch (err) {
-            deferred.reject(err);
-        }
-
-        return deferred.promise;
+        this.logger.debug("list", path);
+        return this.icontrol.list(path, options)
+            .then(function(response) {
+                this.logger.debug(response);
+                return response;
+            }.bind(this));
     };
 
     return util.tryUntil(this, retryOptions, func);
@@ -148,7 +142,7 @@ BigIp.prototype.list = function (path, options, retryOptions) {
  *
  * @param {String}  path                           - The path to get.
  * @param {Object}  body                           - The body for the POST request.
- * @param {Object}  options                        - See iControl create options.
+ * @param {Object}  [options]                      - Options for IControl.
  * @param {Object}  [retryOptions]                 - Options for retrying the request.
  * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
  * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
@@ -160,23 +154,12 @@ BigIp.prototype.create = function(path, body, options, retryOptions) {
     retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
 
     var func = function() {
-        var deferred = q.defer();
-
-        try {
-            this.icontrol.create(path, body, options, function(err, response) {
-                if (err) {
-                    deferred.reject(err);
-                }
-                else {
-                    deferred.resolve(response);
-                }
-            });
-        }
-        catch (err) {
-            deferred.reject(err);
-        }
-
-        return deferred.promise;
+        this.logger.debug("create", path, body);
+        return this.icontrol.create(path, body, options)
+            .then(function(response) {
+                this.logger.debug(response);
+                return response;
+            }.bind(this));
     };
 
     return util.tryUntil(this, retryOptions, func);
@@ -187,7 +170,7 @@ BigIp.prototype.create = function(path, body, options, retryOptions) {
  *
  * @param {String}  path                           - The path to get.
  * @param {Object}  body                           - The body for the patch request.
- * @param {Object}  options                        - See iControl modify options.
+ * @param {Object}  [options]                      - Options for IControl.
  * @param {Object}  [retryOptions]                 - Options for retrying the request.
  * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
  * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
@@ -199,23 +182,12 @@ BigIp.prototype.modify = function(path, body, options, retryOptions) {
     retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
 
     var func = function() {
-        var deferred = q.defer();
-
-        try {
-            this.icontrol.modify(path, body, options, function(err, response) {
-                if (err) {
-                    deferred.reject(err);
-                }
-                else {
-                    deferred.resolve(response);
-                }
-            });
-        }
-        catch (err) {
-            deferred.reject(err);
-        }
-
-        return deferred.promise;
+        this.logger.debug("modify", path, body);
+        return this.icontrol.modify(path, body, options)
+            .then(function(response) {
+                this.logger.debug(response);
+                return response;
+            }.bind(this));
     };
 
     return util.tryUntil(this, retryOptions, func);
@@ -225,7 +197,7 @@ BigIp.prototype.modify = function(path, body, options, retryOptions) {
  * Submits a delete (DELETE) request
  *
  * @param {String}  path                           - The path to get.
- * @param {Object}  options                        - See iControl delete options.
+ * @param {Object}  [options]                      - Options for IControl.
  * @param {Object}  [retryOptions]                 - Options for retrying the request.
  * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
  * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
@@ -237,23 +209,12 @@ BigIp.prototype.delete = function(path, options, retryOptions) {
     retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
 
     var func = function() {
-        var deferred = q.defer();
-
-        try {
-            this.icontrol.delete(path, options, function(err, response) {
-                if (err) {
-                    deferred.reject(err);
-                }
-                else {
-                    deferred.resolve(response);
-                }
-            });
-        }
-        catch (err) {
-            deferred.reject(err);
-        }
-
-        return deferred.promise;
+        this.logger.debug("delete", path);
+        return this.icontrol.delete(path, options)
+            .then(function(response) {
+                this.logger.debug(response);
+                return response;
+            }.bind(this));
     };
 
     return util.tryUntil(this, retryOptions, func);
@@ -283,13 +244,15 @@ BigIp.prototype.active = function(retryOptions) {
                 return this.list('/tm/cm/failover-status', undefined, util.NO_RETRY);
             }.bind(this))
             .then(function(response) {
-                if (response.entries["https://localhost/mgmt/tm/cm/failover-status/0"].nestedStats.entries.status.description === 'ACTIVE') {
+                var state = response.entries["https://localhost/mgmt/tm/cm/failover-status/0"].nestedStats.entries.status.description;
+                this.logger.debug("Current state:", state);
+                if (state === 'ACTIVE') {
                     deferred.resolve();
                 }
                 else {
                     deferred.reject();
                 }
-            })
+            }.bind(this))
             .catch(function(err) {
                 deferred.reject(err);
             })
@@ -616,13 +579,13 @@ module.exports = BigIp;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul><h3>Global</h3><ul><li><a href="global.html#IControl">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Sep 16 2016 13:29:49 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Sep 21 2016 16:30:54 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

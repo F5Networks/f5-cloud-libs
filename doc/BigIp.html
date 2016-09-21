@@ -40,7 +40,7 @@
 
     
 
-    <h4 class="name" id="BigIp"><span class="type-signature"></span>new BigIp<span class="signature">(host, user, password, testOpts<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="BigIp"><span class="type-signature"></span>new BigIp<span class="signature">(host, user, password, logger<span class="signature-attributes">opt</span>, testOpts<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
     
 
@@ -178,6 +178,39 @@
 
         <tr>
             
+                <td class="name"><code>logger</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">A logger to use. Default to no logging.</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>testOpts</code></td>
             
 
@@ -245,7 +278,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line34">line 34</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line35">line 35</a>
     </li></ul></dd>
     
 
@@ -500,7 +533,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line247">line 247</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line208">line 208</a>
     </li></ul></dd>
     
 
@@ -553,7 +586,7 @@
 
     
 
-    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">(path, body, options, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">(path, body, options<span class="signature-attributes">opt</span>, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -675,6 +708,8 @@
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -684,7 +719,7 @@
 
             
 
-            <td class="description last">See iControl create options.</td>
+            <td class="description last">Options for IControl.</td>
         </tr>
 
     
@@ -852,7 +887,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line131">line 131</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line125">line 125</a>
     </li></ul></dd>
     
 
@@ -906,7 +941,7 @@
 
     
 
-    <h4 class="name" id="delete"><span class="type-signature"></span>delete<span class="signature">(path, options, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="delete"><span class="type-signature"></span>delete<span class="signature">(path, options<span class="signature-attributes">opt</span>, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -997,6 +1032,8 @@
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -1006,7 +1043,7 @@
 
             
 
-            <td class="description last">See iControl delete options.</td>
+            <td class="description last">Options for IControl.</td>
         </tr>
 
     
@@ -1174,7 +1211,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line208">line 208</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line180">line 180</a>
     </li></ul></dd>
     
 
@@ -1434,7 +1471,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line286">line 286</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line249">line 249</a>
     </li></ul></dd>
     
 
@@ -1612,7 +1649,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line66">line 66</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line71">line 71</a>
     </li></ul></dd>
     
 
@@ -1643,7 +1680,7 @@
 
     
 
-    <h4 class="name" id="list"><span class="type-signature"></span>list<span class="signature">(path, options, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="list"><span class="type-signature"></span>list<span class="signature">(path, options<span class="signature-attributes">opt</span>, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -1734,6 +1771,8 @@
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -1743,7 +1782,7 @@
 
             
 
-            <td class="description last">See iControl list options.</td>
+            <td class="description last">Options for IControl.</td>
         </tr>
 
     
@@ -1911,7 +1950,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line92">line 92</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line97">line 97</a>
     </li></ul></dd>
     
 
@@ -2237,7 +2276,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line308">line 308</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line271">line 271</a>
     </li></ul></dd>
     
 
@@ -2291,7 +2330,7 @@
 
     
 
-    <h4 class="name" id="modify"><span class="type-signature"></span>modify<span class="signature">(path, body, options, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="modify"><span class="type-signature"></span>modify<span class="signature">(path, body, options<span class="signature-attributes">opt</span>, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -2413,6 +2452,8 @@
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -2422,7 +2463,7 @@
 
             
 
-            <td class="description last">See iControl modify options.</td>
+            <td class="description last">Options for IControl.</td>
         </tr>
 
     
@@ -2590,7 +2631,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line170">line 170</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line153">line 153</a>
     </li></ul></dd>
     
 
@@ -2853,7 +2894,7 @@ is ready.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line355">line 355</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line318">line 318</a>
     </li></ul></dd>
     
 
@@ -2958,7 +2999,7 @@ is ready.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line416">line 416</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line379">line 379</a>
     </li></ul></dd>
     
 
@@ -3195,7 +3236,7 @@ is ready.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line433">line 433</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line396">line 396</a>
     </li></ul></dd>
     
 
@@ -3488,7 +3529,7 @@ required and resolved with 'false' otherwise.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line473">line 473</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line436">line 436</a>
     </li></ul></dd>
     
 
@@ -3647,7 +3688,7 @@ required and resolved with 'false' otherwise.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line510">line 510</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line473">line 473</a>
     </li></ul></dd>
     
 
@@ -3712,13 +3753,13 @@ required and resolved with 'false' otherwise.
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul><h3>Global</h3><ul><li><a href="global.html#IControl">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Sep 16 2016 13:29:49 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Sep 21 2016 16:30:54 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
