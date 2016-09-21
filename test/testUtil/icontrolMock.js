@@ -15,25 +15,27 @@
  */
 'use strict';
 
+var q = require('q');
+
 module.exports = {
-    list: function(path, opts, cb) {
+    list: function(path, opts) {
         this.recordRequest('list', path, null, opts);
-        this.respond('list', path, cb);
+        return this.respond('list', path);
     },
 
-    create: function(path, body, opts, cb) {
+    create: function(path, body, opts) {
         this.recordRequest('create', path, body, opts);
-        this.respond('create', path, cb);
+        return this.respond('create', path);
     },
 
-    modify: function(path, body, opts, cb) {
+    modify: function(path, body, opts) {
         this.recordRequest('modify', path, body, opts);
-        this.respond('modify', path, cb);
+        return this.respond('modify', path);
     },
 
-    delete: function(path, opts, cb) {
+    delete: function(path, opts) {
         this.recordRequest('delete', path, null, opts);
-        this.respond('delete', path, cb);
+        return this.respond('delete', path);
     },
 
     requestMap: {},
@@ -75,8 +77,8 @@ module.exports = {
         }
     },
 
-    respond: function(method, path, cb) {
-        cb(false, this.responseMap[method + '_' + path] || true);
+    respond: function(method, path) {
+        return q(this.responseMap[method + '_' + path] || true);
     }
 };
 

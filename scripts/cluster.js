@@ -106,7 +106,7 @@
             logger.info(process.argv[1] + " called with", process.argv.slice().join(" "));
 
             // Create the bigIp client object
-            bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password);
+            bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password, logger);
 
             // Start processing...
             logger.info("Cluster starting");
