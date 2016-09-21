@@ -40,7 +40,7 @@
 
     
 
-    <h4 class="name" id="BigIpCluster"><span class="type-signature"></span>new BigIpCluster<span class="signature">(bigIpCore, testOpts<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="BigIpCluster"><span class="type-signature"></span>new BigIpCluster<span class="signature">(bigIpCore, logger<span class="signature-attributes">opt</span>, testOpts<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
     
 
@@ -116,6 +116,39 @@
 
         <tr>
             
+                <td class="name"><code>logger</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">A logger to use. Default to no logging.</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>testOpts</code></td>
             
 
@@ -183,7 +216,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line31">line 31</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line33">line 33</a>
     </li></ul></dd>
     
 
@@ -500,7 +533,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line113">line 113</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -884,7 +917,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line70">line 70</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line55">line 55</a>
     </li></ul></dd>
     
 
@@ -913,6 +946,619 @@
 <div class="param-desc">
     A promise which is resolved when the request is complete
                    or rejected if an error occurs.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="areInDeviceGroup"><span class="type-signature"></span>areInDeviceGroup<span class="signature">(deviceNames, deviceGroup, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Checks to see if a device is in the trust group
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>deviceNames</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Device names to check for.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>deviceGroup</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Device group to look in.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Options for retrying the request.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>maxRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryIntervalMs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Milliseconds between retries. Default 10000.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line135">line 135</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise which is resolved with an array of names that are in the trust group
+                   and in deviceNames, or rejected if an error occurs.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="areInTrustGroup"><span class="type-signature"></span>areInTrustGroup<span class="signature">(deviceNames, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Checks to see if a device is in the trust group
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>deviceNames</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Device names to check for.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Options for retrying the request.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>maxRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryIntervalMs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Milliseconds between retries. Default 10000.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line169">line 169</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise which is resolved with an array of names that are in the trust group
+                   and in deviceNames, or rejected if an error occurs.
 </div>
 
 
@@ -1175,7 +1821,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line211">line 211</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line207">line 207</a>
     </li></ul></dd>
     
 
@@ -1757,7 +2403,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line158">line 158</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line248">line 248</a>
     </li></ul></dd>
     
 
@@ -2079,7 +2725,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line244">line 244</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line322">line 322</a>
     </li></ul></dd>
     
 
@@ -2370,7 +3016,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line280">line 280</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line358">line 358</a>
     </li></ul></dd>
     
 
@@ -2424,7 +3070,7 @@
 
     
 
-    <h4 class="name" id="joinCluster"><span class="type-signature"></span>joinCluster<span class="signature">(deviceGroup, remoteHost, remoteUser, remotePassword, sync<span class="signature-attributes">opt</span>, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="joinCluster"><span class="type-signature"></span>joinCluster<span class="signature">(deviceGroup, remoteHost, remoteUser, remotePassword, sync<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -2632,166 +3278,6 @@ The device group must already exist on the remote host.
         </tr>
 
     
-
-        <tr>
-            
-                <td class="name"><code>options</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">Options for logging.
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>verbose</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>silent</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>logFile</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
     </tbody>
 </table>
 
@@ -2829,7 +3315,7 @@ The device group must already exist on the remote host.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line324">line 324</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line398">line 398</a>
     </li></ul></dd>
     
 
@@ -2883,7 +3369,7 @@ The device group must already exist on the remote host.
 
     
 
-    <h4 class="name" id="removeFromCluster"><span class="type-signature"></span>removeFromCluster<span class="signature">(deviceGroup, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="removeFromCluster"><span class="type-signature"></span>removeFromCluster<span class="signature">(deviceNames, deviceGroup)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -2919,8 +3405,6 @@ and other bigIp* files:
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
         
 
@@ -2929,6 +3413,32 @@ and other bigIp* files:
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>deviceNames</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+|
+
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Name or array of names of devices to remove</td>
+        </tr>
+
     
 
         <tr>
@@ -2946,178 +3456,10 @@ and other bigIp* files:
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
 
             
 
             <td class="description last">Name of device group to join.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>options</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">Options for logging.
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>verbose</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>silent</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>logFile</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
         </tr>
 
     
@@ -3158,7 +3500,7 @@ and other bigIp* files:
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line512">line 512</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line538">line 538</a>
     </li></ul></dd>
     
 
@@ -3212,7 +3554,7 @@ and other bigIp* files:
 
     
 
-    <h4 class="name" id="removeFromDeviceGroup"><span class="type-signature"></span>removeFromDeviceGroup<span class="signature">(retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="removeFromDeviceGroup"><span class="type-signature"></span>removeFromDeviceGroup<span class="signature">(deviceNames, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -3257,6 +3599,40 @@ and other bigIp* files:
 
         <tr>
             
+                <td class="name"><code>deviceNames</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+|
+
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Name or array of names of devices to remove</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>retryOptions</code></td>
             
 
@@ -3418,7 +3794,7 @@ and other bigIp* files:
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line461">line 461</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line568">line 568</a>
     </li></ul></dd>
     
 
@@ -3472,7 +3848,7 @@ and other bigIp* files:
 
     
 
-    <h4 class="name" id="removeFromTrust"><span class="type-signature"></span>removeFromTrust<span class="signature">(deviceName, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="removeFromTrust"><span class="type-signature"></span>removeFromTrust<span class="signature">(deviceNames, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
@@ -3517,13 +3893,16 @@ and other bigIp* files:
 
         <tr>
             
-                <td class="name"><code>deviceName</code></td>
+                <td class="name"><code>deviceNames</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type">String</span>
+|
+
+<span class="param-type">Array.&lt;String></span>
 
 
             
@@ -3541,7 +3920,7 @@ and other bigIp* files:
 
             
 
-            <td class="description last">Device name to remove.</td>
+            <td class="description last">Name or array of names of devices to remove</td>
         </tr>
 
     
@@ -3709,7 +4088,7 @@ and other bigIp* files:
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line538">line 538</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line613">line 613</a>
     </li></ul></dd>
     
 
@@ -4064,7 +4443,7 @@ and other bigIp* files:
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line577">line 577</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line665">line 665</a>
     </li></ul></dd>
     
 
@@ -4324,7 +4703,7 @@ and other bigIp* files:
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line608">line 608</a>
+        <a href="bigIpCluster.js.html">bigIpCluster.js</a>, <a href="bigIpCluster.js.html#line696">line 696</a>
     </li></ul></dd>
     
 
@@ -4389,13 +4768,13 @@ and other bigIp* files:
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li></ul><h3>Global</h3><ul><li><a href="global.html#IControl">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Sep 16 2016 13:29:49 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Sep 21 2016 16:30:54 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
