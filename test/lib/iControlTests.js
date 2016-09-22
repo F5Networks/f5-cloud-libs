@@ -82,26 +82,5 @@ module.exports = {
             .finally(function() {
                 test.done();
             });
-    },
-
-    testHeaderContentType: function(test) {
-        var contentType = 'foo/bar';
-        var headers = {
-            'Content-type': contentType
-        };
-
-        iControl.list('somepath', {headers: headers});
-        test.deepEqual(httpMock.lastRequest.headers['Content-Type'], contentType);
-        test.done();
-    },
-
-    testHeaderOther: function(test) {
-        var headers = {
-            foo: 'bar'
-        };
-
-        iControl.list('somepath', {headers: headers});
-        test.deepEqual(httpMock.lastRequest.headers.foo, headers.foo);
-        test.done();
     }
 };
