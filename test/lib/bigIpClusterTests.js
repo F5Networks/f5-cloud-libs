@@ -182,21 +182,65 @@ module.exports = {
     },
 
     testCreateDeviceGroup: {
-        testAlreadyExists: function(test) {
-            var name = 'groupFoo';
+        testAlreadyExistsWithDeviceInGroup: function(test) {
+            var deviceGroup = 'groupFoo';
+            var devices = ['someDevice'];
 
             icontrolMock.when('list',
                               '/tm/cm/device-group/',
                               [
                                   {
-                                      name: name
+                                      name: deviceGroup
                                   }
                               ]);
 
-            bigIp.cluster.createDeviceGroup(name, 'sync-only', ['someDevice'])
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                  {
+                                      name: 'someDevice'
+                                  }
+                              ]
+                              );
+
+            bigIp.cluster.createDeviceGroup(deviceGroup, 'sync-only', devices)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup + '/devices');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testAlreadyExistsDeviceNotInGroup: function(test) {
+            var deviceGroup = 'groupFoo';
+            var devices = ['someDevice'];
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/',
+                              [
+                                  {
+                                      name: deviceGroup
+                                  }
+                              ]);
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                  {
+                                      name: 'someOtherDevice'
+                                  }
+                              ]
+                              );
+
+            bigIp.cluster.createDeviceGroup(deviceGroup, 'sync-only', devices)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/~Common~' + deviceGroup + '/devices');
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
@@ -279,10 +323,10 @@ module.exports = {
         testNoName: function(test) {
             bigIp.cluster.createDeviceGroup()
                 .then(function() {
-                    test.ok(false, 'Should have thrown no name');
+                    test.ok(false, 'Should have thrown deviceGroup required');
                 })
                 .catch(function(err) {
-                    test.notEqual(err.message.indexOf('name is required'), -1);
+                    test.notEqual(err.message.indexOf('deviceGroup is required'), -1);
                 })
                 .finally(function() {
                     test.done();
