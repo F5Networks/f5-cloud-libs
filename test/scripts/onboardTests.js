@@ -48,7 +48,7 @@ var rebootRequested;
 
 module.exports = {
     setUp: function(callback) {
-        argv = ['node', 'onboard', '--log-level', 'none'];
+        argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
         rebootRequested = false;
         callback();
     },
