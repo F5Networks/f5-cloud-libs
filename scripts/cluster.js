@@ -45,6 +45,7 @@
             var i;
 
             var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
+            var REQUIRED_OPTIONS = ['host', 'user', 'password'];
 
             testOpts = testOpts || {};
 
@@ -86,6 +87,13 @@
             }
 
             logger = Logger.getLogger(loggerOptions);
+
+            for (i = 0; i < REQUIRED_OPTIONS.length; ++i) {
+                if (!options[REQUIRED_OPTIONS[i]]) {
+                    logger.error(REQUIRED_OPTIONS[i], "is a required command line option.");
+                    return;
+                }
+            }
 
             // When running in cloud init, we need to exit so that cloud init can complete and
             // allow the BIG-IP services to start
