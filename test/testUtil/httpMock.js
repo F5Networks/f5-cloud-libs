@@ -48,7 +48,7 @@ module.exports = {
     },
 
     request: function(options, cb) {
-        this.options = options;
+        this.lastRequest = options;
         this.clientRequest.cb = cb;
         return this.clientRequest;
     },
@@ -68,8 +68,8 @@ module.exports = {
         delete this.clientRequest.data;
         delete this.clientRequest.response;
         delete this.clientRequest.timeout;
-        delete this.options;
         this.clientRequest.incomingMessage.headers = {};
         this.clientRequest.eventMap = {};
+        delete this.lastRequest;
     }
 };
