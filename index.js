@@ -1,3 +1,4 @@
 module.exports = {
-    bigIp: require("./lib/bigIp.js")
+    bigIp: require("./lib/bigIp"),
+    logger: require("./lib/logger")
 };
