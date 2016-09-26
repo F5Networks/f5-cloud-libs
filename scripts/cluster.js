@@ -168,6 +168,11 @@
                                                                options.deviceGroup);
                     }
                 })
+                .then(function(response) {
+                    logger.debug(response);
+                    logger.info("Waiting for BIG-IP to be active.");
+                    return bigIp.active();
+                })
                 .catch(function(err) {
                     logger.error("BIG-IP cluster failed", err);
                 })

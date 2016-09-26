@@ -265,6 +265,11 @@
                 })
                 .then(function(response) {
                     logger.debug(response);
+                    logger.info("Waiting for BIG-IP to be active.");
+                    return bigIp.active();
+                })
+                .then(function(response) {
+                    logger.debug(response);
                     var address;
                     if (options.ping) {
                         address = options.ping === true ? 'f5.com' : options.ping;
