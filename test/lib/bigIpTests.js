@@ -147,5 +147,61 @@ module.exports = {
             .finally(function() {
                 test.done();
             });
+    },
+
+    testPing: {
+        testPacketsReceived: function(test) {
+            icontrolMock.when('create',
+                              '/tm/util/ping',
+                              {
+                                  commandResult: "PING 104.219.104.168 (104.219.104.168) 56(84) bytes of data.\n64 bytes from 104.219.104.168: icmp_seq=1 ttl=240 time=43.5 ms\n\n--- 104.219.104.168 ping statistics ---\n1 packets transmitted, 1 received, 0% packet loss, time 43ms\nrtt min/avg/max/mdev = 43.593/43.593/43.593/0.000 ms\n"
+                              });
+            bigIp.ping('1.2.3.4')
+            .then(function() {
+                test.ok(true);
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+        },
+
+        testNoPacketsReceived: function(test) {
+            icontrolMock.when('create',
+                              '/tm/util/ping',
+                              {
+                                  commandResult: "PING 1.2.3.4 (1.2.3.4) 56(84) bytes of data.\n\n--- 1.2.3.4 ping statistics ---\n2 packets transmitted, 0 received, 100% packet loss, time 2000ms\n\n"
+                              });
+            bigIp.ping('1.2.3.4', util.NO_RETRY)
+            .then(function() {
+                test.ok(false, "Ping should have failed");
+            })
+            .catch(function() {
+                test.ok(true);
+            })
+            .finally(function() {
+                test.done();
+            });
+        },
+
+        testUnknownHost: function(test) {
+            icontrolMock.when('create',
+                              '/tm/util/ping',
+                              {
+                                  commandResult: "ping: unknown host f5.com\n"
+                              });
+            bigIp.ping('1.2.3.4', util.NO_RETRY)
+            .then(function() {
+                test.ok(false, "Ping should have failed");
+            })
+            .catch(function() {
+                test.ok(true);
+            })
+            .finally(function() {
+                test.done();
+            });
+        }
     }
 };

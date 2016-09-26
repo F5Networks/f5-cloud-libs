@@ -85,13 +85,13 @@
                 .option('--set-password <user:new_password>', 'Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.', util.map, passwords)
                 .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords, rootPasswords)
                 .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
+                .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
                 .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.')
                 .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .parse(argv);
-
 
             loggerOptions.console = true;
             loggerOptions.logLevel = options.logLevel;
@@ -262,6 +262,15 @@
                     logger.debug(response);
                     logger.info("Saving config.");
                     return bigIp.save();
+                })
+                .then(function(response) {
+                    logger.debug(response);
+                    var address;
+                    if (options.ping) {
+                        address = options.ping === true ? 'f5.com' : options.ping;
+                        logger.info("Pinging", address);
+                        return bigIp.ping(address);
+                    }
                 })
                 .then(function(response) {
                     logger.debug(response);
