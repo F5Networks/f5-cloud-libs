@@ -49,11 +49,11 @@
 
             testOpts = testOpts || {};
 
-            options.logLevel = 'info';
             options
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
                 .option('-u, --user <user>', 'Current BIG-IP admin user.')
                 .option('-p, --password <password>', 'Current BIG-IP admin user password.')
+                .option('--port <port>', 'Port to connect to. Default 443.', parseInt)
                 .option('--config-sync-ip <config_sync_ip>', 'IP address for config sync.')
                 .option('--create-group', 'Create a device group with the options:')
                 .option('    --device-group <device_group>', '    Name of the device group.')
@@ -68,6 +68,7 @@
                 .option('    --remote-host <remote_ip_address>', '    Managemnt IP for the BIG-IP on which the group exists.')
                 .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
                 .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password.')
+                .option('    --remote-port <remote_port>', '    Remote BIG-IP port to connect to. Default 443.', parseInt)
                 .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join.')
                 .option('    --sync', '    Tell the remote to sync to us after joining the group.')
                 .option('--remove-from-cluster', 'Remove a device from the cluster')
@@ -75,9 +76,11 @@
                 .option('    --device <device_name>', '    Device name to remove.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when clustering is complete.')
-                .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.')
+                .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
                 .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .parse(argv);
+
+            options.port = options.port || 443;
 
             loggerOptions.console = true;
             loggerOptions.logLevel = options.logLevel;
@@ -114,7 +117,13 @@
             logger.info(process.argv[1] + " called with", process.argv.slice().join(" "));
 
             // Create the bigIp client object
-            bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password, logger);
+            bigIp = testOpts.bigIp || new BigIp(options.host,
+                                                options.user,
+                                                options.password,
+                                                {
+                                                    port: options.port,
+                                                    logger: logger
+                                                });
 
             // Start processing...
             logger.info("Cluster starting");
@@ -152,11 +161,15 @@
                     logger.debug(response);
 
                     if (options.joinGroup) {
+                        logger.info("Joining group.");
                         return bigIp.cluster.joinCluster(options.deviceGroup,
                                                          options.remoteHost,
                                                          options.remoteUser,
                                                          options.remotePassword,
-                                                         options.sync);
+                                                         {
+                                                            remotePort: options.remotePort,
+                                                            sync: options.sync
+                                                         });
                     }
                 })
                 .then(function(response) {
