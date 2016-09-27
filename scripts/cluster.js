@@ -53,7 +53,7 @@
                 .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
                 .option('-u, --user <user>', 'BIG-IP admin user name.')
                 .option('-p, --password <password>', 'BIG-IP admin user password.')
-                .option('--port <port>', 'BIG-IP managemet port to connect to. Default 443.', parseInt)
+                .option('--port <port>', 'BIG-IP management SSL port to connect to. Default 443.', parseInt)
                 .option('--config-sync-ip <config_sync_ip>', 'IP address for config sync.')
                 .option('--create-group', 'Create a device group with the options:')
                 .option('    --device-group <device_group>', '    Name of the device group.')
