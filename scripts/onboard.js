@@ -68,12 +68,12 @@
                 }
             };
 
-            options.logLevel = 'info';
             options.reboot = true;
             options
                 .option('--host <ip_address>', 'Current BIG-IP management IP.')
                 .option('-u, --user <user>', 'Current BIG-IP admin user.')
                 .option('-p, --password <password>', 'Current BIG-IP admin user password.')
+                .option('--port <port>', 'Port to connect to. Default 443.', parseInt)
                 .option('--ntp <ntp-server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
                 .option('--tz <timezone>', 'Set timezone for NTP setting.')
                 .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', util.collect, [])
@@ -89,9 +89,11 @@
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                 .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
-                .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.')
+                .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
                 .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .parse(argv);
+
+            options.port = options.port || 443;
 
             loggerOptions.console = true;
             loggerOptions.logLevel = options.logLevel;
@@ -128,7 +130,13 @@
             logger.info(process.argv[1] + " called with", process.argv.slice().join(" "));
 
             // Create the bigIp client object
-            bigIp = testOpts.bigIp || new BigIp(options.host, options.user, options.password, logger);
+            bigIp = testOpts.bigIp || new BigIp(options.host,
+                                                options.user,
+                                                options.password,
+                                                {
+                                                    port: options.port,
+                                                    logger: logger
+                                                });
 
             // Use hostname if both hostname and global-settings hostname are set
             if (globalSettings && options.hostname) {
