@@ -70,10 +70,10 @@
 
             options.reboot = true;
             options
-                .option('--host <ip_address>', 'Current BIG-IP management IP.')
-                .option('-u, --user <user>', 'Current BIG-IP admin user.')
-                .option('-p, --password <password>', 'Current BIG-IP admin user password.')
-                .option('--port <port>', 'Port to connect to. Default 443.', parseInt)
+                .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
+                .option('-u, --user <user>', 'BIG-IP admin user name.')
+                .option('-p, --password <password>', 'BIG-IP admin user password.')
+                .option('--port <port>', 'BIG-IP managemet port to connect to. Default 443.', parseInt)
                 .option('--ntp <ntp-server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
                 .option('--tz <timezone>', 'Set timezone for NTP setting.')
                 .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', util.collect, [])
