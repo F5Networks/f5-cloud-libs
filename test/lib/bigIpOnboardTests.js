@@ -214,5 +214,50 @@ module.exports = {
                     test.done();
                 });
         }
+    },
+
+    testSslPort: {
+        setUp: function(callback) {
+            icontrolMock.when(
+                'list',
+                '/tm/net/self-allow',
+                {
+                    defaults: [
+                        'tcp:123'
+                    ]
+                }
+            );
+            callback();
+        },
+
+        testNotInDefaults: function(test) {
+            var portToAdd = 456;
+            bigIp.onboard.sslPort(portToAdd, null, true)
+            .then(function() {
+                var newDefaults = icontrolMock.getRequest('modify', '/tm/net/self-allow').defaults;
+                test.notStrictEqual(newDefaults.indexOf('tcp:' + portToAdd), -1);
+                test.notStrictEqual(newDefaults.indexOf('tcp:123'), -1);
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+        },
+
+        testAlreadyInDefaults: function(test) {
+            var portToAdd = 123;
+            bigIp.onboard.sslPort(portToAdd, null, true)
+            .then(function() {
+                test.strictEqual(icontrolMock.lastCall.method, 'list');
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+        }
     }
 };

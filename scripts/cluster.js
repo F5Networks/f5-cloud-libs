@@ -68,7 +68,7 @@
                 .option('    --remote-host <remote_ip_address>', '    Managemnt IP for the BIG-IP on which the group exists.')
                 .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
                 .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password.')
-                .option('    --remote-port <remote_port>', '    Remote BIG-IP port to connect to. Default 443.', parseInt)
+                .option('    --remote-port <remote_port>', '    Remote BIG-IP port to connect to. Default is port of this BIG-IP.', parseInt)
                 .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join.')
                 .option('    --sync', '    Tell the remote to sync to us after joining the group.')
                 .option('--remove-from-cluster', 'Remove a device from the cluster')
