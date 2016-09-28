@@ -54,12 +54,14 @@ var TRUST_DOMAIN_NAME = 'Root';
  * Provides clustering functionality to a base BigIp object
  * @class
  *
- * @param {Object} bigIpCore  - Base BigIp object.
- * @param {Object} [logger]   - A logger to use. Default to no logging.
- * @param {Object} [testOpts] - Options used during testing.
+ * @param {Object} bigIpCore          - Base BigIp object.
+ * @param {Object} [options]          - Optional parameters.
+ * @param {Object} [options.logger]   - A logger to use. Default to no logging.
+ * @param {Object} [testOpts]         - Options used during testing.
  */
-function BigIpCluster(bigIpCore, logger, testOpts) {
-    this.logger = logger || Logger.getLogger({logLevel: 'none'});
+function BigIpCluster(bigIpCore, options, testOpts) {
+    options = options || {};
+    this.logger = options.logger || Logger.getLogger({logLevel: 'none'});
     this.core = bigIpCore;
     this.testOpts = testOpts || {};
 
@@ -149,7 +151,7 @@ BigIpCluster.prototype.addToDeviceGroup = function(deviceName, deviceGroup, retr
 };
 
 /**
- * Checks to see if a device is in the trust group
+ * Checks to see if a device is in a device group
  *
  * @param {String[]} deviceNames                    - Device names to check for.
  * @param {String}   deviceGroup                    - Device group to look in.
@@ -157,7 +159,7 @@ BigIpCluster.prototype.addToDeviceGroup = function(deviceName, deviceGroup, retr
  * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
  * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
- * @returns {Promise} A promise which is resolved with an array of names that are in the trust group
+ * @returns {Promise} A promise which is resolved with an array of names that are in the device group
  *                    and in deviceNames, or rejected if an error occurs.
  */
 BigIpCluster.prototype.areInDeviceGroup = function(deviceNames, deviceGroup, retryOptions) {
@@ -256,31 +258,35 @@ BigIpCluster.prototype.configSyncIp = function(configSyncIp, retryOptions) {
 /**
  * Creates a device group
  *
- * @param {String}   name                           - Name for device group.
- * @param {String}   type                           - Type of device group. Must be 'sync-only' || 'sync-failover'.
- * @param {String[]} [devices]                      - Array of device names to add to the group.
- * @param {Object}   [options]                      - Object containg device group options.
- * @param {Boolean}  [options.autoSync]             - Whether or not to autoSync. Default false.
- * @param {Boolean}  [options.saveOnAutoSync]       - If autoSync is eanbled, whether or not to save on
-                                                      autoSync. Default false.
- * @param {Boolean}  [options.networkFailover]      - Whether or not to use network fail-over. Default false.
- * @param {Boolean}  [options.fullLoadOnSync]       - Whether or not to do a full sync. Default false.
- * @param {Boolean}  [options.asmSync]              - Whether or not do to ASM sync. Default false.
- * @param {Object}   [retryOptions]                 - Options for retrying the request.
- * @param {Integer}  [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
- * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ * @param {String}          deviceGroup                    - Name for device group.
+ * @param {String}          type                           - Type of device group. Must be 'sync-only' || 'sync-failover'.
+ * @param {String|String[]} [deviceNames]                  - Device name or array of names to add to the group.
+ * @param {Object}          [options]                      - Object containg device group options.
+ * @param {Boolean}         [options.autoSync]             - Whether or not to autoSync. Default false.
+ * @param {Boolean}         [options.saveOnAutoSync]       - If autoSync is eanbled, whether or not to save on
+                                                             autoSync. Default false.
+ * @param {Boolean}         [options.networkFailover]      - Whether or not to use network fail-over. Default false.
+ * @param {Boolean}         [options.fullLoadOnSync]       - Whether or not to do a full sync. Default false.
+ * @param {Boolean}         [options.asmSync]              - Whether or not do to ASM sync. Default false.
+ * @param {Object}          [retryOptions]                 - Options for retrying the request.
+ * @param {Integer}         [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
+ * @param {Integer}         [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIpCluster.prototype.createDeviceGroup = function(name, type, devices, options, retryOptions) {
+BigIpCluster.prototype.createDeviceGroup = function(deviceGroup, type, deviceNames, options, retryOptions) {
 
-    if (!name) {
-        return q.reject(new Error("name is required"));
+    if (!deviceGroup) {
+        return q.reject(new Error("deviceGroup is required"));
     }
 
     if (type !== 'sync-only' &amp;&amp; type !== 'sync-failover') {
         return q.reject(new Error("type must be 'sync-only' or 'sync-failover'"));
+    }
+
+    if (!Array.isArray(deviceNames)) {
+        deviceNames = [deviceNames];
     }
 
     retryOptions = retryOptions || this.core.DEFAULT_RETRY_OPTIONS;
@@ -298,7 +304,7 @@ BigIpCluster.prototype.createDeviceGroup = function(name, type, devices, options
                     var i;
 
                     for (i = 0; i &lt; deviceGroups.length; ++i) {
-                        if (deviceGroups[i].name === name) {
+                        if (deviceGroups[i].name === deviceGroup) {
                             return true;
                         }
                     }
@@ -307,9 +313,9 @@ BigIpCluster.prototype.createDeviceGroup = function(name, type, devices, options
                 if (response) {
                     if (!containsGroup(response)) {
                         groupSettings = {
-                            name: name,
+                            name: deviceGroup,
                             type: type,
-                            devices: devices || []
+                            devices: deviceNames || []
                         };
 
                         options = options || {};
@@ -327,6 +333,26 @@ BigIpCluster.prototype.createDeviceGroup = function(name, type, devices, options
                         }
 
                         return this.core.create(DEVICE_GROUP_PATH, groupSettings, undefined, util.NO_RETRY);
+                    }
+                    else {
+                        // If the device group exists, check that the requested devices are in it
+                        return this.areInDeviceGroup(deviceNames, deviceGroup, retryOptions)
+                            .then(function(devicesInGroup) {
+                                var promises = [];
+
+                                deviceNames.forEach(function(deviceName) {
+                                    if (devicesInGroup.indexOf(deviceName) === -1) {
+                                        promises.push(
+                                            {
+                                                promise: this.addToDeviceGroup,
+                                                arguments: [deviceName, deviceGroup]
+                                            }
+                                        );
+                                    }
+                                }.bind(this));
+
+                                return util.callInSerial(this, promises);
+                            }.bind(this));
                     }
                 }
             }.bind(this));
@@ -414,30 +440,41 @@ BigIpCluster.prototype.isInTrustGroup = function(deviceName, retryOptions) {
  * The device group must already exist on the remote host.
  *
  *
- * @param {String}  deviceGroup    - Name of device group to join.
- * @param {String}  remoteHost     - Managemnt IP for the remote BIG-IP on which the group exists.
- * @param {String}  remoteUser     - Remote BIG-IP admin user name.
- * @param {String}  remotePassword - Remote BIG-IP admin user password.
- * @param {Boolean} [sync]         - Whether or not to perform a sync. Default true.
+ * @param {String}  deviceGroup          - Name of device group to join.
+ * @param {String}  remoteHost           - Managemnt IP for the remote BIG-IP on which the group exists.
+ * @param {String}  remoteUser           - Remote BIG-IP admin user name.
+ * @param {String}  remotePassword       - Remote BIG-IP admin user password.
+ * @param {Object}  [options]            - Optional arguments.
+ * @param {Number}  [options.remotePort] - Remote BIG-IP port to connect to. Default the port of this BIG-IP instance.
+ * @param {Boolean} [options.sync]       - Whether or not to perform a sync. Default true.
  *
  * @returns {Promise} A promise which is resolved when the request is complete
  *                    or rejected if an error occurs.
  */
-BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUser, remotePassword, sync) {
+BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUser, remotePassword, options) {
     var BigIp = require('./bigIp');
     var remoteBigIp;
     var hostname;
     var version;
 
-    if (typeof sync === 'undefined') {
-        sync = true;
+    options = options || {};
+    options.remotePort = options.remotePort || this.core.port;
+
+    if (typeof options.sync === 'undefined') {
+        options.sync = true;
     }
 
     if (!deviceGroup || !remoteHost || !remoteUser || !remotePassword) {
-        throw new Error('When joinging a device group, device-group, remote-host, remote-user, and remote-password are required.');
+        throw new Error('When joining a device group, device-group, remote-host, remote-user, and remote-password are required.');
     }
 
-    remoteBigIp = new BigIp(remoteHost, remoteUser, remotePassword);
+    remoteBigIp = new BigIp(remoteHost,
+                            remoteUser,
+                            remotePassword,
+                            {
+                                port: options.remotePort,
+                                logger: this.logger
+                            });
 
     this.logger.info("Checking device group on remote host.");
 
@@ -462,7 +499,7 @@ BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUse
         .then(function(response) {
             this.logger.debug(response);
 
-            if (sync) {
+            if (options.sync) {
                 // If the group datasync-global-dg is present (which it likely is if ASM is provisioned)
                 // we need to force a sync of it as well. Otherwise we will not be able to determine
                 // the overall sync status because there is no way to get the sync status
@@ -543,7 +580,7 @@ BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUse
 
             this.logger.debug(response);
 
-            if (sync) {
+            if (options.sync) {
                 return util.tryUntil(this, {maxRetries: 10, retryIntervalMs: 30000}, syncAndCheck, [response]);
             }
         }.bind(this));
@@ -766,7 +803,7 @@ module.exports = BigIpCluster;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Sep 21 2016 16:30:54 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Sep 27 2016 16:49:02 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
