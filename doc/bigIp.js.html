@@ -54,15 +54,19 @@ var BigIpOnboard = require('./bigIpOnboard');
  * Creates the BIG-IP client
  * @class
  *
- * @param {String} host       - Host name or IP address.
- * @param {String} user       - User with admin rights.
- * @param {String} password   - Password for user.
- * @param {Object} [logger]   - A logger to use. Default to no logging.
- * @param {Object} [testOpts] - Options used during testing.
+ * @param {String} host               - Host name or IP address.
+ * @param {String} user               - User with admin rights.
+ * @param {String} password           - Password for user.
+ * @param {Object} [options]          - Optional parameters.
+ * @param {Number} [options.port]     - Port to connect to. Default 443.
+ * @param {Object} [options.logger]   - A logger to use. Default to no logging.
+ * @param {Object} [testOpts]         - Options used during testing.
  */
-function BigIp(host, user, password, logger, testOpts) {
+function BigIp(host, user, password, options, testOpts) {
 
-    this.logger = logger || Logger.getLogger({logLevel: 'none'});
+    options = options || {};
+
+    this.logger = options.logger || Logger.getLogger({logLevel: 'none'});
     util.logger = this.logger;
 
     this.DEFAULT_RETRIES = 60;
@@ -72,21 +76,17 @@ function BigIp(host, user, password, logger, testOpts) {
         retryIntervalMs: this.DEFAULT_RETRY_INTERVAL
     };
 
-    this.host = host;
-    this.user = user;
-    this.password = password;
-
     testOpts = testOpts || {};
 
     if (testOpts.icontrol) {
         this.icontrol = testOpts.icontrol;
     }
     else {
-        this.init(this.host, this.user, this.password);
+        this.init(host, user, password, options.port || 443);
     }
 
-    this.cluster = new BigIpCluster(this, logger, testOpts);
-    this.onboard = new BigIpOnboard(this, logger, testOpts);
+    this.cluster = new BigIpCluster(this, {logger: this.logger}, testOpts);
+    this.onboard = new BigIpOnboard(this, {logger: this.logger}, testOpts);
 }
 
 /**
@@ -94,11 +94,18 @@ function BigIp(host, user, password, logger, testOpts) {
  *
  * @param {String} host     - Host to connect to.
  * @param {String} user     - User (with admin rights).
- # @param {String} password - Password for the user.
+ * @param {String} password - Password for the user.
+ * @param {Number} port     - Port to connect to
  */
-BigIp.prototype.init = function(host, user, password) {
+BigIp.prototype.init = function(host, user, password, port) {
+    this.host = host;
+    this.user = user;
+    this.password = password;
+    this.port = port;
+
     this.icontrol = new IControl({
         host: host,
+        port: port,
         user: user,
         password: password,
         basePath: '/mgmt',
@@ -324,6 +331,57 @@ BigIp.prototype.load = function(file, options, retryOptions) {
                     }
                 }
                 return this.create('/tm/sys/config', commandBody, undefined, util.NO_RETRY);
+            }.bind(this));
+    };
+
+    return util.tryUntil(this, retryOptions, func);
+};
+
+/**
+ * Pings a given address once
+ *
+ * @param {String}  address                        - IP address or hostname to ping.
+ * @param {Object}  [retryOptions]                 - Options for retrying the request.
+ * @param {Integer} [retryOptions.maxRetries]      - Number of times to retry if first try fails. 0 to not retry. Default 60.
+ * @param {Integer} [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
+ *
+ * @returns {Promise} A promise which is resolved if the ping succeeds
+ *                    or rejected if an error occurs.
+ */
+BigIp.prototype.ping = function(address, retryOptions) {
+    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+
+    if (!address) {
+        return q.reject('Address is required for ping.');
+    }
+
+    var func = function() {
+        return this.ready()
+            .then(function() {
+                var pingCommand = {
+                    command: 'run',
+                    utilCmdArgs: address + ' -c 1'
+                };
+                return this.create('/tm/util/ping', pingCommand, undefined, util.NO_RETRY);
+            }.bind(this))
+            .then(function(response) {
+                var receivedRegex = new RegExp(/transmitted, (\d+) received/);
+                var receivedCheck = receivedRegex.exec(response.commandResult);
+                var packetsReceived;
+
+                if (receivedCheck.length > 0) {
+                    packetsReceived = receivedCheck[1];
+                    this.logger.verbose("Ping reveived", packetsReceived, "packet(s).");
+                    if (packetsReceived > 0) {
+                        return true;
+                    }
+                    else {
+                        return q.reject();
+                    }
+                }
+                else {
+                    return q.reject();
+                }
             }.bind(this));
     };
 
@@ -585,7 +643,7 @@ module.exports = BigIp;</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Sep 21 2016 16:30:54 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Sep 27 2016 16:49:02 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

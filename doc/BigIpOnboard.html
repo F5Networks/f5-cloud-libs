@@ -40,7 +40,7 @@
 
     
 
-    <h4 class="name" id="BigIpOnboard"><span class="type-signature"></span>new BigIpOnboard<span class="signature">(bigIpCore, logger<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="BigIpOnboard"><span class="type-signature"></span>new BigIpOnboard<span class="signature">(bigIpCore, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
     
 
@@ -116,6 +116,60 @@
 
         <tr>
             
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional parameters.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
                 <td class="name"><code>logger</code></td>
             
 
@@ -143,6 +197,13 @@
             
 
             <td class="description last">A logger to use. Default to no logging.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -183,7 +244,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line29">line 29</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line30">line 30</a>
     </li></ul></dd>
     
 
@@ -471,7 +532,7 @@ If settings include hostname, a CM move of hostname is also performed.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line49">line 49</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line51">line 51</a>
     </li></ul></dd>
     
 
@@ -765,7 +826,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line92">line 92</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line94">line 94</a>
     </li></ul></dd>
     
 
@@ -1185,7 +1246,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line152">line 152</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line154">line 154</a>
     </li></ul></dd>
     
 
@@ -1542,7 +1603,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line227">line 227</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -1697,7 +1758,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line282">line 282</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line284">line 284</a>
     </li></ul></dd>
     
 
@@ -1988,7 +2049,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line346">line 346</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line348">line 348</a>
     </li></ul></dd>
     
 
@@ -2038,6 +2099,330 @@ old hostname to new.
 
 
         
+            
+
+    
+
+    <h4 class="name" id="sslPort"><span class="type-signature"></span>sslPort<span class="signature">(sslPort, retryOptions<span class="signature-attributes">opt</span>, noInit<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Sets the SSL port on which the management IP is listening
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sslPort</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">SSL port to listen on.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Options for retrying the request.
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>maxRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>retryIntervalMs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Milliseconds between retries. Default 10000.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>noInit</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">For testing only. Used so that we don't reset iControl during unit tests.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line385">line 385</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise which is resolved when the request is complete
+                   or rejected if an error occurs.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
     
 
     
@@ -2059,7 +2444,7 @@ old hostname to new.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Sep 21 2016 16:30:54 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Sep 27 2016 16:49:02 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
