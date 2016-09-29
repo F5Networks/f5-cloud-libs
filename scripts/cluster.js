@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+'use-strict';
+
 (function() {
 
     var DEFAULT_LOG_FILE = '/tmp/cluster.log';
@@ -34,9 +36,11 @@
          * @param {Function} cb - Optional cb to call when done
          */
         run: function(argv, testOpts, cb) {
-
+            var q = require('q');
             var BigIp = require('../lib/bigIp');
             var Logger = require('../lib/logger');
+            var ipc = require('../lib/ipc');
+            var signals = require('../lib/signals');
             var util = require('../lib/util');
             var loggerOptions = {};
             var logger;
@@ -75,7 +79,8 @@
                 .option('    --device-group <device_group>', '    Name of the device group.')
                 .option('    --device <device_name>', '    Device name to remove.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
-                .option('--signal <pid>', 'Process ID to send USR1 to when clustering is complete.')
+                .option('--signal <signal>', 'Signal to send when done. Default CLUSTER_DONE.')
+                .option('--wait-for <signal>', 'Wait for the named signal before running.')
                 .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
                 .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .parse(argv);
@@ -126,9 +131,20 @@
                                                 });
 
             // Start processing...
-            logger.info("Cluster starting");
-            logger.info("Waiting for BIG-IP to be ready.");
-            bigIp.ready()
+            q()
+                .then(function() {
+                    if (options.waitFor) {
+                        logger.info("Waiting for", options.waitFor);
+                        return ipc.once(options.waitFor);
+                    }
+                })
+                .then(function() {
+                    logger.info("Cluster starting.");
+                    ipc.send(signals.CLUSTER_RUNNING);
+
+                    logger.info("Waiting for BIG-IP to be ready.");
+                    return bigIp.ready();
+                })
                 .then(function() {
                     logger.info("BIG-IP is ready.");
 
@@ -193,15 +209,7 @@
                     logger.debug(response);
                     logger.info("Cluster finished");
 
-                    if (options.signal) {
-                        logger.info("Signalling", options.signal);
-                        try {
-                            process.kill(options.signal, 'SIGUSR1');
-                        }
-                        catch (err) {
-                            logger.error("Signal failed:", err.message);
-                        }
-                    }
+                    ipc.send(options.signal || signals.CLUSTER_DONE);
 
                     if (cb) {
                         cb();

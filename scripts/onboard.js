@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 'use strict';
+
 (function() {
 
     var DEFAULT_LOG_FILE = '/tmp/onboard.log';
@@ -37,6 +39,8 @@
             var q = require("q");
             var BigIp = require('../lib/bigIp');
             var Logger = require('../lib/logger');
+            var ipc = require('../lib/ipc');
+            var signals = require('../lib/signals');
             var util = require('../lib/util');
             var dbVars = {};
             var modules = {};
@@ -89,7 +93,8 @@
                 .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                 .option('--no-reboot', 'Skip reboot even if it is recommended.')
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
-                .option('--signal <pid>', 'Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).')
+                .option('--signal <signal>', 'Signal to send when done. Default ONBOARD_DONE.')
+                .option('--wait-for <signal>', 'Wait for the named signal before running.')
                 .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
                 .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .parse(argv);
@@ -149,9 +154,20 @@
             }
 
             // Start processing...
-            logger.info("Onboard starting");
-            logger.info("Waiting for BIG-IP to be ready.");
-            bigIp.ready()
+            q()
+                .then(function() {
+                    if (options.waitFor) {
+                        logger.info("Waiting for", options.waitFor);
+                        return ipc.once(options.waitFor);
+                    }
+                })
+                .then(function() {
+                    logger.info("Onboard starting.");
+                    ipc.send(signals.ONBOARD_RUNNING);
+
+                    logger.info("Waiting for BIG-IP to be ready.");
+                    return bigIp.ready();
+                })
                 .then(function() {
                     logger.info("BIG-IP is ready.");
 
@@ -316,15 +332,7 @@
                 .done(function() {
                     logger.info("Onboard finished");
 
-                    if (options.signal) {
-                        logger.info("Signalling", options.signal);
-                        try {
-                            process.kill(options.signal, 'SIGUSR1');
-                        }
-                        catch (err) {
-                            logger.error("Signal failed:", err.message);
-                        }
-                    }
+                    ipc.send(options.signal || signals.ONBOARD_DONE);
 
                     if (cb) {
                         cb();
