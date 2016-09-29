@@ -20,9 +20,6 @@
     var DEFAULT_LOG_FILE = '/tmp/cluster.log';
 
     var options = require('commander');
-    var globalSettings = {
-        guiSetup: 'disabled'
-    };
     var runner;
 
     module.exports = runner = {
@@ -215,10 +212,6 @@
                         cb();
                     }
                 });
-        },
-
-        getGlobalSettings: function() {
-            return globalSettings;
         },
 
         getOptions: function() {
