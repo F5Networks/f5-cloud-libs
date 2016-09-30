@@ -13,12 +13,13 @@
 # If our mods to node-icontrol are pushed to npm, we can push
 # f5-cloud-libs to npm as well and use npm here instead
 
-ARGS=`getopt -o o:c: --long onboard:,cluster: -n $0 -- "$@"`
+ARGS=`getopt -o o:c:s: --long onboard:,cluster:,script: -n $0 -- "$@"`
 eval set -- "$ARGS"
 
 # Defaults for optional argutments
 onboardArgs=''
 clusterArgs=''
+scriptArgs=''
 
 # Parse the command line arguments
 while true; do
@@ -28,6 +29,9 @@ while true; do
             shift 2;;
         -c|--cluster)
             clusterArgs=$2
+            shift 2;;
+        -s|--script)
+            scriptArgs=$2
             shift 2;;
         --)
             shift
@@ -52,3 +56,6 @@ if [ -n "$clusterArgs" ]; then
     f5-rest-node scripts/cluster.js $clusterArgs &
 fi
 
+if [ -n "$scriptArgs" ]; then
+    f5-rest-node scripts/runScript.js $scriptArgs &
+fi
