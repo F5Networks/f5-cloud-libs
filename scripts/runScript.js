@@ -33,6 +33,7 @@
          * @param {Function} cb - Optional cb to call when done
          */
         run: function(argv, testOpts, cb) {
+            var fs = require('fs');
             var q = require('q');
             var child_process = require('child_process');
             var Logger = require('../lib/logger');
@@ -47,7 +48,8 @@
 
             options
                 .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
-                .option('-f --file <script>', 'File name of script to run.')
+                .option('-f, --file <script>', 'File name of script to run.')
+                .option('-u, --url <url>', 'URL from which to download script to run. This will override --file.')
                 .option('--cl-args <command_line_args>', 'String of arguments to send to the script as command line arguments.')
                 .option('--signal <signal>', 'Signal to send when done. Default SCRIPT_DONE.')
                 .option('--wait-for <signal>', 'Wait for the named signal before running.')
@@ -88,6 +90,25 @@
                 })
                 .then(function() {
                     var deferred = q.defer();
+
+                    if (options.url) {
+                        util.download(options.url)
+                            .then(function(fileName) {
+                                options.file = fileName;
+                                fs.chmod(fileName, 0755, function() {
+                                    deferred.resolve();
+                                });
+                            })
+                            .catch(function(err) {
+                                deferred.reject(err);
+                            })
+                            .done();
+                    }
+
+                    return deferred.promise;
+                })
+                .then(function() {
+                    var deferred = q.defer();
                     var args = [];
                     var cp;
                     if (options.file) {
@@ -111,6 +132,9 @@
                             logger.info('child process exited with code', code);
                             deferred.resolve();
                         });
+                    }
+                    else {
+                        deferred.resolve();
                     }
 
                     return deferred.promise;
