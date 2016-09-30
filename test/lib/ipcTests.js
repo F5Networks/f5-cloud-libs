@@ -19,23 +19,31 @@ var ipc = require('../../lib/ipc');
 
 module.exports = {
     testOnce: function(test) {
-        var signalled = false;
+        var signalled = 0;
+
+        var checkSignalled = function(expected) {
+            test.strictEqual(signalled, expected);
+        };
+
+        test.expect(2);
+
         ipc.once('foo')
             .then(function() {
-                signalled = true;
-                test.ok(true);
-                test.done();
+                signalled++;
             });
 
-        test.ok(!signalled, "Should not have been signalled yet.");
+        test.strictEqual(signalled, 0);
         setTimeout(ipc.send, 50, 'foo');
+        setTimeout(ipc.send, 50, 'foo');
+        setTimeout(checkSignalled, 100, 1);
+        setTimeout(test.done, 200);
     },
 
     testOnceTwice: function(test) {
         var signalled = 0;
 
-        var checkSignalled = function() {
-            test.strictEqual(signalled, 2);
+        var checkSignalled = function(expected) {
+            test.strictEqual(signalled, expected);
         };
 
         test.expect(2);
@@ -52,7 +60,7 @@ module.exports = {
         test.strictEqual(signalled, 0);
         setTimeout(ipc.send, 50, 'foo');
         setTimeout(ipc.send, 50, 'foo');
-        setTimeout(checkSignalled, 100);
+        setTimeout(checkSignalled, 100, 2);
         setTimeout(test.done, 200);
     }
 };
