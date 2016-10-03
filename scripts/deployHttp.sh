@@ -1,14 +1,15 @@
 #!/bin/bash
 
-USAGE_SHORT="Usage: $0 --help --user <user> --password <password> --pool-name <pool_name> --vs-addr <vs_addr> --vs-port <vs_port> --app-addr <app_ip> --app-port <app_port> --montor <monitor> --ssl"
+USAGE_SHORT="Usage: $0 --help --user <user> --password <password> --vs-addr <vs_addr> --vs-port <vs_port> --app-name <app_name> --app-fqdn <FQDN_for_app> --app-addr <app_ip> --app-port <app_port> --montor <monitor> --ssl"
 read -r -d '' USAGE_LONG << EOM
     Usage: $0
         --help          Print this message and exit.
         -u|--user       User to run as.
         -p|--password   Password for the user.
-        --pool-name     Name for the pool
         --vs-addr       IP address for the virtual. Default 0.0.0.0
         --vs-port       Port for the virtual. Default 80.
+        --app-name      Name for the application.
+        --app-fqdn      FQDN for application.
         --app-addr      IP address for the application.
         --app-port      Port for the application. Default 80.
         --monitor       Monitor to use for the application. Default http.
@@ -18,6 +19,7 @@ EOM
 # Defaults for optional argutments
 USER=''
 PASSWORD=''
+APP_NAME=''
 APP_FQDN=''
 VS_ADDR='0.0.0.0'
 VS_PORT='80'
@@ -27,7 +29,7 @@ MONITOR='http'
 SSL='no_ssl'
 HELP=false
 
-ARGS=`getopt -o hu:p: --long user:,password:,app-fqdn:,vs-addr:,vs-port:,app-addr:,monitor:,help,ssl -n $0 -- "$@"`
+ARGS=`getopt -o hu:p: --long user:,password:,vs-addr:,vs-port:,app-name:,app-fqdn:,app-addr:,app-port:,monitor:,help,ssl -n $0 -- "$@"`
 if [ $? -ne 0 ]; then
     echo $USAGE_SHORT
     exit
@@ -46,6 +48,9 @@ while true; do
             shift 2;;
         -p|--password)
             PASSWORD=$2
+            shift 2;;
+        --app-name)
+            APP_NAME=$2
             shift 2;;
         --app-fqdn)
             APP_FQDN=$2
@@ -87,7 +92,7 @@ sleep 10
 
 curl -sku $USER:$PASSWORD -X POST -H "Content-Type: application/json" https://localhost/mgmt/tm/sys/application/service/ -d \
     "{
-        \"name\": \"deployment_test\",
+        \"name\": \"$APP_NAME\",
         \"partition\": \"Common\",
         \"deviceGroup\": \"/Common/Sync\",
         \"strictUpdates\": \"disabled\",
