@@ -53,6 +53,7 @@
                 .option('--cl-args <command_line_args>', 'String of arguments to send to the script as command line arguments.')
                 .option('--signal <signal>', 'Signal to send when done. Default SCRIPT_DONE.')
                 .option('--wait-for <signal>', 'Wait for the named signal before running.')
+                .option('--cwd <directory>', 'Current working directory for the script to run in.')
                 .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
                 .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                 .parse(argv);
@@ -104,13 +105,18 @@
                             })
                             .done();
                     }
+                    else {
+                        deferred.resolve();
+                    }
 
                     return deferred.promise;
                 })
                 .then(function() {
                     var deferred = q.defer();
                     var args = [];
+                    var cp_options = {};
                     var cp;
+
                     if (options.file) {
                         logger.info("Custom script starting.");
                         ipc.send(signals.SCRIPT_RUNNING);
@@ -119,7 +125,12 @@
                             args = options.clArgs.split(/\s+/);
                         }
 
-                        cp = child_process.spawn(options.file, args);
+                        if (options.cwd) {
+                            cp_options.cwd = options.cwd;
+                        }
+
+                        cp = child_process.spawn(options.file, args, cp_options);
+
                         cp.stdout.on('data', function(data) {
                             logger.info(data.toString().trim());
                         });
