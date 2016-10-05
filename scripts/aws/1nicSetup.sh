@@ -1,19 +1,5 @@
 #!/bin/bash
 
-# Copyright 2016 F5 Networks, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 USAGE_SHORT="Usage: $0"
 read -r -d '' USAGE_LONG << EOM
     Usage: $0
@@ -29,6 +15,8 @@ fi
 eval set -- "$ARGS"
 
 # Defaults
+MGMT_IP=''
+GATEWAY_IP=''
 HELP=false
 
 # Parse the command line arguments
@@ -50,22 +38,27 @@ fi
 
 . ../util.sh
 
+/usr/bin/setdb provision.1nicautoconfig disable
+
+wait_mcp_running
+if [ $? -ne 0 ]; then
+    echo "mcpd not ready in time."
+    exit 1
+fi
+
 # Get the management IP address. Need to wait till it's available via ifconfig
 # since tmsh will have the DHCP address before the correct management IP is ready
-# Then need wait till tmsh agrees since that is updated after eth0 is configured
 function wait_for_management_ip() {
     RETRY_INTERVAL=10
     MAX_TRIES=60
     failed=0
 
     while true; do
-        MGMT_ADDR_TMSH=$(tmsh list sys management-ip | awk '/management-ip/ {print $3}' | awk -F "/" '{print $1}')
-        MGMT_ADDR_ETH0=`ifconfig eth0 | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
-
-        if [[ $MGMT_ADDR_TMSH != $MGMT_ADDR_ETH0 ]]; then
-            echo "Management IP and eth0 not yet in sync."
-        elif [ -n $MGMT_ADDR_TMSH ]; then
-            MGMT_ADDR=$MGMT_ADDR_TMSH
+        MGMT_ADDR=`ifconfig eth0 | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
+        if [[ $mgmt_ip == *"error"* ]]; then
+            echo "eth0 not found yet."
+            failed=$(($failed + 1))
+        elif [ -n $MGMT_ADDR ]; then
             return 0
         fi
 
@@ -78,17 +71,9 @@ function wait_for_management_ip() {
     done
 }
 
-/usr/bin/setdb provision.1nicautoconfig disable
-
-wait_mcp_running
-if [ $? -ne 0 ]; then
-    echo "mcpd not ready in time."
-    exit 1
-fi
-
 wait_for_management_ip
 if [ $? -ne 0 ]; then
-    echo "Could not get management ip."
+    echo "Cound not get management ip."
     exit 1
 fi
 
