@@ -15,8 +15,6 @@ fi
 eval set -- "$ARGS"
 
 # Defaults
-MGMT_IP=''
-GATEWAY_IP=''
 HELP=false
 
 # Parse the command line arguments
@@ -38,14 +36,6 @@ fi
 
 . ../util.sh
 
-/usr/bin/setdb provision.1nicautoconfig disable
-
-wait_mcp_running
-if [ $? -ne 0 ]; then
-    echo "mcpd not ready in time."
-    exit 1
-fi
-
 # Get the management IP address. Need to wait till it's available via ifconfig
 # since tmsh will have the DHCP address before the correct management IP is ready
 function wait_for_management_ip() {
@@ -55,7 +45,7 @@ function wait_for_management_ip() {
 
     while true; do
         MGMT_ADDR=`ifconfig eth0 | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
-        if [[ $mgmt_ip == *"error"* ]]; then
+        if [[ $MGMT_ADDR == *"error"* ]]; then
             echo "eth0 not found yet."
             failed=$(($failed + 1))
         elif [ -n $MGMT_ADDR ]; then
@@ -71,9 +61,17 @@ function wait_for_management_ip() {
     done
 }
 
+/usr/bin/setdb provision.1nicautoconfig disable
+
+wait_mcp_running
+if [ $? -ne 0 ]; then
+    echo "mcpd not ready in time."
+    exit 1
+fi
+
 wait_for_management_ip
 if [ $? -ne 0 ]; then
-    echo "Cound not get management ip."
+    echo "Could not get management ip."
     exit 1
 fi
 
