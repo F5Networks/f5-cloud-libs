@@ -85,10 +85,14 @@ if [ $HELP = true ]; then
 fi
 
 curl -k -s -f --retry 20 --retry-delay 10 --retry-max-time 300 -o /config/http_iapp http://cdn.f5.com/product/blackbox/staging/azure/f5.http.v1.2.0rc4.tmpl
+echo Template downloaded
 
 tmsh load sys config merge file /config/http_iapp
+echo sys config merged
 
-sleep 10
+sleep 20
+
+echo about to curl -sku $USER:$PASSWORD -X POST -H "Content-Type: application/json" https://localhost/mgmt/tm/sys/application/service/
 
 curl -sku $USER:$PASSWORD -X POST -H "Content-Type: application/json" https://localhost/mgmt/tm/sys/application/service/ -d \
     "{
@@ -140,19 +144,9 @@ curl -sku $USER:$PASSWORD -X POST -H "Content-Type: application/json" https://lo
         ],
         \"variables\": [
             {
-                \"name\": \"asm__language\",
-                \"encrypted\": \"no\",
-                \"value\": \"utf-8\"
-            },
-            {
-                \"name\": \"asm__security_logging\",
-                \"encrypted\": \"no\",
-                \"value\": \"Log illegal requests\"
-            },
-            {
                 \"name\": \"asm__use_asm\",
                 \"encrypted\": \"no\",
-                \"value\": \"/Common/test_ltm_policy\"
+                \"value\": \"/#do_not_use#\"
             },
             {
                 \"name\": \"client__http_compression\",
