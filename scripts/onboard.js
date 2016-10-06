@@ -326,13 +326,15 @@
                         }
                     }
                 })
+                .then(function(response) {
+                    logger.debug(response);
+                    ipc.send(options.signal || signals.ONBOARD_DONE);
+                })
                 .catch(function(err) {
                     logger.error("BIG-IP onboard failed", err);
                 })
                 .done(function() {
-                    logger.info("Onboard finished");
-
-                    ipc.send(options.signal || signals.ONBOARD_DONE);
+                    logger.info("Onboard finished.");
 
                     if (cb) {
                         cb();
