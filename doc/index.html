@@ -60,17 +60,20 @@
 </ul>
 </li>
 </ul>
-<h2>Scripts</h2><h3>onboard.js</h3><pre class="prettyprint source"><code>Usage: onboard [options]
+<h2>Scripts</h2><h3>onboard.js</h3><p>Does initial configuration and provisioning of a BIG-IP.</p>
+<pre class="prettyprint source"><code>Usage: onboard [options]
 
 Options:
 
   -h, --help                                               output usage information
-  --host &lt;ip_address>                                      Current BIG-IP management IP.
-  -u, --user &lt;user>                                        Current BIG-IP admin user.
-  -p, --password &lt;password>                                Current BIG-IP admin user password.
+  --host &lt;ip_address>                                      BIG-IP management IP to which to send commands.
+  -u, --user &lt;user>                                        BIG-IP admin user name.
+  -p, --password &lt;password>                                BIG-IP admin user password.
+  --port &lt;port>                                            BIG-IP management SSL port to connect to. Default 443.
   --ntp &lt;ntp-server>                                       Set NTP server. For multiple NTP servers, use multiple --ntp entries.
   --tz &lt;timezone>                                          Set timezone for NTP setting.
   --dns &lt;DNS server>                                       Set DNS server. For multiple DNS severs, use multiple --dns entries.
+  --ssl-port &lt;ssl_port>                                    Set the SSL port for the management IP
   -l, --license &lt;license_key>                              License BIG-IP with &lt;license_key>.
   -a, --add-on &lt;add_on_key>                                License BIG-IP with &lt;add_on_key>. For multiple keys, use multiple -a entries.
   -n, --hostname &lt;hostname>                                Set BIG-IP hostname.
@@ -79,18 +82,22 @@ Options:
   --set-password &lt;user:new_password>                       Set &lt;user> password to &lt;new_password>. For multiple users, use multiple --set-password entries.
   --set-root-password &lt;old:old_password,new:new_password>  Set the password for the root user from &lt;old_password> to &lt;new_password>.
   -m, --module &lt;name:level>                                Provision module &lt;name> to &lt;level>. For multiple modules, use multiple -m entries.
+  --ping [address]                                         Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
   --no-reboot                                              Skip reboot even if it is recommended.
   --background                                             Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
-  --signal &lt;pid>                                           Process ID to send USR1 to when onboarding is complete (but before rebooting if we are rebooting).
+  --signal &lt;signal>                                        Signal to send when done. Default ONBOARD_DONE.
+  --wait-for &lt;signal>                                      Wait for the named signal before running.
   --log-level &lt;level>                                      Log level (none, error, warn, info, verbose, debug, silly). Default is info.
-  -o, --output &lt;file>                                      Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log</code></pre><h3>cluster.js</h3><pre class="prettyprint source"><code>Usage: cluster [options]
+  -o, --output &lt;file>                                      Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log</code></pre><h3>cluster.js</h3><p>Sets up BIG-IPs in a cluster.</p>
+<pre class="prettyprint source"><code>Usage: cluster [options]
 
 Options:
 
   -h, --help                                     output usage information
-  --host &lt;ip_address>                            Current BIG-IP management IP.
-  -u, --user &lt;user>                              Current BIG-IP admin user.
-  -p, --password &lt;password>                      Current BIG-IP admin user password.
+  --host &lt;ip_address>                            BIG-IP management IP to which to send commands.
+  -u, --user &lt;user>                              BIG-IP admin user name.
+  -p, --password &lt;password>                      BIG-IP admin user password.
+  --port &lt;port>                                  BIG-IP management SSL port to connect to. Default 443.
   --config-sync-ip &lt;config_sync_ip>              IP address for config sync.
   --create-group                                 Create a device group with the options:
       --device-group &lt;device_group>                  Name of the device group.
@@ -105,15 +112,29 @@ Options:
       --remote-host &lt;remote_ip_address>              Managemnt IP for the BIG-IP on which the group exists.
       --remote-user &lt;remote_user                     Remote BIG-IP admin user name.
       --remote-password &lt;remote_password>            Remote BIG-IP admin user password.
+      --remote-port &lt;remote_port>                    Remote BIG-IP port to connect to. Default is port of this BIG-IP.
       --device-group &lt;remote_device_group_name>      Name of existing device group on remote BIG-IP to join.
       --sync                                         Tell the remote to sync to us after joining the group.
   --remove-from-cluster                          Remove a device from the cluster
       --device-group &lt;device_group>                  Name of the device group.
       --device &lt;device_name>                         Device name to remove.
   --background                                   Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
-  --signal &lt;pid>                                 Process ID to send USR1 to when clustering is complete.
+  --signal &lt;signal>                              Signal to send when done. Default CLUSTER_DONE.
+  --wait-for &lt;signal>                            Wait for the named signal before running.
   --log-level &lt;level>                            Log level (none, error, warn, info, verbose, debug, silly). Default is info.
-  -o, --output &lt;file>                            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/cluster.log</code></pre></article>
+  -o, --output &lt;file>                            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/cluster.log</code></pre><h3>runScript.js</h3><p>Runs an arbitrary script.</p>
+<pre class="prettyprint source"><code>Usage: runScript [options]
+
+Options:
+
+  -h, --help                     output usage information
+  --background                   Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
+  -f --file &lt;script>             File name of script to run.
+  --cl-args &lt;command_line_args>  String of arguments to send to the script as command line arguments.
+  --signal &lt;signal>              Signal to send when done. Default CLUSTER_DONE.
+  --wait-for &lt;signal>            Wait for the named signal before running.
+  --log-level &lt;level>            Log level (none, error, warn, info, verbose, debug, silly). Default is info.
+  -o, --output &lt;file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log</code></pre></article>
     </section>
 
 
@@ -130,7 +151,7 @@ Options:
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Sep 27 2016 16:49:02 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 15:59:05 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -60,33 +60,18 @@ var BigIpOnboard = require('./bigIpOnboard');
  * @param {Object} [options]          - Optional parameters.
  * @param {Number} [options.port]     - Port to connect to. Default 443.
  * @param {Object} [options.logger]   - A logger to use. Default to no logging.
- * @param {Object} [testOpts]         - Options used during testing.
  */
-function BigIp(host, user, password, options, testOpts) {
+function BigIp(host, user, password, options) {
 
     options = options || {};
 
     this.logger = options.logger || Logger.getLogger({logLevel: 'none'});
     util.logger = this.logger;
 
-    this.DEFAULT_RETRIES = 60;
-    this.DEFAULT_RETRY_INTERVAL = 10000;
-    this.DEFAULT_RETRY_OPTIONS = {
-        maxRetries: this.DEFAULT_RETRIES,
-        retryIntervalMs: this.DEFAULT_RETRY_INTERVAL
-    };
+    this.init(host, user, password, options.port || 443);
 
-    testOpts = testOpts || {};
-
-    if (testOpts.icontrol) {
-        this.icontrol = testOpts.icontrol;
-    }
-    else {
-        this.init(host, user, password, options.port || 443);
-    }
-
-    this.cluster = new BigIpCluster(this, {logger: this.logger}, testOpts);
-    this.onboard = new BigIpOnboard(this, {logger: this.logger}, testOpts);
+    this.cluster = new BigIpCluster(this, {logger: this.logger});
+    this.onboard = new BigIpOnboard(this, {logger: this.logger});
 }
 
 /**
@@ -130,7 +115,7 @@ BigIp.prototype.init = function(host, user, password, port) {
  *                    or rejected if an error occurs.
  */
 BigIp.prototype.list = function (path, options, retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         this.logger.debug("list", path);
@@ -158,7 +143,7 @@ BigIp.prototype.list = function (path, options, retryOptions) {
  *                    or rejected if an error occurs.
  */
 BigIp.prototype.create = function(path, body, options, retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         this.logger.debug("create", path, body);
@@ -186,7 +171,7 @@ BigIp.prototype.create = function(path, body, options, retryOptions) {
  *                    or rejected if an error occurs.
  */
 BigIp.prototype.modify = function(path, body, options, retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         this.logger.debug("modify", path, body);
@@ -213,7 +198,7 @@ BigIp.prototype.modify = function(path, body, options, retryOptions) {
  *                    or rejected if an error occurs.
  */
 BigIp.prototype.delete = function(path, options, retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         this.logger.debug("delete", path);
@@ -241,7 +226,7 @@ BigIp.prototype.delete = function(path, options, retryOptions) {
  * @returns {Promise} A promise which is resolved when the status is active.
  */
 BigIp.prototype.active = function(retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         var deferred = q.defer();
@@ -282,7 +267,7 @@ BigIp.prototype.active = function(retryOptions) {
  *                    or rejected if an error occurs.
  */
 BigIp.prototype.deviceInfo = function(retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         return this.list('/shared/identified-devices/config/device-info', undefined, util.NO_RETRY);
@@ -304,7 +289,7 @@ BigIp.prototype.deviceInfo = function(retryOptions) {
  *                    loaded or rejected if an error occurs.
  */
 BigIp.prototype.load = function(file, options, retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         return this.ready()
@@ -349,7 +334,7 @@ BigIp.prototype.load = function(file, options, retryOptions) {
  *                    or rejected if an error occurs.
  */
 BigIp.prototype.ping = function(address, retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     if (!address) {
         return q.reject('Address is required for ping.');
@@ -402,7 +387,7 @@ BigIp.prototype.ping = function(address, retryOptions) {
  *                    or rejected after trying a fixed number of times.
  */
 BigIp.prototype.ready = function(retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         var promises = [];
@@ -480,7 +465,7 @@ BigIp.prototype.reboot = function() {
  * required and resolved with 'false' otherwise.
  */
 BigIp.prototype.rebootRequired = function(retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         var deferred = q.defer();
@@ -520,7 +505,7 @@ BigIp.prototype.rebootRequired = function(retryOptions) {
  *                    is complete or rejected if an error occurs.
  */
 BigIp.prototype.save = function(file, retryOptions) {
-    retryOptions = retryOptions || this.DEFAULT_RETRY_OPTIONS;
+    retryOptions = retryOptions || util.DEFAULT_RETRY;
 
     var func = function() {
         return this.ready()
@@ -643,7 +628,7 @@ module.exports = BigIp;</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Sep 27 2016 16:49:02 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 15:59:05 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
