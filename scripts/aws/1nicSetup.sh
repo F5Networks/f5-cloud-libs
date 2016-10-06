@@ -38,17 +38,20 @@ fi
 
 # Get the management IP address. Need to wait till it's available via ifconfig
 # since tmsh will have the DHCP address before the correct management IP is ready
+# Then need wait till tmsh agrees since that is updated after eth0 is configured
 function wait_for_management_ip() {
     RETRY_INTERVAL=10
     MAX_TRIES=60
     failed=0
 
     while true; do
-        MGMT_ADDR=`ifconfig eth0 | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
-        if [[ $MGMT_ADDR == *"error"* ]]; then
-            echo "eth0 not found yet."
-            failed=$(($failed + 1))
-        elif [ -n $MGMT_ADDR ]; then
+        MGMT_ADDR_TMSH=$(tmsh list sys management-ip | awk '/management-ip/ {print $3}' | awk -F "/" '{print $1}')
+        MGMT_ADDR_ETH0=`ifconfig eth0 | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
+
+        if [[ $MGMT_ADDR_TMSH != $MGMT_ADDR_ETH0 ]]; then
+            echo "Management IP and eth0 not yet in sync."
+        elif [ -n $MGMT_ADDR_TMSH ]; then
+            MGMT_ADDR=$MGMT_ADDR_TMSH
             return 0
         fi
 
