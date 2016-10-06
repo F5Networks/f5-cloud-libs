@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: logger.js</title>
+    <title>JSDoc: Source: signals.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: logger.js</h1>
+    <h1 class="page-title">Source: signals.js</h1>
 
     
 
@@ -41,60 +41,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 'use strict';
+'use strict';
 
- var winston = require('winston');
-
- /**
-  * @module
-  */
+/**
+ * @module
+ */
 module.exports = {
     /**
-     * Returns a logger.
-     *
-     * @param {Object}  [options]          - Options for configuring the logger
-     * @param {Boolean} [options.console] - Whether or not to log to the console. Default true.
-     * @param {String}  [options.logLevel] - The log level to use. (error, warn, info, verbose, debug, silly). Defaults to warn.
-     * @param {String}  [options.fileName] - File to log to. Defaults to none (console only).
-     *
-     * @returns An instance of a logger
+     * @constant
      */
-    getLogger: function(options) {
-        options = options || {};
-        if (typeof options.console === 'undefined') {
-            options.console = true;
-        }
-
-        var transportOptions = {
-            level: options.logLevel || 'warn',
-            timestamp: true,
-            json: false
-        };
-
-        var transports = [];
-
-        if (options.console) {
-            transports.push(new (winston.transports.Console)(transportOptions));
-        }
-
-        if (options.fileName) {
-            var fileOptions = JSON.parse(JSON.stringify(transportOptions));
-            fileOptions.filename = options.fileName;
-            fileOptions.maxSize = 10485760; // 10 Mb
-            fileOptions.maxFiles = 10;
-            fileOptions.tailable = true;
-
-            transports.push(new(winston.transports.File)(fileOptions));
-        }
-
-        return new (winston.Logger)(
-            {
-                transports: transports
-            }
-        );
-    }
-};
-</code></pre>
+    ONBOARD_DONE: 'ONBOARD_DONE',
+    ONBOARD_RUNNING: 'ONBOARD_RUNNING',
+    CLUSTER_DONE: 'CLUSTER_DONE',
+    CLUSTER_RUNNING: 'CLUSTER_RUNNING',
+    SCRIPT_RUNNING: 'SCRIPT_RUNNING',
+    SCRIPT_DONE: 'SCRIPT_DONE'
+};</code></pre>
         </article>
     </section>
 
