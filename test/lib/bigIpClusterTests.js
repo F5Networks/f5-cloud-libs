@@ -20,7 +20,8 @@ var BigIp = require('../../lib/bigIp');
 var util = require('../../lib/util');
 var icontrolMock = require('../testUtil/icontrolMock');
 
-var bigIp = new BigIp('host', 'user', 'password', null, {icontrol: icontrolMock});
+var bigIp = new BigIp('host', 'user', 'password');
+bigIp.icontrol = icontrolMock;
 bigIp.ready = function() {
     return q();
 };
