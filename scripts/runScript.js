@@ -150,14 +150,16 @@
 
                     return deferred.promise;
                 })
+                .then(function(response) {
+                    logger.debug(response);
+                    ipc.send(options.signal || signals.SCRIPT_DONE);
+                })
                 .catch(function(err) {
                     logger.error("Running custom script failed", err);
                 })
                 .done(function(response) {
                     logger.debug(response);
-                    logger.info("Custom script finished");
-
-                    ipc.send(options.signal || signals.SCRIPT_DONE);
+                    logger.info("Custom script finished.");
 
                     if (cb) {
                         cb();

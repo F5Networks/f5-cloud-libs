@@ -199,14 +199,16 @@
                     logger.info("Waiting for BIG-IP to be active.");
                     return bigIp.active();
                 })
+                .then(function(response) {
+                    logger.debug(response);
+                    ipc.send(options.signal || signals.CLUSTER_DONE);
+                })
                 .catch(function(err) {
                     logger.error("BIG-IP cluster failed", err);
                 })
                 .done(function(response) {
                     logger.debug(response);
-                    logger.info("Cluster finished");
-
-                    ipc.send(options.signal || signals.CLUSTER_DONE);
+                    logger.info("Cluster finished.");
 
                     if (cb) {
                         cb();
