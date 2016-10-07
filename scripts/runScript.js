@@ -78,7 +78,7 @@
             }
 
             // Log the input, but don't log passwords
-            logger.info(process.argv[1] + " called with", process.argv.slice().join(" "));
+            logger.info(argv[1] + " called with", argv.slice().join(" "));
 
 
             // Start processing...
