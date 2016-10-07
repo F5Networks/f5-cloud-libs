@@ -68,6 +68,29 @@ module.exports = {
             });
     },
 
+    testLicense: {
+        testIdentical: function(test) {
+            var regKey = "1234-5678-ABCD-EFGH";
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {
+                    registrationKey: regKey
+                });
+
+            bigIp.onboard.license({registrationKey: regKey})
+                .then(function(response) {
+                    test.notStrictEqual(response.indexOf("Identical license"), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
     testPasswordNonRoot: function(test) {
         var user = 'someuser';
         var newPassword = 'abc123';
