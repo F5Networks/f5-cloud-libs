@@ -224,8 +224,7 @@ module.exports = {
                 '/tm/net/self-allow',
                 {
                     defaults: [
-                        'tcp:123',
-                        'tcp:443'
+                        'tcp:123'
                     ]
                 }
             );
@@ -264,6 +263,17 @@ module.exports = {
 
         testRemove443: function(test) {
             var portToAdd = 456;
+
+            icontrolMock.when(
+                'list',
+                '/tm/net/self-allow',
+                {
+                    defaults: [
+                        'tcp:443'
+                    ]
+                }
+            );
+
             bigIp.onboard.sslPort(portToAdd, null, true)
             .then(function() {
                 var newDefaults = icontrolMock.getRequest('modify', '/tm/net/self-allow').defaults;
