@@ -40,6 +40,7 @@
             var signals = require('../lib/signals');
             var util = require('../lib/util');
             var loggerOptions = {};
+            var loggableArgs;
             var logger;
             var logFileName;
             var bigIp;
@@ -109,14 +110,13 @@
             }
 
             // Log the input, but don't log passwords
-            if (options.password) {
-                for (i = 0; i < process.argv.length; ++i) {
-                    if (KEYS_TO_MASK.indexOf(process.argv[i]) !== -1) {
-                        process.argv[i + 1] = "*******";
-                    }
+            loggableArgs = argv.slice();
+            for (i = 0; i < loggableArgs.length; ++i) {
+                if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
+                    loggableArgs[i + 1] = "*******";
                 }
             }
-            logger.info(process.argv[1] + " called with", process.argv.slice().join(" "));
+            logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
             // Create the bigIp client object
             bigIp = testOpts.bigIp || new BigIp(options.host,
