@@ -55,6 +55,7 @@
             var loggerOptions = {};
             var Logger;
             var logger;
+            var logLevel;
             var argIndex;
             var args;
             var clArgIndex;
@@ -70,7 +71,12 @@
             shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
             console.log(shellOutput.toString());
 
-            console.log("Downloading latest libraries.");
+            argIndex = argv.indexOf('--environment');
+            if (argIndex != -1) {
+                environment = argv[argIndex + 1];
+            }
+
+            console.log("Downloading latest libraries from", environment);
             shellOutput = childProcess.execSync(
                 "curl -sk -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/" + environment + "/f5-cloud-libs.tar.gz",
                 {
@@ -96,6 +102,13 @@
             logger = Logger.getLogger(loggerOptions);
 
             logger.info("Running scripts.");
+
+            argIndex = argv.indexOf('--log-level');
+            if (argIndex != -1) {
+                logLevel = argv[argIndex + 1];
+                logger.info("Set log level to", logLevel);
+                loggerOptions.logLevel = logLevel;
+            }
 
             argIndex = argv.indexOf('--onboard');
             logger.debug("onboard arg index", argIndex);
