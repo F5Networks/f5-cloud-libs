@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-'use-strict';
+'use strict';
 
 (function() {
 
@@ -96,7 +96,7 @@
                         util.download(options.url)
                             .then(function(fileName) {
                                 options.file = fileName;
-                                fs.chmod(fileName, 0755, function() {
+                                fs.chmod(fileName, parseInt('0755',8), function() {
                                     deferred.resolve();
                                 });
                             })

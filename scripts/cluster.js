@@ -18,6 +18,7 @@
 (function() {
 
     var DEFAULT_LOG_FILE = '/tmp/cluster.log';
+    var ARGS_FILE_ID = 'cluster';
 
     var options = require('commander');
     var runner;
@@ -33,9 +34,9 @@
          * @param {Function} cb - Optional cb to call when done
          */
         run: function(argv, testOpts, cb) {
-            var q = require('q');
             var BigIp = require('../lib/bigIp');
             var Logger = require('../lib/logger');
+            var ActiveError = require('../lib/activeError');
             var ipc = require('../lib/ipc');
             var signals = require('../lib/signals');
             var util = require('../lib/util');
@@ -44,6 +45,7 @@
             var logger;
             var logFileName;
             var bigIp;
+            var forceReboot;
             var i;
 
             var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
@@ -128,7 +130,9 @@
                                                 });
 
             // Start processing...
-            q()
+
+            // Save args in restart script in case we need to reboot to recover from an error
+            util.saveArgs(argv, ARGS_FILE_ID)
                 .then(function() {
                     if (options.waitFor) {
                         logger.info("Waiting for", options.waitFor);
@@ -205,10 +209,24 @@
                 })
                 .catch(function(err) {
                     logger.error("BIG-IP cluster failed", err);
+
+                    if (err instanceof ActiveError) {
+                        logger.warn("BIG-IP active check failed. Preparing for reboot.");
+                        forceReboot = util.prepareArgsForReboot();
+                    }
                 })
                 .done(function(response) {
                     logger.debug(response);
                     logger.info("Cluster finished.");
+
+
+                    if (forceReboot) {
+                        logger.warn("Rebooting.");
+                        bigIp.reboot();
+                    }
+                    else {
+                        util.deleteArgs(ARGS_FILE_ID);
+                    }
 
                     if (cb) {
                         cb();
