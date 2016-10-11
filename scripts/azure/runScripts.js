@@ -21,6 +21,8 @@
     var runner;
     var cp;
 
+    var environment = 'archive';
+
     var spawnScript = function(args, stringArgs) {
 
         if (stringArgs) {
@@ -70,7 +72,7 @@
 
             console.log("Downloading latest libraries.");
             shellOutput = childProcess.execSync(
-                "curl -sk -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/archive/f5-cloud-libs.tar.gz",
+                "curl -sk -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/" + environment + "/f5-cloud-libs.tar.gz",
                 {
                     cwd: "/config"
                 }
@@ -96,18 +98,25 @@
             logger.info("Running scripts.");
 
             argIndex = argv.indexOf('--onboard');
+            logger.debug("onboard arg index", argIndex);
             if (argIndex !== -1) {
                 args = ['onboard.js'];
-                spawnScript(args, argv[argIndex + 1]);
+                scriptArgs = argv[argIndex + 1];
+                logger.debug("onboard args", scriptArgs);
+                spawnScript(args, scriptArgs);
             }
 
             argIndex = argv.indexOf('--cluster');
+            logger.debug("cluster arg index", argIndex);
             if (argIndex !== -1) {
                 args = ['cluster.js'];
-                spawnScript(args, argv[argIndex + 1]);
+                scriptArgs = argv[argIndex + 1];
+                logger.debug("cluster args", scriptArgs);
+                spawnScript(args, scriptArgs);
             }
 
             argIndex = argv.indexOf('--script');
+            logger.debug("script arg index", argIndex);
             if (argIndex !== -1) {
                 args = ['runScript.js'];
                 scriptArgs = argv[argIndex + 1];
@@ -139,6 +148,7 @@
                         args.push(arg);
                     });
                 }
+                logger.debug("cluster args", args);
                 spawnScript(args);
             }
         }
