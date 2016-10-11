@@ -1,10 +1,13 @@
+#!/bin/bash
+
 # Single argument should be 'dev' or 'archive'. Default is 'archive'.
 
 ENVIRONMENT=archive
-if [ -n $1 ]; then
+if [ -n "$1" ]; then
     ENVIRONMENT=$1
 fi
 
+echo GOT ENVIRONMENT $ENVIRONMENT
 pushd ../
 tar --exclude=".git" -zcvf f5-cloud-libs.tar.gz f5-cloud-libs
 azure storage blob upload --quiet f5-cloud-libs.tar.gz $ENVIRONMENT f5-cloud-libs.tar.gz
