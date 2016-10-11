@@ -65,7 +65,7 @@
 
             // In Azure, mysql takes extra time to start
             console.log('Resetting mysql start delay');
-            shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 15/' /etc/init.d/mysql");
+            shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
             console.log(shellOutput.toString());
 
             console.log("Downloading latest libraries.");

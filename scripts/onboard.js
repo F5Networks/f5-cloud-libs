@@ -18,6 +18,7 @@
 (function() {
 
     var DEFAULT_LOG_FILE = '/tmp/onboard.log';
+    var ARGS_FILE_ID = 'onboard';
 
     var options = require('commander');
     var globalSettings = {
@@ -39,6 +40,7 @@
             var q = require("q");
             var BigIp = require('../lib/bigIp');
             var Logger = require('../lib/logger');
+            var ActiveError = require('../lib/activeError');
             var ipc = require('../lib/ipc');
             var signals = require('../lib/signals');
             var util = require('../lib/util');
@@ -51,6 +53,7 @@
             var logger;
             var logFileName;
             var bigIp;
+            var forceReboot;
             var i;
 
             var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
@@ -154,7 +157,9 @@
             }
 
             // Start processing...
-            q()
+
+            // Save args in restart script in case we need to reboot to recover from an error
+            util.saveArgs(argv, ARGS_FILE_ID)
                 .then(function() {
                     if (options.waitFor) {
                         logger.info("Waiting for", options.waitFor);
@@ -261,7 +266,7 @@
                     logger.debug(response);
 
                     if (Object.keys(dbVars).length > 0) {
-                        logger.info("Setting DB vars");
+                        logger.info("Setting DB vars.");
                         return bigIp.onboard.setDbVars(dbVars);
                     }
                 })
@@ -331,10 +336,24 @@
                     ipc.send(options.signal || signals.ONBOARD_DONE);
                 })
                 .catch(function(err) {
-                    logger.error("BIG-IP onboard failed", err);
+                    logger.error("BIG-IP onboard failed", err.message);
+
+                    if (err instanceof ActiveError) {
+                        logger.warn("BIG-IP active check failed. Preparing for reboot.");
+                        forceReboot = util.prepareArgsForReboot();
+                    }
                 })
-                .done(function() {
+                .done(function(response) {
+                    logger.debug(response);
                     logger.info("Onboard finished.");
+
+                    if (forceReboot) {
+                        logger.warn("Rebooting.");
+                        bigIp.reboot();
+                    }
+                    else {
+                        util.deleteArgs(ARGS_FILE_ID);
+                    }
 
                     if (cb) {
                         cb();
