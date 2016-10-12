@@ -113,6 +113,7 @@
             }
 
             logger = Logger.getLogger(loggerOptions);
+            util.logger = logger;
 
             for (i = 0; i < REQUIRED_OPTIONS.length; ++i) {
                 if (!options[REQUIRED_OPTIONS[i]]) {
