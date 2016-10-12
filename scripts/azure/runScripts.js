@@ -99,16 +99,18 @@
             loggerOptions.logLevel = 'info';
             loggerOptions.fileName = '/var/log/runScripts.log';
 
+            argIndex = argv.indexOf('--log-level');
+            if (argIndex != -1) {
+                logLevel = argv[argIndex + 1];
+                console.log("Setting log level to", logLevel);
+                loggerOptions.logLevel = logLevel;
+            }
+
             logger = Logger.getLogger(loggerOptions);
 
             logger.info("Running scripts.");
 
-            argIndex = argv.indexOf('--log-level');
-            if (argIndex != -1) {
-                logLevel = argv[argIndex + 1];
-                logger.info("Set log level to", logLevel);
-                loggerOptions.logLevel = logLevel;
-            }
+            logger.debug("raw args", argv);
 
             argIndex = argv.indexOf('--onboard');
             logger.debug("onboard arg index", argIndex);
