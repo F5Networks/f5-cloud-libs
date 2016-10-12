@@ -19,11 +19,11 @@
 
     var childProcess = require('child_process');
     var runner;
-    var cp;
 
     var environment = 'archive';
 
     var spawnScript = function(args, stringArgs) {
+        var cp;
 
         if (stringArgs) {
             stringArgs.trim().split(/\s+/).forEach(function(arg) {
@@ -41,7 +41,6 @@
             }
         );
         cp.unref();
-
     };
 
     module.exports = runner = {
