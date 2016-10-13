@@ -19,6 +19,7 @@
 
     var childProcess = require('child_process');
     var runner;
+    var logger;
 
     var environment = 'archive';
 
@@ -31,6 +32,7 @@
             });
         }
 
+        logger.debug("Spawning child process", args);
         cp = childProcess.spawn(
             'f5-rest-node',
             args,
@@ -51,120 +53,126 @@
          * @param {String[]} script - Arguments to pass to runScript
          */
         run: function(argv) {
-            var loggerOptions = {};
-            var Logger;
-            var logger;
-            var logLevel;
-            var argIndex;
-            var args;
-            var clArgIndex;
-            var clArgStart;
-            var clArgEnd;
-            var scriptArgs;
-            var shellOutput;
+            try {
+                var loggerOptions = {};
+                var Logger;
+                var logLevel;
+                var argIndex;
+                var args;
+                var clArgIndex;
+                var clArgStart;
+                var clArgEnd;
+                var scriptArgs;
+                var shellOutput;
 
-            console.log(process.argv[1] + " called with", process.argv.slice().join(" "));
+                console.log(process.argv[1] + " called with", process.argv.slice().join(" "));
 
-            // In Azure, mysql takes extra time to start
-            console.log('Resetting mysql start delay');
-            shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
-            console.log(shellOutput.toString());
+                // In Azure, mysql takes extra time to start
+                console.log('Resetting mysql start delay');
+                shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
+                console.log(shellOutput.toString());
 
-            argIndex = argv.indexOf('--environment');
-            if (argIndex != -1) {
-                environment = argv[argIndex + 1];
-            }
-
-            console.log("Downloading latest libraries from", environment);
-            shellOutput = childProcess.execSync(
-                "curl -sk -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/" + environment + "/f5-cloud-libs.tar.gz",
-                {
-                    cwd: "/config"
+                argIndex = argv.indexOf('--environment');
+                if (argIndex != -1) {
+                    environment = argv[argIndex + 1];
                 }
-            );
-            console.log(shellOutput.toString());
 
-            console.log("Expanding libraries.");
-            shellOutput = childProcess.execSync(
-                "tar -xzf f5-cloud-libs.tar.gz",
-                {
-                    cwd: "/config"
+                console.log("Downloading latest libraries from", environment);
+                shellOutput = childProcess.execSync(
+                    "curl -sk -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/" + environment + "/f5-cloud-libs.tar.gz",
+                    {
+                        cwd: "/config"
+                    }
+                );
+                console.log(shellOutput.toString());
+
+                console.log("Expanding libraries.");
+                shellOutput = childProcess.execSync(
+                    "tar -xzf f5-cloud-libs.tar.gz",
+                    {
+                        cwd: "/config"
+                    }
+                );
+                console.log(shellOutput.toString());
+
+                Logger = require('/config/f5-cloud-libs/lib/logger');
+                loggerOptions.console = true;
+                loggerOptions.logLevel = 'info';
+                loggerOptions.fileName = '/var/log/runScripts.log';
+
+                argIndex = argv.indexOf('--log-level');
+                if (argIndex != -1) {
+                    logLevel = argv[argIndex + 1];
+                    console.log("Setting log level to", logLevel);
+                    loggerOptions.logLevel = logLevel;
                 }
-            );
-            console.log(shellOutput.toString());
 
-            Logger = require('/config/f5-cloud-libs/lib/logger');
-            loggerOptions.console = true;
-            loggerOptions.logLevel = 'info';
-            loggerOptions.fileName = '/var/log/runScripts.log';
+                logger = Logger.getLogger(loggerOptions);
 
-            argIndex = argv.indexOf('--log-level');
-            if (argIndex != -1) {
-                logLevel = argv[argIndex + 1];
-                console.log("Setting log level to", logLevel);
-                loggerOptions.logLevel = logLevel;
-            }
+                logger.info("Running scripts.");
 
-            logger = Logger.getLogger(loggerOptions);
+                logger.debug("raw args", argv);
 
-            logger.info("Running scripts.");
+                argIndex = argv.indexOf('--onboard');
+                logger.debug("onboard arg index", argIndex);
+                if (argIndex !== -1) {
+                    args = ['onboard.js'];
+                    scriptArgs = argv[argIndex + 1];
+                    logger.debug("onboard args", scriptArgs);
+                    spawnScript(args, scriptArgs);
+                }
 
-            logger.debug("raw args", argv);
+                argIndex = argv.indexOf('--cluster');
+                logger.debug("cluster arg index", argIndex);
+                if (argIndex !== -1) {
+                    args = ['cluster.js'];
+                    scriptArgs = argv[argIndex + 1];
+                    logger.debug("cluster args", scriptArgs);
+                    spawnScript(args, scriptArgs);
+                }
 
-            argIndex = argv.indexOf('--onboard');
-            logger.debug("onboard arg index", argIndex);
-            if (argIndex !== -1) {
-                args = ['onboard.js'];
-                scriptArgs = argv[argIndex + 1];
-                logger.debug("onboard args", scriptArgs);
-                spawnScript(args, scriptArgs);
-            }
+                argIndex = argv.indexOf('--script');
+                logger.debug("script arg index", argIndex);
+                if (argIndex !== -1) {
+                    args = ['runScript.js'];
+                    scriptArgs = argv[argIndex + 1];
+                    clArgIndex = scriptArgs.indexOf('--cl-args');
+                    if (clArgIndex !== -1) {
+                        args.push('--cl-args');
 
-            argIndex = argv.indexOf('--cluster');
-            logger.debug("cluster arg index", argIndex);
-            if (argIndex !== -1) {
-                args = ['cluster.js'];
-                scriptArgs = argv[argIndex + 1];
-                logger.debug("cluster args", scriptArgs);
-                spawnScript(args, scriptArgs);
-            }
+                        // Push the stuff in single quotes following cl-args as one entry
+                        clArgStart = scriptArgs.indexOf("'", clArgIndex);
+                        clArgEnd = scriptArgs.indexOf("'", clArgStart + 1);
+                        args.push(scriptArgs.substring(clArgStart + 1, clArgEnd));
 
-            argIndex = argv.indexOf('--script');
-            logger.debug("script arg index", argIndex);
-            if (argIndex !== -1) {
-                args = ['runScript.js'];
-                scriptArgs = argv[argIndex + 1];
-                clArgIndex = scriptArgs.indexOf('--cl-args');
-                if (clArgIndex !== -1) {
-                    args.push('--cl-args');
+                        // Grab everything up to --cl-arg
+                        if (clArgIndex > 0) {
+                            scriptArgs.substring(0, clArgIndex).trim().split(/\s+/).forEach(function(arg) {
+                                args.push(arg);
+                            });
+                        }
 
-                    // Push the stuff in single quotes following cl-args as one entry
-                    clArgStart = scriptArgs.indexOf("'", clArgIndex);
-                    clArgEnd = scriptArgs.indexOf("'", clArgStart + 1);
-                    args.push(scriptArgs.substring(clArgStart + 1, clArgEnd));
-
-                    // Grab everything up to --cl-arg
-                    if (clArgIndex > 0) {
-                        scriptArgs.substring(0, clArgIndex).trim().split(/\s+/).forEach(function(arg) {
+                        // Grab everything after --cl-args argument
+                        if (clArgEnd < scriptArgs.length - 1) {
+                            scriptArgs.substring(clArgEnd + 1).trim().split(/\s+/).forEach(function(arg) {
+                                args.push(arg);
+                            });
+                        }
+                    }
+                    else {
+                        scriptArgs.split(/\s+/).forEach(function(arg) {
                             args.push(arg);
                         });
                     }
-
-                    // Grab everything after --cl-args argument
-                    if (clArgEnd < scriptArgs.length - 1) {
-                        scriptArgs.substring(clArgEnd + 1).trim().split(/\s+/).forEach(function(arg) {
-                            args.push(arg);
-                        });
-                    }
+                    logger.debug("cluster args", args);
+                    spawnScript(args);
                 }
-                else {
-                    scriptArgs.split(/\s+/).forEach(function(arg) {
-                        args.push(arg);
-                    });
-                }
-                logger.debug("cluster args", args);
-                spawnScript(args);
             }
+            catch (err) {
+                console.log("Error running scripts: " + err);
+            }
+
+            logger.debug("Done spawning scripts.");
         }
     };
 
