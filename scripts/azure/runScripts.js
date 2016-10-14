@@ -23,7 +23,8 @@
 
     var environment = 'archive';
 
-    var spawnScript = function(args, stringArgs) {
+    var spawnScript = function(module, arrayArgs, stringArgs) {
+        var args = arrayArgs ? arrayArgs.slice() : [];
         var cp;
 
         if (stringArgs) {
@@ -32,9 +33,9 @@
             });
         }
 
-        logger.debug("Spawning child process", args);
-        cp = childProcess.spawn(
-            'f5-rest-node',
+        logger.debug("Spawning child process", module, args);
+        cp = childProcess.fork(
+            module,
             args,
             {
                 cwd: '/config/f5-cloud-libs/scripts',
@@ -42,7 +43,10 @@
                 detached: true
             }
         );
-        cp.unref();
+
+        cp.on('error', function(error) {
+            logger.error(cp.pid, "got error:", error);
+        });
     };
 
     module.exports = runner = {
@@ -116,25 +120,23 @@
                 argIndex = argv.indexOf('--onboard');
                 logger.debug("onboard arg index", argIndex);
                 if (argIndex !== -1) {
-                    args = ['onboard.js'];
                     scriptArgs = argv[argIndex + 1];
                     logger.debug("onboard args", scriptArgs);
-                    spawnScript(args, scriptArgs);
+                    spawnScript('onboard.js', undefined, scriptArgs);
                 }
 
                 argIndex = argv.indexOf('--cluster');
                 logger.debug("cluster arg index", argIndex);
                 if (argIndex !== -1) {
-                    args = ['cluster.js'];
                     scriptArgs = argv[argIndex + 1];
                     logger.debug("cluster args", scriptArgs);
-                    spawnScript(args, scriptArgs);
+                    spawnScript('cluster.js', undefined, scriptArgs);
                 }
 
                 argIndex = argv.indexOf('--script');
                 logger.debug("script arg index", argIndex);
                 if (argIndex !== -1) {
-                    args = ['runScript.js'];
+                    args = [];
                     scriptArgs = argv[argIndex + 1];
                     clArgIndex = scriptArgs.indexOf('--cl-args');
                     if (clArgIndex !== -1) {
@@ -164,8 +166,8 @@
                             args.push(arg);
                         });
                     }
-                    logger.debug("cluster args", args);
-                    spawnScript(args);
+                    logger.debug("script args", args);
+                    spawnScript('runScript.js', args);
                 }
             }
             catch (err) {
