@@ -122,7 +122,7 @@
                 if (argIndex !== -1) {
                     scriptArgs = argv[argIndex + 1];
                     logger.debug("onboard args", scriptArgs);
-                    spawnScript('onboard.js', undefined, scriptArgs);
+                    spawnScript("onboard.js", undefined, scriptArgs);
                 }
 
                 argIndex = argv.indexOf('--cluster');
@@ -130,7 +130,7 @@
                 if (argIndex !== -1) {
                     scriptArgs = argv[argIndex + 1];
                     logger.debug("cluster args", scriptArgs);
-                    spawnScript('cluster.js', undefined, scriptArgs);
+                    spawnScript("cluster.js", undefined, scriptArgs);
                 }
 
                 argIndex = argv.indexOf('--script');
@@ -147,14 +147,14 @@
                         clArgEnd = scriptArgs.indexOf("'", clArgStart + 1);
                         args.push(scriptArgs.substring(clArgStart + 1, clArgEnd));
 
-                        // Grab everything up to --cl-arg
+                        // Grab everything up to --cl-args
                         if (clArgIndex > 0) {
                             scriptArgs.substring(0, clArgIndex).trim().split(/\s+/).forEach(function(arg) {
                                 args.push(arg);
                             });
                         }
 
-                        // Grab everything after --cl-args argument
+                        // Grab everything after the --cl-args argument
                         if (clArgEnd < scriptArgs.length - 1) {
                             scriptArgs.substring(clArgEnd + 1).trim().split(/\s+/).forEach(function(arg) {
                                 args.push(arg);
@@ -167,7 +167,7 @@
                         });
                     }
                     logger.debug("script args", args);
-                    spawnScript('runScript.js', args);
+                    spawnScript("runScript.js", args);
                 }
             }
             catch (err) {
