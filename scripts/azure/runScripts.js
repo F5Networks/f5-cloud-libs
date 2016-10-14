@@ -71,6 +71,24 @@
 
                 console.log(process.argv[1] + " called with", process.argv.slice().join(" "));
 
+                // We're parsing command line options manually because the commander module used
+                // in other cloud libs scripts can't grab the cl-args as a single string in the
+                // way it is passes from ARM templates
+
+                argIndex = argv.indexOf('--help');
+                if (argIndex !== -1) {
+                    console.log();
+                    console.log("  Usage: runScripts [options]");
+                    console.log();
+                    console.log("  Options:");
+                    console.log();
+                    console.log("    --help\t\t\tOutputusage information");
+                    console.log("    --onboard <args>\t\tRun the onboard.js script with args.");
+                    console.log("    --cluster <args>\t\tRun the cluster.js script with args.");
+                    console.log("    --script <args>\t\tRun the runScript.js script with args. To run multiple scripts, use multiple --script entrires.");
+                    process.exit();
+                }
+
                 // In Azure, mysql takes extra time to start
                 console.log('Resetting mysql start delay');
                 shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
@@ -133,9 +151,11 @@
                     spawnScript("cluster.js", undefined, scriptArgs);
                 }
 
+                // Process multiple --script args
                 argIndex = argv.indexOf('--script');
                 logger.debug("script arg index", argIndex);
-                if (argIndex !== -1) {
+                /* jshint loopfunc: true */
+                while (argIndex !== -1) {
                     args = [];
                     scriptArgs = argv[argIndex + 1];
                     clArgIndex = scriptArgs.indexOf('--cl-args');
@@ -168,7 +188,11 @@
                     }
                     logger.debug("script args", args);
                     spawnScript("runScript.js", args);
+
+                    argIndex = argv.indexOf('--script', argIndex + 1);
+                    logger.debug("next script arg index", argIndex);
                 }
+                /* jshint loopfunc: false */
             }
             catch (err) {
                 console.log("Error running scripts: " + err);
