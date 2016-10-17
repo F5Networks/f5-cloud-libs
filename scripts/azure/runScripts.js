@@ -18,14 +18,21 @@
 (function() {
 
     var childProcess = require('child_process');
+    var waiting = 0;
     var runner;
     var logger;
 
     var environment = 'archive';
 
-    var spawnScript = function(module, arrayArgs, stringArgs) {
+    var MAX_TRIES = 3;
+
+    var spawnScript = function(module, arrayArgs, stringArgs, tryNum) {
         var args = arrayArgs ? arrayArgs.slice() : [];
         var cp;
+
+        if (typeof tryNum === 'undefined') {
+            tryNum = 1;
+        }
 
         if (stringArgs) {
             stringArgs.trim().split(/\s+/).forEach(function(arg) {
@@ -44,8 +51,28 @@
             }
         );
 
+        waiting++;
+
         cp.on('error', function(error) {
             logger.error(cp.pid, "got error:", error);
+        });
+
+        cp.on('exit', function(code, signal) {
+            logger.verbose(module, "exitted with code:", code === null ? 'null' : code, "/ signal:", signal === null ? 'null' : signal);
+
+            // Occasionally in Azure, a script just exits early with a bad exit code
+            // for no apparent reason
+            if (code !== null && code !== 0 && tryNum < MAX_TRIES) {
+                logger.info("Bad exit code for", module, "restrying.");
+                spawnScript(module, arrayArgs, stringArgs, tryNum + 1);
+            }
+
+            waiting--;
+
+            if (!waiting) {
+                logger.info("All children have exitted. Exitting.");
+                process.exit();
+            }
         });
     };
 
@@ -59,6 +86,7 @@
         run: function(argv) {
             try {
                 var loggerOptions = {};
+                var ipc;
                 var Logger;
                 var logLevel;
                 var argIndex;
@@ -117,6 +145,7 @@
                 );
                 console.log(shellOutput.toString());
 
+                ipc = require('/config/f5-cloud-libs/lib/ipc');
                 Logger = require('/config/f5-cloud-libs/lib/logger');
                 loggerOptions.console = true;
                 loggerOptions.logLevel = 'info';
@@ -193,6 +222,14 @@
                     logger.debug("next script arg index", argIndex);
                 }
                 /* jshint loopfunc: false */
+
+                // If we reboot, exit - otherwise Azure doesn't know the extensions script is done
+                ipc.once('REBOOT')
+                    .then(function() {
+                        logger.info("REBOOT signalled. Exitting.");
+                        process.exit();
+                    });
+
             }
             catch (err) {
                 console.log("Error running scripts: " + err);
