@@ -95,9 +95,11 @@ Runs an arbitrary script.
 
       -h, --help                     output usage information
       --background                   Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
-      -f --file <script>             File name of script to run.
+      -f, --file <script>            File name of script to run.
+      -u, --url <url>                URL from which to download script to run. This will override --file.
       --cl-args <command_line_args>  String of arguments to send to the script as command line arguments.
-      --signal <signal>              Signal to send when done. Default CLUSTER_DONE.
+      --signal <signal>              Signal to send when done. Default SCRIPT_DONE.
       --wait-for <signal>            Wait for the named signal before running.
+      --cwd <directory>              Current working directory for the script to run in.
       --log-level <level>            Log level (none, error, warn, info, verbose, debug, silly). Default is info.
       -o, --output <file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log
