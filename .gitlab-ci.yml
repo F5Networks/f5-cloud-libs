@@ -1,0 +1,16 @@
+image: node:4
+
+cache:
+    paths:
+      - node_modules/
+
+stages:
+    - test
+
+test:
+    tags:
+        - texo
+    stage: test
+    script:
+        - npm install
+        - npm test
