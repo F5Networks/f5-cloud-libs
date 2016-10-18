@@ -158,15 +158,15 @@ module.exports = {
                                   commandResult: "PING 104.219.104.168 (104.219.104.168) 56(84) bytes of data.\n64 bytes from 104.219.104.168: icmp_seq=1 ttl=240 time=43.5 ms\n\n--- 104.219.104.168 ping statistics ---\n1 packets transmitted, 1 received, 0% packet loss, time 43ms\nrtt min/avg/max/mdev = 43.593/43.593/43.593/0.000 ms\n"
                               });
             bigIp.ping('1.2.3.4')
-            .then(function() {
-                test.ok(true);
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
         testNoPacketsReceived: function(test) {
@@ -176,15 +176,15 @@ module.exports = {
                                   commandResult: "PING 1.2.3.4 (1.2.3.4) 56(84) bytes of data.\n\n--- 1.2.3.4 ping statistics ---\n2 packets transmitted, 0 received, 100% packet loss, time 2000ms\n\n"
                               });
             bigIp.ping('1.2.3.4', util.NO_RETRY)
-            .then(function() {
-                test.ok(false, "Ping should have failed");
-            })
-            .catch(function() {
-                test.ok(true);
-            })
-            .finally(function() {
-                test.done();
-            });
+                .then(function() {
+                    test.ok(false, "Ping should have failed");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
         testUnknownHost: function(test) {
@@ -194,15 +194,97 @@ module.exports = {
                                   commandResult: "ping: unknown host f5.com\n"
                               });
             bigIp.ping('1.2.3.4', util.NO_RETRY)
-            .then(function() {
-                test.ok(false, "Ping should have failed");
-            })
-            .catch(function() {
-                test.ok(true);
-            })
-            .finally(function() {
-                test.done();
-            });
+                .then(function() {
+                    test.ok(false, "Ping should have failed");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testTransaction: {
+
+        testBasic: function(test) {
+            var commands = [
+                {
+                    method: 'list',
+                    path: '/foo/bar'
+                },
+                {
+                    method: 'create',
+                    path: '/bar/foo',
+                    body: {
+                        foo: 'bar'
+                    }
+                }
+            ];
+
+            var transId = '1234';
+
+            icontrolMock.when('create',
+                              '/tm/transaction/',
+                              {
+                                  transId: transId
+                              });
+
+            icontrolMock.when('modify',
+                              '/tm/transaction/' + transId,
+                              {
+                                  state: 'COMPLETED'
+                              }
+                              );
+
+            bigIp.transaction(commands)
+                .then(function() {
+                    test.strictEqual(icontrolMock.getRequest('list', '/foo/bar'), null);
+                    test.deepEqual(icontrolMock.getRequest('create', '/bar/foo'), {foo: 'bar'});
+                    test.deepEqual(icontrolMock.getRequest('modify', '/tm/transaction/1234'), { state: 'VALIDATING' });
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testIncomplete: function(test) {
+            var commands = [
+                {
+                    method: 'list',
+                    path: '/foo/bar'
+                }
+            ];
+
+            var transId = '1234';
+
+            icontrolMock.when('create',
+                              '/tm/transaction/',
+                              {
+                                  transId: transId
+                              });
+
+            icontrolMock.when('modify',
+                              '/tm/transaction/' + transId,
+                              {
+                                  state: 'FOOBAR'
+                              }
+                              );
+
+            bigIp.transaction(commands)
+                .then(function() {
+                    test.ok(false, "Transaction should have rejected incomplete");
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.indexOf('not completed'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     }
 };
