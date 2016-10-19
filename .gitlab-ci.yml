@@ -1,32 +1,30 @@
 image: node:4
 
-cache:
-    paths:
-        - node_modules/
-
 stages:
     - test
-    - build
+    - deploy
 
-test:
+testOnly:
     tags:
         - texo
     stage: test
     script:
-        - echo Install and test
         - npm install
         - npm test
+    except:
+        - master
 
-package:
+testAndPackage:
     tags:
         - texo
-    stage: build
+    stage: deploy
     script:
-        - echo Packaging
+        - npm install
+        - npm test
     only:
         - tags
-#    except:
-#        - develop
+    except:
+        - develop
     artifacts:
         name: f5-cloud-libs"${CI_BUILD_TAG}"
         paths:
@@ -37,4 +35,4 @@ package:
             - lib
             - scripts
             - node_modules
-        expire_in: 10 mins
+
