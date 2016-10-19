@@ -2,26 +2,27 @@ image: node:4
 
 cache:
     paths:
-      - node_modules/
+        - node_modules/
 
 stages:
     - test
     - build
 
 test:
-   tags:
-       - texo
-   stage: test
-   script:
-      - npm install
-      - npm test
+    tags:
+        - texo
+    stage: test
+    script:
+        - echo Install and test
+        - npm install
+        - npm test
 
 package:
     tags:
         - texo
     stage: build
     script:
-        - npm install
+        - echo Packaging
     only:
         - tags
 #    except:
