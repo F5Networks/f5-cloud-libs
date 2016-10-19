@@ -8,13 +8,13 @@ stages:
     - test
     - build
 
- test:
-     tags:
-         - texo
-     stage: test
-     script:
-         - npm install
-         - npm test
+test:
+   tags:
+       - texo
+   stage: test
+   script:
+      - npm install
+      - npm test
 
 package:
     tags:
