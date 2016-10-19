@@ -8,15 +8,13 @@ stages:
     - test
     - build
 
-test:
-    tags:
-        - texo
-    stage: test
-    script:
-        - npm install
-        - npm test
-    only:
-        - develop
+ test:
+     tags:
+         - texo
+     stage: test
+     script:
+         - npm install
+         - npm test
 
 package:
     tags:
@@ -24,13 +22,12 @@ package:
     stage: build
     script:
         - npm install
-        - npm test
     only:
         - tags
 #    except:
 #        - develop
     artifacts:
-        name: "${CI_PROJECT_NAME}-${CI_BUILD_TAG}"
+        name: f5-cloud-libs-"${CI_BUILD_TAG}"
         paths:
-            - $CI_PROJECT_NAME
+            - .
         expire_in: 10 mins
