@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://gitswarm.f5net.com/cloudsolutions/f5-cloud-libs.git"
   },
-  "license": "Apache-2.0",
+  "license": "MIT",
   "dependencies": {
     "commander": "^2.9.0",
     "q": "^1.4.1",
