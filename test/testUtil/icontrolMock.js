@@ -17,6 +17,8 @@
 
 var q = require('q');
 
+var FAIL_REQUEST = "FAIL_REQUEST";
+
 module.exports = {
     list: function(path, opts) {
         this.recordRequest('list', path, null, opts);
@@ -46,6 +48,10 @@ module.exports = {
 
     when: function(method, path, response) {
         this.responseMap[method + '_' + path] = response;
+    },
+
+    fail: function(method, path) {
+        this.responseMap[method + '_' + path] = FAIL_REQUEST;
     },
 
     reset: function() {
@@ -78,7 +84,14 @@ module.exports = {
     },
 
     respond: function(method, path) {
-        return q(this.responseMap[method + '_' + path] || true);
+        var response = this.responseMap[method + '_' + path];
+
+        if (response === FAIL_REQUEST) {
+            return q.reject();
+        }
+        else {
+            return q(response || true);
+        }
     }
 };
 

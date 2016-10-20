@@ -21,13 +21,15 @@ var util = require('../../lib/util');
 var icontrolMock = require('../testUtil/icontrolMock');
 
 var bigIp = new BigIp('host', 'user', 'password');
+var realReady = bigIp.ready;  // Store this so we can test the ready function
+
 bigIp.icontrol = icontrolMock;
-bigIp.ready = function() {
-    return q();
-};
 
 module.exports = {
     setUp: function(callback) {
+        bigIp.ready = function() {
+            return q();
+        };
         icontrolMock.reset();
         callback();
     },
@@ -196,6 +198,118 @@ module.exports = {
             bigIp.ping('1.2.3.4', util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ping should have failed");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testReady: {
+        setUp: function(callback) {
+            bigIp.ready = realReady;
+
+            icontrolMock.when(
+                'list',
+                '/shared/echo-js/available',
+                {}
+            );
+
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info/available',
+                {}
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/available',
+                {}
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/available',
+                {}
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/mcp-state/',
+                {
+                    entries: {
+                        entry: {
+                            nestedStats: {
+                                entries: {
+                                    phase: {
+                                        description: 'running'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            callback();
+        },
+
+        testBasic: function(test) {
+            bigIp.ready(util.NO_RETRY)
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testAvailabilityFail: function(test) {
+            icontrolMock.fail(
+                'list',
+                '/shared/echo-js/available'
+            );
+
+            bigIp.ready(util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, "Ready should have failed availability.");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testMcpNotReady: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/sys/mcp-state/',
+                {
+                    entries: {
+                        entry: {
+                            nestedStats: {
+                                entries: {
+                                    phase: {
+                                        description: 'foo'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            bigIp.ready(util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, "Ready should have failed MCP check.");
                 })
                 .catch(function() {
                     test.ok(true);
