@@ -87,6 +87,7 @@
                     .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords, rootPasswords)
                     .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
+                    .option('--update-sigs', 'Update ASM signatures')
                     .option('--no-reboot', 'Skip reboot even if it is recommended.')
                     .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                     .option('--signal <signal>', 'Signal to send when done. Default ONBOARD_DONE.')
@@ -287,6 +288,17 @@
                         if (Object.keys(modules).length > 0) {
                             logger.info("Provisioning modules", modules);
                             return bigIp.onboard.provision(modules);
+                        }
+                    })
+                    .then(function(response) {
+                        logger.debug(response);
+
+                        if (options.updateSigs) {
+                            logger.info("Updating ASM signatures");
+                            return bigIp.create(
+                                '/tm/asm/tasks/update-signatures',
+                                {}
+                            );
                         }
                     })
                     .then(function(response) {
