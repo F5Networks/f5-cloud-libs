@@ -35,6 +35,7 @@
             var loggerOptions = {};
             var logger;
             var logFileName;
+            var clArgIndex;
 
             testOpts = testOpts || {};
 
@@ -74,6 +75,13 @@
                 logger.info(argv[1] + " called with", argv.slice().join(" "));
 
                 // Save args in restart script in case we need to reboot to recover from an error
+                // With cl-args, we need to restore the single quotes around the args - shells remove them
+                if (options.clArgs) {
+                    clArgIndex = argv.indexOf('--cl-args') + 1;
+                    if (argv[clArgIndex][0] !== "'") {
+                        argv[clArgIndex] = "'" + argv[clArgIndex] + "'";
+                    }
+                }
                 util.saveArgs(argv, ARGS_FILE_ID)
                     .then(function() {
                         if (options.waitFor) {
