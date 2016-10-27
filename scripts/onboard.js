@@ -17,13 +17,10 @@
 
 (function() {
 
-    var DEFAULT_LOG_FILE = '/tmp/onboard.log';
-    var ARGS_FILE_ID = 'onboard';
-
-    var options = require('commander');
     var globalSettings = {
         guiSetup: 'disabled'
     };
+    var options;
     var runner;
 
     module.exports = runner = {
@@ -56,9 +53,12 @@
             var forceReboot;
             var i;
 
+            var DEFAULT_LOG_FILE = '/tmp/onboard.log';
+            var ARGS_FILE_ID = 'onboard';
             var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
             var REQUIRED_OPTIONS = ['host', 'user', 'password'];
 
+            options = require('./commonOptions');
             testOpts = testOpts || {};
 
             /**
@@ -77,12 +77,7 @@
             };
 
             try {
-                options.reboot = true;
-                options
-                    .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
-                    .option('-u, --user <user>', 'BIG-IP admin user name.')
-                    .option('-p, --password <password>', 'BIG-IP admin user password.')
-                    .option('--port <port>', 'BIG-IP management SSL port to connect to. Default 443.', parseInt)
+                options = options.getCommonOptions()
                     .option('--ntp <ntp-server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
                     .option('--tz <timezone>', 'Set timezone for NTP setting.')
                     .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', util.collect, [])
@@ -97,15 +92,7 @@
                     .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                     .option('--update-sigs', 'Update ASM signatures')
-                    .option('--no-reboot', 'Skip reboot even if it is recommended.')
-                    .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
-                    .option('--signal <signal>', 'Signal to send when done. Default ONBOARD_DONE.')
-                    .option('--wait-for <signal>', 'Wait for the named signal before running.')
-                    .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
-                    .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                     .parse(argv);
-
-                options.port = options.port || 443;
 
                 loggerOptions.console = true;
                 loggerOptions.logLevel = options.logLevel;

@@ -17,10 +17,7 @@
 
 (function() {
 
-    var DEFAULT_LOG_FILE = '/tmp/cluster.log';
-    var ARGS_FILE_ID = 'cluster';
-
-    var options = require('commander');
+    var options;
     var runner;
 
     module.exports = runner = {
@@ -48,17 +45,16 @@
             var forceReboot;
             var i;
 
+            var DEFAULT_LOG_FILE = '/tmp/cluster.log';
+            var ARGS_FILE_ID = 'cluster';
             var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
             var REQUIRED_OPTIONS = ['host', 'user', 'password'];
 
+            options = require('./commonOptions');
             testOpts = testOpts || {};
 
             try {
-                options
-                    .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
-                    .option('-u, --user <user>', 'BIG-IP admin user name.')
-                    .option('-p, --password <password>', 'BIG-IP admin user password.')
-                    .option('--port <port>', 'BIG-IP management SSL port to connect to. Default 443.', parseInt)
+                options = options.getCommonOptions()
                     .option('--config-sync-ip <config_sync_ip>', 'IP address for config sync.')
                     .option('--create-group', 'Create a device group with the options:')
                     .option('    --device-group <device_group>', '    Name of the device group.')
@@ -79,11 +75,6 @@
                     .option('--remove-from-cluster', 'Remove a device from the cluster')
                     .option('    --device-group <device_group>', '    Name of the device group.')
                     .option('    --device <device_name>', '    Device name to remove.')
-                    .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
-                    .option('--signal <signal>', 'Signal to send when done. Default CLUSTER_DONE.')
-                    .option('--wait-for <signal>', 'Wait for the named signal before running.')
-                    .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
-                    .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                     .parse(argv);
 
                 options.port = options.port || 443;
