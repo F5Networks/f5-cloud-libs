@@ -18,6 +18,14 @@
 var util = require('../../lib/util');
 
 module.exports = {
+    testCsv: function(test) {
+        test.deepEqual(util.csv("1,2,3", []), [["1", "2", "3"]]);
+        test.deepEqual(util.csv("1, 2, 3 ", []), [["1", "2", "3"]]);
+        test.deepEqual(util.csv("1, 2, 3", [["4", "5", "6"]]), [["4", "5", "6"], ["1", "2", "3"]]);
+
+        test.done();
+    },
+
     testVersionCompare: function(test) {
         test.strictEqual(util.versionCompare("1.7.1", "1.7.10"), -1);
         test.strictEqual(util.versionCompare("1.7.2", "1.7.10"), -1);
