@@ -58,10 +58,10 @@
                 options = options.getCommonOptions()
                     .option('--single-nic', 'Set db variables for single NIC configuration.')
                     .option('--multi-nic', 'Set db variables for multi NIC configuration.')
-                    .option('--default-gw <gateway_address>', 'Set default gateway to gateway_address')
-                    .option('--local-only', 'Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only')
-                    .option('--vlan <name, nic_number, [tag]>', 'Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated.', util.csv, [])
-                    .option('--self-ip <name, ip_address, vlan_name>', 'Create self IP with name and ip_address on vlan. Values should be comma-separated. Default CIDR prefix is 24 if not specified', util.csv, [])
+                    .option('--default-gw <gateway_address>', 'Set default gateway to gateway_address.')
+                    .option('--local-only', 'Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.')
+                    .option('--vlan <name, nic_number, [tag]>', 'Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated. For multiple vlans, use multiple --vlan entries.', util.csv, [])
+                    .option('--self-ip <name, ip_address, vlan_name>', 'Create self IP with name and ip_address on vlan. Values should be comma-separated. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.', util.csv, [])
                     .parse(argv);
 
                 loggerOptions.console = true;

@@ -107,10 +107,10 @@ Sets up default gateway, VLANs and self IPs
       -o, --output <file>                      Log to file as well as console. This is the default if background process is spawned. Default is undefined
       --single-nic                             Set db variables for single NIC configuration.
       --multi-nic                              Set db variables for multi NIC configuration.
-      --default-gw <gateway_address>           Set default gateway to gateway_address
-      --local-only                             Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only
-      --vlan <name, nic_number, [tag]>         Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated.
-      --self-ip <name, ip_address, vlan_name>  Create self IP with name and ip_address on vlan. Values should be comma-separated. Default CIDR prefix is 24 if not specified
+      --default-gw <gateway_address>           Set default gateway to gateway_address.
+      --local-only                             Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.
+      --vlan <name, nic_number, [tag]>         Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated. For multiple vlans, use multiple --vlan entries.
+      --self-ip <name, ip_address, vlan_name>  Create self IP with name and ip_address on vlan. Values should be comma-separated. For multiple self IPs, use multiple --self-ip entries. Default    CIDR prefix is 24 if not specified.
 
 ### runScript.js
 
