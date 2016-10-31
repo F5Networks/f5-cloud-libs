@@ -128,11 +128,12 @@
                     f5CloudLibsTag = argv[argIndex + 1];
                 }
 
-                console.log("Moving libraries to /config.");
-                fs.renameSync(f5CloudLibsTag, '/config/f5-cloud-libs.tar.gz');
-
                 console.log("Creating f5-cloud-libs directory.");
                 fs.mkdirSync("/config/f5-cloud-libs");
+
+                console.log("Moving libraries to /config.");
+                shellOutput = childProcess.execSync("mv " + f5CloudLibsTag + " /config/f5-cloud-libs.tar.gz");
+                console.log(shellOutput.toString());
 
                 console.log("Expanding libraries.");
                 shellOutput = childProcess.execSync(
@@ -242,7 +243,9 @@
                 console.log("Error running scripts: " + err);
             }
 
-            logger.debug("Done spawning scripts.");
+            if (logger) {
+                logger.debug("Done spawning scripts.");
+            }
         }
     };
 
