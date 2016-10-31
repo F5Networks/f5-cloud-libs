@@ -22,8 +22,6 @@
     var runner;
     var logger;
 
-    var environment = 'archive';
-
     var MAX_TRIES = 3;
 
     var spawnScript = function(module, arrayArgs, stringArgs, tryNum) {
@@ -96,6 +94,7 @@
                 var clArgEnd;
                 var scriptArgs;
                 var shellOutput;
+                var f5CloudLibsTag;
 
                 console.log(process.argv[1] + " called with", process.argv.slice().join(" "));
 
@@ -111,6 +110,7 @@
                     console.log("  Options:");
                     console.log();
                     console.log("    --help\t\t\tOutputusage information");
+                    console.log("    --tag\t\t\tGitHub f5-cloud-libs tag that was pulled.");
                     console.log("    --onboard <args>\t\tRun the onboard.js script with args.");
                     console.log("    --cluster <args>\t\tRun the cluster.js script with args.");
                     console.log("    --script <args>\t\tRun the runScript.js script with args. To run multiple scripts, use multiple --script entrires.");
@@ -122,25 +122,33 @@
                 shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
                 console.log(shellOutput.toString());
 
-                argIndex = argv.indexOf('--environment');
+                argIndex = argv.indexOf('--tag');
                 if (argIndex != -1) {
-                    environment = argv[argIndex + 1];
+                    f5CloudLibsTag = argv[argIndex + 1];
                 }
 
-                console.log("Downloading latest libraries from", environment);
+                console.log("Copying libraries.");
                 shellOutput = childProcess.execSync(
-                    "curl -sk -o f5-cloud-libs.tar.gz https://f5cloudlibs.blob.core.windows.net/" + environment + "/f5-cloud-libs.tar.gz",
+//                    "mv F5Networks-f5-cloud-libs-" + f5CloudLibsTag + " /config"
+                    "mv seattlevine-f5-cloud-libs-" + f5CloudLibsTag + " /config"
+                );
+                console.log(shellOutput.toString());
+
+                console.log("Expanding libraries.");
+                shellOutput = childProcess.execSync(
+//                    "tar -xzf F5Networks-f5-cloud-libs-" + f5CloudLibsTag + ".tar.gz",
+                    "tar -xzf seattlevine-f5-cloud-libs-" + f5CloudLibsTag + ".tar.gz",
                     {
                         cwd: "/config"
                     }
                 );
                 console.log(shellOutput.toString());
 
-                console.log("Expanding libraries.");
+                console.log("Downloading dependencies.");
                 shellOutput = childProcess.execSync(
-                    "tar -xzf f5-cloud-libs.tar.gz",
+                    "npm install --procuction",
                     {
-                        cwd: "/config"
+                        cwd: "/config/f5-cloud-libs"
                     }
                 );
                 console.log(shellOutput.toString());
