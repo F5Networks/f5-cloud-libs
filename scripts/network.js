@@ -59,6 +59,7 @@
                     .option('--single-nic', 'Set db variables for single NIC configuration.')
                     .option('--multi-nic', 'Set db variables for multi NIC configuration.')
                     .option('--default-gw <gateway_address>', 'Set default gateway to gateway_address')
+                    .option('--local-only', 'Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only')
                     .option('--vlan <name, nic_number, [tag]>', 'Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated.', util.csv, [])
                     .option('--self-ip <name, ip_address, vlan_name>', 'Create self IP with name and ip_address on vlan. Values should be comma-separated. Default CIDR prefix is 24 if not specified', util.csv, [])
                     .parse(argv);
@@ -131,12 +132,12 @@
                     .then(function() {
                         logger.info("BIG-IP is ready.");
 
-                        if (options.multiNic) {
-                            logger.info("Setting multi NIC options.");
+                        if (options.singleNic || options.multiNic) {
+                            logger.info("Setting single/multi NIC options.");
                             return bigIp.modify(
                                 '/tm/sys/db/provision.1nic',
                                 {
-                                    value: 'forced_enable'
+                                    value: options.singleNic ? 'enable' : 'forced_enable'
                                 }
                             )
                             .then(function(response) {
@@ -175,14 +176,40 @@
                     .then(function(response) {
                         logger.debug(response);
 
+                        if (options.localOnly) {
+                            logger.info("Creating LOCAL_ONLY partition.");
+                            return bigIp.create(
+                                '/tm/sys/folder',
+                                {
+                                    name: "LOCAL_ONLY",
+                                    partition: "/",
+                                    deviceGroup: "none",
+                                    trafficGroup: "traffic-group-local-only"
+                                }
+                            );
+                        }
+                    })
+                    .then(function(response) {
+                        logger.debug(response);
+
+                        var routeBody;
+
                         if (options.defaultGw) {
                             logger.info("Setting default gateway " + options.defaultGw);
+
+                            routeBody = {
+                                name: "default",
+                                gw: options.defaultGw
+                            };
+
+                            if (options.localOnly) {
+                                routeBody.partition = "LOCAL_ONLY";
+                                routeBody.network = "default";
+                            }
+
                             return bigIp.create(
                                 '/tm/net/route',
-                                {
-                                    name: "default",
-                                    gw: options.defaultGw
-                                }
+                                routeBody
                             );
                         }
                     })
