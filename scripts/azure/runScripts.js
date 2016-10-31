@@ -88,6 +88,7 @@
                 var ipc;
                 var Logger;
                 var logLevel;
+                var loggableArgs;
                 var argIndex;
                 var args;
                 var clArgIndex;
@@ -96,8 +97,18 @@
                 var scriptArgs;
                 var shellOutput;
                 var f5CloudLibsTag;
+                var i;
 
-                console.log(process.argv[1] + " called with", process.argv.slice().join(" "));
+                var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
+
+                // Log the input, but don't log passwords
+                loggableArgs = argv.slice();
+                for (i = 0; i < loggableArgs.length; ++i) {
+                    if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
+                        loggableArgs[i + 1] = "*******";
+                    }
+                }
+                console.log(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
                 // We're parsing command line options manually because the commander module used
                 // in other cloud libs scripts can't grab the cl-args as a single string in the
