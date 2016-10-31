@@ -17,6 +17,7 @@
 
 (function() {
 
+    var fs = require('fs');
     var childProcess = require('child_process');
     var waiting = 0;
     var runner;
@@ -127,17 +128,15 @@
                     f5CloudLibsTag = argv[argIndex + 1];
                 }
 
-                console.log("Copying libraries.");
-                shellOutput = childProcess.execSync(
-//                    "mv F5Networks-f5-cloud-libs-" + f5CloudLibsTag + " /config"
-                    "mv seattlevine-f5-cloud-libs-" + f5CloudLibsTag + " /config"
-                );
-                console.log(shellOutput.toString());
+                console.log("Moving libraries to /config.");
+                fs.renameSync(f5CloudLibsTag, '/config/f5-cloud-libs.tar.gz');
+
+                console.log("Creating f5-cloud-libs directory.");
+                fs.mkdirSync("/config/f5-cloud-libs");
 
                 console.log("Expanding libraries.");
                 shellOutput = childProcess.execSync(
-//                    "tar -xzf F5Networks-f5-cloud-libs-" + f5CloudLibsTag + ".tar.gz",
-                    "tar -xzf seattlevine-f5-cloud-libs-" + f5CloudLibsTag + ".tar.gz",
+                    "tar -xzf f5-cloud-libs.tar.gz --strip-components 1 --directory f5-cloud-libs",
                     {
                         cwd: "/config"
                     }
@@ -146,7 +145,7 @@
 
                 console.log("Downloading dependencies.");
                 shellOutput = childProcess.execSync(
-                    "npm install --procuction",
+                    "npm install --production",
                     {
                         cwd: "/config/f5-cloud-libs"
                     }
