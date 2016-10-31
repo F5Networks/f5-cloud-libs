@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/seattlevine/f5-cloud-libs.svg?branch=develop)](https://travis-ci.org/seattlevine/f5-cloud-libs)
+
 # Library code and scripts for deploying BIG-IP in a cloud
 
 This project consists of two main parts
