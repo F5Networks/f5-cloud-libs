@@ -31,9 +31,9 @@
          * @param {Function} cb - Optional cb to call when done
          */
         run: function(argv, testOpts, cb) {
+            var options = require('commander');
             var BigIp = require('../lib/bigIp');
             var Logger = require('../lib/logger');
-            var ActiveError = require('../lib/activeError');
             var ipc = require('../lib/ipc');
             var signals = require('../lib/signals');
             var util = require('../lib/util');
@@ -42,7 +42,6 @@
             var logger;
             var logFileName;
             var bigIp;
-            var forceReboot;
             var i;
 
             var DEFAULT_LOG_FILE = '/tmp/network.log';
@@ -51,17 +50,28 @@
             var REQUIRED_OPTIONS = ['host', 'user', 'password'];
             var DEFAULT_CIDR = '/24';
 
-            options = require('./commonOptions');
             testOpts = testOpts || {};
 
             try {
-                options = options.getCommonOptions()
+                // Can't use getCommonOptions here because of the special reboot handling
+                options
+                    .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
+                    .option('-u, --user <user>', 'BIG-IP admin user name.')
+                    .option('-p, --password <password>', 'BIG-IP admin user password.')
+                    .option('--port <port>', 'BIG-IP management SSL port to connect to. Default 443.', parseInt)
+                    .option('--no-reboot', 'Skip reboot even if it is recommended.')
+                    .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
+                    .option('--signal <signal>', 'Signal to send when done. Default ONBOARD_DONE.')
+                    .option('--wait-for <signal>', 'Wait for the named signal before running.')
+                    .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
+                    .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                     .option('--single-nic', 'Set db variables for single NIC configuration.')
                     .option('--multi-nic', 'Set db variables for multi NIC configuration.')
                     .option('--default-gw <gateway_address>', 'Set default gateway to gateway_address.')
                     .option('--local-only', 'Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.')
                     .option('--vlan <name, nic_number, [tag]>', 'Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated. For multiple vlans, use multiple --vlan entries.', util.csv, [])
                     .option('--self-ip <name, ip_address, vlan_name>', 'Create self IP with name and ip_address on vlan. Values should be comma-separated. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.', util.csv, [])
+                    .option('--force-reboot', 'Force a reboot at the end. This is necessary for some 2+ NIC configurations.')
                     .parse(argv);
 
                 loggerOptions.console = true;
@@ -307,46 +317,57 @@
                     }.bind(this))
                     .then(function(response) {
                         logger.debug(response);
-                        logger.info("BIG-IP network setup complete.");
-                        return bigIp.rebootRequired();
+                        logger.info("Saving config.");
+                        return bigIp.save();
                     })
                     .then(function(response) {
-                        if (response) {
-                            if (options.reboot) {
-                                logger.warn('Reboot required. Rebooting...');
-                                return bigIp.reboot();
+                        logger.debug(response);
+
+                        var ARGS_TO_SAVE = ['--host', '--port', '--user', '-u', '--password', '-p', '--output', '-o'];
+                        var updatedArgs = [];
+                        var i;
+
+                        if (options.forceReboot) {
+                            // After reboot, we just want to send our done signal,
+                            // in case any other scripts are waiting on us. So, modify
+                            // the saved args for that.
+                            updatedArgs.push(argv[0], argv[1]);
+                            for (i = 0; i < argv.length; ++i) {
+                                if (ARGS_TO_SAVE.indexOf(argv[i]) !== -1) {
+                                    updatedArgs.push(argv[i], argv[i + 1]);
+                                }
                             }
-                            else {
-                                logger.warn('Reboot required. Skipping due to --no-reboot option.');
-                            }
+
+                            return util.saveArgs(updatedArgs, ARGS_FILE_ID)
+                                .then(function() {
+                                    logger.info("Rebooting and exitting. Will continue after reboot.");
+                                    util.prepareArgsForReboot();
+                                    bigIp.reboot();
+                                });
                         }
                     })
                     .then(function(response) {
                         logger.debug(response);
-                        ipc.send(options.signal || signals.NETWORK_DONE);
+
+                        if (!options.forceReboot) {
+                            logger.info("BIG-IP network setup complete.");
+                            ipc.send(options.signal || signals.NETWORK_DONE);
+                        }
                     })
                     .catch(function(err) {
                         logger.error("BIG-IP network setup failed", err.message);
-
-                        if (err instanceof ActiveError) {
-                            logger.warn("BIG-IP active check failed. Preparing for reboot.");
-                            forceReboot = util.prepareArgsForReboot();
-                        }
                     })
                     .done(function(response) {
                         logger.debug(response);
-                        logger.info("Network setup finished.");
 
-                        if (forceReboot) {
-                            logger.warn("Rebooting.");
-                            bigIp.reboot();
-                        }
-                        else {
+                        if (!options.forceReboot) {
+                            logger.info("Network setup finished.");
+
                             util.deleteArgs(ARGS_FILE_ID);
-                        }
 
-                        if (cb) {
-                            cb();
+                            if (cb) {
+                                cb();
+                            }
                         }
                     });
             }
