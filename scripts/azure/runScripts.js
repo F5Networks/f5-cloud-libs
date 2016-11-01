@@ -85,10 +85,10 @@
         run: function(argv) {
             try {
                 var loggerOptions = {};
+                var loggableArgs = [];
                 var ipc;
                 var Logger;
                 var logLevel;
-                var loggableArgs;
                 var argIndex;
                 var args;
                 var clArgIndex;
@@ -101,8 +101,17 @@
 
                 var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
 
-                // Log the input, but don't log passwords
-                loggableArgs = argv.slice();
+                // Log the input, but don't log passwords...
+                // ... copy args expanding those with spaces
+                for (i = 0; i < argv.length; i++) {
+                    if (argv[i].indexOf(' ') === -1) {
+                        loggableArgs.push(argv[i]);
+                    }
+                    else {
+                        loggableArgs = loggableArgs.concat(loggableArgs, argv[i].split(/\s+/));
+                    }
+                }
+                // ... mask the passwords
                 for (i = 0; i < loggableArgs.length; ++i) {
                     if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
                         loggableArgs[i + 1] = "*******";
@@ -180,8 +189,6 @@
                 logger = Logger.getLogger(loggerOptions);
 
                 logger.info("Running scripts.");
-
-                logger.debug("raw args", argv);
 
                 argIndex = argv.indexOf('--onboard');
                 logger.debug("onboard arg index", argIndex);
