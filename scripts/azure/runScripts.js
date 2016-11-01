@@ -140,6 +140,7 @@
                     console.log("    --tag\t\t\tGitHub f5-cloud-libs tag that was pulled.");
                     console.log("    --onboard <args>\t\tRun the onboard.js script with args.");
                     console.log("    --cluster <args>\t\tRun the cluster.js script with args.");
+                    console.log("    --network <args>\t\tRun the network.js script with args.");
                     console.log("    --script <args>\t\tRun the runScript.js script with args. To run multiple scripts, use multiple --script entrires.");
                     process.exit();
                 }
@@ -200,7 +201,6 @@
                 logger.debug("onboard arg index", argIndex);
                 if (argIndex !== -1) {
                     scriptArgs = argv[argIndex + 1];
-                    logger.debug("onboard args", scriptArgs);
                     spawnScript("onboard.js", undefined, scriptArgs);
                 }
 
@@ -208,8 +208,14 @@
                 logger.debug("cluster arg index", argIndex);
                 if (argIndex !== -1) {
                     scriptArgs = argv[argIndex + 1];
-                    logger.debug("cluster args", scriptArgs);
                     spawnScript("cluster.js", undefined, scriptArgs);
+                }
+
+                argIndex = argv.indexOf('--network');
+                logger.debug("network arg index", argIndex);
+                if (argIndex !== -1) {
+                    scriptArgs = argv[argIndex + 1];
+                    spawnScript("network.js", undefined, scriptArgs);
                 }
 
                 // Process multiple --script args
@@ -247,7 +253,6 @@
                             args.push(arg);
                         });
                     }
-                    logger.debug("script args", args);
                     spawnScript("runScript.js", args);
 
                     argIndex = argv.indexOf('--script', argIndex + 1);
