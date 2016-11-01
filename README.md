@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/seattlevine/f5-cloud-libs.svg?branch=develop)](https://travis-ci.org/seattlevine/f5-cloud-libs)
+[![Build Status](https://travis-ci.org/F5Networks/f5-cloud-libs.svg?branch=master)](https://travis-ci.org/F5Networks/f5-cloud-libs)
 
 # Library code and scripts for deploying BIG-IP in a cloud
 
