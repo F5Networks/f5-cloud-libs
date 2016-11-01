@@ -77,7 +77,7 @@
             };
 
             try {
-                options = options.getCommonOptions()
+                options = options.getCommonOptions(DEFAULT_LOG_FILE)
                     .option('--ntp <ntp-server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
                     .option('--tz <timezone>', 'Set timezone for NTP setting.')
                     .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', util.collect, [])
