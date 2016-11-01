@@ -54,7 +54,7 @@
             testOpts = testOpts || {};
 
             try {
-                options = options.getCommonOptions()
+                options = options.getCommonOptions(DEFAULT_LOG_FILE)
                     .option('--config-sync-ip <config_sync_ip>', 'IP address for config sync.')
                     .option('--create-group', 'Create a device group with the options:')
                     .option('    --device-group <device_group>', '    Name of the device group.')
