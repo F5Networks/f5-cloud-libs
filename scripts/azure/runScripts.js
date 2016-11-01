@@ -86,6 +86,7 @@
             try {
                 var loggerOptions = {};
                 var loggableArgs = [];
+                var loggableArgsSplit;
                 var ipc;
                 var Logger;
                 var logLevel;
@@ -98,6 +99,7 @@
                 var shellOutput;
                 var f5CloudLibsTag;
                 var i;
+                var j;
 
                 var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
 
@@ -108,9 +110,13 @@
                         loggableArgs.push(argv[i]);
                     }
                     else {
-                        loggableArgs = loggableArgs.concat(loggableArgs, argv[i].split(/\s+/));
+                        loggableArgsSplit = argv[i].split(/\s+/);
+                        for (j = 0; j < loggableArgsSplit.length; ++j) {
+                            loggableArgs.push(loggableArgsSplit[j]);
+                        }
                     }
                 }
+
                 // ... mask the passwords
                 for (i = 0; i < loggableArgs.length; ++i) {
                     if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
