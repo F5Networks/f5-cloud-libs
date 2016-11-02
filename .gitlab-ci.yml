@@ -1,0 +1,38 @@
+image: node:4
+
+stages:
+    - test
+    - deploy
+
+testOnly:
+    tags:
+        - texo
+    stage: test
+    script:
+        - npm install
+        - npm test
+    except:
+        - master
+
+testAndPackage:
+    tags:
+        - texo
+    stage: deploy
+    script:
+        - npm install
+        - npm test
+    only:
+        - tags
+    except:
+        - develop
+    artifacts:
+        name: f5-cloud-libs"${CI_BUILD_TAG}"
+        paths:
+            - LICENSE
+            - README.md
+            - index.js
+            - package.json
+            - lib
+            - scripts
+            - node_modules
+
