@@ -186,46 +186,6 @@
                     .then(function(response) {
                         logger.debug(response);
 
-                        if (options.localOnly) {
-                            logger.info("Creating LOCAL_ONLY partition.");
-                            return bigIp.create(
-                                '/tm/sys/folder',
-                                {
-                                    name: "LOCAL_ONLY",
-                                    partition: "/",
-                                    deviceGroup: "none",
-                                    trafficGroup: "traffic-group-local-only"
-                                }
-                            );
-                        }
-                    })
-                    .then(function(response) {
-                        logger.debug(response);
-
-                        var routeBody;
-
-                        if (options.defaultGw) {
-                            logger.info("Setting default gateway " + options.defaultGw);
-
-                            routeBody = {
-                                name: "default",
-                                gw: options.defaultGw
-                            };
-
-                            if (options.localOnly) {
-                                routeBody.partition = "LOCAL_ONLY";
-                                routeBody.network = "default";
-                            }
-
-                            return bigIp.create(
-                                '/tm/net/route',
-                                routeBody
-                            );
-                        }
-                    })
-                    .then(function(response) {
-                        logger.debug(response);
-
                         var promises = [];
                         var vlanName;
                         var nicName;
@@ -314,6 +274,46 @@
                         }
 
                         return util.callInSerial(bigIp, promises);
+                    }.bind(this))
+                    .then(function(response) {
+                        logger.debug(response);
+
+                        if (options.localOnly) {
+                            logger.info("Creating LOCAL_ONLY partition.");
+                            return bigIp.create(
+                                '/tm/sys/folder',
+                                {
+                                    name: "LOCAL_ONLY",
+                                    partition: "/",
+                                    deviceGroup: "none",
+                                    trafficGroup: "traffic-group-local-only"
+                                }
+                            );
+                        }
+                    }.bind(this))
+                    .then(function(response) {
+                        logger.debug(response);
+
+                        var routeBody;
+
+                        if (options.defaultGw) {
+                            logger.info("Setting default gateway " + options.defaultGw);
+
+                            routeBody = {
+                                name: "default",
+                                gw: options.defaultGw
+                            };
+
+                            if (options.localOnly) {
+                                routeBody.partition = "LOCAL_ONLY";
+                                routeBody.network = "default";
+                            }
+
+                            return bigIp.create(
+                                '/tm/net/route',
+                                routeBody
+                            );
+                        }
                     }.bind(this))
                     .then(function(response) {
                         logger.debug(response);
