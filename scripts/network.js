@@ -31,7 +31,6 @@
          * @param {Function} cb - Optional cb to call when done
          */
         run: function(argv, testOpts, cb) {
-            var childProcess = require('child_process');
             var options = require('commander');
             var BigIp = require('../lib/bigIp');
             var Logger = require('../lib/logger');
@@ -165,12 +164,21 @@
                                 logger.debug(response);
 
                                 logger.info("Restarting services.");
-                                childProcess.execSync("bigstart restart");
+                                return bigIp.create(
+                                    '/tm/util/bash',
+                                    {
+                                        command: "run",
+                                        utilCmdArgs: "-c 'bigstart restart'"
+                                    },
+                                    {
+                                        noWait: true
+                                    }
+                                );
                             })
                             .then(function(response) {
                                 logger.debug(response);
 
-                                logger.info("Waiting for BIG-IP to be ready after mcpd restart.");
+                                logger.info("Waiting for BIG-IP to be ready after bigstart restart.");
                                 return bigIp.ready();
                             });
                         }
