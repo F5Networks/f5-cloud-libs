@@ -99,6 +99,11 @@
                         }
                     })
                     .then(function() {
+                        // Whatever we're waiting for is done, so don't wait for
+                        // that again in case of a reboot
+                        return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                    })
+                    .then(function() {
                         var deferred = q.defer();
 
                         if (options.url) {
@@ -168,13 +173,14 @@
                     })
                     .done(function(response) {
                         logger.debug(response);
-                        logger.info("Custom script finished.");
 
                         util.deleteArgs(ARGS_FILE_ID);
 
                         if (cb) {
                             cb();
                         }
+
+                        util.logAndExit("Custom script finished.");
                     });
                 }
                 catch (err) {
@@ -185,6 +191,12 @@
                         console.log("Custom script error:", err);
                     }
                 }
+
+            // If we reboot, exit - otherwise cloud providers won't know we're done
+            ipc.once('REBOOT')
+                .then(function() {
+                    util.logAndExit("REBOOT signalled. Exitting.");
+                });
         },
 
         getOptions: function() {

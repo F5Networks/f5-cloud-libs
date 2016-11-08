@@ -69,8 +69,10 @@
             waiting--;
 
             if (!waiting) {
-                logger.info("All children have exitted. Exitting.");
-                process.exit();
+                // Make sure the last log message is flushed before exitting.
+                logger.info("All children have exitted. Exitting.", function() {
+                    process.exit();
+                });
             }
         });
     };
@@ -263,8 +265,10 @@
                 // If we reboot, exit - otherwise Azure doesn't know the extensions script is done
                 ipc.once('REBOOT')
                     .then(function() {
-                        logger.info("REBOOT signalled. Exitting.");
-                        process.exit();
+                        // Make sure the last log message is flushed before exitting.
+                        logger.info("REBOOT signalled. Exitting.", function() {
+                            process.exit();
+                        });
                     });
 
             }

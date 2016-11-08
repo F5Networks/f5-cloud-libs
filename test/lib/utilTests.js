@@ -15,7 +15,16 @@
  */
 'use strict';
 
+var fs = require('fs');
 var util = require('../../lib/util');
+
+var UTIL_ARGS_TEST_FILE = 'UTIL_ARGS_TEST_FILE';
+
+var argv;
+
+var getSavedArgs = function() {
+    return fs.readFileSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh').toString();
+};
 
 module.exports = {
     testCsv: function(test) {
@@ -24,6 +33,64 @@ module.exports = {
         test.deepEqual(util.csv("1, 2, 3", [["4", "5", "6"]]), [["4", "5", "6"], ["1", "2", "3"]]);
 
         test.done();
+    },
+
+    testSaveArgs: {
+
+        setUp: function(callback) {
+            argv = ['node', 'utilTests.js', '--one', '--two', 'abc'];
+            callback();
+        },
+
+        tearDown: function(callback) {
+            fs.unlinkSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh');
+            callback();
+        },
+
+        testBasic: function(test) {
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+                .then(function() {
+                    var savedArgs = getSavedArgs();
+                    test.notStrictEqual(savedArgs.indexOf('--one'), -1);
+                    test.notStrictEqual(savedArgs.indexOf('--two abc'), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testStripArgsWithParam: function(test) {
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE, ['--two'])
+                .then(function() {
+                    var savedArgs = getSavedArgs();
+                    test.notStrictEqual(savedArgs.indexOf('--one'), -1);
+                    test.strictEqual(savedArgs.indexOf('abc'), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testStripArgsWithoutParam: function(test) {
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE, ['--one'])
+                .then(function() {
+                    var savedArgs = getSavedArgs();
+                    test.strictEqual(savedArgs.indexOf('--one'), -1);
+                    test.notStrictEqual(savedArgs.indexOf('--two abc'), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testVersionCompare: function(test) {

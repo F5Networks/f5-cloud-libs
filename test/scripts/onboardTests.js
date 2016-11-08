@@ -16,6 +16,7 @@
 'use strict';
 
 var onboard = require('../../scripts/onboard');
+var ipc = require('../../lib/ipc');
 var q = require('q');
 
 var bigIpMock = {
@@ -63,9 +64,22 @@ var bigIpMock = {
     }
 };
 
-var testOptions = {bigIp: bigIpMock};
+var testOptions = {
+    bigIp: bigIpMock
+};
+
 var argv;
 var rebootRequested;
+
+// Don't let onboard exit - we need the nodeunit process to run to completion
+process.exit = function() {};
+
+// Just resolve right away, otherwise these tests never exit
+ipc.once = function() {
+    var deferred = q.defer();
+    deferred.resolve();
+    return deferred;
+};
 
 module.exports = {
     setUp: function(callback) {
@@ -76,32 +90,36 @@ module.exports = {
 
     testCollect: function(test) {
         argv.push('--ntp', 'one', '--ntp', 'two');
-        onboard.run(argv, testOptions);
-        test.strictEqual(onboard.getOptions().ntp.length, 2);
-        test.done();
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(onboard.getOptions().ntp.length, 2);
+            test.done();
+        });
     },
 
     testMapSimple: function(test) {
         argv.push('--global-setting', 'name1:value1');
-        onboard.run(argv, testOptions);
-        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
-        test.done();
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
+            test.done();
+        });
     },
 
     testMapSpaces: function(test) {
         argv.push('--global-setting', ' name1 : value1 ');
-        onboard.run(argv, testOptions);
-        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
-        test.done();
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
+            test.done();
+        });
     },
 
     testMapMultiple: function(test) {
         argv.push('--global-setting', 'name1:value1');
         argv.push('--global-setting', 'name2:value2');
-        onboard.run(argv, testOptions);
-        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
-        test.strictEqual(onboard.getGlobalSettings().name2, 'value2');
-        test.done();
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
+            test.strictEqual(onboard.getGlobalSettings().name2, 'value2');
+            test.done();
+        });
     },
 
     testReboot: function(test) {
