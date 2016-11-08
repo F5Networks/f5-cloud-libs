@@ -133,6 +133,11 @@
                         }
                     })
                     .then(function() {
+                        // Whatever we're waiting for is done, so don't wait for
+                        // that again in case of a reboot
+                        return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                    })
+                    .then(function() {
                         logger.info("Cluster starting.");
                         ipc.send(signals.CLUSTER_RUNNING);
 
@@ -210,11 +215,13 @@
                     })
                     .done(function(response) {
                         logger.debug(response);
-                        logger.info("Cluster finished.");
 
                         if (forceReboot) {
                             logger.warn("Rebooting.");
-                            bigIp.reboot();
+                            bigIp.reboot()
+                                .then(function() {
+                                    process.exit();
+                                });
                         }
                         else {
                             util.deleteArgs(ARGS_FILE_ID);
@@ -222,6 +229,20 @@
 
                         if (cb) {
                             cb();
+                        }
+
+                        // If we're not forcing a reboot, exit so that any listeners don't keep us alive
+                        if (!forceReboot) {
+                            util.logAndExit("Cluster finished.");
+                        }
+                    });
+
+                // If we reboot, exit - otherwise cloud providers won't know we're done
+                ipc.once('REBOOT')
+                    .then(function() {
+                        // If we forced the reboot ourselves, we will exit when that call completes
+                        if (!forceReboot) {
+                            util.logAndExit("REBOOT signalled. Exitting.");
                         }
                     });
             }

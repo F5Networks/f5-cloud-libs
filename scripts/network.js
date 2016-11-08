@@ -133,6 +133,11 @@
                         }
                     })
                     .then(function() {
+                        // Whatever we're waiting for is done, so don't wait for
+                        // that again in case of a reboot
+                        return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                    })
+                    .then(function() {
                         logger.info("Network setup starting.");
                         ipc.send(signals.NETWORK_RUNNING);
 
@@ -323,26 +328,16 @@
                     .then(function(response) {
                         logger.debug(response);
 
-                        var ARGS_TO_SAVE = ['--host', '--port', '--user', '-u', '--password', '-p', '--output', '-o'];
-                        var updatedArgs = [];
-                        var i;
-
                         if (options.forceReboot) {
                             // After reboot, we just want to send our done signal,
                             // in case any other scripts are waiting on us. So, modify
                             // the saved args for that.
-                            updatedArgs.push(argv[0], argv[1]);
-                            for (i = 0; i < argv.length; ++i) {
-                                if (ARGS_TO_SAVE.indexOf(argv[i]) !== -1) {
-                                    updatedArgs.push(argv[i], argv[i + 1]);
-                                }
-                            }
-
-                            return util.saveArgs(updatedArgs, ARGS_FILE_ID)
+                            var ARGS_TO_STRIP = ['--wait-for', '--single-nic', '--multi-nic', '--default-gw', '--local-only', '--vlan', '--self-ip', '--force-reboot'];
+                            return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP)
                                 .then(function() {
                                     logger.info("Rebooting and exitting. Will continue after reboot.");
                                     util.prepareArgsForReboot();
-                                    bigIp.reboot();
+                                    return bigIp.reboot();
                                 });
                         }
                     })
@@ -361,15 +356,26 @@
                         logger.debug(response);
 
                         if (!options.forceReboot) {
-                            logger.info("Network setup finished.");
-
                             util.deleteArgs(ARGS_FILE_ID);
 
                             if (cb) {
                                 cb();
                             }
+
+                            util.logAndExit("Network setup finished.");
                         }
                     });
+
+                // If we reboot, exit - otherwise cloud providers won't know we're done.
+                // But, if we're the one doing the reboot, we'll exit on our own through
+                // the normal path.
+                if (!options.forceReboot) {
+                    ipc.once('REBOOT')
+                        .then(function() {
+                            // Make sure the last log message is flushed before exitting.
+                            util.logAndExit("REBOOT signalled. Exitting.");
+                        });
+                }
             }
             catch (err) {
                 if (logger) {
