@@ -216,31 +216,34 @@
                 logger.info("Running scripts.");
 
                 argIndex = argv.indexOf('--onboard');
-                logger.debug("onboard arg index", argIndex);
-                if (argIndex !== -1) {
+                while (argIndex !== -1) {
+                    logger.debug("onboard arg index", argIndex);
                     scriptArgs = argv[argIndex + 1];
                     spawnScript("onboard.js", undefined, scriptArgs);
+                    argIndex = argv.indexOf('--onboard', argIndex + 1);
                 }
 
                 argIndex = argv.indexOf('--cluster');
-                logger.debug("cluster arg index", argIndex);
-                if (argIndex !== -1) {
+                while (argIndex !== -1) {
+                    logger.debug("cluster arg index", argIndex);
                     scriptArgs = argv[argIndex + 1];
                     spawnScript("cluster.js", undefined, scriptArgs);
+                    argIndex = argv.indexOf('--cluster', argIndex + 1);
                 }
 
                 argIndex = argv.indexOf('--network');
-                logger.debug("network arg index", argIndex);
-                if (argIndex !== -1) {
+                while (argIndex !== -1) {
+                    logger.debug("network arg index", argIndex);
                     scriptArgs = argv[argIndex + 1];
                     spawnScript("network.js", undefined, scriptArgs);
+                    argIndex = argv.indexOf('--network', argIndex + 1);
                 }
 
-                // Process multiple --script args
                 argIndex = argv.indexOf('--script');
-                logger.debug("script arg index", argIndex);
                 /* jshint loopfunc: true */
                 while (argIndex !== -1) {
+                    logger.debug("script arg index", argIndex);
+
                     args = [];
                     scriptArgs = argv[argIndex + 1];
                     clArgIndex = scriptArgs.indexOf('--cl-args');
@@ -274,7 +277,6 @@
                     spawnScript("runScript.js", args);
 
                     argIndex = argv.indexOf('--script', argIndex + 1);
-                    logger.debug("next script arg index", argIndex);
                 }
                 /* jshint loopfunc: false */
 

@@ -45,7 +45,7 @@
             var i;
 
             var DEFAULT_LOG_FILE = '/tmp/network.log';
-            var ARGS_FILE_ID = 'network';
+            var ARGS_FILE_ID = 'network_' + Date.now();
             var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
             var REQUIRED_OPTIONS = ['host', 'user', 'password'];
             var DEFAULT_CIDR = '/24';
