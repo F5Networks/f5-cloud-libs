@@ -17,9 +17,6 @@
 
 (function() {
 
-    var DEFAULT_LOG_FILE = '/tmp/runScript.log';
-    var ARGS_FILE_ID = 'runScript_' + Date.now(); // Add timestamp in case multiple calls to this script are made
-
     var options = require('commander');
     var runner;
 
@@ -45,6 +42,9 @@
             var logger;
             var logFileName;
             var clArgIndex;
+
+            var DEFAULT_LOG_FILE = '/tmp/runScript.log';
+            var ARGS_FILE_ID = 'runScript_' + Date.now();
 
             testOpts = testOpts || {};
 

@@ -46,7 +46,7 @@
             var i;
 
             var DEFAULT_LOG_FILE = '/tmp/cluster.log';
-            var ARGS_FILE_ID = 'cluster';
+            var ARGS_FILE_ID = 'cluster_' + Date.now();
             var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
             var REQUIRED_OPTIONS = ['host', 'user', 'password'];
 
