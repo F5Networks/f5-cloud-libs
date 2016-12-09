@@ -16,6 +16,7 @@
 'use strict';
 
 module.exports = {
+    autoscaleProvider: require('./lib/autoscaleProvider'),
     bigIp: require("./lib/bigIp"),
     logger: require("./lib/logger")
 };
