@@ -1,6 +1,6 @@
 {
   "name": "f5-cloud-libs",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Common library code for deploying a BIG-IP in a cloud environment",
   "main": "index.js",
   "repository": {
@@ -17,12 +17,12 @@
     "jshint": "latest",
     "nodeunit": "^0.9"
   },
+  "config": {
+    "cloudProvider": "",
+    "cloudProviderTag": ""
+  },
   "scripts": {
     "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test test/lib test/scripts",
-    "predeployAWS": "npm test",
-    "deployAWS": "scripts/aws/deploy.sh",
-    "predeployAzure": "npm test",
-    "deployAzure": "scripts/azure/deploy.sh",
     "doc": "jsdoc -c jsdoc.conf"
   }
 }
