@@ -309,5 +309,78 @@ module.exports = {
                 test.done();
             });
         }
+    },
+
+    testUpdateUser: {
+        testCreate: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/auth/user',
+                [
+                    {
+                        name: 'admin'
+                    }
+                ]
+            );
+            bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
+            .then(function() {
+                var userParams = icontrolMock.getRequest('create', '/tm/auth/user');
+                test.strictEqual(userParams.name, 'myUser');
+                test.strictEqual(userParams.password, 'myPass');
+                test.strictEqual(userParams["partition-access"]["all-partitions"].role, 'myRole');
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+        },
+
+        testCreateNoExistingUsers: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/auth/user',
+                {}
+            );
+            bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
+            .then(function() {
+                var userParams = icontrolMock.getRequest('create', '/tm/auth/user');
+                test.strictEqual(userParams.name, 'myUser');
+                test.strictEqual(userParams.password, 'myPass');
+                test.strictEqual(userParams["partition-access"]["all-partitions"].role, 'myRole');
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+        },
+
+        testUpdate: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/auth/user',
+                [
+                    {
+                        name: 'myUser'
+                    }
+                ]
+            );
+            bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
+            .then(function() {
+                var userParams = icontrolMock.getRequest('modify', '/tm/auth/user/myUser');
+                test.strictEqual(userParams.name, undefined);
+                test.strictEqual(userParams.password, 'myPass');
+                test.strictEqual(userParams["partition-access"], undefined);
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+        }
     }
 };
