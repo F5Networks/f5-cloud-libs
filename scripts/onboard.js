@@ -45,6 +45,7 @@
             var modules = {};
             var passwords = {};
             var rootPasswords = {};
+            var updateUsers = [];
             var loggerOptions = {};
             var loggableArgs;
             var logger;
@@ -67,13 +68,48 @@
              * Since passwords can contain any character, a delimiter is difficult to find.
              * Compromise by looking for ',new:' as a delimeter
              */
-            var parseRootPasswords = function(passwordsValue, container) {
+            var parseRootPasswords = function(passwordsValue) {
                 var set = passwordsValue.split(",new:");
 
                 if (set.length == 2) {
-                    container.old = set[0].split("old:")[1];
-                    container.new = set[1];
+                    rootPasswords.old = set[0].split("old:")[1];
+                    rootPasswords.new = set[1];
                 }
+            };
+
+            var parseUpdateUser = function(paramsValue) {
+                var userPassParams = paramsValue.split(',password:');
+                var passRoleParams;
+                var user;
+                var password;
+                var role;
+
+                if (userPassParams.length != 2) {
+                    logger.warn('Invalid syntax for update-user. No ",password:" found.');
+                    return;
+                }
+
+                user = userPassParams[0].split('user:');
+                if (user.length != 2) {
+                    logger.info('Invalid syntax for update-user. No "user:" found.');
+                    return;
+                }
+                user = user[1];
+
+                passRoleParams = userPassParams[1].split(',role:');
+                password = passRoleParams[0];
+
+                if (passRoleParams.length > 1) {
+                    role = passRoleParams[1];
+                }
+
+                updateUsers.push(
+                    {
+                        user: user,
+                        password: password,
+                        role: role
+                    }
+                );
             };
 
             try {
@@ -87,8 +123,8 @@
                     .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
                     .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.map, globalSettings)
                     .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.map, dbVars)
-                    .option('--set-password <user:new_password>', 'Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.', util.map, passwords)
-                    .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords, rootPasswords)
+                    .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords)
+                    .option('--update-user <user:user,password:password,role:role>', 'Update user password or create user with password and role. Role is only valid on create.', parseUpdateUser)
                     .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                     .option('--update-sigs', 'Update ASM signatures')
@@ -177,21 +213,6 @@
                         }
                     })
                     .then(function(response) {
-                        var promises = [];
-                        var user;
-
-                        logger.debug(response);
-
-                        if (Object.keys(passwords).length > 0) {
-                            logger.info("Setting password(s).");
-                            for (user in passwords) {
-                                promises.push(bigIp.onboard.password(user, passwords[user]));
-                            }
-
-                            return q.all(promises);
-                        }
-                    })
-                    .then(function(response) {
                         logger.debug(response);
 
                         if (Object.keys(rootPasswords).length > 0) {
@@ -201,6 +222,20 @@
 
                             logger.info("Setting rootPassword.");
                             return bigIp.onboard.password('root', rootPasswords.new, rootPasswords.old);
+                        }
+                    })
+                    .then(function(response) {
+                        var i;
+                        var promises = [];
+
+                        logger.debug(response);
+
+                        if (updateUsers.length > 0) {
+                            for (i = 0; i < updateUsers.length; ++i) {
+                                logger.info("Updating user", updateUsers[i].user);
+                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user, updateUsers[i].password, updateUsers[i].role));
+                            }
+                            return q.all(promises);
                         }
                     })
                     .then(function(response) {

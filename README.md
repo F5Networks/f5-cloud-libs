@@ -12,6 +12,10 @@ This project consists of two main parts
     - Library code for controlling a BIG-IP
     - Called from the scripts
 
+## Release notes
+### Version 2.0.0
+* onboard.js option of --set-password is no longer available, use --update-user instead.
+
 ## Scripts
 
 ### onboard.js
