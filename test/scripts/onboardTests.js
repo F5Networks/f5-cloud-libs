@@ -71,6 +71,10 @@ var testOptions = {
 var argv;
 var rebootRequested;
 
+// Our tests cause too many event listeners. Turn off the check.
+var options = require('commander');
+options.setMaxListeners(0);
+
 // Don't let onboard exit - we need the nodeunit process to run to completion
 process.exit = function() {};
 
