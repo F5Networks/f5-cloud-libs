@@ -23,9 +23,9 @@ This project consists of two main parts
 Does initial configuration and provisioning of a BIG-IP.
 
     Usage: onboard [options]
-
+    
     Options:
-
+    
       -h, --help                                               output usage information
       --host <ip_address>                                      BIG-IP management IP to which to send commands.
       -u, --user <user>                                        BIG-IP admin user name.
@@ -46,8 +46,8 @@ Does initial configuration and provisioning of a BIG-IP.
       -n, --hostname <hostname>                                Set BIG-IP hostname.
       -g, --global-setting <name:value>                        Set global setting <name> to <value>. For multiple settings, use multiple -g entries.
       -d, --db <name:value>                                    Set db variable <name> to <value>. For multiple settings, use multiple -d entries.
-      --set-password <user:new_password>                       Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.
       --set-root-password <old:old_password,new:new_password>  Set the password for the root user from <old_password> to <new_password>.
+      --update-user <user:user,password:password,role:role>    Update user password or create user with password and role. Role is only valid on create.
       -m, --module <name:level>                                Provision module <name> to <level>. For multiple modules, use multiple -m entries.
       --ping [address]                                         Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
       --update-sigs                                            Update ASM signatures
