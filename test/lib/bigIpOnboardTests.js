@@ -358,6 +358,28 @@ module.exports = {
             });
         },
 
+        testCreateNoRole: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/auth/user',
+                [
+                    {
+                        name: 'admin'
+                    }
+                ]
+            );
+            bigIp.onboard.updateUser('myUser', 'myPass')
+            .then(function() {
+                test.ok(false, "Should have thrown that we are creating with no role.");
+            })
+            .catch(function() {
+                test.ok(true);
+            })
+            .finally(function() {
+                test.done();
+            });
+        },
+
         testUpdate: function(test) {
             icontrolMock.when(
                 'list',
