@@ -5,7 +5,7 @@ stages:
 
 test:
     tags:
-        - texo
+        - docker-executor
     stage: test
     script:
         - npm install
