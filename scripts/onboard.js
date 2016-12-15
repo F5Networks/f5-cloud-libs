@@ -43,7 +43,6 @@
             var util = require('../lib/util');
             var dbVars = {};
             var modules = {};
-            var passwords = {};
             var rootPasswords = {};
             var updateUsers = [];
             var loggerOptions = {};
@@ -78,36 +77,49 @@
             };
 
             var parseUpdateUser = function(paramsValue) {
-                var userPassParams = paramsValue.split(',password:');
-                var passRoleParams;
+                var params;
                 var user;
                 var password;
                 var role;
+                var shell;
+                var i;
 
-                if (userPassParams.length != 2) {
-                    logger.warn('Invalid syntax for update-user. No ",password:" found.');
-                    return;
-                }
+                // prepend a ',' so we can use a regex to split
+                paramsValue = ',' + paramsValue;
 
-                user = userPassParams[0].split('user:');
-                if (user.length != 2) {
-                    logger.info('Invalid syntax for update-user. No "user:" found.');
-                    return;
-                }
-                user = user[1];
+                // split on ,<key>:<value>
+                params = paramsValue.split(/,(\w+):/);
 
-                passRoleParams = userPassParams[1].split(',role:');
-                password = passRoleParams[0];
+                // strip off the first match, which is an empty string
+                params = params.splice(1);
 
-                if (passRoleParams.length > 1) {
-                    role = passRoleParams[1];
+                for (i = 0; i < params.length; ++i) {
+                    switch (params[i].trim()) {
+                        case 'user':
+                            user = params[i + 1].trim();
+                            i++;
+                            break;
+                        case 'password':
+                            password = params[i + 1].trim();
+                            i++;
+                            break;
+                        case 'role':
+                            role = params[i + 1].trim();
+                            i++;
+                            break;
+                        case 'shell':
+                            shell = params[i + 1].trim();
+                            i++;
+                            break;
+                    }
                 }
 
                 updateUsers.push(
                     {
                         user: user,
                         password: password,
-                        role: role
+                        role: role,
+                        shell: shell
                     }
                 );
             };
@@ -124,7 +136,7 @@
                     .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.map, globalSettings)
                     .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.map, dbVars)
                     .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords)
-                    .option('--update-user <user:user,password:password,role:role>', 'Update user password or create user with password and role. Role is only valid on create.', parseUpdateUser)
+                    .option('--update-user <user:user,password:password,role:role,shell:shell>', 'Update user password or create user with password, role, and shell. Role and shell are only valid on create.', parseUpdateUser)
                     .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                     .option('--update-sigs', 'Update ASM signatures')
@@ -233,7 +245,7 @@
                         if (updateUsers.length > 0) {
                             for (i = 0; i < updateUsers.length; ++i) {
                                 logger.info("Updating user", updateUsers[i].user);
-                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user, updateUsers[i].password, updateUsers[i].role));
+                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user, updateUsers[i].password, updateUsers[i].role), updateUsers[i].shell);
                             }
                             return q.all(promises);
                         }

@@ -343,11 +343,12 @@ module.exports = {
                 '/tm/auth/user',
                 {}
             );
-            bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
+            bigIp.onboard.updateUser('myUser', 'myPass', 'myRole', 'myShell')
             .then(function() {
                 var userParams = icontrolMock.getRequest('create', '/tm/auth/user');
                 test.strictEqual(userParams.name, 'myUser');
                 test.strictEqual(userParams.password, 'myPass');
+                test.strictEqual(userParams.shell, 'myShell');
                 test.strictEqual(userParams["partition-access"]["all-partitions"].role, 'myRole');
             })
             .catch(function(err) {
