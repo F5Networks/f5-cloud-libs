@@ -41,20 +41,28 @@
             var q = require('q');
             var BigIp = require('../lib/bigIp');
             var Logger = require('../lib/logger');
+            var util = require('../lib/util');
             var loggerOptions = {};
+            var providerOptions = [];
+            var loggableArgs;
+            var logFileName;
             var masterIid;
             var Provider;
             var provider;
+            var i;
+
+            var KEYS_TO_MASK = ['-p', '--password'];
 
             testOpts = testOpts || {};
 
-            options.logLevel = 'info';
-            options
+            options = require('./commonOptions');
+
+            options = options.getCommonOptions(DEFAULT_LOG_FILE)
                 .option('--cloud <provider>', 'Cloud provider (aws | azure | etc.)')
-                .option('-c, --cluster-action <type>', 'join (join a cluster) | update (update cluster to match existing instances')
+                .option('--provider-options <cloud_options>', 'Any options (JSON stringified) that are required for the specific cloud provider.', util.map, providerOptions)
+                .option('-c, --cluster-action <type>', 'join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)')
                 .option('--device-group <device_group>', 'Device group name.')
-                .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
-                .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.')
+                .option('--block-sync', 'If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.')
                 .parse(argv);
 
             loggerOptions.console = true;
@@ -65,16 +73,37 @@
             }
 
             logger = Logger.getLogger(loggerOptions);
+            util.logger = logger;
 
-            logger.info(argv[1] + " called with", argv.join(' '));
+            // When running in cloud init, we need to exit so that cloud init can complete and
+            // allow the BIG-IP services to start
+            if (options.background) {
+                logFileName = options.output || DEFAULT_LOG_FILE;
+                logger.info("Spawning child process to do the work. Output will be in", logFileName);
+                util.runInBackgroundAndExit(process, logFileName);
+            }
 
+            // Log the input, but don't log passwords
+            loggableArgs = argv.slice();
+            for (i = 0; i < loggableArgs.length; ++i) {
+                if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
+                    loggableArgs[i + 1] = "*******";
+                }
+            }
+            logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
+
+            // Dummy password - if all of our actions will be on localhost (as in update),
+            // user does not need to provide a password
+            options.password = options.password || 'dummypass';
+
+            // Get the concrete provider instance
             provider = testOpts.provider;
             if (!provider) {
                 Provider = require('f5-cloud-libs-' + options.cloud).provider;
                 provider = new Provider({logger: logger});
             }
 
-            provider.init()
+            provider.init(providerOptions[0])
                 .then(function() {
                     logger.info('Getting info on all instances.');
                     return provider.getInstances();
@@ -97,11 +126,11 @@
                     masterIid = getMasterInstanceId(this.instances);
 
                     if (masterIid) {
-                        logger.info('Possible master ID:'. masterIid);
+                        logger.info('Possible master ID:', masterIid);
                         return provider.isValidMaster(masterIid);
                     }
                     else {
-                        logger.info("No master ID found.");
+                        logger.info('No master ID found.');
                     }
                 }.bind(this))
                 .then(function(response) {
@@ -119,9 +148,9 @@
                         }
 
                         logger.info('Electing master.');
-                        return provider.electMaster();
+                        return provider.electMaster(this.instances);
                     }
-                })
+                }.bind(this))
                 .then(function(response) {
                     var promises = [];
                     var thisInstance;
@@ -138,15 +167,15 @@
 
                     logger.info('Using master ID:', masterIid);
 
-                    bigIp = testOpts.bigIp || new BigIp(thisInstance.mgmtIp,
-                                                        thisInstance.adminUser,
-                                                        thisInstance.adminPassword,
-                                                        {port: thisInstance.mgmtPort, logger: logger});
+                    bigIp = testOpts.bigIp || new BigIp(options.host,
+                                                        options.user,
+                                                        options.password,
+                                                        {port: options.port, logger: logger});
 
                     if (options.clusterAction === 'update') {
                         // Only run if master is self
                         if (thisInstance.isMaster) {
-                            logger.info('Cluster Action UPDATE');
+                            logger.info('Cluster action UPDATE');
 
                             return getCmSyncStatus(bigIp)
                                 .then(function(response) {
@@ -195,7 +224,7 @@
                         }
                     }
                     else if (options.clusterAction === 'join') {
-                        logger.info('Cluster Action JOIN');
+                        logger.info('Cluster action JOIN');
 
                         // Store our info
                         return provider.putInstance(thisInstance)
@@ -203,7 +232,13 @@
                                 logger.debug(response);
 
                                 // Configure cm configsync-ip on this BIG-IP node
-                                return bigIp.cluster.configSyncIp(thisInstance.privateIp);
+                                if (!thisInstance.isMaster || !options.blockSync) {
+                                    logger.info("Setting config sync IP.");
+                                    return bigIp.cluster.configSyncIp(thisInstance.privateIp);
+                                }
+                                else {
+                                    logger.info("Not seting config sync IP because we're master and block-sync is specified.");
+                                }
                             }.bind(this))
                             .then(function() {
                                 var masterInstance;
@@ -221,9 +256,13 @@
                                 else {
                                     logger.info('Joining cluster.');
                                     masterInstance = this.instances[masterIid];
-                                    return bigIp.cluster.joinCluster(options.deviceGroup, masterInstance.mgmtIp, masterInstance.adminUser, masterInstance.adminPassword);
+                                    return bigIp.cluster.joinCluster(options.deviceGroup, masterInstance.mgmtIp, options.user, options.password, {remotePort: options.port});
                                 }
                             }.bind(this));
+                    }
+                    else if (options.clusterAction === 'unblock-sync') {
+                        logger.info("Cluster action UNBLOCK-SYNC");
+                        return bigIp.cluster.configSyncIp(thisInstance.privateIp);
                     }
                 }.bind(this))
                 .catch(function(err) {
