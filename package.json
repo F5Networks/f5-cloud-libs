@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "jshint": "latest",
-    "nodeunit": "^0.9"
+    "nodeunit": "^0.10"
   },
   "config": {
     "cloudProvider": "",

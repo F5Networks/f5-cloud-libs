@@ -62,7 +62,7 @@
             testOpts = testOpts || {};
 
             /**
-             * Special case of util.map. Used to parse root password options in the form of
+             * Special case of util.pair. Used to parse root password options in the form of
              *     old:oldRootPassword,new:newRootPassword
              * Since passwords can contain any character, a delimiter is difficult to find.
              * Compromise by looking for ',new:' as a delimeter
@@ -76,54 +76,6 @@
                 }
             };
 
-            var parseUpdateUser = function(paramsValue) {
-                var params;
-                var user;
-                var password;
-                var role;
-                var shell;
-                var i;
-
-                // prepend a ',' so we can use a regex to split
-                paramsValue = ',' + paramsValue;
-
-                // split on ,<key>:<value>
-                params = paramsValue.split(/,(\w+):/);
-
-                // strip off the first match, which is an empty string
-                params = params.splice(1);
-
-                for (i = 0; i < params.length; ++i) {
-                    switch (params[i].trim()) {
-                        case 'user':
-                            user = params[i + 1].trim();
-                            i++;
-                            break;
-                        case 'password':
-                            password = params[i + 1].trim();
-                            i++;
-                            break;
-                        case 'role':
-                            role = params[i + 1].trim();
-                            i++;
-                            break;
-                        case 'shell':
-                            shell = params[i + 1].trim();
-                            i++;
-                            break;
-                    }
-                }
-
-                updateUsers.push(
-                    {
-                        user: user,
-                        password: password,
-                        role: role,
-                        shell: shell
-                    }
-                );
-            };
-
             try {
                 options = options.getCommonOptions(DEFAULT_LOG_FILE)
                     .option('--ntp <ntp-server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
@@ -133,11 +85,11 @@
                     .option('-l, --license <license_key>', 'License BIG-IP with <license_key>.')
                     .option('-a, --add-on <add_on_key>', 'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.', util.collect, [])
                     .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
-                    .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.map, globalSettings)
-                    .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.map, dbVars)
+                    .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.pair, globalSettings)
+                    .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.pair, dbVars)
                     .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords)
-                    .option('--update-user <user:user,password:password,role:role,shell:shell>', 'Update user password or create user with password, role, and shell. Role and shell are only valid on create.', parseUpdateUser)
-                    .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
+                    .option('--update-user <user:user,password:password,role:role,shell:shell>', 'Update user password or create user with password, role, and shell. Role and shell are only valid on create.', util.map, updateUsers)
+                    .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.pair, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                     .option('--update-sigs', 'Update ASM signatures')
                     .parse(argv);
@@ -245,7 +197,7 @@
                         if (updateUsers.length > 0) {
                             for (i = 0; i < updateUsers.length; ++i) {
                                 logger.info("Updating user", updateUsers[i].user);
-                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user, updateUsers[i].password, updateUsers[i].role), updateUsers[i].shell);
+                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user, updateUsers[i].password, updateUsers[i].role, updateUsers[i].shell));
                             }
                             return q.all(promises);
                         }

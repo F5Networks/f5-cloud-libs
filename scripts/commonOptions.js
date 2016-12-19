@@ -33,7 +33,7 @@ module.exports = {
             .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
             .option('-u, --user <user>', 'BIG-IP admin user name.')
             .option('-p, --password <password>', 'BIG-IP admin user password.')
-            .option('--port <port>', 'BIG-IP management SSL port to connect to. Default 443.', parseInt)
+            .option('--port <port>', 'BIG-IP management SSL port to connect to. Default 443.')
             .option('--no-reboot', 'Skip reboot even if it is recommended.')
             .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
             .option('--signal <signal>', 'Signal to send when done. Default ONBOARD_DONE.')

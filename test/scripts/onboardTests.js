@@ -60,8 +60,20 @@ var bigIpMock = {
     onboard: {
         globalSettings: function() {
             return q();
+        },
+
+        updateUser: function(user, password, role, shell) {
+            this.updatedUsers = this.updatedUsers || [];
+            this.updatedUsers.push({
+                user: user,
+                password: password,
+                role: role,
+                shell: shell
+            });
+
+            return q();
         }
-    }
+    },
 };
 
 var testOptions = {
@@ -100,7 +112,7 @@ module.exports = {
         });
     },
 
-    testMapSimple: function(test) {
+    testPairSimple: function(test) {
         argv.push('--global-setting', 'name1:value1');
         onboard.run(argv, testOptions, function() {
             test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
@@ -108,7 +120,7 @@ module.exports = {
         });
     },
 
-    testMapSpaces: function(test) {
+    testPairSpaces: function(test) {
         argv.push('--global-setting', ' name1 : value1 ');
         onboard.run(argv, testOptions, function() {
             test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
@@ -116,7 +128,7 @@ module.exports = {
         });
     },
 
-    testMapMultiple: function(test) {
+    testPairMultiple: function(test) {
         argv.push('--global-setting', 'name1:value1');
         argv.push('--global-setting', 'name2:value2');
         onboard.run(argv, testOptions, function() {
@@ -137,6 +149,26 @@ module.exports = {
         argv.push('--no-reboot');
         onboard.run(argv, testOptions, function() {
             test.ifError(rebootRequested);
+            test.done();
+        });
+    },
+
+    testUpdateUser: function(test) {
+        argv.push('--update-user', 'user:user1,password:pass1,role:role1,shell:shell1', '--update-user', 'user:user2,password:pass2,shell:shell2');
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(bigIpMock.onboard.updatedUsers.length, 2);
+            test.deepEqual(bigIpMock.onboard.updatedUsers[0], {
+                user: "user1",
+                password: "pass1",
+                role: "role1",
+                shell: "shell1"
+            });
+            test.deepEqual(bigIpMock.onboard.updatedUsers[1], {
+                user: "user2",
+                password: "pass2",
+                role: undefined,
+                shell: "shell2"
+            });
             test.done();
         });
     }
