@@ -51,6 +51,7 @@
             var logFileName;
             var bigIp;
             var forceReboot;
+            var index;
             var i;
 
             var DEFAULT_LOG_FILE = '/tmp/onboard.log';
@@ -125,6 +126,10 @@
                     if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
                         loggableArgs[i + 1] = "*******";
                     }
+                }
+                index = loggableArgs.indexOf('--update-user');
+                if (index !== -1) {
+                    loggableArgs[index + 1] = loggableArgs[index + 1].replace(/password:([^,])+/, '*******');
                 }
                 logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
