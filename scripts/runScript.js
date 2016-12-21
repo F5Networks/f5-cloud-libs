@@ -39,12 +39,15 @@
             var signals = require('../lib/signals');
             var util = require('../lib/util');
             var loggerOptions = {};
+            var loggableArgs;
             var logger;
             var logFileName;
             var clArgIndex;
+            var i;
 
             var DEFAULT_LOG_FILE = '/tmp/runScript.log';
             var ARGS_FILE_ID = 'runScript_' + Date.now();
+            var KEYS_TO_MASK = ['--cl-args'];
 
             testOpts = testOpts || {};
 
@@ -78,8 +81,14 @@
                     util.runInBackgroundAndExit(process, logFileName);
                 }
 
-                // Log the input, but don't log passwords
-                logger.info(argv[1] + " called with", argv.slice().join(" "));
+                // Log the input, but don't cl-args since it could contain a password
+                loggableArgs = argv.slice();
+                for (i = 0; i < loggableArgs.length; ++i) {
+                    if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
+                        loggableArgs[i + 1] = "*******";
+                    }
+                }
+                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
                 // Save args in restart script in case we need to reboot to recover from an error
                 // With cl-args, we need to restore the single quotes around the args - shells remove them
