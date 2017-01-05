@@ -1246,7 +1246,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line154">line 154</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line156">line 156</a>
     </li></ul></dd>
     
 
@@ -1603,7 +1603,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line229">line 229</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line306">line 306</a>
     </li></ul></dd>
     
 
@@ -1758,7 +1758,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line284">line 284</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line361">line 361</a>
     </li></ul></dd>
     
 
@@ -2049,7 +2049,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line351">line 351</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line428">line 428</a>
     </li></ul></dd>
     
 
@@ -2373,7 +2373,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line388">line 388</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line465">line 465</a>
     </li></ul></dd>
     
 
@@ -2423,6 +2423,267 @@ old hostname to new.
 
 
         
+            
+
+    
+
+    <h4 class="name" id="updateUser"><span class="type-signature"></span>updateUser<span class="signature">(user, password, role<span class="signature-attributes">opt</span>, shell<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Updates or creates a user
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>user</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Username to update or create.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>password</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Password for user.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>role</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Role for user. Only valid when creating user.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>shell</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Shell for user (bash | tmsh | none). Only valid when creating user. Default tmsh.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line243">line 243</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise which is resolved when the user has been updated
+                   or rejected if an error occurs.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
     
 
     
@@ -2438,13 +2699,13 @@ old hostname to new.
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="AutoscaleProvider.html">AutoscaleProvider</a></li><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 05 2017 09:26:30 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
