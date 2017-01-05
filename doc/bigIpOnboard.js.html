@@ -143,6 +143,9 @@ BigIpOnboard.prototype.hostname = function(hostname, retryOptions) {
                         util.NO_RETRY
                     )
                     .then(function() {
+                        return this.core.ready();
+                    }.bind(this))
+                    .then(function() {
                         return this.core.modify(
                             '/tm/sys/global-settings',
                             {
@@ -152,7 +155,6 @@ BigIpOnboard.prototype.hostname = function(hostname, retryOptions) {
                             util.NO_RETRY
                         );
                     }.bind(this));
-
                 }
                 else {
                     return q('New hostname matches existing hostname');
@@ -181,21 +183,31 @@ BigIpOnboard.prototype.hostname = function(hostname, retryOptions) {
  */
 BigIpOnboard.prototype.license = function(options, retryOptions) {
 
+    var licenseRetryOptions = {
+        maxRetries: 5,
+        retryIntervalMs: 10000
+    };
+
     if (!(options.registrationKey || options.addOnKeys)) {
         return q('No registration key or add on keys. Nothing to do.');
     }
 
-    retryOptions = retryOptions || util.DEFAULT_RETRY;
+    retryOptions = retryOptions || licenseRetryOptions;
 
     var func = function() {
         var alreadyLicensed;
+        var identicalLicense;
 
         return this.core.ready()
             .then(function() {
                 return this.core.list('/tm/shared/licensing/registration', undefined, util.NO_RETRY);
             }.bind(this))
             .then(function(response) {
-                if (response.registrationKey &amp;&amp; !options.addOnKeys.length &amp;&amp; !options.overwrite) {
+                if (response.registrationKey &amp;&amp; !options.addOnKeys &amp;&amp; response.registrationKey === options.registrationKey) {
+                    identicalLicense = true;
+                    return;
+                }
+                else if (response.registrationKey &amp;&amp; !options.addOnKeys.length &amp;&amp; !options.overwrite) {
                     alreadyLicensed = true;
                     return;
                 }
@@ -205,7 +217,7 @@ BigIpOnboard.prototype.license = function(options, retryOptions) {
             }.bind(this))
             .then(function() {
                 var licenseBody;
-                if (!alreadyLicensed) {
+                if (!identicalLicense &amp;&amp; !alreadyLicensed) {
                     licenseBody = {
                         command: 'install'
                     };
@@ -220,9 +232,14 @@ BigIpOnboard.prototype.license = function(options, retryOptions) {
             }.bind(this))
             .then(function(response) {
                 var message;
-                if (alreadyLicensed) {
+                if (identicalLicense) {
+                    message = 'Identical license. Skipping.';
+                    return message;
+                }
+
+                else if (alreadyLicensed) {
                     message = 'BIG-IP already licensed. Use overwrite option to re-license.';
-                    return q(message);
+                    return message;
                 }
                 else {
                     message = response.commandResult.trim();
@@ -230,13 +247,73 @@ BigIpOnboard.prototype.license = function(options, retryOptions) {
                         return q.reject(message);
                     }
                     else {
-                        return q(message);
+                        return message;
                     }
                 }
             }.bind(this));
     };
 
     return util.tryUntil(this, retryOptions, func);
+};
+
+/**
+ * Updates or creates a user
+ *
+ * @param {String} user - Username to update or create.
+ * @param {String} password - Password for user.
+ * @param {String} [role] - Role for user. Only valid when creating user.
+ * @param {String} [shell] - Shell for user (bash | tmsh | none). Only valid when creating user. Default tmsh.
+ *
+ * @returns {Promise} A promise which is resolved when the user has been updated
+ *                    or rejected if an error occurs.
+
+ */
+BigIpOnboard.prototype.updateUser = function(user, password, role, shell) {
+    return this.core.ready()
+        .then(function() {
+            // Check to see if the user exists
+            return this.core.list('/tm/auth/user');
+        }.bind(this))
+        .then(function(response) {
+            var body = {
+                password: password
+            };
+
+            var currentUser = -1;
+
+            if (Array.isArray(response)) {
+                currentUser = response.findIndex(function(element) {
+                    return element.name === user;
+                });
+            }
+
+            if (currentUser !== -1) {
+                // If we're setting the password for our user, we need to
+                // re-initialize the bigIp core
+                if (user === this.user) {
+                    this.core.init(this.core.host, this.core.user, password, this.core.port);
+                }
+
+                return this.core.modify('/tm/auth/user/' + user, body);
+            }
+            else {
+                if (!role) {
+                    return q.reject(new Error('Must specify role when creating a user.'));
+                }
+
+                shell = shell || 'tmsh';
+
+                body.name = user;
+                body.shell = shell;
+                body["partition-access"] = {
+                    "all-partitions": {
+                        role: role
+                    }
+                };
+
+                return this.core.create('/tm/auth/user', body);
+            }
+        }.bind(this));
 };
 
 /**
@@ -438,8 +515,23 @@ BigIpOnboard.prototype.sslPort = function(sslPort, retryOptions, noInit) {
             }.bind(this))
             .then(function(response) {
                 var defaults = response.defaults || [];
+                var defaultsChanged;
+                var index443;
+
                 if (defaults.indexOf('tcp:' + sslPort) === -1) {
                     defaults.push('tcp:' + sslPort);
+                    defaultsChanged = true;
+                }
+
+                if (sslPort !== 443) {
+                    index443 = defaults.indexOf('tcp:443');
+                    if (index443 !== -1) {
+                        defaults.splice(index443, 1);
+                        defaultsChanged = true;
+                    }
+                }
+
+                if (defaultsChanged) {
                     return this.core.modify(
                         SELF_ALLOW_PATH,
                         {
@@ -464,13 +556,13 @@ module.exports = BigIpOnboard;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="AutoscaleProvider.html">AutoscaleProvider</a></li><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 05 2017 09:26:30 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

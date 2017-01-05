@@ -41,7 +41,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 'use strict';
+'use strict';
 
 var https = require('https');
 var q = require('q');
@@ -77,12 +77,13 @@ var IControl = function(options) {
 /**
  * Executes a list (GET) request
  *
- * @param {String} path              - Path for the request.
- * @param {Object} [options]         - Options for the request.
- * @param {Object} [options.headers] - Headers to use in the request. Default
- *                                     {
- *                                         'Content-Type': 'application/json'
- *                                     }
+ * @param {String}  path              - Path for the request.
+ * @param {Object}  [options]         - Options for the request.
+ * @param {Boolean} [options.noWait]  - Don't wait for a response. Default false (wait for a response).
+ * @param {Object}  [options.headers] - Headers to use in the request. Default
+ *                                      {
+ *                                          'Content-Type': 'application/json'
+ *                                      }
  *
  * @returns {Promise} A promise which is resolved with the results of the request
  *                    or rejected if an error occurs. If the response is JSON that
@@ -95,13 +96,14 @@ IControl.prototype.list = function(path, options) {
 /**
  * Executes a create (POST) request
  *
- * @param {String} path              - Path for the request.
- * @param {Object} [body]            - Body of the request.
- * @param {Object} [options]         - Options for the request.
- * @param {Object} [options.headers] - Headers to use in the request. Default
- *                                     {
- *                                         'Content-Type': 'application/json'
- *                                     }
+ * @param {String}  path              - Path for the request.
+ * @param {Object}  [body]            - Body of the request.
+ * @param {Object}  [options]         - Options for the request.
+ * @param {Boolean} [options.noWait]  - Don't wait for a response. Default false (wait for a response).
+ * @param {Object}  [options.headers] - Headers to use in the request. Default
+ *                                      {
+ *                                          'Content-Type': 'application/json'
+ *                                      }
  *
  * @returns {Promise} A promise which is resolved with the results of the request
  *                    or rejected if an error occurs.
@@ -113,13 +115,14 @@ IControl.prototype.create = function(path, body, options) {
 /**
  * Executes a modify (PATCH) request
  *
- * @param {String} path              - Path for the request.
- * @param {Object} [body]            - Body of the request.
- * @param {Object} [options]         - Options for the request.
- * @param {Object} [options.headers] - Headers to use in the request. Default
- *                                     {
- *                                         'Content-Type': 'application/json'
- *                                     }
+ * @param {String}  path              - Path for the request.
+ * @param {Object}  [body]            - Body of the request.
+ * @param {Object}  [options]         - Options for the request.
+ * @param {Boolean} [options.noWait]  - Don't wait for a response. Default false (wait for a response).
+ * @param {Object}  [options.headers] - Headers to use in the request. Default
+ *                                      {
+ *                                          'Content-Type': 'application/json'
+ *                                      }
  *
  * @returns {Promise} A promise which is resolved with the results of the request
  *                    or rejected if an error occurs.
@@ -132,13 +135,14 @@ IControl.prototype.modify = function(path, body, options) {
 /**
  * Executes a replace (PUT) request
  *
- * @param {String} path              - Path for the request.
- * @param {Object} [body]            - Body of the request.
- * @param {Object} [options]         - Options for the request.
- * @param {Object} [options.headers] - Headers to use in the request. Default
- *                                     {
- *                                         'Content-Type': 'application/json'
- *                                     }
+ * @param {String}  path              - Path for the request.
+ * @param {Object}  [body]            - Body of the request.
+ * @param {Object}  [options]         - Options for the request.
+ * @param {Boolean} [options.noWait]  - Don't wait for a response. Default false (wait for a response).
+ * @param {Object}  [options.headers] - Headers to use in the request. Default
+ *                                      {
+ *                                          'Content-Type': 'application/json'
+ *                                      }
  *
  * @returns {Promise} A promise which is resolved with the results of the request
  *                    or rejected if an error occurs.
@@ -150,12 +154,13 @@ IControl.prototype.replace = function(path, body, options) {
 /**
  * Executes a delete (DELETE) request
  *
- * @param {String} path              - Path for the request.
- * @param {Object} [options]         - Options for the request.
- * @param {Object} [options.headers] - Headers to use in the request. Default
- *                                     {
- *                                         'Content-Type': 'application/json'
- *                                     }
+ * @param {String}  path              - Path for the request.
+ * @param {Object}  [options]         - Options for the request.
+ * @param {Boolean} [options.noWait]  - Don't wait for a response. Default false (wait for a response).
+ * @param {Object}  [options.headers] - Headers to use in the request. Default
+ *                                      {
+ *                                          'Content-Type': 'application/json'
+ *                                      }
  *
  * @returns {Promise} A promise which is resolved with the results of the request
  *                    or rejected if an error occurs. If the response is JSON that
@@ -168,14 +173,15 @@ IControl.prototype.delete = function(path, options) {
 /**
  * Executes a request
  *
- * @param {String} method            - HTTP method for the request.
- * @param {String} path              - Path for the request.
- * @param {Object} [body]            - Body of the request.
- * @param {Object} [options]         - Options for the request.
- * @param {Object} [options.headers] - Headers to use in the request. Default
- *                                     {
- *                                         'Content-Type': 'application/json'
- *                                     }
+ * @param {String}  method            - HTTP method for the request.
+ * @param {String}  path              - Path for the request.
+ * @param {Object}  [body]            - Body of the request.
+ * @param {Object}  [options]         - Options for the request.
+ * @param {Boolean} [options.noWait]  - Don't wait for a response. Default false (wait for a response).
+ * @param {Object}  [options.headers] - Headers to use in the request. Default
+ *                                      {
+ *                                          'Content-Type': 'application/json'
+ *                                      }
  *
  * @returns {Promise} A promise which is resolved with the results of the request
  *                    or rejected if an error occurs.
@@ -196,9 +202,12 @@ IControl.prototype.request = function(method, path, body, options) {
 
     var header;
     var httpRequest;
+    var responseHandler;
+
+    options = options || {};
 
     // Add any headers that were specified
-    if (options &amp;&amp; options.headers) {
+    if (options.headers) {
         for (header in options.headers) {
             if (options.headers.hasOwnProperty(header)) {
                 if (header.toLowerCase() === 'content-type') {
@@ -221,7 +230,7 @@ IControl.prototype.request = function(method, path, body, options) {
         requestOptions.headers['Content-Length'] = Buffer.byteLength(body);
     }
 
-    httpRequest = this.https.request(requestOptions, function(response) {
+    responseHandler = options.noWait ? undefined : function(response) {
         var totalResponse = '';
         response.on('data', function(chunk) {
             totalResponse += chunk;
@@ -255,17 +264,25 @@ IControl.prototype.request = function(method, path, body, options) {
                 deferred.resolve(parsedResponse);
             }
         });
-    });
+    };
 
-    httpRequest.on('error', function(err) {
-        deferred.reject(err);
-    });
+    httpRequest = this.https.request(requestOptions, responseHandler);
 
     if (body) {
         httpRequest.write(body);
     }
 
+    httpRequest.on('error', function(err) {
+        if (!options.noWait) {
+            deferred.reject(err);
+        }
+    });
+
     httpRequest.end();
+
+    if (options.noWait) {
+        deferred.resolve();
+    }
 
     return deferred.promise;
 };
@@ -281,13 +298,13 @@ module.exports = IControl;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="AutoscaleProvider.html">AutoscaleProvider</a></li><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 05 2017 09:26:30 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

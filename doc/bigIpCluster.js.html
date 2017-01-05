@@ -453,7 +453,56 @@ BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUse
     var BigIp = require('./bigIp');
     var remoteBigIp;
     var hostname;
+    var managementIp;
     var version;
+
+    var checkClusterReadiness = function(deviceGroup) {
+        var func = function() {
+
+            var promises;
+
+            // remoteBigIp is passed as 'this'
+            return this.ready()
+                .then(function() {
+                    return this.deviceInfo();
+                }.bind(this))
+                .then(function(response) {
+                    var hostname = response.hostname;
+
+                    promises = [
+                        {
+                            promise: this.list,
+                            arguments: [
+                                '/tm/cm/device-group/' + deviceGroup,
+                                undefined,
+                                util.NO_RETRY
+                            ]
+                        },
+                        {
+                            promise: this.list,
+                            arguments: [
+                                '/tm/cm/device/~Common~' + hostname,
+                                undefined,
+                                util.NO_RETRY
+                            ]
+                        }
+                    ];
+
+                    return util.callInSerial(this, promises);
+                }.bind(this))
+                .then(function(responses) {
+                    if (responses.length !== promises.length) {
+                        throw new Error("Not all responses received.");
+                    }
+
+                    if (!responses[1].configsyncIp || responses[1].configsyncIp === 'none') {
+                        throw new Error("No config sync IP.");
+                    }
+                }.bind(this));
+            };
+
+        return util.tryUntil(remoteBigIp, {maxRetries: 240, retryIntervalMs: 10000}, func);
+    };
 
     options = options || {};
     options.remotePort = options.remotePort || this.core.port;
@@ -474,23 +523,32 @@ BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUse
                                 logger: this.logger
                             });
 
-    this.logger.info("Checking device group on remote host.");
+    this.logger.info("Checking remote host for cluster readiness.");
 
-    return remoteBigIp.list('/tm/cm/device-group/' + deviceGroup, undefined, {maxRetries: 120, retryIntervalMs: 10000})
+    return checkClusterReadiness(deviceGroup)
         .then(function(response) {
             this.logger.debug(response);
+
             this.logger.info("Getting local hostname for trust.");
+            return this.core.list('/tm/cm/device');
+        }.bind(this))
+        .then(function(response) {
+            this.logger.debug(response);
+
+            hostname = response[0].hostname;
+            this.logger.info("Getting local management address.");
             return this.core.deviceInfo();
         }.bind(this))
         .then(function(response) {
             this.logger.debug(response);
+
+            managementIp = response.managementAddress;
             this.logger.info("Adding to remote trust.");
-            hostname = response.hostname;
-            version = response.version; // we need this later when we sync the datasync-global-dg group
-            return remoteBigIp.cluster.addToTrust(hostname, this.core.host, this.core.user, this.core.password);
+            return remoteBigIp.cluster.addToTrust(hostname, managementIp, this.core.user, this.core.password);
         }.bind(this))
         .then(function(response) {
             this.logger.debug(response);
+
             this.logger.info("Adding to remote device group.");
             return remoteBigIp.cluster.addToDeviceGroup(hostname, deviceGroup);
         }.bind(this))
@@ -507,6 +565,8 @@ BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUse
             }
         }.bind(this))
         .then(function(response) {
+
+            var dataSyncResponse = response;
 
             // Sometimes sync just fails silently, so we retry all of the sync commands until both
             // local and remote devices report that they are in sync
@@ -567,9 +627,29 @@ BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUse
                         this.logger.info("Sync complete.");
                         deferred.resolve();
                     }.bind(this))
-                    .catch(function() {
+                    .catch(function(err) {
                         this.logger.info("Sync not yet complete.");
-                        deferred.reject();
+                        this.logger.verbose("Sync Error", err);
+
+                        if (err &amp;&amp; err.recommendedAction) {
+                            // In some cases, sync complete tells us to sync a different group
+                            if (err.recommendedAction.sync) {
+                                this.logger.info("Following recommended action. Syncing group " + err.recommendedAction.sync);
+                                remoteBigIp.cluster.sync('to-group', err.recommendedAction.sync, true, util.NO_RETRY)
+                                    .then(function() {
+                                        return this.syncComplete(SYNC_COMPLETE_RETRY);
+                                    })
+                                    .then(function() {
+                                        deferred.resolve();
+                                    })
+                                    .catch(function() {
+                                        deferred.reject();
+                                    });
+                            }
+                        }
+                        else {
+                            deferred.reject();
+                        }
                     }.bind(this))
                     .done();
 
@@ -579,7 +659,11 @@ BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUse
             this.logger.debug(response);
 
             if (options.sync) {
-                return util.tryUntil(this, {maxRetries: 10, retryIntervalMs: 30000}, syncAndCheck, [response]);
+                return this.core.deviceInfo()
+                    .then(function(response) {
+                        version = response.version; // we need this later when we sync the datasync-global-dg group
+                        return util.tryUntil(this, {maxRetries: 10, retryIntervalMs: 30000}, syncAndCheck, [dataSyncResponse]);
+                    }.bind(this));
             }
         }.bind(this));
 };
@@ -636,27 +720,26 @@ BigIpCluster.prototype.removeFromDeviceGroup = function(deviceNames, deviceGroup
     }
 
     var func = function() {
-         return this.core.ready()
-             .then(function() {
-                 return this.core.list(DEVICE_GROUP_PATH + deviceGroup + '/devices', undefined, util.NO_RETRY);
-             }.bind(this))
-             .then(function(currentDevices) {
-                 var devicesToKeep = [];
-                 currentDevices.forEach(function(currentDevice) {
-                     if (deviceNames.indexOf(currentDevice.name) === -1) {
-                         devicesToKeep.push(currentDevice.name);
-                     }
-                 });
-
+        return this.core.ready()
+            .then(function() {
+                return this.core.list(DEVICE_GROUP_PATH + deviceGroup + '/devices', undefined, util.NO_RETRY);
+            }.bind(this))
+            .then(function(currentDevices) {
+                var devicesToKeep = [];
+                currentDevices.forEach(function(currentDevice) {
+                    if (deviceNames.indexOf(currentDevice.name) === -1) {
+                        devicesToKeep.push(currentDevice.name);
+                    }
+                });
                 if (devicesToKeep.length !== currentDevices.length) {
-                     return this.core.modify(
-                         DEVICE_GROUP_PATH + deviceGroup,
-                         {
-                            devices: devicesToKeep
-                         }
-                     );
-                 }
-             }.bind(this));
+                    return this.core.modify(
+                        DEVICE_GROUP_PATH + deviceGroup,
+                        {
+                           devices: devicesToKeep
+                        }
+                    );
+                }
+            }.bind(this));
     };
 
     return util.tryUntil(this, retryOptions, func);
@@ -754,7 +837,7 @@ BigIpCluster.prototype.sync = function(direction, deviceGroup, forceFullLoadPush
  * @param {Integer}  [retryOptions.retryIntervalMs] - Milliseconds between retries. Default 10000.
  *
  * @returns {Promise} A promise which is resolved if sync is complete,
- *                    or rejected if not or on error.
+ *                    or rejected on error or recommended action.
  */
 BigIpCluster.prototype.syncComplete = function(retryOptions) {
     retryOptions = retryOptions || util.DEFAULT_RETRY;
@@ -766,11 +849,39 @@ BigIpCluster.prototype.syncComplete = function(retryOptions) {
                 return this.core.list('/tm/cm/sync-status', undefined, util.NO_RETRY);
             }.bind(this))
             .then(function(response) {
-                if (response.entries["https://localhost/mgmt/tm/cm/sync-status/0"].nestedStats.entries.color.description === 'green') {
+                var mainStats = response.entries["https://localhost/mgmt/tm/cm/sync-status/0"].nestedStats.entries;
+                var toGroupTag = "to group ";
+                var detailedStats;
+                var detailKeys;
+                var description;
+                var rejectReason;
+                var toGroupIndex;
+                var i;
+
+                if (mainStats.color.description === 'green') {
                     deferred.resolve();
                 }
                 else {
-                    deferred.reject();
+                    // Look for a recommended action
+                    detailedStats = mainStats["https://localhost/mgmt/tm/cm/syncStatus/0/details"].nestedStats.entries;
+                    detailKeys = Object.keys(detailedStats);
+                    for (i = 0; i &lt; detailKeys.length; ++i) {
+                        description = detailedStats[detailKeys[i]].nestedStats.entries.details.description;
+                        if (description.indexOf("Recommended action") !== -1) {
+                            // If found, look for the group to sync.
+                            toGroupIndex = description.indexOf(toGroupTag);
+                            if (toGroupIndex !== -1) {
+                                rejectReason = {
+                                    recommendedAction: {
+                                        sync: description.substring(toGroupIndex + toGroupTag.length)
+                                    }
+                                };
+                            }
+                            break;
+                        }
+                    }
+
+                    deferred.reject(rejectReason);
                 }
             })
             .catch(function(err) {
@@ -795,13 +906,13 @@ module.exports = BigIpCluster;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="AutoscaleProvider.html">AutoscaleProvider</a></li><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 05 2017 09:26:30 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
