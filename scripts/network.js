@@ -55,6 +55,7 @@
             try {
                 // Can't use getCommonOptions here because of the special reboot handling
                 options
+                    .version('2.0.0')
                     .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
                     .option('-u, --user <user>', 'BIG-IP admin user name.')
                     .option('-p, --password <password>', 'BIG-IP admin user password.')
