@@ -29,6 +29,10 @@ var testOptions;
 var instances;
 var instanceId;
 
+// Our tests cause too many event listeners. Turn off the check.
+var options = require('commander');
+options.setMaxListeners(0);
+
 bigIpMock = new BigIp('localhost', 'admin', 'admin');
 bigIpMock.icontrol = icontrolMock;
 
