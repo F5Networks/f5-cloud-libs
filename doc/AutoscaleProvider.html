@@ -30,6 +30,12 @@
     
         <h2>AutoscaleProvider</h2>
         
+            <div class="class-description"><p>Abstract cloud provider implementation.</p>
+<p>This class should be inherited from to implement cloud-provider
+specific implementations. Any method in this class that throws
+must be overridded. Methods that do not throw may be optionally
+overridden.</p></div>
+        
     
 </header>
 
@@ -39,6 +45,8 @@
         
 
     
+    <h2>Constructor</h2>
+    
 
     <h4 class="name" id="AutoscaleProvider"><span class="type-signature"></span>new AutoscaleProvider<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
@@ -47,7 +55,7 @@
 
 
 <div class="description">
-    Constructor.
+    <p>Constructor.</p>
 </div>
 
 
@@ -111,7 +119,7 @@
 
             
 
-            <td class="description last">Options for the instance
+            <td class="description last"><p>Options for the instance</p>
                 <h6>Properties</h6>
                 
 
@@ -165,7 +173,7 @@
 
             
 
-            <td class="description last">Logger to use. Default no logging.</td>
+            <td class="description last"><p>Logger to use. Default no logging.</p></td>
         </tr>
 
     
@@ -213,7 +221,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line28">line 28</a>
+        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line35">line 35</a>
     </li></ul></dd>
     
 
@@ -262,14 +270,14 @@
 
     
 
-    <h4 class="name" id="electMaster"><span class="type-signature"></span>electMaster<span class="signature">(instances)</span><span class="type-signature"> &rarr; {String}</span></h4>
+    <h4 class="name" id="electMaster"><span class="type-signature">(abstract) </span>electMaster<span class="signature">(instances)</span><span class="type-signature"> &rarr; {String}</span></h4>
 
     
 
 
 
 <div class="description">
-    Elects a new master instance from the available instances
+    <p>Elects a new master instance from the available instances</p>
 </div>
 
 
@@ -321,12 +329,222 @@
 
             
 
-            <td class="description last">Dictionary of instances as returned by getInstances</td>
+            <td class="description last"><p>Dictionary of instances as returned by getInstances</p></td>
         </tr>
 
     
     </tbody>
 </table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line96">line 96</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Instance ID of the elected master</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">String</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getInstanceId"><span class="type-signature">(abstract) </span>getInstanceId<span class="signature">()</span><span class="type-signature"> &rarr; {String}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Gets the instance ID of this instance</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line63">line 63</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The instance ID of this instance</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">String</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getInstances"><span class="type-signature">(abstract) </span>getInstances<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Gets info for each instance</p>
+<p>Info is retrieval is cloud specific. Likely either from the cloud infrastructure
+itself, stored info that we have in a database, or both.</p>
+</div>
+
+
+
+
+
+
+
 
 
 
@@ -389,224 +607,13 @@
 
         
 <div class="param-desc">
-    Instance ID of the elected master
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">String</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getInstanceId"><span class="type-signature"></span>getInstanceId<span class="signature">()</span><span class="type-signature"> &rarr; {String}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Gets the instance ID of this instance
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line54">line 54</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    The instance ID of this instance
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">String</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getInstances"><span class="type-signature"></span>getInstances<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Gets info for each instance
-
-Info is retrieval is cloud specific. Likely either from the cloud infrastructure
-itself, stored info that we have in a database, or both.
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line72">line 72</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    Dictionary of instance info keyed by instance ID. Instance info is
+    <p>Dictionary of instance info keyed by instance ID. Instance info is
                   {
                       isMaster: <Boolean>,
                       hostname: <String>,
                       mgmtIp: <String>,
                       privateIp: <String>
-                  }
+                  }</p>
 </div>
 
 
@@ -639,11 +646,10 @@ itself, stored info that we have in a database, or both.
 
 
 <div class="description">
-    Initialize class
-
-Override for implementation specific initialization needs (read info
+    <p>Initialize class</p>
+<p>Override for implementation specific initialization needs (read info
 from cloud provider, read database, etc.). Called at the start of
-processing.
+processing.</p>
 </div>
 
 
@@ -695,7 +701,7 @@ processing.
 
             
 
-            <td class="description last">Provider specific options.</td>
+            <td class="description last"><p>Provider specific options.</p></td>
         </tr>
 
     
@@ -736,7 +742,7 @@ processing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line44">line 44</a>
+        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line51">line 51</a>
     </li></ul></dd>
     
 
@@ -763,7 +769,7 @@ processing.
 
         
 <div class="param-desc">
-    A promise which will be resolved when init is complete.
+    <p>A promise which will be resolved when init is complete.</p>
 </div>
 
 
@@ -796,10 +802,9 @@ processing.
 
 
 <div class="description">
-    Determines if a given instanceId is a valid master
-
-In some cloud environments, the master may change unexpectedly.
-Override this method if implementing such a cloud provider.
+    <p>Determines if a given instanceId is a valid master</p>
+<p>In some cloud environments, the master may change unexpectedly.
+Override this method if implementing such a cloud provider.</p>
 </div>
 
 
@@ -851,7 +856,7 @@ Override this method if implementing such a cloud provider.
 
             
 
-            <td class="description last">Instance ID to validate as a valid master.</td>
+            <td class="description last"><p>Instance ID to validate as a valid master.</p></td>
         </tr>
 
     
@@ -892,7 +897,7 @@ Override this method if implementing such a cloud provider.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line97">line 97</a>
+        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line110">line 110</a>
     </li></ul></dd>
     
 
@@ -919,7 +924,7 @@ Override this method if implementing such a cloud provider.
 
         
 <div class="param-desc">
-    Wether or not the given instanceId is a valid master
+    <p>Wether or not the given instanceId is a valid master</p>
 </div>
 
 
@@ -952,9 +957,8 @@ Override this method if implementing such a cloud provider.
 
 
 <div class="description">
-    Saves instance info
-
-Override for cloud implementations which store instance information.
+    <p>Saves instance info</p>
+<p>Override for cloud implementations which store instance information.</p>
 </div>
 
 
@@ -1006,7 +1010,7 @@ Override for cloud implementations which store instance information.
 
             
 
-            <td class="description last">information as returned by getInstances</td>
+            <td class="description last"><p>information as returned by getInstances</p></td>
         </tr>
 
     
@@ -1047,7 +1051,7 @@ Override for cloud implementations which store instance information.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line109">line 109</a>
+        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line122">line 122</a>
     </li></ul></dd>
     
 
@@ -1085,9 +1089,8 @@ Override for cloud implementations which store instance information.
 
 
 <div class="description">
-    Turns on instance protection for the given instance ID
-
-Override for cloud provicers that support instance protection from scale in.
+    <p>Turns on instance protection for the given instance ID</p>
+<p>Override for cloud provicers that support instance protection from scale in.</p>
 </div>
 
 
@@ -1151,7 +1154,7 @@ Override for cloud provicers that support instance protection from scale in.
 
             
 
-            <td class="description last">Instance ID of instnace to protect. Default instance ID of self.</td>
+            <td class="description last"><p>Instance ID of instnace to protect. Default instance ID of self.</p></td>
         </tr>
 
     
@@ -1192,7 +1195,7 @@ Override for cloud provicers that support instance protection from scale in.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line121">line 121</a>
+        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line134">line 134</a>
     </li></ul></dd>
     
 
@@ -1230,9 +1233,8 @@ Override for cloud provicers that support instance protection from scale in.
 
 
 <div class="description">
-    Turns off instance protection for the given instance ID
-
-Override for cloud provicers that support instance protection from scale in.
+    <p>Turns off instance protection for the given instance ID</p>
+<p>Override for cloud provicers that support instance protection from scale in.</p>
 </div>
 
 
@@ -1296,7 +1298,7 @@ Override for cloud provicers that support instance protection from scale in.
 
             
 
-            <td class="description last">Instance ID of instnace to un-protect. Default instance ID of self.</td>
+            <td class="description last"><p>Instance ID of instnace to un-protect. Default instance ID of self.</p></td>
         </tr>
 
     
@@ -1337,7 +1339,7 @@ Override for cloud provicers that support instance protection from scale in.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line133">line 133</a>
+        <a href="autoscaleProvider.js.html">autoscaleProvider.js</a>, <a href="autoscaleProvider.js.html#line146">line 146</a>
     </li></ul></dd>
     
 
@@ -1385,7 +1387,7 @@ Override for cloud provicers that support instance protection from scale in.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 05 2017 09:26:30 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Jan 06 2017 13:40:19 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
