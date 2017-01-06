@@ -30,6 +30,8 @@
     
         <h2>BigIpOnboard</h2>
         
+            <div class="class-description"><p>Provides basic onboarding operaitons for a BIG-IP.</p></div>
+        
     
 </header>
 
@@ -39,6 +41,8 @@
         
 
     
+    <h2>Constructor</h2>
+    
 
     <h4 class="name" id="BigIpOnboard"><span class="type-signature"></span>new BigIpOnboard<span class="signature">(bigIpCore, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
@@ -47,7 +51,7 @@
 
 
 <div class="description">
-    Provides onboarding functionality to a base BigIp object
+    <p>Provides onboarding functionality to a base BigIp object</p>
 </div>
 
 
@@ -109,7 +113,7 @@
 
             
 
-            <td class="description last">Base BigIp object.</td>
+            <td class="description last"><p>Base BigIp object.</p></td>
         </tr>
 
     
@@ -142,7 +146,7 @@
 
             
 
-            <td class="description last">Optional parameters.
+            <td class="description last"><p>Optional parameters.</p>
                 <h6>Properties</h6>
                 
 
@@ -196,7 +200,7 @@
 
             
 
-            <td class="description last">A logger to use. Default to no logging.</td>
+            <td class="description last"><p>A logger to use. Default to no logging.</p></td>
         </tr>
 
     
@@ -244,7 +248,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line30">line 30</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line32">line 32</a>
     </li></ul></dd>
     
 
@@ -300,9 +304,8 @@
 
 
 <div class="description">
-    Sets global settings
-
-If settings include hostname, a CM move of hostname is also performed.
+    <p>Sets global settings</p>
+<p>If settings include hostname, a CM move of hostname is also performed.</p>
 </div>
 
 
@@ -364,7 +367,7 @@ If settings include hostname, a CM move of hostname is also performed.
 
             
 
-            <td class="description last">An object containing the global settings</td>
+            <td class="description last"><p>An object containing the global settings</p></td>
         </tr>
 
     
@@ -397,7 +400,7 @@ If settings include hostname, a CM move of hostname is also performed.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -451,7 +454,7 @@ If settings include hostname, a CM move of hostname is also performed.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -484,7 +487,7 @@ If settings include hostname, a CM move of hostname is also performed.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -532,7 +535,7 @@ If settings include hostname, a CM move of hostname is also performed.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line51">line 51</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line53">line 53</a>
     </li></ul></dd>
     
 
@@ -559,8 +562,8 @@ If settings include hostname, a CM move of hostname is also performed.
 
         
 <div class="param-desc">
-    A promise which is resolved when the global settings
-                   are set or rejected if an error occurs.
+    <p>A promise which is resolved when the global settings
+                   are set or rejected if an error occurs.</p>
 </div>
 
 
@@ -593,10 +596,9 @@ If settings include hostname, a CM move of hostname is also performed.
 
 
 <div class="description">
-    Sets the hostname
-
-Sets the global settings host-name and also does a cm mv from
-old hostname to new.
+    <p>Sets the hostname</p>
+<p>Sets the global settings host-name and also does a cm mv from
+old hostname to new.</p>
 </div>
 
 
@@ -658,7 +660,7 @@ old hostname to new.
 
             
 
-            <td class="description last">The hostname to set</td>
+            <td class="description last"><p>The hostname to set</p></td>
         </tr>
 
     
@@ -691,7 +693,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -745,7 +747,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -778,7 +780,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -826,7 +828,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line94">line 94</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line96">line 96</a>
     </li></ul></dd>
     
 
@@ -853,8 +855,8 @@ old hostname to new.
 
         
 <div class="param-desc">
-    A promise which is resolved when the hostname
-                   is set or rejected if an error occurs.
+    <p>A promise which is resolved when the hostname
+                   is set or rejected if an error occurs.</p>
 </div>
 
 
@@ -887,7 +889,7 @@ old hostname to new.
 
 
 <div class="description">
-    Licenses the BIG-IP
+    <p>Licenses the BIG-IP</p>
 </div>
 
 
@@ -949,7 +951,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Licensing options
+            <td class="description last"><p>Licensing options</p>
                 <h6>Properties</h6>
                 
 
@@ -1003,9 +1005,9 @@ old hostname to new.
 
             
 
-            <td class="description last">Whether or not to overwrite an
+            <td class="description last"><p>Whether or not to overwrite an
                                                    existing license file if it exists.
-                                                   Default is false</td>
+                                                   Default is false</p></td>
         </tr>
 
     
@@ -1038,7 +1040,7 @@ old hostname to new.
 
             
 
-            <td class="description last">The registration key</td>
+            <td class="description last"><p>The registration key</p></td>
         </tr>
 
     
@@ -1071,7 +1073,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Array of add on keys.</td>
+            <td class="description last"><p>Array of add on keys.</p></td>
         </tr>
 
     
@@ -1111,7 +1113,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -1165,7 +1167,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -1198,7 +1200,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -1246,7 +1248,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line156">line 156</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line158">line 158</a>
     </li></ul></dd>
     
 
@@ -1273,8 +1275,8 @@ old hostname to new.
 
         
 <div class="param-desc">
-    A promise which is resolved when the licensing
-                   is complete or rejected if an error occurs.
+    <p>A promise which is resolved when the licensing
+                   is complete or rejected if an error occurs.</p>
 </div>
 
 
@@ -1307,7 +1309,7 @@ old hostname to new.
 
 
 <div class="description">
-    Sets the password for a user
+    <p>Sets the password for a user</p>
 </div>
 
 
@@ -1369,7 +1371,7 @@ old hostname to new.
 
             
 
-            <td class="description last">The user for whom to set the password</td>
+            <td class="description last"><p>The user for whom to set the password</p></td>
         </tr>
 
     
@@ -1400,7 +1402,7 @@ old hostname to new.
 
             
 
-            <td class="description last">The password to set</td>
+            <td class="description last"><p>The password to set</p></td>
         </tr>
 
     
@@ -1433,9 +1435,9 @@ old hostname to new.
 
             
 
-            <td class="description last">The old password for the user. Only
+            <td class="description last"><p>The old password for the user. Only
                                                   required for the root user. Ignored
-                                                  otherwise;</td>
+                                                  otherwise;</p></td>
         </tr>
 
     
@@ -1468,7 +1470,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -1522,7 +1524,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -1555,7 +1557,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -1603,7 +1605,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line306">line 306</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line308">line 308</a>
     </li></ul></dd>
     
 
@@ -1630,8 +1632,8 @@ old hostname to new.
 
         
 <div class="param-desc">
-    A promise which is resolved when the password
-                   has been set, or rejected if an error occurs.
+    <p>A promise which is resolved when the password
+                   has been set, or rejected if an error occurs.</p>
 </div>
 
 
@@ -1664,7 +1666,7 @@ old hostname to new.
 
 
 <div class="description">
-    Provisions modules
+    <p>Provisions modules</p>
 </div>
 
 
@@ -1716,8 +1718,8 @@ old hostname to new.
 
             
 
-            <td class="description last">Object map of module to provisioning level
-                                                 ['dedicated', 'nominial', 'minimum', 'none']</td>
+            <td class="description last"><p>Object map of module to provisioning level
+                                                 ['dedicated', 'nominial', 'minimum', 'none']</p></td>
         </tr>
 
     
@@ -1758,7 +1760,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line361">line 361</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line363">line 363</a>
     </li></ul></dd>
     
 
@@ -1785,8 +1787,8 @@ old hostname to new.
 
         
 <div class="param-desc">
-    A promise which is resolved when the modules have
-                   been provisioned, or rejected if an error occurs.
+    <p>A promise which is resolved when the modules have
+                   been provisioned, or rejected if an error occurs.</p>
 </div>
 
 
@@ -1819,7 +1821,7 @@ old hostname to new.
 
 
 <div class="description">
-    Updates db variables
+    <p>Updates db variables</p>
 </div>
 
 
@@ -1881,7 +1883,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Object map of db variable to value</td>
+            <td class="description last"><p>Object map of db variable to value</p></td>
         </tr>
 
     
@@ -1914,7 +1916,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -1968,7 +1970,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -2001,7 +2003,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -2049,7 +2051,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line428">line 428</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line430">line 430</a>
     </li></ul></dd>
     
 
@@ -2076,8 +2078,8 @@ old hostname to new.
 
         
 <div class="param-desc">
-    A promise which is resolved when the db variables
-                   have been set, or rejected if an error occurs.
+    <p>A promise which is resolved when the db variables
+                   have been set, or rejected if an error occurs.</p>
 </div>
 
 
@@ -2110,7 +2112,7 @@ old hostname to new.
 
 
 <div class="description">
-    Sets the SSL port on which the management IP is listening
+    <p>Sets the SSL port on which the management IP is listening</p>
 </div>
 
 
@@ -2172,7 +2174,7 @@ old hostname to new.
 
             
 
-            <td class="description last">SSL port to listen on.</td>
+            <td class="description last"><p>SSL port to listen on.</p></td>
         </tr>
 
     
@@ -2205,7 +2207,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -2259,7 +2261,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -2292,7 +2294,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -2332,7 +2334,7 @@ old hostname to new.
 
             
 
-            <td class="description last">For testing only. Used so that we don't reset iControl during unit tests.</td>
+            <td class="description last"><p>For testing only. Used so that we don't reset iControl during unit tests.</p></td>
         </tr>
 
     
@@ -2373,7 +2375,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line465">line 465</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line467">line 467</a>
     </li></ul></dd>
     
 
@@ -2400,8 +2402,8 @@ old hostname to new.
 
         
 <div class="param-desc">
-    A promise which is resolved when the request is complete
-                   or rejected if an error occurs.
+    <p>A promise which is resolved when the request is complete
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -2434,7 +2436,7 @@ old hostname to new.
 
 
 <div class="description">
-    Updates or creates a user
+    <p>Updates or creates a user</p>
 </div>
 
 
@@ -2496,7 +2498,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Username to update or create.</td>
+            <td class="description last"><p>Username to update or create.</p></td>
         </tr>
 
     
@@ -2527,7 +2529,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Password for user.</td>
+            <td class="description last"><p>Password for user.</p></td>
         </tr>
 
     
@@ -2560,7 +2562,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Role for user. Only valid when creating user.</td>
+            <td class="description last"><p>Role for user. Only valid when creating user.</p></td>
         </tr>
 
     
@@ -2593,7 +2595,7 @@ old hostname to new.
 
             
 
-            <td class="description last">Shell for user (bash | tmsh | none). Only valid when creating user. Default tmsh.</td>
+            <td class="description last"><p>Shell for user (bash | tmsh | none). Only valid when creating user. Default tmsh.</p></td>
         </tr>
 
     
@@ -2634,7 +2636,7 @@ old hostname to new.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line243">line 243</a>
+        <a href="bigIpOnboard.js.html">bigIpOnboard.js</a>, <a href="bigIpOnboard.js.html#line245">line 245</a>
     </li></ul></dd>
     
 
@@ -2661,8 +2663,8 @@ old hostname to new.
 
         
 <div class="param-desc">
-    A promise which is resolved when the user has been updated
-                   or rejected if an error occurs.
+    <p>A promise which is resolved when the user has been updated
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -2705,7 +2707,7 @@ old hostname to new.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 05 2017 09:26:30 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Jan 06 2017 13:40:19 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

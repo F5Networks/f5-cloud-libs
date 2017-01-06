@@ -68,31 +68,31 @@
 
 Options:
 
-  -h, --help                                               output usage information
-  --host &lt;ip_address>                                      BIG-IP management IP to which to send commands.
-  -u, --user &lt;user>                                        BIG-IP admin user name.
-  -p, --password &lt;password>                                BIG-IP admin user password.
-  --port &lt;port>                                            BIG-IP management SSL port to connect to. Default 443.
-  --no-reboot                                              Skip reboot even if it is recommended.
-  --background                                             Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
-  --signal &lt;signal>                                        Signal to send when done. Default ONBOARD_DONE.
-  --wait-for &lt;signal>                                      Wait for the named signal before running.
-  --log-level &lt;level>                                      Log level (none, error, warn, info, verbose, debug, silly). Default is info.
-  -o, --output &lt;file>                                      Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log
-  --ntp &lt;ntp-server>                                       Set NTP server. For multiple NTP servers, use multiple --ntp entries.
-  --tz &lt;timezone>                                          Set timezone for NTP setting.
-  --dns &lt;DNS server>                                       Set DNS server. For multiple DNS severs, use multiple --dns entries.
-  --ssl-port &lt;ssl_port>                                    Set the SSL port for the management IP
-  -l, --license &lt;license_key>                              License BIG-IP with &lt;license_key>.
-  -a, --add-on &lt;add_on_key>                                License BIG-IP with &lt;add_on_key>. For multiple keys, use multiple -a entries.
-  -n, --hostname &lt;hostname>                                Set BIG-IP hostname.
-  -g, --global-setting &lt;name:value>                        Set global setting &lt;name> to &lt;value>. For multiple settings, use multiple -g entries.
-  -d, --db &lt;name:value>                                    Set db variable &lt;name> to &lt;value>. For multiple settings, use multiple -d entries.
-  --set-root-password &lt;old:old_password,new:new_password>  Set the password for the root user from &lt;old_password> to &lt;new_password>.
-  --update-user &lt;user:user,password:password,role:role>    Update user password or create user with password and role. Role is only valid on create.
-  -m, --module &lt;name:level>                                Provision module &lt;name> to &lt;level>. For multiple modules, use multiple -m entries.
-  --ping [address]                                         Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
-  --update-sigs                                            Update ASM signatures</code></pre><h3>cluster.js</h3><p>Sets up BIG-IPs in a cluster.</p>
+  -h, --help                                                         output usage information
+  --host &lt;ip_address>                                                BIG-IP management IP to which to send commands.
+  -u, --user &lt;user>                                                  BIG-IP admin user name.
+  -p, --password &lt;password>                                          BIG-IP admin user password.
+  --port &lt;port>                                                      BIG-IP management SSL port to connect to. Default 443.
+  --no-reboot                                                        Skip reboot even if it is recommended.
+  --background                                                       Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
+  --signal &lt;signal>                                                  Signal to send when done. Default ONBOARD_DONE.
+  --wait-for &lt;signal>                                                Wait for the named signal before running.
+  --log-level &lt;level>                                                Log level (none, error, warn, info, verbose, debug, silly). Default is info.
+  -o, --output &lt;file>                                                Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log
+  --ntp &lt;ntp-server>                                                 Set NTP server. For multiple NTP servers, use multiple --ntp entries.
+  --tz &lt;timezone>                                                    Set timezone for NTP setting.
+  --dns &lt;DNS server>                                                 Set DNS server. For multiple DNS severs, use multiple --dns entries.
+  --ssl-port &lt;ssl_port>                                              Set the SSL port for the management IP
+  -l, --license &lt;license_key>                                        License BIG-IP with &lt;license_key>.
+  -a, --add-on &lt;add_on_key>                                          License BIG-IP with &lt;add_on_key>. For multiple keys, use multiple -a entries.
+  -n, --hostname &lt;hostname>                                          Set BIG-IP hostname.
+  -g, --global-setting &lt;name:value>                                  Set global setting &lt;name> to &lt;value>. For multiple settings, use multiple -g entries.
+  -d, --db &lt;name:value>                                              Set db variable &lt;name> to &lt;value>. For multiple settings, use multiple -d entries.
+  --set-root-password &lt;old:old_password,new:new_password>            Set the password for the root user from &lt;old_password> to &lt;new_password>.
+  --update-user &lt;user:user,password:password,role:role,shell:shell>  Update user password or create user with password, role, and shell. Role and shell are only valid on create.
+  -m, --module &lt;name:level>                                          Provision module &lt;name> to &lt;level>. For multiple modules, use multiple -m entries.
+  --ping [address]                                                   Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
+  --update-sigs                                                      Update ASM signatures</code></pre><h3>cluster.js</h3><p>Sets up BIG-IPs in a cluster.</p>
 <pre class="prettyprint source"><code>Usage: cluster [options]
 
 Options:
@@ -148,7 +148,7 @@ Options:
   --default-gw &lt;gateway_address>           Set default gateway to gateway_address.
   --local-only                             Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.
   --vlan &lt;name, nic_number, [tag]>         Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated. For multiple vlans, use multiple --vlan entries.
-  --self-ip &lt;name, ip_address, vlan_name>  Create self IP with name and ip_address on vlan. Values should be comma-separated. For multiple self IPs, use multiple --self-ip entries.    Default CIDR prefix is 24 if not specified.
+  --self-ip &lt;name, ip_address, vlan_name>  Create self IP with name and ip_address on vlan. Values should be comma-separated. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.
   --force-reboot                           Force a reboot at the end. This is necessary for some 2+ NIC configurations.</code></pre><h3>runScript.js</h3><p>Runs an arbitrary script.</p>
 <pre class="prettyprint source"><code>Usage: runScript [options]
 
@@ -180,7 +180,7 @@ Options:
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 05 2017 09:26:30 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Jan 06 2017 13:40:19 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

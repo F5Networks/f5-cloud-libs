@@ -68,7 +68,7 @@
 
 
 <div class="description">
-    Calls an array of promises in serial.
+    <p>Calls an array of promises in serial.</p>
 </div>
 
 
@@ -130,7 +130,7 @@
 
             
 
-            <td class="description last">The 'this' argument to pass to the called function</td>
+            <td class="description last"><p>The 'this' argument to pass to the called function</p></td>
         </tr>
 
     
@@ -161,13 +161,13 @@
 
             
 
-            <td class="description last">An array of promise definitions. Each
+            <td class="description last"><p>An array of promise definitions. Each
                              definition should be:
                              {
                                  promise: A function that returns a promise
                                  arguments: Array of arguments to pass to the function,
                                  message: An optional message to display at the start of this promise
-                             }</td>
+                             }</p></td>
         </tr>
 
     
@@ -200,7 +200,7 @@
 
             
 
-            <td class="description last">Delay in milliseconds to use between calls.</td>
+            <td class="description last"><p>Delay in milliseconds to use between calls.</p></td>
         </tr>
 
     
@@ -279,10 +279,9 @@
 
 
 <div class="description">
-    Adds value to an array
-
-Typically used by the option parser for collecting
-multiple values for a command line option
+    <p>Adds value to an array</p>
+<p>Typically used by the option parser for collecting
+multiple values for a command line option</p>
 </div>
 
 
@@ -334,7 +333,7 @@ multiple values for a command line option
 
             
 
-            <td class="description last">The comma separated value string</td>
+            <td class="description last"><p>The comma separated value string</p></td>
         </tr>
 
     
@@ -357,7 +356,7 @@ multiple values for a command line option
 
             
 
-            <td class="description last">The array into which to put the value</td>
+            <td class="description last"><p>The array into which to put the value</p></td>
         </tr>
 
     
@@ -425,7 +424,7 @@ multiple values for a command line option
 
         
 <div class="param-desc">
-    The updated collection
+    <p>The updated collection</p>
 </div>
 
 
@@ -458,12 +457,10 @@ multiple values for a command line option
 
 
 <div class="description">
-    Parses a comma-separated value
-
-Typically used by the option parser for collecting
-multiple values which are comma separated values.
-
-Leading and trailing spaces are removed from keys and values
+    <p>Parses a comma-separated value</p>
+<p>Typically used by the option parser for collecting
+multiple values which are comma separated values.</p>
+<p>Leading and trailing spaces are removed from keys and values</p>
 </div>
 
 
@@ -515,7 +512,7 @@ Leading and trailing spaces are removed from keys and values
 
             
 
-            <td class="description last">The comma separated value string</td>
+            <td class="description last"><p>The comma separated value string</p></td>
         </tr>
 
     
@@ -538,7 +535,7 @@ Leading and trailing spaces are removed from keys and values
 
             
 
-            <td class="description last">The array into which to put a new array conataining the values</td>
+            <td class="description last"><p>The array into which to put a new array conataining the values</p></td>
         </tr>
 
     
@@ -606,7 +603,7 @@ Leading and trailing spaces are removed from keys and values
 
         
 <div class="param-desc">
-    The updated collection
+    <p>The updated collection</p>
 </div>
 
 
@@ -639,9 +636,8 @@ Leading and trailing spaces are removed from keys and values
 
 
 <div class="description">
-    Deletes the arguments previously saved with saveArgs
-
-This should be called when a script successfully completes.
+    <p>Deletes the arguments previously saved with saveArgs</p>
+<p>This should be called when a script successfully completes.</p>
 </div>
 
 
@@ -693,8 +689,8 @@ This should be called when a script successfully completes.
 
             
 
-            <td class="description last">Some unique id for the process. This will be used as the file name in which
-                     to store the files.</td>
+            <td class="description last"><p>Some unique id for the process. This will be used as the file name in which
+                     to store the files.</p></td>
         </tr>
 
     
@@ -773,7 +769,7 @@ This should be called when a script successfully completes.
 
 
 <div class="description">
-    Downloads a file from a URL
+    <p>Downloads a file from a URL</p>
 </div>
 
 
@@ -825,7 +821,7 @@ This should be called when a script successfully completes.
 
             
 
-            <td class="description last">URL to download from</td>
+            <td class="description last"><p>URL to download from</p></td>
         </tr>
 
     
@@ -893,8 +889,8 @@ This should be called when a script successfully completes.
 
         
 <div class="param-desc">
-    A promise which is resolved with the file name the file was downloaded to
-                   or rejected if an error occurs.
+    <p>A promise which is resolved with the file name the file was downloaded to
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -927,9 +923,8 @@ This should be called when a script successfully completes.
 
 
 <div class="description">
-    Log a message and exit.
-
-Makes sure that message is logged before exitting.
+    <p>Log a message and exit.</p>
+<p>Makes sure that message is logged before exitting.</p>
 </div>
 
 
@@ -991,7 +986,7 @@ Makes sure that message is logged before exitting.
 
             
 
-            <td class="description last">Message to log</td>
+            <td class="description last"><p>Message to log</p></td>
         </tr>
 
     
@@ -1024,7 +1019,7 @@ Makes sure that message is logged before exitting.
 
             
 
-            <td class="description last">Level at which to log the message. Default info.</td>
+            <td class="description last"><p>Level at which to log the message. Default info.</p></td>
         </tr>
 
     
@@ -1103,12 +1098,11 @@ Makes sure that message is logged before exitting.
 
 
 <div class="description">
-    Parses a string of keys and values
-
-Keys are separated from values by a ':'
+    <p>Parses a string of keys and values</p>
+<p>Keys are separated from values by a ':'
 Key value pairs are separated from each other by a ','
 Example:
-   user:JoeBob,password:iamcool
+   user:JoeBob,password:iamcool</p>
 </div>
 
 
@@ -1160,7 +1154,7 @@ Example:
 
             
 
-            <td class="description last">String form of map. See example above.</td>
+            <td class="description last"><p>String form of map. See example above.</p></td>
         </tr>
 
     
@@ -1183,7 +1177,7 @@ Example:
 
             
 
-            <td class="description last">Container into which to push the map object</td>
+            <td class="description last"><p>Container into which to push the map object</p></td>
         </tr>
 
     
@@ -1262,13 +1256,11 @@ Example:
 
 
 <div class="description">
-    Parses a ':' deliminated key-value pair and stores them
-in a container.
-
-Leading and trailing spaces are removed from keys and values
-
-Typically used by the option parser for collecting
-multiple key-value pairs for a command line option
+    <p>Parses a ':' deliminated key-value pair and stores them
+in a container.</p>
+<p>Leading and trailing spaces are removed from keys and values</p>
+<p>Typically used by the option parser for collecting
+multiple key-value pairs for a command line option</p>
 </div>
 
 
@@ -1320,7 +1312,7 @@ multiple key-value pairs for a command line option
 
             
 
-            <td class="description last">String in the format of key:value</td>
+            <td class="description last"><p>String in the format of key:value</p></td>
         </tr>
 
     
@@ -1343,7 +1335,7 @@ multiple key-value pairs for a command line option
 
             
 
-            <td class="description last">Object into which to put the key:value</td>
+            <td class="description last"><p>Object into which to put the key:value</p></td>
         </tr>
 
     
@@ -1422,8 +1414,8 @@ multiple key-value pairs for a command line option
 
 
 <div class="description">
-    Copies all the saved arguments (from saveArgs) to the startup file
-so that when the box reboots, the arguments are executed.
+    <p>Copies all the saved arguments (from saveArgs) to the startup file
+so that when the box reboots, the arguments are executed.</p>
 </div>
 
 
@@ -1505,7 +1497,7 @@ so that when the box reboots, the arguments are executed.
 
 
 <div class="description">
-    Spawns a new process in the background and exits current process
+    <p>Spawns a new process in the background and exits current process</p>
 </div>
 
 
@@ -1557,7 +1549,7 @@ so that when the box reboots, the arguments are executed.
 
             
 
-            <td class="description last">Node.js process</td>
+            <td class="description last"><p>Node.js process</p></td>
         </tr>
 
     
@@ -1580,7 +1572,7 @@ so that when the box reboots, the arguments are executed.
 
             
 
-            <td class="description last">Name to pass for output log file</td>
+            <td class="description last"><p>Name to pass for output log file</p></td>
         </tr>
 
     
@@ -1659,8 +1651,8 @@ so that when the box reboots, the arguments are executed.
 
 
 <div class="description">
-    Saves arguments that started a script so that they can be re-used
-in the event we get stuck and need to reboot.
+    <p>Saves arguments that started a script so that they can be re-used
+in the event we get stuck and need to reboot.</p>
 </div>
 
 
@@ -1722,7 +1714,7 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">Array of arguments that can be used to re-run the process (i.e. process.argv)</td>
+            <td class="description last"><p>Array of arguments that can be used to re-run the process (i.e. process.argv)</p></td>
         </tr>
 
     
@@ -1753,8 +1745,8 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">Some unique id for the process. This will be used as the file name in which
-                                  to store the files.</td>
+            <td class="description last"><p>Some unique id for the process. This will be used as the file name in which
+                                  to store the files.</p></td>
         </tr>
 
     
@@ -1787,7 +1779,7 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">Array of arguments to strip. Default none.</td>
+            <td class="description last"><p>Array of arguments to strip. Default none.</p></td>
         </tr>
 
     
@@ -1866,7 +1858,7 @@ in the event we get stuck and need to reboot.
 
 
 <div class="description">
-    Tries a method until it succeeds or reaches a maximum number of retries.
+    <p>Tries a method until it succeeds or reaches a maximum number of retries.</p>
 </div>
 
 
@@ -1918,7 +1910,7 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">The 'this' argument to pass to the called function</td>
+            <td class="description last"><p>The 'this' argument to pass to the called function</p></td>
         </tr>
 
     
@@ -1941,7 +1933,7 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -1983,7 +1975,7 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -2006,7 +1998,7 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -2036,8 +2028,8 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">Function to try. Function should return a
-                                                 Promise which is later resolved or rejected.</td>
+            <td class="description last"><p>Function to try. Function should return a
+                                                 Promise which is later resolved or rejected.</p></td>
         </tr>
 
     
@@ -2060,7 +2052,7 @@ in the event we get stuck and need to reboot.
 
             
 
-            <td class="description last">Array of arguments to pass to funcToTry</td>
+            <td class="description last"><p>Array of arguments to pass to funcToTry</p></td>
         </tr>
 
     
@@ -2128,8 +2120,8 @@ in the event we get stuck and need to reboot.
 
         
 <div class="param-desc">
-    A promise which is resolved if funcToTry is resolved
-                   within maxRetries.
+    <p>A promise which is resolved if funcToTry is resolved
+                   within maxRetries.</p>
 </div>
 
 
@@ -2162,9 +2154,8 @@ in the event we get stuck and need to reboot.
 
 
 <div class="description">
-    Compares two software version numbers (e.g. "1.7.1" or "1.2b").
-
-This function is based on https://gist.github.com/TheDistantSea/8021359
+    <p>Compares two software version numbers (e.g. &quot;1.7.1&quot; or &quot;1.2b&quot;).</p>
+<p>This function is based on https://gist.github.com/TheDistantSea/8021359</p>
 </div>
 
 
@@ -2226,7 +2217,7 @@ This function is based on https://gist.github.com/TheDistantSea/8021359
 
             
 
-            <td class="description last">The first version to be compared.</td>
+            <td class="description last"><p>The first version to be compared.</p></td>
         </tr>
 
     
@@ -2257,7 +2248,7 @@ This function is based on https://gist.github.com/TheDistantSea/8021359
 
             
 
-            <td class="description last">The second version to be compared.</td>
+            <td class="description last"><p>The second version to be compared.</p></td>
         </tr>
 
     
@@ -2290,11 +2281,11 @@ This function is based on https://gist.github.com/TheDistantSea/8021359
 
             
 
-            <td class="description last">Optional flags that affect comparison behavior:
+            <td class="description last"><p>Optional flags that affect comparison behavior:</p>
 <ul>
     <li>
         <tt>zeroExtend: true</tt> changes the result if one version string has less parts than the other. In
-        this case the shorter string will be padded with "zero" parts instead of being considered smaller.
+        this case the shorter string will be padded with &quot;zero&quot; parts instead of being considered smaller.
     </li>
 </ul></td>
         </tr>
@@ -2372,8 +2363,8 @@ This function is based on https://gist.github.com/TheDistantSea/8021359
 <div class="param-desc">
     <ul>
    <li>0 if the versions are equal</li>
-   <li>a negative integer iff v1 < v2</li>
-   <li>a positive integer iff v1 > v2</li>
+   <li>a negative integer iff v1 &lt; v2</li>
+   <li>a positive integer iff v1 &gt; v2</li>
 </ul>
 </div>
 
@@ -2417,7 +2408,7 @@ This function is based on https://gist.github.com/TheDistantSea/8021359
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 05 2017 09:26:30 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Jan 06 2017 13:40:19 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
