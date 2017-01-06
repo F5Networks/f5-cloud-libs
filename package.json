@@ -22,7 +22,7 @@
     "cloudProviderTag": ""
   },
   "scripts": {
-    "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test test/lib test/scripts",
+    "test": "node_modules/nodeunit/bin/nodeunit --reporter eclipse test/lib; if [ $? -ne 0 ]; then exit 1; fi; node_modules/nodeunit/bin/nodeunit --reporter eclipse test/scripts; if [ $? -ne 0 ]; then exit 1; fi",
     "doc": "jsdoc -c jsdoc.conf"
   }
 }
