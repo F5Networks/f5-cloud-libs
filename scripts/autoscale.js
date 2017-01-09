@@ -65,7 +65,7 @@
                 .option('--block-sync', 'If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.')
                 .parse(argv);
 
-            loggerOptions.console = true;
+            loggerOptions.console = options.console;
             loggerOptions.logLevel = options.logLevel;
 
             if (options.output) {

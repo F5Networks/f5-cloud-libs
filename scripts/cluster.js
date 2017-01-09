@@ -79,7 +79,7 @@
 
                 options.port = options.port || 443;
 
-                loggerOptions.console = true;
+                loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
 
                 if (options.output) {
