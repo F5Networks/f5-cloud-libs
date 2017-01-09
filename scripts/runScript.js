@@ -65,7 +65,7 @@
                     .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                     .parse(argv);
 
-                loggerOptions.console = true;
+                loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
 
                 if (options.output) {

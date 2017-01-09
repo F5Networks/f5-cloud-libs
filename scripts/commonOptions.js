@@ -40,6 +40,7 @@ module.exports = {
             .option('--signal <signal>', 'Signal to send when done. Default ONBOARD_DONE.')
             .option('--wait-for <signal>', 'Wait for the named signal before running.')
             .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
-            .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + defaultLogFile);
+            .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + defaultLogFile)
+            .option('--no-console', 'Do not log to console. Default false (log to console).');
     }
 };

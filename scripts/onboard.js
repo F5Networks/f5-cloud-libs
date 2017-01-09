@@ -95,7 +95,7 @@
                     .option('--update-sigs', 'Update ASM signatures')
                     .parse(argv);
 
-                loggerOptions.console = true;
+                loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
 
                 if (options.output) {

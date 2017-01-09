@@ -75,7 +75,7 @@
                     .option('--force-reboot', 'Force a reboot at the end. This is necessary for some 2+ NIC configurations.')
                     .parse(argv);
 
-                loggerOptions.console = true;
+                loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
 
                 if (options.output) {
