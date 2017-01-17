@@ -1,0 +1,17 @@
+cli script /Common/verifyHash {
+    proc script::run {} {
+        if {[catch {
+            set file_path [lindex $tmsh::argv 1]
+            set expected_hash INSERT_HASH_HERE
+            set computed_hash [lindex [exec /usr/bin/openssl dgst -r -sha512 $file_path] 0]
+            if { $expected_hash eq $computed_hash } {
+                exit 0
+            }
+            tmsh::log err {Hash does not match}
+            exit 1
+        }]} {
+            tmsh::log err {Unexpected error in verifyHash}
+            exit 1
+        }
+    }
+}
