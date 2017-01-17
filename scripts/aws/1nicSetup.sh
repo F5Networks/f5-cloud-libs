@@ -78,8 +78,6 @@ function wait_for_management_ip() {
     done
 }
 
-/usr/bin/setdb provision.1nicautoconfig disable
-
 wait_mcp_running
 if [ $? -ne 0 ]; then
     echo "mcpd not ready in time."

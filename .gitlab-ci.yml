@@ -2,6 +2,7 @@ image: node:4
 
 stages:
     - test
+    - package
 
 test:
     tags:
@@ -10,3 +11,21 @@ test:
     script:
         - npm install
         - npm test
+
+package:
+    tags:
+        - docker-executor
+    stage: package
+    only:
+        - /^release-.*/
+        - triggers
+    script:
+        - npm install --production
+        - tar -C .. --exclude=".git*" --exclude="test" --exclude="dist" --exclude="doc" -zcvf dist/f5-cloud-libs.tar.gz f5-cloud-libs
+        - cd dist
+        - hash=`openssl dgst -r -sha512 f5-cloud-libs.tar.gz | cut -d ' ' -f 1`
+        - sed -i "s/INSERT_HASH_HERE/$hash/" verifyHash
+    artifacts:
+        name: f5-cloud-libs-$CI_BUILD_REF
+        paths:
+            - dist/
