@@ -104,6 +104,9 @@ echo GATEWAY_CIDR_BLOCK: "$GATEWAY_CIDR_BLOCK"
 GATEWAY_NET=${GATEWAY_CIDR_BLOCK%/*}
 echo GATEWAY_NET: "$GATEWAY_NET"
 
+GATEWAY_PREFIX=${GATEWAY_CIDR_BLOCK#*/}
+echo GATEWAY_PREFIX: "$GATEWAY_PREFIX"
+
 GATEWAY=`echo $GATEWAY_NET | awk -F. '{ printf "%d.%d.%d.%d", $1, $2, $3, $4+1 }'`
 echo GATEWAY: "$GATEWAY"
 
@@ -111,8 +114,8 @@ echo GATEWAY: "$GATEWAY"
 echo tmsh create net vlan external interfaces add { 1.0 }
 tmsh create net vlan external interfaces add { 1.0 }
 
-echo tmsh create net self "$MGMT_ADDR"/24 vlan external allow-service default
-tmsh create net self "$MGMT_ADDR"/24 vlan external allow-service default
+echo tmsh create net self "$MGMT_ADDR"/$GATEWAY_PREFIX vlan external allow-service default
+tmsh create net self "$MGMT_ADDR"/$GATEWAY_PREFIX vlan external allow-service default
 
 echo tmsh create sys folder /LOCAL_ONLY device-group none traffic-group traffic-group-local-only
 tmsh create sys folder /LOCAL_ONLY device-group none traffic-group traffic-group-local-only
