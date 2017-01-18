@@ -74,7 +74,21 @@ function wait_for_management_ip() {
             return 1
         fi
 
+        ((failed=failed+1))
         sleep $RETRY_INTERVAL
+    done
+}
+
+function wait_for_cidr_block() {
+    RETRY_INTERVAL=2
+    MAX_TRIES=60
+    failed=0
+
+    GATEWAY_CIDR_BLOCK=`curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block`
+    while [ -z "$GATEWAY_CIDR_BLOCK" ] && [[ $failed -lt $MAX_TRIES ]]; do
+        sleep $RETRY_INTERVAL
+        ((failed=failed+1))
+        GATEWAY_CIDR_BLOCK=`curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block`
     done
 }
 
@@ -96,7 +110,7 @@ echo MGMT_ADDR: "$MGMT_ADDR"
 GATEWAY_MAC=`ifconfig eth0 | egrep HWaddr | awk '{print tolower($5)}'`
 echo GATEWAY_MAC: "$GATEWAY_MAC"
 
-GATEWAY_CIDR_BLOCK=`curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block`
+wait_for_cidr_block
 echo GATEWAY_CIDR_BLOCK: "$GATEWAY_CIDR_BLOCK"
 
 GATEWAY_NET=${GATEWAY_CIDR_BLOCK%/*}
