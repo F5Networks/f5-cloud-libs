@@ -169,8 +169,12 @@
 
                     bigIp = testOpts.bigIp || new BigIp(options.host,
                                                         options.user,
-                                                        options.password,
-                                                        {port: options.port, logger: logger});
+                                                        options.password || options.passwordUrl,
+                                                        {
+                                                            port: options.port,
+                                                            logger: logger,
+                                                            passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                                                        });
 
                     if (options.clusterAction === 'update') {
                         // Only run if master is self

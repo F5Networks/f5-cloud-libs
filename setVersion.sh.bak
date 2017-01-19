@@ -15,6 +15,7 @@ sed $SED_ARGS "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$1\"/" p
 sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+'\)/version(\'$1\')/" scripts/commonOptions.js
 sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+'\)/version(\'$1\')/" scripts/network.js
 sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+'\)/version(\'$1\')/" scripts/runScript.js
+sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+'\)/version(\'$1\')/" scripts/generatePassword.js
 
 rm -f package.json.bak
 rm -f scripts/commonOptions.js.bak
