@@ -48,7 +48,7 @@
             var DEFAULT_LOG_FILE = '/tmp/cluster.log';
             var ARGS_FILE_ID = 'cluster_' + Date.now();
             var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
-            var REQUIRED_OPTIONS = ['host', 'user', 'password'];
+            var REQUIRED_OPTIONS = ['host', 'user'];
 
             options = require('./commonOptions');
             testOpts = testOpts || {};
@@ -68,7 +68,8 @@
                     .option('--join-group', 'Join a remote device group with the options:')
                     .option('    --remote-host <remote_ip_address>', '    Managemnt IP for the BIG-IP on which the group exists.')
                     .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
-                    .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password.')
+                    .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password. Use this or --remote-password-url')
+                    .option('    --remote-password-url <remote_password_url>', '    URL (only file URL is currently supported) that contains. Use this or --remote-password'))
                     .option('    --remote-port <remote_port>', '    Remote BIG-IP port to connect to. Default is port of this BIG-IP.', parseInt)
                     .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join.')
                     .option('    --sync', '    Tell the remote to sync to us after joining the group.')
@@ -96,6 +97,11 @@
                     }
                 }
 
+                if (!options.password && !options.passwordUrl) {
+                    logger.error("One of --password or --password-url is required.");
+                    return;
+                }
+
                 // When running in cloud init, we need to exit so that cloud init can complete and
                 // allow the BIG-IP services to start
                 if (options.background) {
@@ -112,15 +118,6 @@
                     }
                 }
                 logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
-
-                // Create the bigIp client object
-                bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                    options.user,
-                                                    options.password,
-                                                    {
-                                                        port: options.port,
-                                                        logger: logger
-                                                    });
 
                 // Start processing...
 
@@ -140,6 +137,16 @@
                     .then(function() {
                         logger.info("Cluster starting.");
                         ipc.send(signals.CLUSTER_RUNNING);
+
+                        // Create the bigIp client object
+                        bigIp = testOpts.bigIp || new BigIp(options.host,
+                                                            options.user,
+                                                            options.password || options.passwordUrl,
+                                                            {
+                                                                port: options.port,
+                                                                logger: logger,
+                                                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                                                            });
 
                         logger.info("Waiting for BIG-IP to be ready.");
                         return bigIp.ready();
@@ -180,10 +187,11 @@
                             return bigIp.cluster.joinCluster(options.deviceGroup,
                                                              options.remoteHost,
                                                              options.remoteUser,
-                                                             options.remotePassword,
+                                                             options.remotePassword || options.remotePasswordUrl,
                                                              {
                                                                 remotePort: options.remotePort,
-                                                                sync: options.sync
+                                                                sync: options.sync,
+                                                                passwordIsUrl: typeof options.remotePasswordUrl !== 'undefined'
                                                              });
                         }
                     })

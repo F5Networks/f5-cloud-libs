@@ -47,7 +47,7 @@
             var DEFAULT_LOG_FILE = '/tmp/network.log';
             var ARGS_FILE_ID = 'network_' + Date.now();
             var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
-            var REQUIRED_OPTIONS = ['host', 'user', 'password'];
+            var REQUIRED_OPTIONS = ['host', 'user'];
             var DEFAULT_CIDR = '/24';
 
             testOpts = testOpts || {};
@@ -92,6 +92,11 @@
                     }
                 }
 
+                if (!options.password && !options.passwordUrl) {
+                    logger.error("One of --password or --password-url is required.");
+                    return;
+                }
+
                 // When running in cloud init, we need to exit so that cloud init can complete and
                 // allow the BIG-IP services to start
                 if (options.background) {
@@ -117,10 +122,11 @@
                 // Create the bigIp client object
                 bigIp = testOpts.bigIp || new BigIp(options.host,
                                                     options.user,
-                                                    options.password,
+                                                    options.password || options.passwordUrl,
                                                     {
                                                         port: options.port,
-                                                        logger: logger
+                                                        logger: logger,
+                                                        passwordIsUrl: typeof options.passwordUrl !== 'undefined'
                                                     });
 
                 // Start processing...

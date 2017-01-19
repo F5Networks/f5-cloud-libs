@@ -57,7 +57,7 @@
             var DEFAULT_LOG_FILE = '/tmp/onboard.log';
             var ARGS_FILE_ID = 'onboard_' + Date.now();
             var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
-            var REQUIRED_OPTIONS = ['host', 'user', 'password'];
+            var REQUIRED_OPTIONS = ['host', 'user'];
 
             options = require('./commonOptions');
             testOpts = testOpts || {};
@@ -89,7 +89,7 @@
                     .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.pair, globalSettings)
                     .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.pair, dbVars)
                     .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords)
-                    .option('--update-user <user:user,password:password,role:role,shell:shell>', 'Update user password or create user with password, role, and shell. Role and shell are only valid on create.', util.map, updateUsers)
+                    .option('--update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>', 'Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create.', util.map, updateUsers)
                     .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.pair, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                     .option('--update-sigs', 'Update ASM signatures')
@@ -112,6 +112,11 @@
                     }
                 }
 
+                if (!options.password && !options.passwordUrl) {
+                    logger.error("One of --password or --password-url is required.");
+                    return;
+                }
+
                 // When running in cloud init, we need to exit so that cloud init can complete and
                 // allow the BIG-IP services to start
                 if (options.background) {
@@ -132,15 +137,6 @@
                     loggableArgs[index + 1] = loggableArgs[index + 1].replace(/password:([^,])+/, '*******');
                 }
                 logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
-
-                // Create the bigIp client object
-                bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                    options.user,
-                                                    options.password,
-                                                    {
-                                                        port: options.port,
-                                                        logger: logger
-                                                    });
 
                 // Use hostname if both hostname and global-settings hostname are set
                 if (globalSettings && options.hostname) {
@@ -169,6 +165,16 @@
                     .then(function() {
                         logger.info("Onboard starting.");
                         ipc.send(signals.ONBOARD_RUNNING);
+
+                        // Create the bigIp client object
+                        bigIp = testOpts.bigIp || new BigIp(options.host,
+                                                            options.user,
+                                                            options.password || options.passwordUrl,
+                                                            {
+                                                                port: options.port,
+                                                                logger: logger,
+                                                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                                                            });
 
                         logger.info("Waiting for BIG-IP to be ready.");
                         return bigIp.ready();
@@ -202,7 +208,13 @@
                         if (updateUsers.length > 0) {
                             for (i = 0; i < updateUsers.length; ++i) {
                                 logger.info("Updating user", updateUsers[i].user);
-                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user, updateUsers[i].password, updateUsers[i].role, updateUsers[i].shell));
+                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user,
+                                                                       updateUsers[i].password || updateUsers[i].passwordUrl,
+                                                                       updateUsers[i].role,
+                                                                       updateUsers[i].shell,
+                                                                       {
+                                                                           passwordIsUrl: typeof updateUsers[i].passwordUrl !== 'undefined'
+                                                                       }));
                             }
                             return q.all(promises);
                         }
