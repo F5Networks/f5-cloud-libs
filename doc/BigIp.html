@@ -176,7 +176,7 @@ references to other modules in f5-cloud-libs.</p></div>
 
             
 
-            <td class="description last"><p>Password for user.</p></td>
+            <td class="description last"><p>Password for user or file URL for file containing password.</p></td>
         </tr>
 
     
@@ -300,6 +300,39 @@ references to other modules in f5-cloud-libs.</p></div>
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>passwordIsUrl</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Indicates that password is a URL for the password.</p></td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -344,7 +377,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line42">line 42</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line43">line 43</a>
     </li></ul></dd>
     
 
@@ -599,7 +632,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line206">line 206</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line209">line 209</a>
     </li></ul></dd>
     
 
@@ -953,7 +986,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line123">line 123</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line126">line 126</a>
     </li></ul></dd>
     
 
@@ -1277,7 +1310,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line178">line 178</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -1537,7 +1570,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line247">line 247</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line250">line 250</a>
     </li></ul></dd>
     
 
@@ -1591,7 +1624,7 @@ references to other modules in f5-cloud-libs.</p></div>
 
     
 
-    <h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">(host, user, password, port)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">(host, user, password, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
     
 
@@ -1622,6 +1655,8 @@ references to other modules in f5-cloud-libs.</p></div>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -1647,6 +1682,14 @@ references to other modules in f5-cloud-libs.</p></div>
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -1669,6 +1712,14 @@ references to other modules in f5-cloud-libs.</p></div>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -1693,12 +1744,74 @@ references to other modules in f5-cloud-libs.</p></div>
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>Password for the user.</p></td>
+            <td class="description last"><p>Password for user or file URL for file containing password.</p></td>
         </tr>
 
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Optional parameters.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
     
 
         <tr>
@@ -1716,10 +1829,60 @@ references to other modules in f5-cloud-libs.</p></div>
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>Port to connect to</p></td>
+            <td class="description last"><p>Port to connect to. Default 443.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>passwordIsUrl</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Indicates that password is a URL for the password</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -1760,7 +1923,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line63">line 63</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line66">line 66</a>
     </li></ul></dd>
     
 
@@ -2061,7 +2224,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line95">line 95</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -2387,7 +2550,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line269">line 269</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line272">line 272</a>
     </li></ul></dd>
     
 
@@ -2742,7 +2905,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line151">line 151</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line154">line 154</a>
     </li></ul></dd>
     
 
@@ -3033,7 +3196,7 @@ references to other modules in f5-cloud-libs.</p></div>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line314">line 314</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line317">line 317</a>
     </li></ul></dd>
     
 
@@ -3295,7 +3458,7 @@ is ready.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line367">line 367</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line370">line 370</a>
     </li></ul></dd>
     
 
@@ -3400,7 +3563,7 @@ is ready.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line437">line 437</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line440">line 440</a>
     </li></ul></dd>
     
 
@@ -3637,7 +3800,7 @@ is ready.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line455">line 455</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line458">line 458</a>
     </li></ul></dd>
     
 
@@ -3930,7 +4093,7 @@ required and resolved with 'false' otherwise.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line495">line 495</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line498">line 498</a>
     </li></ul></dd>
     
 
@@ -4089,7 +4252,7 @@ required and resolved with 'false' otherwise.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line532">line 532</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line535">line 535</a>
     </li></ul></dd>
     
 
@@ -4160,7 +4323,7 @@ required and resolved with 'false' otherwise.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Jan 06 2017 13:40:19 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 19 2017 10:01:22 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
