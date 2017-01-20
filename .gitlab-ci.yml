@@ -2,37 +2,31 @@ image: node:4
 
 stages:
     - test
-    - deploy
+    - package
 
-testOnly:
+test:
     tags:
-        - texo
+        - docker-executor
     stage: test
     script:
         - npm install
         - npm test
-    except:
-        - master
 
-testAndPackage:
+package:
     tags:
-        - texo
-    stage: deploy
-    script:
-        - npm install
-        - npm test
+        - docker-executor
+    stage: package
     only:
-        - tags
-    except:
-        - develop
+        - /^release-.*/
+        - triggers
+    script:
+        - npm install --production
+        - tar -C .. --exclude=".git*" --exclude="test" --exclude="dist" --exclude="doc" -zcvf dist/f5-cloud-libs.tar.gz f5-cloud-libs
+        - cd dist
+        - hash=`openssl dgst -r -sha512 f5-cloud-libs.tar.gz | cut -d ' ' -f 1`
+        - sed -i "s/set expected_hash .*/set expected_hash $hash/" verifyHash
+        - sed -i "/script-signature/d" verifyHash
     artifacts:
-        name: f5-cloud-libs"${CI_BUILD_TAG}"
+        name: f5-cloud-libs-$CI_BUILD_REF
         paths:
-            - LICENSE
-            - README.md
-            - index.js
-            - package.json
-            - lib
-            - scripts
-            - node_modules
-
+            - dist/

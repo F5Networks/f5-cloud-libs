@@ -74,11 +74,23 @@ function wait_for_management_ip() {
             return 1
         fi
 
+        ((failed=failed+1))
         sleep $RETRY_INTERVAL
     done
 }
 
-/usr/bin/setdb provision.1nicautoconfig disable
+function wait_for_cidr_block() {
+    RETRY_INTERVAL=2
+    MAX_TRIES=60
+    failed=0
+
+    GATEWAY_CIDR_BLOCK=`curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block`
+    while [ -z "$GATEWAY_CIDR_BLOCK" ] && [[ $failed -lt $MAX_TRIES ]]; do
+        sleep $RETRY_INTERVAL
+        ((failed=failed+1))
+        GATEWAY_CIDR_BLOCK=`curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block`
+    done
+}
 
 wait_mcp_running
 if [ $? -ne 0 ]; then
@@ -98,11 +110,14 @@ echo MGMT_ADDR: "$MGMT_ADDR"
 GATEWAY_MAC=`ifconfig eth0 | egrep HWaddr | awk '{print tolower($5)}'`
 echo GATEWAY_MAC: "$GATEWAY_MAC"
 
-GATEWAY_CIDR_BLOCK=`curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block`
+wait_for_cidr_block
 echo GATEWAY_CIDR_BLOCK: "$GATEWAY_CIDR_BLOCK"
 
 GATEWAY_NET=${GATEWAY_CIDR_BLOCK%/*}
 echo GATEWAY_NET: "$GATEWAY_NET"
+
+GATEWAY_PREFIX=${GATEWAY_CIDR_BLOCK#*/}
+echo GATEWAY_PREFIX: "$GATEWAY_PREFIX"
 
 GATEWAY=`echo $GATEWAY_NET | awk -F. '{ printf "%d.%d.%d.%d", $1, $2, $3, $4+1 }'`
 echo GATEWAY: "$GATEWAY"
@@ -111,8 +126,8 @@ echo GATEWAY: "$GATEWAY"
 echo tmsh create net vlan external interfaces add { 1.0 }
 tmsh create net vlan external interfaces add { 1.0 }
 
-echo tmsh create net self "$MGMT_ADDR"/24 vlan external allow-service default
-tmsh create net self "$MGMT_ADDR"/24 vlan external allow-service default
+echo tmsh create net self "$MGMT_ADDR"/$GATEWAY_PREFIX vlan external allow-service default
+tmsh create net self "$MGMT_ADDR"/$GATEWAY_PREFIX vlan external allow-service default
 
 echo tmsh create sys folder /LOCAL_ONLY device-group none traffic-group traffic-group-local-only
 tmsh create sys folder /LOCAL_ONLY device-group none traffic-group traffic-group-local-only

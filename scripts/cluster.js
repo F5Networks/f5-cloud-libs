@@ -46,9 +46,9 @@
             var i;
 
             var DEFAULT_LOG_FILE = '/tmp/cluster.log';
-            var ARGS_FILE_ID = 'cluster';
+            var ARGS_FILE_ID = 'cluster_' + Date.now();
             var KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
-            var REQUIRED_OPTIONS = ['host', 'user', 'password'];
+            var REQUIRED_OPTIONS = ['host', 'user'];
 
             options = require('./commonOptions');
             testOpts = testOpts || {};
@@ -68,7 +68,8 @@
                     .option('--join-group', 'Join a remote device group with the options:')
                     .option('    --remote-host <remote_ip_address>', '    Managemnt IP for the BIG-IP on which the group exists.')
                     .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
-                    .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password.')
+                    .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password. Use this or --remote-password-url')
+                    .option('    --remote-password-url <remote_password_url>', '    URL (only file URL is currently supported) that contains. Use this or --remote-password')
                     .option('    --remote-port <remote_port>', '    Remote BIG-IP port to connect to. Default is port of this BIG-IP.', parseInt)
                     .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join.')
                     .option('    --sync', '    Tell the remote to sync to us after joining the group.')
@@ -79,7 +80,7 @@
 
                 options.port = options.port || 443;
 
-                loggerOptions.console = true;
+                loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
 
                 if (options.output) {
@@ -94,6 +95,11 @@
                         logger.error(REQUIRED_OPTIONS[i], "is a required command line option.");
                         return;
                     }
+                }
+
+                if (!options.password && !options.passwordUrl) {
+                    logger.error("One of --password or --password-url is required.");
+                    return;
                 }
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
@@ -113,15 +119,6 @@
                 }
                 logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
-                // Create the bigIp client object
-                bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                    options.user,
-                                                    options.password,
-                                                    {
-                                                        port: options.port,
-                                                        logger: logger
-                                                    });
-
                 // Start processing...
 
                 // Save args in restart script in case we need to reboot to recover from an error
@@ -133,8 +130,23 @@
                         }
                     })
                     .then(function() {
+                        // Whatever we're waiting for is done, so don't wait for
+                        // that again in case of a reboot
+                        return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                    })
+                    .then(function() {
                         logger.info("Cluster starting.");
                         ipc.send(signals.CLUSTER_RUNNING);
+
+                        // Create the bigIp client object
+                        bigIp = testOpts.bigIp || new BigIp(options.host,
+                                                            options.user,
+                                                            options.password || options.passwordUrl,
+                                                            {
+                                                                port: options.port,
+                                                                logger: logger,
+                                                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                                                            });
 
                         logger.info("Waiting for BIG-IP to be ready.");
                         return bigIp.ready();
@@ -175,10 +187,11 @@
                             return bigIp.cluster.joinCluster(options.deviceGroup,
                                                              options.remoteHost,
                                                              options.remoteUser,
-                                                             options.remotePassword,
+                                                             options.remotePassword || options.remotePasswordUrl,
                                                              {
                                                                 remotePort: options.remotePort,
-                                                                sync: options.sync
+                                                                sync: options.sync,
+                                                                passwordIsUrl: typeof options.remotePasswordUrl !== 'undefined'
                                                              });
                         }
                     })
@@ -210,11 +223,13 @@
                     })
                     .done(function(response) {
                         logger.debug(response);
-                        logger.info("Cluster finished.");
 
                         if (forceReboot) {
                             logger.warn("Rebooting.");
-                            bigIp.reboot();
+                            bigIp.reboot()
+                                .then(function() {
+                                    process.exit();
+                                });
                         }
                         else {
                             util.deleteArgs(ARGS_FILE_ID);
@@ -222,6 +237,20 @@
 
                         if (cb) {
                             cb();
+                        }
+
+                        // If we're not forcing a reboot, exit so that any listeners don't keep us alive
+                        if (!forceReboot) {
+                            util.logAndExit("Cluster finished.");
+                        }
+                    });
+
+                // If we reboot, exit - otherwise cloud providers won't know we're done
+                ipc.once('REBOOT')
+                    .then(function() {
+                        // If we forced the reboot ourselves, we will exit when that call completes
+                        if (!forceReboot) {
+                            util.logAndExit("REBOOT signalled. Exitting.");
                         }
                     });
             }

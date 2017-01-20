@@ -16,6 +16,7 @@
 'use strict';
 
 var onboard = require('../../scripts/onboard');
+var ipc = require('../../lib/ipc');
 var q = require('q');
 
 var bigIpMock = {
@@ -59,13 +60,42 @@ var bigIpMock = {
     onboard: {
         globalSettings: function() {
             return q();
+        },
+
+        updateUser: function(user, password, role, shell) {
+            this.updatedUsers = this.updatedUsers || [];
+            this.updatedUsers.push({
+                user: user,
+                password: password,
+                role: role,
+                shell: shell
+            });
+
+            return q();
         }
-    }
+    },
 };
 
-var testOptions = {bigIp: bigIpMock};
+var testOptions = {
+    bigIp: bigIpMock
+};
+
 var argv;
 var rebootRequested;
+
+// Our tests cause too many event listeners. Turn off the check.
+var options = require('commander');
+options.setMaxListeners(0);
+
+// Don't let onboard exit - we need the nodeunit process to run to completion
+process.exit = function() {};
+
+// Just resolve right away, otherwise these tests never exit
+ipc.once = function() {
+    var deferred = q.defer();
+    deferred.resolve();
+    return deferred;
+};
 
 module.exports = {
     setUp: function(callback) {
@@ -76,32 +106,36 @@ module.exports = {
 
     testCollect: function(test) {
         argv.push('--ntp', 'one', '--ntp', 'two');
-        onboard.run(argv, testOptions);
-        test.strictEqual(onboard.getOptions().ntp.length, 2);
-        test.done();
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(onboard.getOptions().ntp.length, 2);
+            test.done();
+        });
     },
 
-    testMapSimple: function(test) {
+    testPairSimple: function(test) {
         argv.push('--global-setting', 'name1:value1');
-        onboard.run(argv, testOptions);
-        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
-        test.done();
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
+            test.done();
+        });
     },
 
-    testMapSpaces: function(test) {
+    testPairSpaces: function(test) {
         argv.push('--global-setting', ' name1 : value1 ');
-        onboard.run(argv, testOptions);
-        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
-        test.done();
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
+            test.done();
+        });
     },
 
-    testMapMultiple: function(test) {
+    testPairMultiple: function(test) {
         argv.push('--global-setting', 'name1:value1');
         argv.push('--global-setting', 'name2:value2');
-        onboard.run(argv, testOptions);
-        test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
-        test.strictEqual(onboard.getGlobalSettings().name2, 'value2');
-        test.done();
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(onboard.getGlobalSettings().name1, 'value1');
+            test.strictEqual(onboard.getGlobalSettings().name2, 'value2');
+            test.done();
+        });
     },
 
     testReboot: function(test) {
@@ -115,6 +149,26 @@ module.exports = {
         argv.push('--no-reboot');
         onboard.run(argv, testOptions, function() {
             test.ifError(rebootRequested);
+            test.done();
+        });
+    },
+
+    testUpdateUser: function(test) {
+        argv.push('--update-user', 'user:user1,password:pass1,role:role1,shell:shell1', '--update-user', 'user:user2,password:pass2,shell:shell2');
+        onboard.run(argv, testOptions, function() {
+            test.strictEqual(bigIpMock.onboard.updatedUsers.length, 2);
+            test.deepEqual(bigIpMock.onboard.updatedUsers[0], {
+                user: "user1",
+                password: "pass1",
+                role: "role1",
+                shell: "shell1"
+            });
+            test.deepEqual(bigIpMock.onboard.updatedUsers[1], {
+                user: "user2",
+                password: "pass2",
+                role: undefined,
+                shell: "shell2"
+            });
             test.done();
         });
     }

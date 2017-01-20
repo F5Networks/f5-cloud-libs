@@ -41,25 +41,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 'use strict';
+'use strict';
 
 var q = require('q');
 var IControl = require('./iControl');
 var util = require('./util');
+var ipc = require('./ipc');
+var signals = require('./signals');
 var Logger = require('./logger');
 var BigIpCluster = require('./bigIpCluster');
 var BigIpOnboard = require('./bigIpOnboard');
+var ActiveError = require('./activeError');
 
 /**
  * Creates the BIG-IP client
  * @class
+ * @classdesc
+ * Provides core functionality (CRUD operations, ready, etc) and maintains
+ * references to other modules in f5-cloud-libs.
  *
- * @param {String} host               - Host name or IP address.
- * @param {String} user               - User with admin rights.
- * @param {String} password           - Password for user.
- * @param {Object} [options]          - Optional parameters.
- * @param {Number} [options.port]     - Port to connect to. Default 443.
- * @param {Object} [options.logger]   - A logger to use. Default to no logging.
+ * @param {String}  host                    - Host name or IP address.
+ * @param {String}  user                    - User with admin rights.
+ * @param {String}  password                - Password for user or file URL for file containing password.
+ * @param {Object}  [options]               - Optional parameters.
+ * @param {Number}  [options.port]          - Port to connect to. Default 443.
+ * @param {Object}  [options.logger]        - A logger to use. Default to no logging.
+ * @param {Boolean} [options.passwordIsUrl] - Indicates that password is a URL for the password.
  */
 function BigIp(host, user, password, options) {
 
@@ -68,7 +75,7 @@ function BigIp(host, user, password, options) {
     this.logger = options.logger || Logger.getLogger({logLevel: 'none'});
     util.logger = this.logger;
 
-    this.init(host, user, password, options.port || 443);
+    this.init(host, user, password, options);
 
     this.cluster = new BigIpCluster(this, {logger: this.logger});
     this.onboard = new BigIpOnboard(this, {logger: this.logger});
@@ -77,22 +84,24 @@ function BigIp(host, user, password, options) {
 /**
  * Initialize this instance w/ host user password
  *
- * @param {String} host     - Host to connect to.
- * @param {String} user     - User (with admin rights).
- * @param {String} password - Password for the user.
- * @param {Number} port     - Port to connect to
+ * @param {String}  host                    - Host to connect to.
+ * @param {String}  user                    - User (with admin rights).
+ * @param {String}  password                - Password for user or file URL for file containing password.
+ * @param {Object}  [options]               - Optional parameters.
+ * @param {Number}  [options.port]          - Port to connect to. Default 443.
+ * @param {Boolean} [options.passwordIsUrl] - Indicates that password is a URL for the password
  */
-BigIp.prototype.init = function(host, user, password, port) {
+BigIp.prototype.init = function(host, user, password, options) {
     this.host = host;
     this.user = user;
-    this.password = password;
-    this.port = port;
+    this.password = options.passwordIsUrl ? util.getPasswordFromUrl(password) : password;
+    this.port = options.port || 443;
 
     this.icontrol = new IControl({
-        host: host,
-        port: port,
-        user: user,
-        password: password,
+        host: this.host,
+        port: this.port,
+        user: this.user,
+        password: this.password,
         basePath: '/mgmt',
         strict: false
     });
@@ -242,11 +251,11 @@ BigIp.prototype.active = function(retryOptions) {
                     deferred.resolve();
                 }
                 else {
-                    deferred.reject();
+                    deferred.reject(new ActiveError("BIG-IP not active."));
                 }
             }.bind(this))
             .catch(function(err) {
-                deferred.reject(err);
+                deferred.reject(new ActiveError(err.message));
             })
             .done();
 
@@ -419,7 +428,7 @@ BigIp.prototype.ready = function(retryOptions) {
                         deferred.resolve();
                     }
                     else {
-                        deferred.reject();
+                        deferred.reject(new Error('MCP not ready yet.'));
                     }
                 })
                 .catch(function(err) {
@@ -433,12 +442,21 @@ BigIp.prototype.ready = function(retryOptions) {
         var i;
 
         for (i = 0; i &lt; availabilityChecks.length; ++i) {
-            promises.push(this.list(availabilityChecks[i], undefined, util.NO_RETRY));
+            promises.push(
+                {
+                    promise: this.list,
+                    arguments: [availabilityChecks[i], undefined, util.NO_RETRY]
+                }
+            );
         }
 
-        promises.push(mcpCheck());
+        promises.push(
+            {
+                promise: mcpCheck
+            }
+        );
 
-        return q.all(promises);
+        return util.callInSerial(this, promises);
     }.bind(this);
 
     return util.tryUntil(this, retryOptions, func);
@@ -450,6 +468,7 @@ BigIp.prototype.ready = function(retryOptions) {
 BigIp.prototype.reboot = function() {
     return this.ready()
         .then(function() {
+            ipc.send(signals.REBOOT);
             return this.create('/tm/sys', {command: "reboot"}, undefined, util.NO_RETRY);
         }.bind(this));
 };
@@ -622,13 +641,13 @@ module.exports = BigIp;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="AutoscaleProvider.html">AutoscaleProvider</a></li><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 19 2017 10:01:22 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

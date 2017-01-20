@@ -41,10 +41,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 'use strict';
+'use strict';
 
-var q = require("q");
+var fs = require('fs');
+var q = require('q');
 var Logger = require('./logger');
+
+var EOL = require('os').EOL;
+var REBOOT_SCRIPTS_DIR = '/tmp/rebootScripts/';
 
 /**
  * @module
@@ -89,13 +93,18 @@ module.exports = {
                     deferred.resolve(response);
                 }.bind(this))
                 .catch(function(err) {
-                    this.logger.verbose('tryUntil', err, 'tries left:', maxRetries);
+                    this.logger.verbose('tryUntil:', err ? err.message : '', 'tries left:', maxRetries);
+                    if (err) {
+                        this.logger.debug(err);
+                    }
+
                     if (maxRetries > 0) {
                         --maxRetries;
                         setTimeout(_tryUntil, interval, maxRetries, interval, funcToTry, deferred);
                     }
                     else {
-                        deferred.reject('Giving up after max tries');
+                        this.logger.verbose('Max tries reached.');
+                        deferred.reject(err);
                     }
                 }.bind(this))
                 .done();
@@ -122,30 +131,34 @@ module.exports = {
     callInSerial: function(thisArg, promises, delay) {
         delay = delay || 0;
 
+        var results = [];
+
         var _callInSerial = function(thisArg, promises, delay, index) {
 
             if (index === promises.length) {
-                deferred.resolve();
+                deferred.resolve(results);
                 return;
             }
 
             if (promises[index].message) {
-                console.log(promises[index].message);
+                this.logger.info(promises[index].message);
             }
 
             promises[index].promise.apply(thisArg, promises[index].arguments)
-                .then(function() {
+                .then(function(response) {
+                    results.push(response);
+
                     if (index &lt; promises.length - 1) {
                         setTimeout(_callInSerial, delay, thisArg, promises, delay, ++index);
                     }
                     else {
-                        deferred.resolve();
+                        deferred.resolve(results);
                     }
                 })
                 .catch(function(err) {
                     deferred.reject(err);
                 });
-        };
+        }.bind(this);
 
         var deferred = q.defer();
 
@@ -154,7 +167,23 @@ module.exports = {
         return deferred.promise;
     },
 
-    /** Spawns a new process in the background and exits current process
+    /**
+     * Log a message and exit.
+     *
+     * Makes sure that message is logged before exitting.
+     *
+     * @param {String} message - Message to log
+     * @param {String} [level] - Level at which to log the message. Default info.
+     */
+    logAndExit: function(message, level) {
+        level = level || 'info';
+        this.logger.log(level, message, function() {
+            process.exit();
+        });
+    },
+
+    /**
+     * Spawns a new process in the background and exits current process
      *
      * @param {Object} process     - Node.js process
      * @param {String} logFileName - Name to pass for output log file
@@ -166,7 +195,7 @@ module.exports = {
         var i;
 
         if (process.argv.length > 100) {
-            process.stdout.write("Too many arguments - maybe we're stuck in a restart loop?");
+            this.logger.warn("Too many arguments - maybe we're stuck in a restart loop?");
         }
         else {
             args = process.argv.slice(1);
@@ -183,6 +212,7 @@ module.exports = {
                 args.push('--output', logFileName);
             }
 
+            this.logger.debug("Spawning child process.", args);
             myChild = childProcess.spawn(
                 process.argv[0],
                 args,
@@ -194,7 +224,165 @@ module.exports = {
             myChild.unref();
         }
 
+        this.logger.debug("Original process exitting.");
         process.exit();
+    },
+
+    /**
+     * Saves arguments that started a script so that they can be re-used
+     * in the event we get stuck and need to reboot.
+     *
+     * @param {String[]} args          - Array of arguments that can be used to re-run the process (i.e. process.argv)
+     * @param {String}   id            - Some unique id for the process. This will be used as the file name in which
+     *                                   to store the files.
+     * @param {Object}   [argsToStrip] - Array of arguments to strip. Default none.
+     */
+    saveArgs: function(args, id, argsToStrip) {
+        var deferred = q.defer();
+        var fullPath = REBOOT_SCRIPTS_DIR + id + '.sh';
+        var updatedArgs = [];
+        var i;
+
+        argsToStrip = argsToStrip || [];
+
+        fs.stat(REBOOT_SCRIPTS_DIR, function(err) {
+            if (err &amp;&amp; err.code === 'ENOENT') {
+                fs.mkdirSync(REBOOT_SCRIPTS_DIR);
+            }
+            else if (err) {
+                this.logger.warn("Unable to stat", REBOOT_SCRIPTS_DIR, "Not saving args for a second try.");
+                // Just resolve - may as well try any to run anyway
+                deferred.resolve();
+            }
+
+            fs.open(fullPath, 'w', function(err, fd) {
+                if (err) {
+                    this.logger.warn("Unable to open", fullPath, "Not saving args for a second try.");
+                    // Just resolve - may as well try any to run anyway
+                    deferred.resolve();
+                    return;
+                }
+
+                // push the executable and script name
+                updatedArgs.push(args[0], args[1]);
+                for (i = 2; i &lt; args.length; ++i) {
+                    if (args[i][0] === '-') {
+                        if (argsToStrip.indexOf(args[i]) === -1) {
+                            updatedArgs.push(args[i]);
+
+                            // If the first character of the next argument does not start with '-',
+                            // assume it is a parameter for this argument
+                            if (args.length > i + 1) {
+                                if (args[i + 1][0] !== '-') {
+                                    updatedArgs.push(args[i + 1]);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                try {
+                    fs.writeSync(fd, '#!/bin/bash' + EOL);
+                    fs.writeSync(fd, updatedArgs.join(' ') + EOL);
+                    fs.fchmodSync(fd, parseInt('0755',8));
+                    fs.closeSync(fd);
+                    deferred.resolve();
+                }
+                catch (err) {
+                    this.logger.warn("Unable to save args", err);
+                    fs.closeSync(fd);
+                    // Just resolve - may as well try any to run anyway
+                    deferred.resolve();
+                }
+            }.bind(this));
+        }.bind(this));
+
+        return deferred.promise;
+    },
+
+    /**
+     * Deletes the arguments previously saved with saveArgs
+     *
+     * This should be called when a script successfully completes.
+     *
+     * @param {String} id - Some unique id for the process. This will be used as the file name in which
+     *                      to store the files.
+     */
+    deleteArgs: function(id) {
+        var file = REBOOT_SCRIPTS_DIR + id + '.sh';
+        if (fs.existsSync(file)) {
+            fs.unlinkSync(file);
+        }
+    },
+
+    /**
+     * Copies all the saved arguments (from saveArgs) to the startup file
+     * so that when the box reboots, the arguments are executed.
+     */
+    prepareArgsForReboot: function() {
+        var deferred = q.defer();
+        var startupScripts;
+        var startupCommands;
+        var startupCommandsChanged;
+        var status;
+
+        var STARTUP_DIR = '/config/';
+        var STARTUP_FILE = STARTUP_DIR + 'startup';
+
+        try {
+            fs.statSync(STARTUP_DIR);
+        }
+        catch (err) {
+            if (err.code === 'ENOENT') {
+                this.logger.info("No config directory. Assuming non-local run. Skipping.");
+                deferred.resolve(false);
+                return;
+            }
+        }
+
+        try {
+            startupCommands = fs.readFileSync(STARTUP_FILE, 'utf8');
+        }
+        catch (err) {
+            this.logger.warn("Error reading starup file.");
+            deferred.reject(err);
+            return;
+        }
+
+        try {
+            startupScripts = fs.readdirSync(REBOOT_SCRIPTS_DIR);
+        }
+        catch (err) {
+            this.logger.warn("Error reading directory with reboot args.");
+            deferred.reject(err);
+            return;
+        }
+
+        startupScripts.forEach(function(script) {
+            var fullPath = REBOOT_SCRIPTS_DIR + script;
+            if (startupCommands.indexOf(fullPath) === -1) {
+                startupCommandsChanged = true;
+                startupCommands += "if [ -f " + fullPath + " ]; then" + EOL;
+                startupCommands += "    " + fullPath + ' &amp;' + EOL;
+                startupCommands += "fi" + EOL;
+                startupCommands += EOL;
+            }
+        });
+
+        if (startupCommandsChanged) {
+            status = true;
+            try {
+                fs.writeFileSync(STARTUP_FILE, startupCommands);
+            }
+            catch (err) {
+                this.logger.warn("Failed writing startup file", STARTUP_FILE, err);
+                status = false;
+            }
+        }
+
+        deferred.resolve(status);
+
+        return deferred.promise;
     },
 
     /**
@@ -202,6 +390,11 @@ module.exports = {
      *
      * Typically used by the option parser for collecting
      * multiple values for a command line option
+     *
+     * @param {String} val           - The comma separated value string
+     * @param {String[]} collecction - The array into which to put the value
+     *
+     * @returns {String[]} The updated collection
      */
     collect: function(val, collection) {
         collection.push(val);
@@ -209,18 +402,101 @@ module.exports = {
     },
 
     /**
+     * Parses a comma-separated value
+     *
+     * Typically used by the option parser for collecting
+     * multiple values which are comma separated values.
+     *
+     * Leading and trailing spaces are removed from keys and values
+     *
+     * @param {String} val             - The comma separated value string
+     * @param {String[][]} collecction - The array into which to put a new array conataining the values
+     *
+     * @returns {String[][]} The updated collection
+     */
+    csv: function(val, collection) {
+        var values = val.split(',');
+        var newEntry = [];
+        values.forEach(function(value) {
+            newEntry.push(value.trim());
+        });
+        collection.push(newEntry);
+        return collection;
+    },
+
+    /**
      * Parses a ':' deliminated key-value pair and stores them
      * in a container.
-     *   - Key is the part before the first ':',
-     *   - Value is everything after.
-     *   - Leading and trailing spaces are removed from keys and values
+     *
+     * Leading and trailing spaces are removed from keys and values
      *
      * Typically used by the option parser for collecting
      * multiple key-value pairs for a command line option
+     *
+     * @param {String} pair      - String in the format of key:value
+     * @param {Object} container - Object into which to put the key:value
      */
-    map: function(pair, container) {
+    pair: function(pair, container) {
         var nameVal = pair.split(/:(.+)/);
         container[nameVal[0].trim()] = nameVal[1].trim();
+    },
+
+    /**
+     * Parses a string of keys and values
+     *
+     * Keys are separated from values by a ':'
+     * Key value pairs are separated from each other by a ','
+     * Example:
+     *    user:JoeBob,password:iamcool
+     *
+     * @param {String} mapString - String form of map. See example above.
+     * @param {Objcect[]} container - Container into which to push the map object
+     */
+    map: function(mapString, container) {
+        var mapObject = {};
+        var params;
+        var i;
+
+        // prepend a ',' so we can use a regex to split
+        mapString = ',' + mapString;
+
+        // split on ,&lt;key>:&lt;value>
+        params = mapString.split(/,([^,]+):/);
+
+        // strip off the first match, which is an empty string
+        params = params.splice(1);
+
+        for (i = 0; i &lt; params.length; ++i) {
+            mapObject[params[i].trim()] = params[i + 1].trim();
+            i++;
+        }
+
+        container.push(mapObject);
+    },
+
+    /**
+     * Gets a password from a URL.
+     *
+     * Only file URL is supported for now.
+     *
+     * @param {String} url - URL from which to get the password. Only
+     *                       file URL is supported for now.
+     *
+     * @returns {String} The password.
+     */
+    getPasswordFromUrl: function(url) {
+        var URL = require('url');
+        var fs = require('fs');
+        var parsedUrl = URL.parse(url);
+        var password;
+
+        if (parsedUrl.protocol === 'file:') {
+            password = fs.readFileSync(parsedUrl.pathname, {encoding: 'ascii'});
+            return password.trim();
+        }
+        else {
+            throw new Error('Only file URLs are currently supported.');
+        }
     },
 
     /**
@@ -389,13 +665,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="AutoscaleProvider.html">AutoscaleProvider</a></li><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 19 2017 10:01:22 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

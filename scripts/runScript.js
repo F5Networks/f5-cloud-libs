@@ -17,9 +17,6 @@
 
 (function() {
 
-    var DEFAULT_LOG_FILE = '/tmp/runScript.log';
-    var ARGS_FILE_ID = 'runScript';
-
     var options = require('commander');
     var runner;
 
@@ -42,14 +39,21 @@
             var signals = require('../lib/signals');
             var util = require('../lib/util');
             var loggerOptions = {};
+            var loggableArgs;
             var logger;
             var logFileName;
             var clArgIndex;
+            var i;
+
+            var DEFAULT_LOG_FILE = '/tmp/runScript.log';
+            var ARGS_FILE_ID = 'runScript_' + Date.now();
+            var KEYS_TO_MASK = ['--cl-args'];
 
             testOpts = testOpts || {};
 
             try {
                 options
+                    .version('2.0.0')
                     .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                     .option('-f, --file <script>', 'File name of script to run.')
                     .option('-u, --url <url>', 'URL from which to download script to run. This will override --file.')
@@ -61,9 +65,7 @@
                     .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
                     .parse(argv);
 
-                options.port = options.port || 443;
-
-                loggerOptions.console = true;
+                loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
 
                 if (options.output) {
@@ -80,8 +82,14 @@
                     util.runInBackgroundAndExit(process, logFileName);
                 }
 
-                // Log the input, but don't log passwords
-                logger.info(argv[1] + " called with", argv.slice().join(" "));
+                // Log the input, but don't cl-args since it could contain a password
+                loggableArgs = argv.slice();
+                for (i = 0; i < loggableArgs.length; ++i) {
+                    if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
+                        loggableArgs[i + 1] = "*******";
+                    }
+                }
+                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
                 // Save args in restart script in case we need to reboot to recover from an error
                 // With cl-args, we need to restore the single quotes around the args - shells remove them
@@ -97,6 +105,11 @@
                             logger.info("Waiting for", options.waitFor);
                             return ipc.once(options.waitFor);
                         }
+                    })
+                    .then(function() {
+                        // Whatever we're waiting for is done, so don't wait for
+                        // that again in case of a reboot
+                        return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
                     })
                     .then(function() {
                         var deferred = q.defer();
@@ -168,13 +181,14 @@
                     })
                     .done(function(response) {
                         logger.debug(response);
-                        logger.info("Custom script finished.");
 
                         util.deleteArgs(ARGS_FILE_ID);
 
                         if (cb) {
                             cb();
                         }
+
+                        util.logAndExit("Custom script finished.");
                     });
                 }
                 catch (err) {
@@ -185,6 +199,12 @@
                         console.log("Custom script error:", err);
                     }
                 }
+
+            // If we reboot, exit - otherwise cloud providers won't know we're done
+            ipc.once('REBOOT')
+                .then(function() {
+                    util.logAndExit("REBOOT signalled. Exitting.");
+                });
         },
 
         getOptions: function() {

@@ -43,36 +43,37 @@
             var util = require('../lib/util');
             var dbVars = {};
             var modules = {};
-            var passwords = {};
             var rootPasswords = {};
+            var updateUsers = [];
             var loggerOptions = {};
             var loggableArgs;
             var logger;
             var logFileName;
             var bigIp;
             var forceReboot;
+            var index;
             var i;
 
             var DEFAULT_LOG_FILE = '/tmp/onboard.log';
-            var ARGS_FILE_ID = 'onboard';
+            var ARGS_FILE_ID = 'onboard_' + Date.now();
             var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
-            var REQUIRED_OPTIONS = ['host', 'user', 'password'];
+            var REQUIRED_OPTIONS = ['host', 'user'];
 
             options = require('./commonOptions');
             testOpts = testOpts || {};
 
             /**
-             * Special case of util.map. Used to parse root password options in the form of
+             * Special case of util.pair. Used to parse root password options in the form of
              *     old:oldRootPassword,new:newRootPassword
              * Since passwords can contain any character, a delimiter is difficult to find.
              * Compromise by looking for ',new:' as a delimeter
              */
-            var parseRootPasswords = function(passwordsValue, container) {
+            var parseRootPasswords = function(passwordsValue) {
                 var set = passwordsValue.split(",new:");
 
                 if (set.length == 2) {
-                    container.old = set[0].split("old:")[1];
-                    container.new = set[1];
+                    rootPasswords.old = set[0].split("old:")[1];
+                    rootPasswords.new = set[1];
                 }
             };
 
@@ -85,16 +86,16 @@
                     .option('-l, --license <license_key>', 'License BIG-IP with <license_key>.')
                     .option('-a, --add-on <add_on_key>', 'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.', util.collect, [])
                     .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
-                    .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.map, globalSettings)
-                    .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.map, dbVars)
-                    .option('--set-password <user:new_password>', 'Set <user> password to <new_password>. For multiple users, use multiple --set-password entries.', util.map, passwords)
-                    .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords, rootPasswords)
-                    .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.map, modules)
+                    .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.pair, globalSettings)
+                    .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.pair, dbVars)
+                    .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords)
+                    .option('--update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>', 'Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create.', util.map, updateUsers)
+                    .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.pair, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                     .option('--update-sigs', 'Update ASM signatures')
                     .parse(argv);
 
-                loggerOptions.console = true;
+                loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
 
                 if (options.output) {
@@ -109,6 +110,11 @@
                         logger.error(REQUIRED_OPTIONS[i], "is a required command line option.");
                         return;
                     }
+                }
+
+                if (!options.password && !options.passwordUrl) {
+                    logger.error("One of --password or --password-url is required.");
+                    return;
                 }
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
@@ -126,16 +132,11 @@
                         loggableArgs[i + 1] = "*******";
                     }
                 }
+                index = loggableArgs.indexOf('--update-user');
+                if (index !== -1) {
+                    loggableArgs[index + 1] = loggableArgs[index + 1].replace(/password:([^,])+/, '*******');
+                }
                 logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
-
-                // Create the bigIp client object
-                bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                    options.user,
-                                                    options.password,
-                                                    {
-                                                        port: options.port,
-                                                        logger: logger
-                                                    });
 
                 // Use hostname if both hostname and global-settings hostname are set
                 if (globalSettings && options.hostname) {
@@ -157,8 +158,23 @@
                         }
                     })
                     .then(function() {
+                        // Whatever we're waiting for is done, so don't wait for
+                        // that again in case of a reboot
+                        return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                    })
+                    .then(function() {
                         logger.info("Onboard starting.");
                         ipc.send(signals.ONBOARD_RUNNING);
+
+                        // Create the bigIp client object
+                        bigIp = testOpts.bigIp || new BigIp(options.host,
+                                                            options.user,
+                                                            options.password || options.passwordUrl,
+                                                            {
+                                                                port: options.port,
+                                                                logger: logger,
+                                                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                                                            });
 
                         logger.info("Waiting for BIG-IP to be ready.");
                         return bigIp.ready();
@@ -172,21 +188,6 @@
                         }
                     })
                     .then(function(response) {
-                        var promises = [];
-                        var user;
-
-                        logger.debug(response);
-
-                        if (Object.keys(passwords).length > 0) {
-                            logger.info("Setting password(s).");
-                            for (user in passwords) {
-                                promises.push(bigIp.onboard.password(user, passwords[user]));
-                            }
-
-                            return q.all(promises);
-                        }
-                    })
-                    .then(function(response) {
                         logger.debug(response);
 
                         if (Object.keys(rootPasswords).length > 0) {
@@ -196,6 +197,26 @@
 
                             logger.info("Setting rootPassword.");
                             return bigIp.onboard.password('root', rootPasswords.new, rootPasswords.old);
+                        }
+                    })
+                    .then(function(response) {
+                        var i;
+                        var promises = [];
+
+                        logger.debug(response);
+
+                        if (updateUsers.length > 0) {
+                            for (i = 0; i < updateUsers.length; ++i) {
+                                logger.info("Updating user", updateUsers[i].user);
+                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user,
+                                                                       updateUsers[i].password || updateUsers[i].passwordUrl,
+                                                                       updateUsers[i].role,
+                                                                       updateUsers[i].shell,
+                                                                       {
+                                                                           passwordIsUrl: typeof updateUsers[i].passwordUrl !== 'undefined'
+                                                                       }));
+                            }
+                            return q.all(promises);
                         }
                     })
                     .then(function(response) {
@@ -346,11 +367,13 @@
                     })
                     .done(function(response) {
                         logger.debug(response);
-                        logger.info("Onboard finished.");
 
                         if (forceReboot) {
                             logger.warn("Rebooting.");
-                            bigIp.reboot();
+                            bigIp.reboot()
+                                .then(function() {
+                                    process.exit();
+                                });
                         }
                         else {
                             util.deleteArgs(ARGS_FILE_ID);
@@ -358,6 +381,20 @@
 
                         if (cb) {
                             cb();
+                        }
+
+                        // If we're not forcing a reboot, exit so that any listeners don't keep us alive
+                        if (!forceReboot) {
+                            util.logAndExit("Onboard finished.");
+                        }
+                    });
+
+                // If we reboot, exit - otherwise cloud providers won't know we're done
+                ipc.once('REBOOT')
+                    .then(function() {
+                        // If we forced the reboot ourselves, we will exit when that call completes
+                        if (!forceReboot) {
+                            util.logAndExit("REBOOT signalled. Exitting.");
                         }
                     });
             }

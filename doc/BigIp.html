@@ -30,6 +30,9 @@
     
         <h2>BigIp</h2>
         
+            <div class="class-description"><p>Provides core functionality (CRUD operations, ready, etc) and maintains
+references to other modules in f5-cloud-libs.</p></div>
+        
     
 </header>
 
@@ -39,6 +42,8 @@
         
 
     
+    <h2>Constructor</h2>
+    
 
     <h4 class="name" id="BigIp"><span class="type-signature"></span>new BigIp<span class="signature">(host, user, password, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
@@ -47,7 +52,7 @@
 
 
 <div class="description">
-    Creates the BIG-IP client
+    <p>Creates the BIG-IP client</p>
 </div>
 
 
@@ -109,7 +114,7 @@
 
             
 
-            <td class="description last">Host name or IP address.</td>
+            <td class="description last"><p>Host name or IP address.</p></td>
         </tr>
 
     
@@ -140,7 +145,7 @@
 
             
 
-            <td class="description last">User with admin rights.</td>
+            <td class="description last"><p>User with admin rights.</p></td>
         </tr>
 
     
@@ -171,7 +176,7 @@
 
             
 
-            <td class="description last">Password for user.</td>
+            <td class="description last"><p>Password for user or file URL for file containing password.</p></td>
         </tr>
 
     
@@ -204,7 +209,7 @@
 
             
 
-            <td class="description last">Optional parameters.
+            <td class="description last"><p>Optional parameters.</p>
                 <h6>Properties</h6>
                 
 
@@ -258,7 +263,7 @@
 
             
 
-            <td class="description last">Port to connect to. Default 443.</td>
+            <td class="description last"><p>Port to connect to. Default 443.</p></td>
         </tr>
 
     
@@ -291,7 +296,40 @@
 
             
 
-            <td class="description last">A logger to use. Default to no logging.</td>
+            <td class="description last"><p>A logger to use. Default to no logging.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>passwordIsUrl</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Indicates that password is a URL for the password.</p></td>
         </tr>
 
     
@@ -339,7 +377,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line36">line 36</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line43">line 43</a>
     </li></ul></dd>
     
 
@@ -395,7 +433,7 @@
 
 
 <div class="description">
-    Determines if the BIG-IP status is active
+    <p>Determines if the BIG-IP status is active</p>
 </div>
 
 
@@ -459,7 +497,7 @@
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -513,7 +551,7 @@
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -546,7 +584,7 @@
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -594,7 +632,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line200">line 200</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line209">line 209</a>
     </li></ul></dd>
     
 
@@ -621,7 +659,7 @@
 
         
 <div class="param-desc">
-    A promise which is resolved when the status is active.
+    <p>A promise which is resolved when the status is active.</p>
 </div>
 
 
@@ -654,7 +692,7 @@
 
 
 <div class="description">
-    Submits a create (POST) request
+    <p>Submits a create (POST) request</p>
 </div>
 
 
@@ -716,7 +754,7 @@
 
             
 
-            <td class="description last">The path to get.</td>
+            <td class="description last"><p>The path to get.</p></td>
         </tr>
 
     
@@ -747,7 +785,7 @@
 
             
 
-            <td class="description last">The body for the POST request.</td>
+            <td class="description last"><p>The body for the POST request.</p></td>
         </tr>
 
     
@@ -780,7 +818,7 @@
 
             
 
-            <td class="description last">Options for IControl.</td>
+            <td class="description last"><p>Options for IControl.</p></td>
         </tr>
 
     
@@ -813,7 +851,7 @@
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -867,7 +905,7 @@
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -900,7 +938,7 @@
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -948,7 +986,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line117">line 117</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line126">line 126</a>
     </li></ul></dd>
     
 
@@ -975,8 +1013,8 @@
 
         
 <div class="param-desc">
-    A promise which is resolved when the request is complete
-                   or rejected if an error occurs.
+    <p>A promise which is resolved when the request is complete
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -1009,7 +1047,7 @@
 
 
 <div class="description">
-    Submits a delete (DELETE) request
+    <p>Submits a delete (DELETE) request</p>
 </div>
 
 
@@ -1071,7 +1109,7 @@
 
             
 
-            <td class="description last">The path to get.</td>
+            <td class="description last"><p>The path to get.</p></td>
         </tr>
 
     
@@ -1104,7 +1142,7 @@
 
             
 
-            <td class="description last">Options for IControl.</td>
+            <td class="description last"><p>Options for IControl.</p></td>
         </tr>
 
     
@@ -1137,7 +1175,7 @@
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -1191,7 +1229,7 @@
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -1224,7 +1262,7 @@
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -1272,7 +1310,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line172">line 172</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -1299,8 +1337,8 @@
 
         
 <div class="param-desc">
-    A promise which is resolved when the request is complete
-                   or rejected if an error occurs.
+    <p>A promise which is resolved when the request is complete
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -1333,7 +1371,7 @@
 
 
 <div class="description">
-    Gets the device info
+    <p>Gets the device info</p>
 </div>
 
 
@@ -1397,7 +1435,7 @@
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -1451,7 +1489,7 @@
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -1484,7 +1522,7 @@
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -1532,7 +1570,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line241">line 241</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line250">line 250</a>
     </li></ul></dd>
     
 
@@ -1559,8 +1597,8 @@
 
         
 <div class="param-desc">
-    A promise which is resolved when the request is complete
-                   or rejected if an error occurs.
+    <p>A promise which is resolved when the request is complete
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -1586,14 +1624,14 @@
 
     
 
-    <h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">(host, user, password, port)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">(host, user, password, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    Initialize this instance w/ host user password
+    <p>Initialize this instance w/ host user password</p>
 </div>
 
 
@@ -1616,6 +1654,8 @@
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -1642,10 +1682,18 @@
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">Host to connect to.</td>
+            <td class="description last"><p>Host to connect to.</p></td>
         </tr>
 
     
@@ -1665,10 +1713,18 @@
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">User (with admin rights).</td>
+            <td class="description last"><p>User (with admin rights).</p></td>
         </tr>
 
     
@@ -1688,12 +1744,74 @@
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">Password for the user.</td>
+            <td class="description last"><p>Password for user or file URL for file containing password.</p></td>
         </tr>
 
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Optional parameters.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
     
 
         <tr>
@@ -1711,10 +1829,60 @@
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">Port to connect to</td>
+            <td class="description last"><p>Port to connect to. Default 443.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>passwordIsUrl</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Indicates that password is a URL for the password</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -1755,7 +1923,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line57">line 57</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line66">line 66</a>
     </li></ul></dd>
     
 
@@ -1793,7 +1961,7 @@
 
 
 <div class="description">
-    Submits a list (GET) request
+    <p>Submits a list (GET) request</p>
 </div>
 
 
@@ -1855,7 +2023,7 @@
 
             
 
-            <td class="description last">The path to get.</td>
+            <td class="description last"><p>The path to get.</p></td>
         </tr>
 
     
@@ -1888,7 +2056,7 @@
 
             
 
-            <td class="description last">Options for IControl.</td>
+            <td class="description last"><p>Options for IControl.</p></td>
         </tr>
 
     
@@ -1921,7 +2089,7 @@
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -1975,7 +2143,7 @@
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -2008,7 +2176,7 @@
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -2056,7 +2224,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line89">line 89</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -2083,8 +2251,8 @@
 
         
 <div class="param-desc">
-    A promise which is resolved when the request is complete
-                   or rejected if an error occurs.
+    <p>A promise which is resolved when the request is complete
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -2117,7 +2285,7 @@
 
 
 <div class="description">
-    Loads sys config
+    <p>Loads sys config</p>
 </div>
 
 
@@ -2181,7 +2349,7 @@
 
             
 
-            <td class="description last">Full path on BIG-IP of file to load. Default is to load the default config.</td>
+            <td class="description last"><p>Full path on BIG-IP of file to load. Default is to load the default config.</p></td>
         </tr>
 
     
@@ -2214,7 +2382,7 @@
 
             
 
-            <td class="description last">Object map of load options (for example, {merge: true})</td>
+            <td class="description last"><p>Object map of load options (for example, {merge: true})</p></td>
         </tr>
 
     
@@ -2247,7 +2415,7 @@
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -2301,7 +2469,7 @@
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -2334,7 +2502,7 @@
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -2382,7 +2550,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line263">line 263</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line272">line 272</a>
     </li></ul></dd>
     
 
@@ -2409,8 +2577,8 @@
 
         
 <div class="param-desc">
-    A promise which is resolved when the config has been
-                   loaded or rejected if an error occurs.
+    <p>A promise which is resolved when the config has been
+                   loaded or rejected if an error occurs.</p>
 </div>
 
 
@@ -2443,7 +2611,7 @@
 
 
 <div class="description">
-    Submits a modify (PATCH) request
+    <p>Submits a modify (PATCH) request</p>
 </div>
 
 
@@ -2505,7 +2673,7 @@
 
             
 
-            <td class="description last">The path to get.</td>
+            <td class="description last"><p>The path to get.</p></td>
         </tr>
 
     
@@ -2536,7 +2704,7 @@
 
             
 
-            <td class="description last">The body for the patch request.</td>
+            <td class="description last"><p>The body for the patch request.</p></td>
         </tr>
 
     
@@ -2569,7 +2737,7 @@
 
             
 
-            <td class="description last">Options for IControl.</td>
+            <td class="description last"><p>Options for IControl.</p></td>
         </tr>
 
     
@@ -2602,7 +2770,7 @@
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -2656,7 +2824,7 @@
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -2689,7 +2857,7 @@
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -2737,7 +2905,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line145">line 145</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line154">line 154</a>
     </li></ul></dd>
     
 
@@ -2764,8 +2932,8 @@
 
         
 <div class="param-desc">
-    A promise which is resolved when the request is complete
-                   or rejected if an error occurs.
+    <p>A promise which is resolved when the request is complete
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -2798,7 +2966,7 @@
 
 
 <div class="description">
-    Pings a given address once
+    <p>Pings a given address once</p>
 </div>
 
 
@@ -2860,7 +3028,7 @@
 
             
 
-            <td class="description last">IP address or hostname to ping.</td>
+            <td class="description last"><p>IP address or hostname to ping.</p></td>
         </tr>
 
     
@@ -2893,7 +3061,7 @@
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -2947,7 +3115,7 @@
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -2980,7 +3148,7 @@
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -3028,7 +3196,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line308">line 308</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line317">line 317</a>
     </li></ul></dd>
     
 
@@ -3055,8 +3223,8 @@
 
         
 <div class="param-desc">
-    A promise which is resolved if the ping succeeds
-                   or rejected if an error occurs.
+    <p>A promise which is resolved if the ping succeeds
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -3089,10 +3257,9 @@
 
 
 <div class="description">
-    Resolves when BIG-IP is ready.
-
-BIG-IP is determined to be ready when the nodejs echo-js worker
-is ready.
+    <p>Resolves when BIG-IP is ready.</p>
+<p>BIG-IP is determined to be ready when the nodejs echo-js worker
+is ready.</p>
 </div>
 
 
@@ -3156,7 +3323,7 @@ is ready.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -3210,7 +3377,7 @@ is ready.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -3243,7 +3410,7 @@ is ready.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -3291,7 +3458,7 @@ is ready.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line361">line 361</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line370">line 370</a>
     </li></ul></dd>
     
 
@@ -3318,8 +3485,8 @@ is ready.
 
         
 <div class="param-desc">
-    A Promise which is resolved when BIG-IP is ready
-                   or rejected after trying a fixed number of times.
+    <p>A Promise which is resolved when BIG-IP is ready
+                   or rejected after trying a fixed number of times.</p>
 </div>
 
 
@@ -3352,7 +3519,7 @@ is ready.
 
 
 <div class="description">
-    Reboots the BIG-IP
+    <p>Reboots the BIG-IP</p>
 </div>
 
 
@@ -3396,7 +3563,7 @@ is ready.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line422">line 422</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line440">line 440</a>
     </li></ul></dd>
     
 
@@ -3434,7 +3601,7 @@ is ready.
 
 
 <div class="description">
-    Checks to see if the BIG-IP needs to be rebooted
+    <p>Checks to see if the BIG-IP needs to be rebooted</p>
 </div>
 
 
@@ -3498,7 +3665,7 @@ is ready.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -3552,7 +3719,7 @@ is ready.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -3585,7 +3752,7 @@ is ready.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -3633,7 +3800,7 @@ is ready.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line439">line 439</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line458">line 458</a>
     </li></ul></dd>
     
 
@@ -3660,8 +3827,8 @@ is ready.
 
         
 <div class="param-desc">
-    A promise which is resolved with 'true' if reboot is
-required and resolved with 'false' otherwise.
+    <p>A promise which is resolved with 'true' if reboot is
+required and resolved with 'false' otherwise.</p>
 </div>
 
 
@@ -3694,7 +3861,7 @@ required and resolved with 'false' otherwise.
 
 
 <div class="description">
-    Saves sys config
+    <p>Saves sys config</p>
 </div>
 
 
@@ -3758,7 +3925,7 @@ required and resolved with 'false' otherwise.
 
             
 
-            <td class="description last">File to save to. Default is bigip.conf</td>
+            <td class="description last"><p>File to save to. Default is bigip.conf</p></td>
         </tr>
 
     
@@ -3791,7 +3958,7 @@ required and resolved with 'false' otherwise.
 
             
 
-            <td class="description last">Options for retrying the request.
+            <td class="description last"><p>Options for retrying the request.</p>
                 <h6>Properties</h6>
                 
 
@@ -3845,7 +4012,7 @@ required and resolved with 'false' otherwise.
 
             
 
-            <td class="description last">Number of times to retry if first try fails. 0 to not retry. Default 60.</td>
+            <td class="description last"><p>Number of times to retry if first try fails. 0 to not retry. Default 60.</p></td>
         </tr>
 
     
@@ -3878,7 +4045,7 @@ required and resolved with 'false' otherwise.
 
             
 
-            <td class="description last">Milliseconds between retries. Default 10000.</td>
+            <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
         </tr>
 
     
@@ -3926,7 +4093,7 @@ required and resolved with 'false' otherwise.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line479">line 479</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line498">line 498</a>
     </li></ul></dd>
     
 
@@ -3953,8 +4120,8 @@ required and resolved with 'false' otherwise.
 
         
 <div class="param-desc">
-    A promise which is resolved when the licensing
-                   is complete or rejected if an error occurs.
+    <p>A promise which is resolved when the licensing
+                   is complete or rejected if an error occurs.</p>
 </div>
 
 
@@ -3987,7 +4154,7 @@ required and resolved with 'false' otherwise.
 
 
 <div class="description">
-    Submits commands in a transaction
+    <p>Submits commands in a transaction</p>
 </div>
 
 
@@ -4039,12 +4206,12 @@ required and resolved with 'false' otherwise.
 
             
 
-            <td class="description last">Array of command definitions. Each command should be:
+            <td class="description last"><p>Array of command definitions. Each command should be:
                              {
                                  method: 'list' | 'create' | 'modify' | 'delete',
                                  path: path for command,
                                  body: optional body for command
-                             }</td>
+                             }</p></td>
         </tr>
 
     
@@ -4085,7 +4252,7 @@ required and resolved with 'false' otherwise.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line516">line 516</a>
+        <a href="bigIp.js.html">bigIp.js</a>, <a href="bigIp.js.html#line535">line 535</a>
     </li></ul></dd>
     
 
@@ -4112,8 +4279,8 @@ required and resolved with 'false' otherwise.
 
         
 <div class="param-desc">
-    A promise which is resolved when the transaction is complete
-                   or rejected if an error occurs.
+    <p>A promise which is resolved when the transaction is complete
+                   or rejected if an error occurs.</p>
 </div>
 
 
@@ -4150,13 +4317,13 @@ required and resolved with 'false' otherwise.
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-ipc.html">ipc</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="AutoscaleProvider.html">AutoscaleProvider</a></li><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="IControl.html">IControl</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Oct 06 2016 16:18:52 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 19 2017 10:01:22 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
