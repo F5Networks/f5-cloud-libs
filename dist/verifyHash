@@ -14,4 +14,5 @@ proc script::run {} {
             exit 1
         }
     }
+    script-signature L8QywICfDm81QF2jXzt7+89AubfpBXD7xbr/En+vvz5082IhbZ5tiMvtnTeLwsZsMiOHd3FJEabaSiGUn9BUqs2/BJpLXAoS7OqCdDfLUrY8whhg1/LN9tkgU4/oil9MFGmeZ5Ob56IHcyR+4JuC8qALdm8WCTt/HWbzpjAeP2Kzvk3IIhCAJ0M6SVNZ2pF3KlS16qu/aISYB6f/WVzygxFwr8dkVMXTxJ0F4bfBOlz7QKFPcflr6y9phVUD+NU/ooXi0Ts5AXOoLxZSXjp+wuRYsRageQmj9dWK8ikF5hpOp+c8JsMvIHALneaF7Y/fix9WVo0wZA3S/I2lyS+02g==
 }
