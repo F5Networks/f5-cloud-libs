@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016, 2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,6 @@
                     console.log("  Options:");
                     console.log();
                     console.log("    --help\t\t\tOutputusage information");
-                    console.log("    --tag\t\t\tGitHub f5-cloud-libs tag that was pulled.");
                     console.log("    --onboard <args>\t\tRun the onboard.js script with args.");
                     console.log("    --cluster <args>\t\tRun the cluster.js script with args.");
                     console.log("    --network <args>\t\tRun the network.js script with args.");
@@ -153,50 +152,6 @@
                 console.log('Resetting mysql start delay');
                 shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
                 console.log(shellOutput.toString());
-
-                argIndex = argv.indexOf('--tag');
-                if (argIndex != -1) {
-                    f5CloudLibsTag = argv[argIndex + 1];
-                }
-
-                try {
-                    fstats = fs.statSync("/config/f5-cloud-libs");
-                }
-                catch (err) {
-                    if (err.code === 'ENOENT') {
-                        doInstall = true;
-                    }
-                }
-
-                if (doInstall) {
-                    console.log("Creating f5-cloud-libs directory.");
-                    fs.mkdirSync("/config/f5-cloud-libs");
-
-                    console.log("Moving libraries to /config.");
-                    shellOutput = childProcess.execSync("mv " + f5CloudLibsTag + " /config/f5-cloud-libs.tar.gz");
-                    console.log(shellOutput.toString());
-
-                    console.log("Expanding libraries.");
-                    shellOutput = childProcess.execSync(
-                        "tar -xzf f5-cloud-libs.tar.gz --strip-components 1 --directory f5-cloud-libs",
-                        {
-                            cwd: "/config"
-                        }
-                    );
-                    console.log(shellOutput.toString());
-
-                    console.log("Downloading dependencies.");
-                    shellOutput = childProcess.execSync(
-                        "npm install --production",
-                        {
-                            cwd: "/config/f5-cloud-libs"
-                        }
-                    );
-                    console.log(shellOutput.toString());
-                }
-                else {
-                    console.log("f5-cloud-libs already installed.");
-                }
 
                 ipc = require('/config/f5-cloud-libs/lib/ipc');
                 Logger = require('/config/f5-cloud-libs/lib/logger');
