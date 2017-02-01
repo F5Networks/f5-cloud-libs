@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016, 2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,11 @@
             logger = Logger.getLogger(loggerOptions);
             util.logger = logger;
 
+            if (!options.password && !options.passwordUrl) {
+                logger.error("One of --password or --password-url is required.");
+                return;
+            }
+
             // When running in cloud init, we need to exit so that cloud init can complete and
             // allow the BIG-IP services to start
             if (options.background) {
@@ -92,18 +97,14 @@
             }
             logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
-            // Dummy password - if all of our actions will be on localhost (as in update),
-            // user does not need to provide a password
-            options.password = options.password || 'dummypass';
-
             // Get the concrete provider instance
             provider = testOpts.provider;
             if (!provider) {
                 Provider = require('f5-cloud-libs-' + options.cloud).provider;
-                provider = new Provider({logger: logger});
+                provider = new Provider({clOptions: options, logger: logger});
             }
 
-            provider.init(providerOptions[0])
+            provider.init(providerOptions[0], {autoscale: true})
                 .then(function() {
                     logger.info('Getting info on all instances.');
                     return provider.getInstances();
@@ -152,20 +153,29 @@
                     }
                 }.bind(this))
                 .then(function(response) {
+                    masterIid = response;
+                    logger.info('Using master ID:', masterIid);
+
+                    return provider.masterElected(masterIid);
+                })
+                .then(function() {
+                    if (provider.getInstanceId() === masterIid) {
+                        logger.info('Storing master credentials.');
+                        return provider.putMasterCredentials();
+                    }
+                })
+                .then(function() {
                     var promises = [];
                     var thisInstance;
                     var thisInstanceIid;
                     var bigIp;
 
-                    masterIid = response;
                     thisInstanceIid = provider.getInstanceId();
                     thisInstance = this.instances[thisInstanceIid];
 
                     if (thisInstanceIid === masterIid) {
                         thisInstance.isMaster = true;
                     }
-
-                    logger.info('Using master ID:', masterIid);
 
                     bigIp = testOpts.bigIp || new BigIp(options.host,
                                                         options.user,
@@ -260,7 +270,10 @@
                                 else {
                                     logger.info('Joining cluster.');
                                     masterInstance = this.instances[masterIid];
-                                    return bigIp.cluster.joinCluster(options.deviceGroup, masterInstance.mgmtIp, options.user, options.password, {remotePort: options.port});
+                                    return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
+                                        .then(function(credentials) {
+                                            return bigIp.cluster.joinCluster(options.deviceGroup, masterInstance.mgmtIp, credentials.username, credentials.password, {remotePort: options.port});
+                                        });
                                 }
                             }.bind(this));
                     }

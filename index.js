@@ -18,5 +18,6 @@
 module.exports = {
     autoscaleProvider: require('./lib/autoscaleProvider'),
     bigIp: require("./lib/bigIp"),
-    logger: require("./lib/logger")
+    logger: require("./lib/logger"),
+    util: require("./lib/util")
 };

@@ -27,7 +27,7 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016, 2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,11 +57,13 @@ var Logger = require('./logger');
  * must be overridded. Methods that do not throw may be optionally
  * overridden.
  *
- * @param {Ojbect} [options] - Options for the instance
+ * @param {Ojbect} [options] - Options for the instance.
+ * @param {Object} [options.clOptions] - Command line options if called from a script.
  * @param {Logger} [options.logger] - Logger to use. Default no logging.
  */
 function AutoscaleProvider(options) {
     options = options || {};
+    this.clOptions = options.clOptions || {};
     this.logger = options.logger || Logger.getLogger({logLevel: 'none'});
 }
 
@@ -86,7 +88,7 @@ AutoscaleProvider.prototype.init = function(providerOptions) {
  *
  * @abstract
  *
- * @returns {String} The instance ID of this instance
+ * @returns {String} The instance ID of this instance.
  */
 AutoscaleProvider.prototype.getInstanceId = function() {
     throw new Error("Unimplemented abstract method AutoscaleProvider.getInstanceId");
@@ -100,7 +102,8 @@ AutoscaleProvider.prototype.getInstanceId = function() {
  *
  * @abstract
  *
- * @returns {Object} Dictionary of instance info keyed by instance ID. Instance info is
+ * @returns {Promise} A promise which will be resolved with a dictionary of instances
+ *                    keyed by instance ID. Each instance value should be:
  *                   {
  *                       isMaster: &lt;Boolean>,
  *                       hostname: &lt;String>,
@@ -119,10 +122,29 @@ AutoscaleProvider.prototype.getInstances = function() {
  *
  * @param {Object} instances - Dictionary of instances as returned by getInstances
  *
- * @returns {String} Instance ID of the elected master
+ * @returns {Promise} A promise which will be resolved with the instance ID of the
+ *                    elected master.
  */
 AutoscaleProvider.prototype.electMaster = function(instances) {
     throw new Error("Unimplemented abstract method AutoscaleProvider.electMaster", instances);
+};
+
+/**
+ * Called to retrieve master instance credentials
+ *
+ * When joining a cluster we need the username and password for the
+ * master instance.
+ *
+ * @abstract
+ *
+ * @returns {Promise} A promise which will be resolved with:
+ *                    {
+ *                        username: &lt;admin_user>,
+ *                        password: &lt;admin_password>
+ *                    }
+ */
+AutoscaleProvider.prototype.getMasterCredentials = function() {
+    throw new Error("Unimplemented abstract method AutoscaleProvider.getMasterCredentials");
 };
 
 /**
@@ -133,7 +155,8 @@ AutoscaleProvider.prototype.electMaster = function(instances) {
  *
  * @param {String} instanceId - Instance ID to validate as a valid master.
  *
- * @returns {Boolean} Wether or not the given instanceId is a valid master
+ * @returns {Promise} A promise which will be resolved with a boolean indicating
+ *                    wether or not the given instanceId is a valid master.
  */
 AutoscaleProvider.prototype.isValidMaster = function(instanceId) {
     this.logger.debug("No override for AutoscaleProvider.isValidMaster", instanceId);
@@ -141,11 +164,29 @@ AutoscaleProvider.prototype.isValidMaster = function(instanceId) {
 };
 
 /**
+ * Called when a master has been elected
+ *
+ * In some cloud environments, information about the master needs to be
+ * stored in persistent storage. Override this method if implementing
+ * such a cloud provider.
+ *
+ * @param {String} instanceId - Instance ID to validate as a valid master.
+ *
+ * @returns {Promise} A promise which will be resolved when processing is complete.
+ */
+AutoscaleProvider.prototype.masterElected = function(instanceId) {
+    this.logger.debug("No override for AutoscaleProvider.masterElected", instanceId);
+    return q();
+};
+
+/**
  * Saves instance info
  *
  * Override for cloud implementations which store instance information.
  *
- * @param {Object} Instance information as returned by getInstances
+ * @param {Object} Instance information as returned by getInstances.
+ *
+ * @returns {Promise} A promise which will be resolved with instance info.
  */
 AutoscaleProvider.prototype.putInstance = function(instance) {
     this.logger.debug("No override for AutoscaleProvider.putInstance", instance);
@@ -158,6 +199,8 @@ AutoscaleProvider.prototype.putInstance = function(instance) {
  * Override for cloud provicers that support instance protection from scale in.
  *
  * @param {String} [instanceId] - Instance ID of instnace to protect. Default instance ID of self.
+ *
+ * @returns {Promise} A promise which will be resolved when processing is complete.
  */
 AutoscaleProvider.prototype.setInstanceProtection = function(instanceId) {
     this.logger.debug("No override for AutoscaleProvider.setInstanceProtection", instanceId);
@@ -170,6 +213,8 @@ AutoscaleProvider.prototype.setInstanceProtection = function(instanceId) {
  * Override for cloud provicers that support instance protection from scale in.
  *
  * @param {String} [instanceId] - Instance ID of instnace to un-protect. Default instance ID of self.
+ *
+ * @returns {Promise} A promise which will be resolved when processing is complete.
  */
 AutoscaleProvider.prototype.unsetInstanceProtection = function(instanceId) {
     this.logger.debug("No override for AutoscaleProvider.unsetInstanceProtection", instanceId);
@@ -192,7 +237,7 @@ module.exports = AutoscaleProvider;</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Jan 26 2017 09:18:53 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Jan 25 2017 16:00:58 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

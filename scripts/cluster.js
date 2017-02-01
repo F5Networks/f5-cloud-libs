@@ -37,6 +37,9 @@
             var ipc = require('../lib/ipc');
             var signals = require('../lib/signals');
             var util = require('../lib/util');
+            var providerOptions = [];
+            var Provider;
+            var provider;
             var loggerOptions = {};
             var loggableArgs;
             var logger;
@@ -56,6 +59,9 @@
             try {
                 options = options.getCommonOptions(DEFAULT_LOG_FILE)
                     .option('--config-sync-ip <config_sync_ip>', 'IP address for config sync.')
+                    .option('--cloud <provider>', 'Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of autoscaleProvider must exist at the correct location.')
+                    .option('    --master', 'If using a cloud provider, indicates that this is the master and credentials should be stored.')
+                    .option('    --provider-options <cloud_options>', 'Any options (JSON stringified) that are required for the specific cloud provider.', util.map, providerOptions)
                     .option('--create-group', 'Create a device group with the options:')
                     .option('    --device-group <device_group>', '    Name of the device group.')
                     .option('    --sync-type <sync_type>', '    Type of sync this cluster is for ("sync-only" | "sync-failover").')
@@ -121,6 +127,12 @@
 
                 // Start processing...
 
+                if (options.cloud) {
+                    // Get the concrete provider instance
+                    Provider = require('f5-cloud-libs-' + options.cloud).provider;
+                    provider = new Provider({clOptions: options, logger: logger});
+                }
+
                 // Save args in restart script in case we need to reboot to recover from an error
                 util.saveArgs(argv, ARGS_FILE_ID)
                     .then(function() {
@@ -154,6 +166,12 @@
                     .then(function() {
                         logger.info("BIG-IP is ready.");
 
+                        if (options.cloud) {
+                            logger.info("Initializing cloud provider.");
+                            return provider.init(providerOptions[0]);
+                        }
+                    })
+                    .then(function() {
                         if (options.configSyncIp) {
                             logger.info("Setting config sync ip.");
                             return bigIp.cluster.configSyncIp(options.configSyncIp);
@@ -182,8 +200,32 @@
                     .then(function(response) {
                         logger.debug(response);
 
+                        // If we are using cloud storage and are the master, store our credentials
+                        if (options.cloud && options.master) {
+                            logger.info("Storing credentials.");
+                            return provider.putMasterCredentials();
+                        }
+                    })
+                    .then(function(response) {
+                        logger.debug(response);
+
+                        if (options.cloud && options.joinGroup) {
+                            logger.info("Getting master credentials.");
+                            return provider.getMasterCredentials(options.remoteHost, options.remotePort);
+                        }
+                    })
+                    .then(function(response) {
+                        // Don't log the response here - it has the credentials in it
+                        if (options.cloud && options.joinGroup) {
+                            logger.info("Got master credentials.");
+
+                            options.remoteUser = response.username;
+                            options.remotePassword = response.password;
+                        }
+
                         if (options.joinGroup) {
                             logger.info("Joining group.");
+
                             return bigIp.cluster.joinCluster(options.deviceGroup,
                                                              options.remoteHost,
                                                              options.remoteUser,

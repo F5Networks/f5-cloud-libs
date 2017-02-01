@@ -88,7 +88,7 @@ ProviderMock.prototype.instancesRemoved = function(instances) {
 
 module.exports = {
     setUp: function(callback) {
-        argv = ['node', 'autoscale', '--device-group', deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
+        argv = ['node', 'autoscale', '--password', 'foobar', '--device-group', deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
         providerMock = new ProviderMock();
 
         providerMock.getInstances = function() {
