@@ -2,7 +2,7 @@ cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
             set file_path [lindex $tmsh::argv 1]
-            set expected_hash ea1af17c941a422777382ae0fe500e49e439ea10b2bf99f0f3e3ea5e3ed73406243eedf1894a61e50323c1a1321a61f2ac62057d0e5c0007fe2ba439eb673110
+            set expected_hash 76c1f5d42d45bcb82a30c12faea9509a5150bca84f2feb773a25a616eab538366a9e24ac84805d8f5f0229729739681393e89ef9e2d91c6b37413af413228c71
             set computed_hash [lindex [exec /usr/bin/openssl dgst -r -sha512 $file_path] 0]
             if { $expected_hash eq $computed_hash } {
                 exit 0
