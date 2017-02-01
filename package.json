@@ -14,6 +14,7 @@
     "winston": "^2.2.0"
   },
   "devDependencies": {
+    "jsdoc": "^3.4.3",
     "jshint": "latest",
     "nodeunit": "^0.10"
   },
@@ -24,6 +25,6 @@
   "scripts": {
     "test": "if ! node_modules/nodeunit/bin/nodeunit --reporter eclipse test/lib; then exit 1; fi; if ! node_modules/nodeunit/bin/nodeunit --reporter eclipse test/scripts; then exit 1; fi",
     "package": "./package.sh",
-    "doc": "jsdoc -c jsdoc.conf"
+    "doc": "node node_modules/jsdoc/jsdoc.js -c jsdoc.conf"
   }
 }
