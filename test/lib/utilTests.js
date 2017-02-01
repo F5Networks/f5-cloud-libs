@@ -35,6 +35,19 @@ module.exports = {
         test.done();
     },
 
+    testGetPasswordFromUrl: function(test) {
+        var password = 'foobar';
+        var passwordFile = '/tmp/mypass';
+
+        fs.writeFileSync(passwordFile, password, {encoding: 'ascii'});
+
+        var readPassword = util.getPasswordFromUrl('file://' + passwordFile);
+        test.strictEqual(readPassword, password);
+
+        fs.unlinkSync(passwordFile);
+        test.done();
+    },
+
     testSaveArgs: {
 
         setUp: function(callback) {

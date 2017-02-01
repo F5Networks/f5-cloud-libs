@@ -2,7 +2,7 @@ cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
             set file_path [lindex $tmsh::argv 1]
-            set expected_hash 47141fb27d7eae28cb041db34669c79d03794c7d6d295bb7c97ddbc4b2a7dc87bc173c5db7ac8ba28e08e7a620ecbce73eecffa2d3b1e0764a597601b4614daa
+            set expected_hash ea1af17c941a422777382ae0fe500e49e439ea10b2bf99f0f3e3ea5e3ed73406243eedf1894a61e50323c1a1321a61f2ac62057d0e5c0007fe2ba439eb673110
             set computed_hash [lindex [exec /usr/bin/openssl dgst -r -sha512 $file_path] 0]
             if { $expected_hash eq $computed_hash } {
                 exit 0
@@ -14,5 +14,4 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature L8QywICfDm81QF2jXzt7+89AubfpBXD7xbr/En+vvz5082IhbZ5tiMvtnTeLwsZsMiOHd3FJEabaSiGUn9BUqs2/BJpLXAoS7OqCdDfLUrY8whhg1/LN9tkgU4/oil9MFGmeZ5Ob56IHcyR+4JuC8qALdm8WCTt/HWbzpjAeP2Kzvk3IIhCAJ0M6SVNZ2pF3KlS16qu/aISYB6f/WVzygxFwr8dkVMXTxJ0F4bfBOlz7QKFPcflr6y9phVUD+NU/ooXi0Ts5AXOoLxZSXjp+wuRYsRageQmj9dWK8ikF5hpOp+c8JsMvIHALneaF7Y/fix9WVo0wZA3S/I2lyS+02g==
 }

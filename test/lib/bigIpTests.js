@@ -20,13 +20,14 @@ var BigIp = require('../../lib/bigIp');
 var util = require('../../lib/util');
 var icontrolMock = require('../testUtil/icontrolMock');
 
-var bigIp = new BigIp('host', 'user', 'password');
-var realReady = bigIp.ready;  // Store this so we can test the ready function
-
-bigIp.icontrol = icontrolMock;
+var bigIp;
+var realReady;
 
 module.exports = {
     setUp: function(callback) {
+        bigIp = new BigIp('host', 'user', 'password');
+        realReady = bigIp.ready;  // Store this so we can test the ready function
+        bigIp.icontrol = icontrolMock;
         bigIp.ready = function() {
             return q();
         };
@@ -63,6 +64,44 @@ module.exports = {
             .finally(function() {
                 test.done();
             });
+    },
+
+    testInit: {
+        testBasic: function(test) {
+            var host = 'myHost';
+            var user = 'myUser';
+            var password = 'myPassword';
+            var port = 1234;
+            bigIp = new BigIp(host, user, password, {port: port});
+
+            test.strictEqual(bigIp.host, host);
+            test.strictEqual(bigIp.user, user);
+            test.strictEqual(bigIp.password, password);
+            test.strictEqual(bigIp.port, port);
+            test.done();
+        },
+
+        testPasswordUrl: function(test) {
+            var host = 'myHost';
+            var user = 'myUser';
+            var password = 'myPassword';
+            var passwordFile = '/fooBar';
+            var passwordUrl = 'file://' + passwordFile;
+            var fs = require('fs');
+            var readFileSync = fs.readFileSync;
+            var calledPath;
+
+            fs.readFileSync = function(path) {
+                calledPath = path;
+                return password;
+            };
+
+            bigIp = new BigIp(host, user, passwordUrl, {passwordIsUrl: true});
+            test.strictEqual(calledPath, passwordFile);
+            test.strictEqual(bigIp.password, password);
+            fs.readFileSync = readFileSync;
+            test.done();
+        }
     },
 
     testNotActive: function(test) {
