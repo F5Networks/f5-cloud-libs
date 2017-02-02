@@ -13,6 +13,11 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 2.1.0
+* Allows for autoscaling and clustering without providing a password in the template
+* Adds hash verification for all downloaded files
+* Fixes race condition when running multiple f5-cloud-libs scripts at once
+
 ### Version 2.0.0
 * onboard.js option of --set-password is no longer available, use --update-user instead.
 * All scripts that take --password now also support --password-url. Only 'file' URLs are supported for now.
@@ -58,7 +63,7 @@ Does initial configuration and provisioning of a BIG-IP.
       -m, --module <name:level>                                                                  Provision module <name> to <level>. For multiple modules, use multiple -m entries.
       --ping [address]                                                                           Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
       --update-sigs                                                                              Update ASM signatures
-    
+
 
 ### cluster.js
 
@@ -83,6 +88,9 @@ Sets up BIG-IPs in a cluster.
       -o, --output <file>                              Log to file as well as console. This is the default if background process is spawned. Default is /tmp/cluster.log
       --no-console                                     Do not log to console. Default false (log to console).
       --config-sync-ip <config_sync_ip>                IP address for config sync.
+      --cloud <provider>                               Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of autoscaleProvider must exist at the correct location.
+          --master                                     If using a cloud provider, indicates that this is the master and credentials should be stored.
+          --provider-options <cloud_options>           Any options (JSON stringified) that are required for the specific cloud provider.
       --create-group                                   Create a device group with the options:
           --device-group <device_group>                    Name of the device group.
           --sync-type <sync_type>                          Type of sync this cluster is for ("sync-only" | "sync-failover").
