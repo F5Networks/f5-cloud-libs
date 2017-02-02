@@ -21,7 +21,7 @@ package:
         - triggers
     script:
         - npm run doc
-        - npm run package
+        - npm run package -- --no-deps
     artifacts:
         name: f5-cloud-libs-$CI_BUILD_REF
         paths:
