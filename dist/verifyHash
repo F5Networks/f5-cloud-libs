@@ -1,7 +1,7 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) 4f8a7bfe4583a6d1f8139f60e3febcb431eaf6b99e35d93937904c818068dcf66d1a401cf0fd64b64adcf0b0ae8584b6c8c757a62685373276822019b883ca52
+            set hashes(f5-cloud-libs.tar.gz) d667d0405e9fc6e0f3e7bd5a9e81ec6ca6bce59aae006bda4b55ac896f9afb41e8d887565d0decbf86a20371ab52cc74042bf92e988bb050c8f6b3497c7b7d39
             set hashes(f5-cloud-libs-aws.tar.gz) 4938d1adecb8c18df793da3eccf28d8a596033fa1530a2ebba967e2b5b2a12c1a4eb9459275242339db525bb61f1da5ad8100cdf5317053c8e28b1a2e4a348db
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
             set hashes(f5.http.v1.2.0rc4.tmpl) 47c19a83ebfc7bd1e9e9c35f3424945ef8694aa437eedd17b6a387788d4db1396fefe445199b497064d76967b0d50238154190ca0bd73941298fc257df4dc034
@@ -11,7 +11,7 @@ proc script::run {} {
             set file_name [file tail $file_path]
 
             if {![info exists hashes($file_name)]} {
-                tmsh::log err \"No hash found for $file_name\"
+                tmsh::log err "No hash found for $file_name"
                 exit 1
             }
 
@@ -20,10 +20,10 @@ proc script::run {} {
             if { $expected_hash eq $computed_hash } {
                 exit 0
             }
-            tmsh::log err \"Hash does not match for $file_path\"
+            tmsh::log err "Hash does not match for $file_path"
             exit 1
         }]} {
-            tmsh::log err \"Unexpected error in verifyHash\"
+            tmsh::log err {Unexpected error in verifyHash}
             exit 1
         }
     }
