@@ -20,6 +20,7 @@ package:
         - /^release-.*/
         - triggers
     script:
+        - npm install
         - npm run doc
         - npm run package -- --no-deps
     artifacts:
