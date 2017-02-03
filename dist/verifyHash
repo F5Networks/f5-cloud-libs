@@ -1,8 +1,8 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) 0a4171555bfd733efb798394d93002d48a84b910abb8578f25c8d7dab7e50599db713e1edff7a48fa03cbee38098cb7695ff0b6c7e018513fde1664b7ed8eb69
-            set hashes(f5-cloud-libs-aws.tar.gz) 4938d1adecb8c18df793da3eccf28d8a596033fa1530a2ebba967e2b5b2a12c1a4eb9459275242339db525bb61f1da5ad8100cdf5317053c8e28b1a2e4a348db
+            set hashes(f5-cloud-libs.tar.gz) 2afed6753e4facb15566195415ba2f02f858ded5d99c660a6c238bba4ca65ff413fd854a0d880232acf22ac3307f2c1c1e560c08779e3deba926eab5a98ffc97
+            set hashes(f5-cloud-libs-aws.tar.gz) 0b49d7b89a455d30eb9e8eadb126d1e60b8a7aad30f87ae691a21ad0d27087351e51e5e94236820b1d64aad1e6528c9bdf77c44a0c9cb058143edce59ba37d3b
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
             set hashes(f5.http.v1.2.0rc4.tmpl) 47c19a83ebfc7bd1e9e9c35f3424945ef8694aa437eedd17b6a387788d4db1396fefe445199b497064d76967b0d50238154190ca0bd73941298fc257df4dc034
             set hashes(f5.http.v1.2.0rc6.tmpl) 811b14bffaab5ed0365f0106bb5ce5e4ec22385655ea3ac04de2a39bd9944f51e3714619dae7ca43662c956b5212228858f0592672a2579d4a87769186e2cbfe
