@@ -15,7 +15,7 @@
  */
 'use strict';
 
-var ipc = require('../../lib/ipc');
+var ipc = require('../../../f5-cloud-libs').ipc;
 
 module.exports = {
     testOnce: function(test) {

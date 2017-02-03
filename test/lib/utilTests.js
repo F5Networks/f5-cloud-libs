@@ -16,7 +16,7 @@
 'use strict';
 
 var fs = require('fs');
-var util = require('../../lib/util');
+var util = require('../../../f5-cloud-libs').util;
 
 var UTIL_ARGS_TEST_FILE = 'UTIL_ARGS_TEST_FILE';
 

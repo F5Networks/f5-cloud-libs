@@ -15,7 +15,7 @@
  */
 'use strict';
 
-var IControl = require('../../lib/iControl');
+var IControl = require('../../../f5-cloud-libs').iControl;
 var httpMock = require('../testUtil/httpMock');
 var iControl;
 
