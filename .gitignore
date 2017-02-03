@@ -1,4 +1,5 @@
 doc
 node_modules
+lib-cov
 npm-debug.log
 out

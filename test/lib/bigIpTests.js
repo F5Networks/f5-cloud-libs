@@ -16,8 +16,8 @@
 'use strict';
 
 var q = require('q');
-var BigIp = require('../../lib/bigIp');
-var util = require('../../lib/util');
+var BigIp = require('../../../f5-cloud-libs').bigIp;
+var util = require('../../../f5-cloud-libs').util;
 var icontrolMock = require('../testUtil/icontrolMock');
 
 var bigIp;

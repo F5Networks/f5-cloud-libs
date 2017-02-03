@@ -15,9 +15,28 @@
  */
 'use strict';
 
-module.exports = {
+module.exports = process.env.TEST_COVERAGE ?
+{
+    activeError: require('./lib-cov/activeError'),
+    autoscaleProvider: require('./lib-cov/autoscaleProvider'),
+    bigIp: require('./lib-cov/bigIp'),
+    bigIpCluster: require('./lib-cov/bigIpCluster'),
+    bigIpOnboard: require('./lib-cov/bigIpOnboard'),
+    iControl: require('./lib-cov/iControl'),
+    ipc: require('./lib-cov/ipc'),
+    logger: require('./lib-cov/logger'),
+    signals: require('./lib-cov/signals'),
+    util: require('./lib-cov/util')
+} :
+{
+    activeError: require('./lib/activeError'),
     autoscaleProvider: require('./lib/autoscaleProvider'),
-    bigIp: require("./lib/bigIp"),
-    logger: require("./lib/logger"),
-    util: require("./lib/util")
+    bigIp: require('./lib/bigIp'),
+    bigIpCluster: require('./lib/bigIpCluster'),
+    bigIpOnboard: require('./lib/bigIpOnboard'),
+    iControl: require('./lib/iControl'),
+    ipc: require('./lib/ipc'),
+    logger: require('./lib/logger'),
+    signals: require('./lib/signals'),
+    util: require('./lib/util')
 };
