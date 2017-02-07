@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/F5Networks/f5-cloud-libs.svg?branch=master)](https://travis-ci.org/F5Networks/f5-cloud-libs)
+[![Coverage Status](https://coveralls.io/repos/github/F5Networks/f5-cloud-libs/badge.svg?branch=develop)](https://coveralls.io/github/F5Networks/f5-cloud-libs?branch=develop)
 
 # Library code and scripts for deploying BIG-IP in a cloud
 
