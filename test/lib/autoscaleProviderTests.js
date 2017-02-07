@@ -16,7 +16,6 @@
 'use strict';
 
 var util = require('util');
-var q = require('q');
 var AutoscaleProvider = require('../../../f5-cloud-libs').autoscaleProvider;
 
 util.inherits(TestAutoscaleProvider, AutoscaleProvider);
