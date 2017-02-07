@@ -17,47 +17,389 @@
 
 var fs = require('fs');
 var util = require('../../../f5-cloud-libs').util;
+var childProcess = require('child_process');
+var http = require('http');
+var URL = require('url');
+var q = require('q');
 
 var UTIL_ARGS_TEST_FILE = 'UTIL_ARGS_TEST_FILE';
 
 var argv;
+var funcCount;
+
+// process mock
+var processExit;
+var exitCalled;
+var spawnCalled;
+var calledArgs;
+
+// child_process mock
+var childProcessSpawn;
+var unrefCalled;
+var childMock = {
+    unref: function() {
+        unrefCalled = true;
+    }
+};
+
+// fs mock
+var fsStat;
+var fsStatSync;
+var fsReadFileSync;
+var fsWriteFileSync;
+var fsMkdirSync;
+var fsReaddirSync;
+var fsCreateWriteStream;
+var startupCommands;
+var startupScripts;
+var writtenCommands;
+var dataWritten;
+var createdDir;
+
+// URL mock
+var urlParse;
+
+// http mock
+var httpGet;
 
 var getSavedArgs = function() {
     return fs.readFileSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh').toString();
 };
 
 module.exports = {
-    testCsv: function(test) {
-        test.deepEqual(util.csv("1,2,3", []), [["1", "2", "3"]]);
-        test.deepEqual(util.csv("1, 2, 3 ", []), [["1", "2", "3"]]);
-        test.deepEqual(util.csv("1, 2, 3", [["4", "5", "6"]]), [["4", "5", "6"], ["1", "2", "3"]]);
+    testCommandLineParsing: {
+        testCollect: function(test) {
+            var container = [];
+            var input = 'foobar';
+            util.collect(input, container);
+            input = 'hello world';
+            util.collect(input, container);
+            test.strictEqual(container.length, 2);
+            test.notStrictEqual(container.indexOf('foobar'), -1);
+            test.notStrictEqual(container.indexOf('hello world'), -1);
+            test.done();
+        },
 
-        test.done();
+        testCsv: function(test) {
+            test.deepEqual(util.csv("1,2,3", []), [["1", "2", "3"]]);
+            test.deepEqual(util.csv("1, 2, 3 ", []), [["1", "2", "3"]]);
+            test.deepEqual(util.csv("1, 2, 3", [["4", "5", "6"]]), [["4", "5", "6"], ["1", "2", "3"]]);
+
+            test.done();
+        },
+
+        testMap: function(test) {
+            var container = [];
+            var input = 'foo:bar, hello:world';
+            util.map(input, container);
+            input = 'fooz:bazz';
+            util.map(input, container);
+            test.strictEqual(container[0].foo, 'bar');
+            test.strictEqual(container[0].hello, 'world');
+            test.strictEqual(container[1].fooz, 'bazz');
+            test.done();
+        },
+
+        testPair: function(test) {
+            var container = {};
+            var input = 'foo:bar';
+            util.pair(input, container);
+            input = 'hello: world ';
+            util.pair(input, container);
+            test.strictEqual(container.foo, 'bar');
+            test.strictEqual(container.hello, 'world');
+            test.done();
+        }
     },
 
-    testGetPasswordFromUrl: function(test) {
-        var password = 'foobar';
-        var passwordFile = '/tmp/mypass';
+    testDownload: {
+        setUp: function(callback) {
+            dataWritten = false;
 
-        fs.writeFileSync(passwordFile, password, {encoding: 'ascii'});
+            var incomingMessageHandler = {
+                pipe: function() {
+                    dataWritten = true;
+                }
+            };
 
-        var readPassword = util.getPasswordFromUrl('file://' + passwordFile);
-        test.strictEqual(readPassword, password);
+            var fileMock = {
+                on: function(event, cb) {
+                    cb();
+                },
 
-        fs.unlinkSync(passwordFile);
-        test.done();
+                close: function(cb) {
+                    cb();
+                }
+            };
+
+            fsCreateWriteStream = fs.createWriteStream;
+            fs.createWriteStream = function() {
+                return fileMock;
+            };
+
+            httpGet = http.get;
+            http.get = function(url, cb) {
+                cb(incomingMessageHandler);
+                return {
+                    on: function() {}
+                };
+            };
+
+            urlParse = URL.parse;
+            URL.parse = function() {
+                return {
+                    protocol: 'http:'
+                };
+            };
+
+            callback();
+        },
+
+        tearDown: function(callback) {
+            fs.createWriteStream = fsCreateWriteStream;
+            http.get = httpGet;
+            URL.parse = urlParse;
+            callback();
+        },
+
+        testBasic: function(test) {
+            util.download()
+                .then(function() {
+                    test.ok(dataWritten, 'No data written');
+                    test.done();
+                });
+        }
+    },
+
+    testGetPasswordFromUrl: {
+        testBasic: function(test) {
+            var password = 'foobar';
+            var passwordFile = '/tmp/mypass';
+
+            fs.writeFileSync(passwordFile, password, {encoding: 'ascii'});
+
+            var readPassword = util.getPasswordFromUrl('file://' + passwordFile);
+            test.strictEqual(readPassword, password);
+
+            fs.unlinkSync(passwordFile);
+            test.done();
+        },
+
+        testNonFileUrl: function(test) {
+            test.expect(1);
+            try {
+                util.getPasswordFromUrl('http://www.foo.com');
+            }
+            catch (err) {
+                test.notStrictEqual(err.message.indexOf('Only file URLs'), -1);
+                test.done();
+            }
+        }
+    },
+
+    testRunInBackgroundAndExit: {
+        setUp: function(callback) {
+            processExit = process.exit;
+            exitCalled = false;
+            unrefCalled = false;
+            spawnCalled = false;
+            process.exit = function() {
+                exitCalled = true;
+            };
+
+            childProcessSpawn = childProcess.spawn;
+            childProcess.spawn = function(name, args) {
+                spawnCalled = true;
+                calledArgs = args;
+                return childMock;
+            };
+
+            callback();
+        },
+
+        tearDown: function(callback) {
+            process.exit = processExit;
+            childProcess.spawn = childProcessSpawn;
+            callback();
+        },
+
+        testBasic: function(test) {
+            util.runInBackgroundAndExit(process);
+            test.ok(spawnCalled, 'child_process.spawn() was not called');
+            test.ok(unrefCalled, 'child.unref() was not called');
+            test.ok(exitCalled, 'process.exit() was not called');
+            test.done();
+        },
+
+        testTooManyArgs: function(test) {
+            var processArgv = process.argv;
+            var argvMock = [];
+            var i;
+
+            for (i = 0; i < 101; ++i) {
+                argvMock.push(i);
+            }
+
+            process.argv = argvMock;
+
+            util.runInBackgroundAndExit(process);
+            test.ifError(spawnCalled);
+            test.ok(exitCalled, 'process.exit() was not called');
+
+            process.argv = processArgv;
+            test.done();
+        },
+
+        testBackgroundRemoved: function(test) {
+            var processArgv = process.argv;
+            var argvMock = ['node', '--foo', '--background'];
+
+            process.argv = argvMock;
+
+            calledArgs.length = 0;
+            util.runInBackgroundAndExit(process, 'myLogFile');
+            test.strictEqual(calledArgs.length, 3); // --output myLogFile will be pushed
+            test.strictEqual(calledArgs.indexOf('--background'), -1);
+
+            process.argv = processArgv;
+            test.done();
+        },
+
+        testOutputAdded: function(test) {
+            var processArgv = process.argv;
+            var argvMock = ['node'];
+            var logFile = 'myLogFile';
+
+            process.argv = argvMock;
+
+            calledArgs.length = 0;
+            util.runInBackgroundAndExit(process, logFile);
+            test.strictEqual(calledArgs.length, 2); // --output myLogFile will be pushed
+            test.notStrictEqual(calledArgs.indexOf('--output'), -1);
+            test.notStrictEqual(calledArgs.indexOf(logFile), -1);
+
+            process.argv = processArgv;
+            test.done();
+        }
+    },
+
+    testPrepareArgsForReboot: {
+        setUp: function(callback) {
+            fsStatSync = fs.statSync;
+            fsReadFileSync = fs.readFileSync;
+            fsWriteFileSync = fs.writeFileSync;
+            fsReaddirSync = fs.readdirSync;
+
+            startupCommands = 'command 1';
+            startupScripts = ['script1', 'script2'];
+
+            fs.statSync = function() {};
+            fs.readFileSync = function() {
+                return startupCommands;
+            };
+            fs.writeFileSync = function(fileName, commands) {
+                writtenCommands = commands;
+            };
+            fs.readdirSync = function() {
+                return startupScripts;
+            };
+
+            callback();
+        },
+
+        tearDown: function(callback) {
+            fs.statSync = fsStatSync;
+            fs.readFileSync = fsReadFileSync;
+            fs.writeFileSync = fsWriteFileSync;
+            fs.readdirSync = fsReaddirSync;
+            callback();
+        },
+
+        testBasic: function(test) {
+            util.prepareArgsForReboot()
+                .then(function() {
+                    startupScripts.forEach(function(script) {
+                        test.notStrictEqual(writtenCommands.indexOf(script), -1);
+                    });
+                    test.done();
+                });
+        },
+
+        testMissingStartupDir: function(test) {
+            function enoentError() {
+                /*jshint validthis: true */
+                this.code = 'ENOENT';
+            }
+            enoentError.prototype = Error.prototype;
+
+            fs.statSync = function() {
+                throw new enoentError();
+            };
+
+            util.prepareArgsForReboot()
+                .then(function(didRun) {
+                    test.ifError(didRun);
+                    test.done();
+                });
+        },
+
+        testReadFileError: function(test) {
+            fs.readFileSync = function() {
+                throw new Error();
+            };
+
+            util.prepareArgsForReboot()
+                .then(function() {
+                    test.ok(false, 'fs.readFileSync should have thrown');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testReaddirError: function(test) {
+            fs.readdirSync = function() {
+                throw new Error();
+            };
+
+            util.prepareArgsForReboot()
+                .then(function() {
+                    test.ok(false, 'fs.readdirSync should have thrown');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testSaveArgs: {
 
         setUp: function(callback) {
+            fsStat = fs.stat;
+            fsMkdirSync = fs.mkdirSync;
             argv = ['node', 'utilTests.js', '--one', '--two', 'abc'];
             callback();
         },
 
         tearDown: function(callback) {
-            fs.unlinkSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh');
-            callback();
+            fs.stat = fsStat;
+            fs.mkdirSync = fsMkdirSync;
+            try {
+                fs.unlinkSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh');
+                fs.rmdirSync('/tmp/rebootScripts');
+            }
+            catch(err) {
+
+            }
+            finally {
+                callback();
+            }
         },
 
         testBasic: function(test) {
@@ -103,7 +445,159 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
+
+        testDirCreated: function(test) {
+            fs.stat = function(dir, cb) {
+                cb({code: 'ENOENT'});
+            };
+
+            fs.mkdirSync = function(dirName) {
+                createdDir = dirName;
+                fsMkdirSync(dirName);
+            };
+
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+                .then(function() {
+                    test.strictEqual(createdDir, '/tmp/rebootScripts/');
+                    test.done();
+                });
+        },
+
+        testDirCreateError: function(test) {
+            fs.stat = function(dir, cb) {
+                cb({code: 'FOOBAR'});
+            };
+
+            test.expect(1);
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+                .then(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testMkdirRaceCondition: function(test) {
+            function eexistError() {
+                /*jshint validthis: true */
+                this.code = 'EEXIST';
+            }
+            eexistError.prototype = Error.prototype;
+
+            fs.stat = function(dir, cb) {
+                cb({code: 'ENOENT'});
+            };
+
+            fs.mkdirSync = function(dirName) {
+                fsMkdirSync(dirName);
+                throw new eexistError();
+            };
+
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+                .then(function() {
+                    var savedArgs = getSavedArgs();
+                    test.notStrictEqual(savedArgs.indexOf('--one'), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testMkdirRaceConditionFail: function(test) {
+            fs.stat = function(dir, cb) {
+                cb({code: 'ENOENT'});
+            };
+
+            fs.mkdirSync = function(dirName) {
+                fsMkdirSync(dirName);
+                throw new Error();
+            };
+
+            test.expect(1);
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
+    },
+
+    testTryUntil: {
+        setUp: function(callback) {
+            funcCount = 0;
+            callback();
+        },
+
+        testCalledOnce: function(test) {
+            var func = function() {
+                var deferred = q.defer();
+                funcCount++;
+                deferred.resolve();
+                return deferred.promise;
+            };
+
+            util.tryUntil(this, util.NO_RETRY, func)
+                .then(function() {
+                    test.strictEqual(funcCount, 1);
+                    test.done();
+                });
+        },
+
+        testCalledMultple: function(test) {
+            var retries = 3;
+
+            var func = function() {
+                var deferred = q.defer();
+
+                funcCount++;
+
+                if (funcCount < retries) {
+                    deferred.reject();
+                }
+                else {
+                    deferred.resolve();
+                }
+
+
+                return deferred.promise;
+            };
+
+            util.tryUntil(this, {maxRetries: retries, retryIntervalMs: 10}, func)
+                .then(function() {
+                    test.strictEqual(funcCount, retries);
+                    test.done();
+                });
+        },
+
+        testNotResolved: function(test) {
+            var func = function() {
+                var deferred = q.defer();
+                deferred.reject();
+                return deferred.promise;
+            };
+
+            test.expect(1);
+            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10}, func)
+                .then(function() {
+                    test.ok(false, 'func should never have resolved');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+            }
     },
 
     testVersionCompare: function(test) {
