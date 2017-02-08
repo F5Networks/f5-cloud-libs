@@ -20,17 +20,23 @@ var BigIp = require('../../../f5-cloud-libs').bigIp;
 var util = require('../../../f5-cloud-libs').util;
 var icontrolMock = require('../testUtil/icontrolMock');
 
-var bigIp = new BigIp('host', 'user', 'password');
-bigIp.icontrol = icontrolMock;
-bigIp.ready = function() {
-    return q();
-};
-
 var localHostname = 'localhostname';
 var deviceGroup = 'testDeviceGroup';
 
+var bigIp;
+
+var callInSerial;
+var deviceInfo;
+var ready;
+
 module.exports = {
     setUp: function(callback) {
+        bigIp = new BigIp('host', 'user', 'password');
+        bigIp.icontrol = icontrolMock;
+        bigIp.ready = function() {
+            return q();
+        };
+
         icontrolMock.reset();
         callback();
     },
@@ -583,6 +589,361 @@ module.exports = {
         }
     },
 
+    testJoinCluster: {
+        setUp: function(callback) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device',
+                [
+                    {
+                        hostname: localHostname
+                    }
+                ]
+            );
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['foo', 'bar']
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/cm/add-to-trust',
+                {}
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/cm/device-group/~Common~myDeviceGroup/devices',
+                {}
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/cm/add-to-trust',
+                {}
+            );
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device-group',
+                [
+                    {
+                        name: 'datasync-global-dg'
+                    }
+                ]
+            );
+            icontrolMock.when(
+                'list',
+                '/tm/cm/sync-status',
+                {
+                    entries: {
+                        "https://localhost/mgmt/tm/cm/sync-status/0": {
+                            nestedStats: {
+                                entries: {
+                                    color: {
+                                        description: 'green'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            callInSerial = util.callInSerial;
+            deviceInfo = BigIp.prototype.deviceInfo;
+            ready = BigIp.prototype.ready;
+
+            // In this test, the code under test creates its own remoteBigIp object
+            // so we need to do dependency injection a little differently
+            BigIp.prototype.list = function() {
+                return icontrolMock.list.apply(icontrolMock, arguments);
+            };
+            BigIp.prototype.create = function() {
+                return icontrolMock.create.apply(icontrolMock, arguments);
+            };
+            BigIp.prototype.ready = function() {
+                return q();
+            };
+            util.callInSerial = function() {
+                return q([
+                    {},
+                    {
+                        configsyncIp: '1.2.3.4'
+                    }
+                ]);
+            };
+
+            callback();
+        },
+
+        tearDown: function(callback) {
+            BigIp.prototype.deviceInfo = deviceInfo;
+            BigIp.prototype.ready = ready;
+            util.callInSerial = callInSerial;
+            callback();
+        },
+
+        testMissingParameters: function(test) {
+            test.expect(1);
+            bigIp.cluster.joinCluster()
+                .then(function() {
+                    test.ok(false, 'Should have thrown missing parameters');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('are required'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        test121Plus: function(test) {
+            var deviceGroup = 'myDeviceGroup';
+            BigIp.prototype.deviceInfo = function() {
+                return q({
+                    hostname: 'remoteHost',
+                    managementAddress: '5.6.7.8',
+                    version: '12.1.0'
+                });
+            };
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    hostname: localHostname,
+                    managementAddress: '5.6.7.8',
+                    version: '12.1.0'
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/cm',
+                {}
+            );
+
+            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', {syncDelay: 5})
+                .then(function() {
+                    var syncRequest = icontrolMock.getRequest('create', '/tm/cm');
+                    test.strictEqual(syncRequest.command, 'run');
+                    test.notStrictEqual(syncRequest.utilCmdArgs.indexOf('to-group'), -1);
+                    test.notStrictEqual(syncRequest.utilCmdArgs.indexOf(deviceGroup), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testBelow121: function(test) {
+            var deviceGroup = 'myDeviceGroup';
+            BigIp.prototype.deviceInfo = function() {
+                return q({
+                    hostname: 'remoteHost',
+                    managementAddress: '5.6.7.8',
+                    version: '12.0.0'
+                });
+            };
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    hostname: localHostname,
+                    managementAddress: '5.6.7.8',
+                    version: '12.0.0'
+                }
+            );
+            icontrolMock.when(
+                'modify',
+                '/tm/cm/device-group/datasync-global-dg/devices/' + localHostname,
+                {}
+            );
+
+            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', {syncDelay: 5})
+                .then(function() {
+                    var syncRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/datasync-global-dg/devices/' + localHostname);
+                    test.deepEqual(syncRequest, {'set-sync-leader': true});
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testRecommendedAction: function(test) {
+            var deviceGroup = 'myDeviceGroup';
+            var recommendedGroup = 'otherDeviceGroup';
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/sync-status',
+                {
+                    entries: {
+                        "https://localhost/mgmt/tm/cm/sync-status/0": {
+                            nestedStats: {
+                                entries: {
+                                    color: {
+                                        description: 'red'
+                                    },
+                                    "https://localhost/mgmt/tm/cm/syncStatus/0/details": {
+                                        nestedStats: {
+                                            entries: {
+                                                1: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'Recommended action: to group ' + recommendedGroup
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            BigIp.prototype.deviceInfo = function() {
+                return q({
+                    hostname: 'remoteHost',
+                    managementAddress: '5.6.7.8',
+                    version: '12.1.0'
+                });
+            };
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    hostname: localHostname,
+                    managementAddress: '5.6.7.8',
+                    version: '12.1.0'
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/cm',
+                {}
+            );
+
+            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', {syncDelay: 5, syncCompDelay: 5})
+                .then(function() {
+                    test.ok(false, 'Should have been rejected due to our mock.');
+                })
+                .catch(function() {
+                    // promise will be rejected because our final syncComplete never passes because
+                    // we mocked it, but check that the last sync request was for the recommendedGroup
+                    var syncRequest = icontrolMock.getRequest('create', '/tm/cm');
+                    var lastSyncRequest;
+
+                    while (syncRequest) {
+                        lastSyncRequest = syncRequest;
+                        syncRequest = icontrolMock.getRequest('create', '/tm/cm');
+                    }
+                    test.strictEqual(lastSyncRequest.command, 'run');
+                    test.notStrictEqual(lastSyncRequest.utilCmdArgs.indexOf('to-group'), -1);
+                    test.notStrictEqual(lastSyncRequest.utilCmdArgs.indexOf(recommendedGroup), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testRemoveFromCluster: {
+        testOneDevice: function(test) {
+            var device1 = 'device1';
+            var device2 = 'device2';
+            var deviceGroup = 'myDeviceGroup';
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                   {
+                                       name: device1
+                                   },
+                                   {
+                                       name: device2
+                                   }
+                              ]
+                            );
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/Root',
+                              {
+                                  caDevices: ['/Common/' + device1, '/Common/' + device2]
+                              });
+
+            icontrolMock.when ('create',
+                               '/tm/cm/remove-from-trust',
+                               {});
+
+            bigIp.cluster.removeFromCluster(device1, deviceGroup)
+                .then(function() {
+                    var modifyFromDeviceGroupRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/' + deviceGroup);
+                    var removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
+
+                    test.deepEqual(modifyFromDeviceGroupRequest.devices, [device2]);
+                    test.strictEqual(removeFromTrustRequest.deviceName, device1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testTwoDevices: function(test) {
+            var device1 = 'device1';
+            var device2 = 'device2';
+            var deviceGroup = 'myDeviceGroup';
+
+            icontrolMock.when('list',
+                              '/tm/cm/device-group/' + deviceGroup + '/devices',
+                              [
+                                   {
+                                       name: device1
+                                   },
+                                   {
+                                       name: device2
+                                   }
+                              ]
+                            );
+            icontrolMock.when('list',
+                              '/tm/cm/trust-domain/Root',
+                              {
+                                  caDevices: ['/Common/' + device1, '/Common/' + device2]
+                              });
+
+            icontrolMock.when ('create',
+                               '/tm/cm/remove-from-trust',
+                               {});
+
+            bigIp.cluster.removeFromCluster([device1, device2], deviceGroup)
+                .then(function() {
+                    var modifyFromDeviceGroupRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/' + deviceGroup);
+                    var removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
+
+                    test.deepEqual(modifyFromDeviceGroupRequest.devices, []);
+                    test.strictEqual(removeFromTrustRequest.deviceName, device1);
+                    removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
+                    test.strictEqual(removeFromTrustRequest.deviceName, device2);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
     testRemoveFromDeviceGroup: {
         testInGroup: function(test) {
             var device1 = 'device1';
@@ -702,6 +1063,7 @@ module.exports = {
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/remove-from-trust');
+                    test.strictEqual(icontrolMock.lastCall.body.deviceName, localHostname);
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
