@@ -35,28 +35,91 @@ module.exports = {
         callback();
     },
 
-    testActive: function(test) {
-        icontrolMock.when(
-            'list',
-            '/tm/cm/failover-status',
-            {
-                entries: {
-                    'https://localhost/mgmt/tm/cm/failover-status/0': {
-                        nestedStats: {
-                            entries: {
-                                status: {
-                                    description: 'ACTIVE'
+    testActive: {
+        testActive: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/failover-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/failover-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    status: {
+                                        description: 'ACTIVE'
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-        );
+            );
 
-        bigIp.active()
+            bigIp.active()
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNotActive: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/failover-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/failover-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    status: {
+                                        description: 'FOOBAR'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            bigIp.active(util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, "BIG-IP should not be active.");
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.name, 'ActiveError');
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testActiveThrow: function(test) {
+            icontrolMock.fail('list', '/tm/cm/failover-status');
+
+            bigIp.active(util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, "BIG-IP should not be active.");
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.name, 'ActiveError');
+                })
+                .finally(function() {
+                    test.done();
+                });
+            }
+    },
+
+    testDelete: function(test) {
+        icontrolMock.when('delete', '/tm/sys/foo/bar', {});
+        bigIp.delete('/tm/sys/foo/bar')
             .then(function() {
-                test.ok(true);
+                  test.strictEqual(icontrolMock.lastCall.method, 'delete');
+                  test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/bar');
             })
             .catch(function(err) {
                 test.ok(false, err.message);
@@ -104,94 +167,79 @@ module.exports = {
         }
     },
 
-    testNotActive: function(test) {
-        icontrolMock.when(
-            'list',
-            '/tm/cm/failover-status',
-            {
-                entries: {
-                    'https://localhost/mgmt/tm/cm/failover-status/0': {
-                        nestedStats: {
-                            entries: {
-                                status: {
-                                    description: 'FOOBAR'
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        );
-
-        bigIp.active(util.NO_RETRY)
-            .then(function() {
-                test.ok(false, "BIG-IP should not be active.");
-            })
-            .catch(function() {
-                test.ok(true);
-            })
-            .finally(function() {
-                test.done();
-            });
-    },
-
     testListSuccess: function(test) {
         bigIp.list();
         test.strictEqual(icontrolMock.lastCall.method, 'list');
         test.done();
     },
 
-    testLoadNoFile: function(test) {
-        bigIp.load()
-            .then(function() {
-                test.strictEqual(icontrolMock.lastCall.method, 'create');
-                test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
-                test.strictEqual(icontrolMock.lastCall.body.command, 'load');
-                test.strictEqual(icontrolMock.lastCall.body.name, 'default');
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
-    },
+    testLoad: {
+        testLoadNoFile: function(test) {
+            bigIp.load()
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
+                    test.strictEqual(icontrolMock.lastCall.body.command, 'load');
+                    test.strictEqual(icontrolMock.lastCall.body.name, 'default');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
 
-    testLoadFile: function(test) {
-        var fileName = 'foobar';
+        testLoadFile: function(test) {
+            var fileName = 'foobar';
 
-        bigIp.load(fileName)
-            .then(function() {
-                test.strictEqual(icontrolMock.lastCall.body.options[0].file, fileName);
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
-    },
+            bigIp.load(fileName)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.body.options[0].file, fileName);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
 
-    testLoadOptions: function(test) {
-        var options = {
-            foo: 'bar',
-            hello: 'world'
-        };
+        testLoadOptions: function(test) {
+            var options = {
+                foo: 'bar',
+                hello: 'world'
+            };
 
-        bigIp.load(null, options)
-            .then(function() {
-                test.strictEqual(icontrolMock.lastCall.body.options[0].foo, options.foo);
-                test.strictEqual(icontrolMock.lastCall.body.options[1].hello, options.hello);
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
+            bigIp.load(null, options)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.body.options[0].foo, options.foo);
+                    test.strictEqual(icontrolMock.lastCall.body.options[1].hello, options.hello);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
     },
 
     testPing: {
+        testNoAddress: function(test) {
+            test.expect(1);
+            bigIp.ping()
+                .then(function() {
+                    test.ok(false, 'Ping with no address should have been rejected.');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('Address is required'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
         testPacketsReceived: function(test) {
             icontrolMock.when('create',
                               '/tm/util/ping',
@@ -218,7 +266,7 @@ module.exports = {
                               });
             bigIp.ping('1.2.3.4', util.NO_RETRY)
                 .then(function() {
-                    test.ok(false, "Ping should have failed");
+                    test.ok(false, "Ping with no packets should have failed.");
                 })
                 .catch(function() {
                     test.ok(true);
@@ -236,7 +284,25 @@ module.exports = {
                               });
             bigIp.ping('1.2.3.4', util.NO_RETRY)
                 .then(function() {
-                    test.ok(false, "Ping should have failed");
+                    test.ok(false, "Ping with unknown host should have failed.");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testUnexpectedResponse: function(test) {
+            icontrolMock.when('create',
+                              '/tm/util/ping',
+                              {
+                                  commandResult: "foobar"
+                              });
+            bigIp.ping('1.2.3.4', util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, "Ping with unexpected response should have failed.");
                 })
                 .catch(function() {
                     test.ok(true);
@@ -346,12 +412,160 @@ module.exports = {
                 }
             );
 
+            test.expect(1);
             bigIp.ready(util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ready should have failed MCP check.");
                 })
                 .catch(function() {
                     test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testMcpCheckReject: function(test) {
+            icontrolMock.fail('list', '/tm/sys/mcp-state/');
+
+            test.expect(1);
+            bigIp.ready(util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, "MCP check should have rejected.");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testReboot: function(test) {
+        icontrolMock.when('create', '/tm/sys', {});
+        bigIp.reboot()
+            .then(function() {
+                test.strictEqual(icontrolMock.lastCall.method, 'create');
+                test.strictEqual(icontrolMock.lastCall.path, '/tm/sys');
+                test.strictEqual(icontrolMock.lastCall.body.command, 'reboot');
+            })
+            .catch(function(err) {
+                test.ok(false, err);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testRebootRequired: {
+        testRebootRequired: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/sys/db/provision.action',
+                {
+                    value: 'reboot'
+                }
+            );
+
+            bigIp.rebootRequired()
+                .then(function(rebootRequired) {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    test.strictEqual(icontrolMock.lastCall.path,'/tm/sys/db/provision.action');
+                    test.ok(rebootRequired, 'Reboot should have been required.');
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testRebootNotRequired: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/sys/db/provision.action',
+                {
+                    value: 'none'
+                }
+            );
+
+            bigIp.rebootRequired()
+                .then(function(rebootRequired) {
+                    test.ifError(rebootRequired);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testUnexpectedResponse: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/sys/db/provision.action',
+                {}
+            );
+
+            bigIp.rebootRequired(util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, 'rebootRequired with no value should not have resolved.');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('no value'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testFailedActionCheck: function(test) {
+            icontrolMock.fail('list', '/tm/sys/db/provision.action');
+            test.expect(1);
+            bigIp.rebootRequired(util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, 'rebootRequired with failed action check should not have resolved.');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+            }
+    },
+
+    testSave: {
+        testNoFile: function(test) {
+            icontrolMock.when('create', '/tm/sys/config', {});
+
+            bigIp.save()
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
+                    test.strictEqual(icontrolMock.lastCall.body.command, 'save');
+                    test.strictEqual(icontrolMock.lastCall.body.options, undefined);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testFile: function(test) {
+            icontrolMock.when('create', '/tm/sys/config', {});
+
+            bigIp.save('foo')
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.body.options[0].file, 'foo');
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
                 })
                 .finally(function() {
                     test.done();
@@ -373,6 +587,17 @@ module.exports = {
                     body: {
                         foo: 'bar'
                     }
+                },
+                {
+                    method: 'modify',
+                    path: '/hello/world',
+                    body: {
+                        roger: 'dodger'
+                    }
+                },
+                {
+                    method: 'delete',
+                    path: '/okie/dokie'
                 }
             ];
 
@@ -395,6 +620,8 @@ module.exports = {
                 .then(function() {
                     test.strictEqual(icontrolMock.getRequest('list', '/foo/bar'), null);
                     test.deepEqual(icontrolMock.getRequest('create', '/bar/foo'), {foo: 'bar'});
+                    test.deepEqual(icontrolMock.getRequest('modify', 'hello/world', {roger: 'dodger'}));
+                    test.deepEqual(icontrolMock.getRequest('delete', '/okie/dokie'), null);
                     test.deepEqual(icontrolMock.getRequest('modify', '/tm/transaction/1234'), { state: 'VALIDATING' });
                 })
                 .catch(function(err) {
@@ -434,6 +661,20 @@ module.exports = {
                 })
                 .catch(function(err) {
                     test.notStrictEqual(err.indexOf('not completed'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoCommands: function(test) {
+            test.expect(1);
+            bigIp.transaction()
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
                 })
                 .finally(function() {
                     test.done();
