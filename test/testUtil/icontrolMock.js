@@ -87,7 +87,7 @@ module.exports = {
         var response = this.responseMap[method + '_' + path];
 
         if (response === FAIL_REQUEST) {
-            return q.reject();
+            return q.reject(new Error('We were told to fail this.'));
         }
         else {
             return q(response || true);

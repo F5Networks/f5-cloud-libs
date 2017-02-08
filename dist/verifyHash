@@ -3,13 +3,17 @@ proc script::run {} {
         if {[catch {
 <<<<<<< HEAD
 <<<<<<< HEAD
-            set hashes(f5-cloud-libs.tar.gz) 7615ed95a34be436f54e76ebec6110458cae191475ce271ee1037649562b39ca3ba3c671db34731a4c66c2731af8ea4dad6b470d43615b7a91b60d23f009fd3a
+<<<<<<< HEAD
+            set hashes(f5-cloud-libs.tar.gz) 1f965ceedaffd50eca372d3c816d7f3e278485d59ee9e8e43da866d14b74ea112c37536f18ddbe29df936e758888936db4081a88ba5b1d6cc02f1e1142bb7dde
 =======
-            set hashes(f5-cloud-libs.tar.gz) 7615ed95a34be436f54e76ebec6110458cae191475ce271ee1037649562b39ca3ba3c671db34731a4c66c2731af8ea4dad6b470d43615b7a91b60d23f009fd3a
+            set hashes(f5-cloud-libs.tar.gz) 1f965ceedaffd50eca372d3c816d7f3e278485d59ee9e8e43da866d14b74ea112c37536f18ddbe29df936e758888936db4081a88ba5b1d6cc02f1e1142bb7dde
 >>>>>>> clustertests
+=======
+            set hashes(f5-cloud-libs.tar.gz) 1f965ceedaffd50eca372d3c816d7f3e278485d59ee9e8e43da866d14b74ea112c37536f18ddbe29df936e758888936db4081a88ba5b1d6cc02f1e1142bb7dde
+>>>>>>> testcode
             set hashes(f5-cloud-libs-aws.tar.gz) 0b49d7b89a455d30eb9e8eadb126d1e60b8a7aad30f87ae691a21ad0d27087351e51e5e94236820b1d64aad1e6528c9bdf77c44a0c9cb058143edce59ba37d3b
 =======
-            set hashes(f5-cloud-libs.tar.gz) 7615ed95a34be436f54e76ebec6110458cae191475ce271ee1037649562b39ca3ba3c671db34731a4c66c2731af8ea4dad6b470d43615b7a91b60d23f009fd3a
+            set hashes(f5-cloud-libs.tar.gz) 1f965ceedaffd50eca372d3c816d7f3e278485d59ee9e8e43da866d14b74ea112c37536f18ddbe29df936e758888936db4081a88ba5b1d6cc02f1e1142bb7dde
             set hashes(f5-cloud-libs-aws.tar.gz) 90058095cc536a057378a90ed19c3afe0cecd9034e1d1816745bd5ad837939623fad034ebd2ee9bdf594f33358b50c50f49a18c2ee7588ba89645142f2217330
 >>>>>>> release-2.1.0
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
