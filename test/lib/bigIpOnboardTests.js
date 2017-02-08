@@ -27,48 +27,199 @@ bigIp.ready = function() {
 };
 
 module.exports = {
-    testHostName: function(test) {
-        var oldHostname = 'yourOldHostname';
-        var newHostname = 'myNewHostName';
+    setUp: function(callback) {
+        icontrolMock.reset();
+        callback();
+    },
 
-        icontrolMock.when(
-            'list',
-            '/tm/cm/device',
-            [
-                {
-                    name: oldHostname
-                }
-            ]
-        );
+    testDbVars: {
+        testBasic: function(test) {
+            var dbVars = {
+                foo: 'bar',
+                hello: 'world'
+            };
 
-        bigIp.onboard.hostname(newHostname)
-            .then(function() {
-                test.deepEqual(icontrolMock.getRequest(
-                    'create',
-                    '/tm/cm/device'),
+            bigIp.onboard.setDbVars(dbVars)
+                .then(function() {
+                    test.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/db/foo').value, 'bar');
+                    test.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/db/hello').value, 'world');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testGlobalSettings: {
+        setUp: function(callback) {
+            icontrolMock.when('modify', '/tm/sys/global-settings', {});
+            callback();
+        },
+
+        testBasic: function(test) {
+            var globalSettings = {
+                foo: 'bar',
+                hello: 'world'
+            };
+
+            bigIp.onboard.globalSettings(globalSettings)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/global-settings');
+                    test.deepEqual(icontrolMock.lastCall.body, globalSettings);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testHostName: function(test) {
+            var newHostname = 'myNewHostName';
+            var globalSettings = {
+                hostname: newHostname,
+                foo: 'bar'
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device',
+                [
                     {
-                        command: 'mv',
-                        name: oldHostname,
-                        target: newHostname
+                        name: 'oldHostname'
                     }
-                );
-                test.deepEqual(icontrolMock.getRequest(
-                    'modify',
-                    '/tm/sys/global-settings'),
+                ]
+            );
+
+            bigIp.onboard.globalSettings(globalSettings)
+                .then(function() {
+                    var globalSettingsRequest = icontrolMock.getRequest('modify', '/tm/sys/global-settings');
+                    var deviceRequest = icontrolMock.getRequest('create', '/tm/cm/device');
+                    test.deepEqual(globalSettingsRequest, {foo: 'bar'});
+                    test.strictEqual(deviceRequest.target, newHostname);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testHostName: {
+        testChange: function(test) {
+            var oldHostname = 'yourOldHostname';
+            var newHostname = 'myNewHostName';
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device',
+                [
                     {
-                        hostname: newHostname
+                        name: oldHostname
                     }
-                );
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
+                ]
+            );
+
+            bigIp.onboard.hostname(newHostname)
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest(
+                        'create',
+                        '/tm/cm/device'),
+                        {
+                            command: 'mv',
+                            name: oldHostname,
+                            target: newHostname
+                        }
+                    );
+                    test.deepEqual(icontrolMock.getRequest(
+                        'modify',
+                        '/tm/sys/global-settings'),
+                        {
+                            hostname: newHostname
+                        }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoChange: function(test) {
+            var oldHostname = 'myNewHostName';
+            var newHostname = 'myNewHostName';
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device',
+                [
+                    {
+                        name: oldHostname
+                    }
+                ]
+            );
+
+            bigIp.onboard.hostname(newHostname)
+                .then(function(response) {
+                    test.notStrictEqual(response.indexOf('matches'), -1);
+                    test.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/global-settings'), undefined);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testLicense: {
+        setUp: function(callback) {
+            icontrolMock.when(
+                'create',
+                '/tm/sys/config',
+                {}
+            );
+            callback();
+        },
+
+        testNotLicensed: function(test) {
+            var regKey = "1234-5678-ABCD-EFGH";
+
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {}
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: 'New license installed'
+                }
+            );
+
+            bigIp.onboard.license({registrationKey: regKey})
+                .then(function() {
+                    test.strictEqual(icontrolMock.getRequest('create', '/tm/sys/license').command, 'install');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
         testIdentical: function(test) {
             var regKey = "1234-5678-ABCD-EFGH";
             icontrolMock.when(
@@ -81,6 +232,100 @@ module.exports = {
             bigIp.onboard.license({registrationKey: regKey})
                 .then(function(response) {
                     test.notStrictEqual(response.indexOf("Identical license"), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testAlreadyLicensed: function(test) {
+            var oldRegKey = "1234-5678-ABCD-EFGH";
+            var newRegKey = "ABCD-EFGH-1234-5678";
+
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {
+                    registrationKey: oldRegKey
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: 'New license installed'
+                }
+            );
+
+            bigIp.onboard.license({registrationKey: newRegKey})
+                .then(function(response) {
+                    test.notStrictEqual(response.indexOf("already licensed"), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testOverwrite: function(test) {
+            var oldRegKey = "1234-5678-ABCD-EFGH";
+            var newRegKey = "ABCD-EFGH-1234-5678";
+
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {
+                    registrationKey: oldRegKey
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: 'New license installed'
+                }
+            );
+
+            bigIp.onboard.license({registrationKey: newRegKey, overwrite: true})
+                .then(function() {
+                    var licenseRequest = icontrolMock.getRequest('create', '/tm/sys/license');
+                    test.strictEqual(licenseRequest.command, 'install');
+                    test.strictEqual(licenseRequest.registrationKey, newRegKey);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testAddOnKeys: function(test) {
+            var addOnKeys = ["1234-5678"];
+
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {}
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: 'New license installed'
+                }
+            );
+
+            bigIp.onboard.license({addOnKeys: addOnKeys})
+                .then(function() {
+                    var licenseRequest = icontrolMock.getRequest('create', '/tm/sys/license');
+                    test.strictEqual(licenseRequest.command, 'install');
+                    test.deepEqual(licenseRequest.addOnKeys, addOnKeys);
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
@@ -323,18 +568,18 @@ module.exports = {
                 ]
             );
             bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
-            .then(function() {
-                var userParams = icontrolMock.getRequest('create', '/tm/auth/user');
-                test.strictEqual(userParams.name, 'myUser');
-                test.strictEqual(userParams.password, 'myPass');
-                test.strictEqual(userParams["partition-access"]["all-partitions"].role, 'myRole');
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
+                .then(function() {
+                    var userParams = icontrolMock.getRequest('create', '/tm/auth/user');
+                    test.strictEqual(userParams.name, 'myUser');
+                    test.strictEqual(userParams.password, 'myPass');
+                    test.strictEqual(userParams["partition-access"]["all-partitions"].role, 'myRole');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
         testCreateNoExistingUsers: function(test) {
@@ -344,19 +589,19 @@ module.exports = {
                 {}
             );
             bigIp.onboard.updateUser('myUser', 'myPass', 'myRole', 'myShell')
-            .then(function() {
-                var userParams = icontrolMock.getRequest('create', '/tm/auth/user');
-                test.strictEqual(userParams.name, 'myUser');
-                test.strictEqual(userParams.password, 'myPass');
-                test.strictEqual(userParams.shell, 'myShell');
-                test.strictEqual(userParams["partition-access"]["all-partitions"].role, 'myRole');
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
+                .then(function() {
+                    var userParams = icontrolMock.getRequest('create', '/tm/auth/user');
+                    test.strictEqual(userParams.name, 'myUser');
+                    test.strictEqual(userParams.password, 'myPass');
+                    test.strictEqual(userParams.shell, 'myShell');
+                    test.strictEqual(userParams["partition-access"]["all-partitions"].role, 'myRole');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
         testCreateNoRole: function(test) {
@@ -370,15 +615,15 @@ module.exports = {
                 ]
             );
             bigIp.onboard.updateUser('myUser', 'myPass')
-            .then(function() {
-                test.ok(false, "Should have thrown that we are creating with no role.");
-            })
-            .catch(function() {
-                test.ok(true);
-            })
-            .finally(function() {
-                test.done();
-            });
+                .then(function() {
+                    test.ok(false, "Should have thrown that we are creating with no role.");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
         testUpdate: function(test) {
@@ -392,18 +637,50 @@ module.exports = {
                 ]
             );
             bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
-            .then(function() {
-                var userParams = icontrolMock.getRequest('modify', '/tm/auth/user/myUser');
-                test.strictEqual(userParams.name, undefined);
-                test.strictEqual(userParams.password, 'myPass');
-                test.strictEqual(userParams["partition-access"], undefined);
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
+                .then(function() {
+                    var userParams = icontrolMock.getRequest('modify', '/tm/auth/user/myUser');
+                    test.strictEqual(userParams.name, undefined);
+                    test.strictEqual(userParams.password, 'myPass');
+                    test.strictEqual(userParams["partition-access"], undefined);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testUpdateCurrent: function(test) {
+            var init = BigIp.prototype.init;
+            var newPassword;
+
+            // Overwrite init because otherwise the real init creates
+            // a new iControl and we lose our icontrolMock
+            BigIp.prototype.init = function(host, user, password) {
+                newPassword = password;
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/auth/user',
+                [
+                    {
+                        name: 'user'
+                    }
+                ]
+            );
+            bigIp.onboard.updateUser('user', 'myPass')
+                .then(function() {
+                    test.strictEqual(newPassword, 'myPass');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    BigIp.prototype.init = init;
+                    test.done();
+                });
         }
     }
 };
