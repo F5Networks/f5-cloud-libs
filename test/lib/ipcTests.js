@@ -15,9 +15,19 @@
  */
 'use strict';
 
+var fs = require('fs');
 var ipc = require('../../../f5-cloud-libs').ipc;
 
 module.exports = {
+    tearDown: function(callback) {
+        try {
+            fs.unlinkSync('/tmp/foo');
+        }
+        catch (err) {
+        }
+        callback();
+    },
+
     testOnce: function(test) {
         var signalled = 0;
 

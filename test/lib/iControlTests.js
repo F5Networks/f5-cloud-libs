@@ -27,12 +27,41 @@ module.exports = {
         callback();
     },
 
+    testCreate: function(test) {
+        var body = {foo: 'bar'};
+        iControl.create('somepath', body)
+            .then(function() {
+                test.deepEqual(httpMock.lastRequest.method, 'POST');
+                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({foo: 'bar'}));
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testDelete: function(test) {
+        iControl.delete('somepath')
+            .then(function() {
+                test.deepEqual(httpMock.lastRequest.method, 'DELETE');
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
     testList: function(test) {
         var expectedResponse = 'foo';
         httpMock.setResponse(expectedResponse);
         iControl.list('somepath')
             .then(function(response) {
                 test.strictEqual(response, expectedResponse);
+                test.deepEqual(httpMock.lastRequest.method, 'GET');
             })
             .catch(function(err) {
                 test.ok(false, err.message);
@@ -103,5 +132,35 @@ module.exports = {
         iControl.list('somepath', {headers: headers});
         test.deepEqual(httpMock.lastRequest.headers.foo, headers.foo);
         test.done();
+    },
+
+    testModify: function(test) {
+        var body = {foo: 'bar'};
+        iControl.modify('somepath', body)
+            .then(function() {
+                test.deepEqual(httpMock.lastRequest.method, 'PATCH');
+                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({foo: 'bar'}));
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testReplace: function(test) {
+        var body = {foo: 'bar'};
+        iControl.replace('somepath', body)
+            .then(function() {
+                test.deepEqual(httpMock.lastRequest.method, 'PUT');
+                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({foo: 'bar'}));
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
     }
 };
