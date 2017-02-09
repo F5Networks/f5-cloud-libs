@@ -16,6 +16,8 @@
 'use strict';
 
 var Logger = require('../../../f5-cloud-libs').logger;
+var fs = require('fs');
+var q = require('q');
 
 module.exports = {
     testConsole: function(test) {
@@ -40,5 +42,21 @@ module.exports = {
         var logger = Logger.getLogger();
         test.ifError(logger.transports.file);
         test.done();
+    },
+
+    testPasswordMask: function(test) {
+        const TEMP_LOGFILE = '/tmp/f5-cloud-libs-loggerTest.log';
+        var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
+        var loggedMessage;
+
+        logger.warn('password=1234');
+
+        setTimeout(function() {
+            loggedMessage = fs.readFileSync(TEMP_LOGFILE);
+            test.notStrictEqual(loggedMessage.indexOf('password='), -1);
+            test.strictEqual(loggedMessage.indexOf('1234'), -1);
+            fs.unlinkSync(TEMP_LOGFILE);
+            test.done();
+        }, 10);
     }
 };
