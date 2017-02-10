@@ -49,12 +49,14 @@ module.exports = {
         var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
         var loggedMessage;
 
-        logger.warn('password=1234');
+        logger.warn('password=1234', {Password: '5678'});
 
         setTimeout(function() {
             loggedMessage = fs.readFileSync(TEMP_LOGFILE);
             test.notStrictEqual(loggedMessage.indexOf('password='), -1);
+            test.notStrictEqual(loggedMessage.indexOf('Password'), -1);
             test.strictEqual(loggedMessage.indexOf('1234'), -1);
+            test.strictEqual(loggedMessage.indexOf('5678'), -1);
             fs.unlinkSync(TEMP_LOGFILE);
             test.done();
         }, 10);
