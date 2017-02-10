@@ -32,7 +32,9 @@ module.exports = {
             }
         },
         end: function() {
-            this.cb(this.incomingMessage);
+            if (this.cb) {
+                this.cb(this.incomingMessage);
+            }
             this.incomingMessage.emit('data', this.response);
             this.incomingMessage.emit('end');
         },
@@ -53,7 +55,7 @@ module.exports = {
         return this.clientRequest;
     },
 
-    setResponse: function(response, headers) {
+    setResponse: function(response, headers, statusCode) {
         var key;
         var lowerCaseHeaders = {};
         this.clientRequest.response = typeof response === 'object' ? JSON.stringify(response) : response;
@@ -61,6 +63,10 @@ module.exports = {
             lowerCaseHeaders[key.toLowerCase()] = headers[key];
         }
         this.clientRequest.incomingMessage.headers = lowerCaseHeaders;
+
+        if (statusCode) {
+            this.clientRequest.incomingMessage.statusCode = statusCode;
+        }
     },
 
     reset: function() {
@@ -69,6 +75,7 @@ module.exports = {
         delete this.clientRequest.response;
         delete this.clientRequest.timeout;
         this.clientRequest.incomingMessage.headers = {};
+        this.clientRequest.incomingMessage.statusCode = 200;
         this.clientRequest.eventMap = {};
         delete this.lastRequest;
     }
