@@ -96,6 +96,16 @@
                 logger = Logger.getLogger(loggerOptions);
                 util.logger = logger;
 
+                // Log the input, but don't log passwords
+                loggableArgs = argv.slice();
+                for (i = 0; i < loggableArgs.length; ++i) {
+                    if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
+                        loggableArgs[i + 1] = "*******";
+                    }
+                }
+                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
+
+
                 for (i = 0; i < REQUIRED_OPTIONS.length; ++i) {
                     if (!options[REQUIRED_OPTIONS[i]]) {
                         logger.error(REQUIRED_OPTIONS[i], "is a required command line option.");
@@ -116,15 +126,14 @@
                     util.runInBackgroundAndExit(process, logFileName);
                 }
 
-                // Log the input, but don't log passwords
-                loggableArgs = argv.slice();
-                for (i = 0; i < loggableArgs.length; ++i) {
-                    if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
-                        loggableArgs[i + 1] = "*******";
-                    }
-                }
-                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
-
+                // Create the bigIp client object
+                bigIp = testOpts.bigIp || new BigIp(options.host,
+                                                    options.user,
+                                                    options.password,
+                                                    {
+                                                        port: options.port,
+                                                        logger: logger
+                                                    });
                 // Start processing...
 
                 if (options.cloud) {
