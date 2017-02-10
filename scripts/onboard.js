@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016, 2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,8 @@
 
             var DEFAULT_LOG_FILE = '/tmp/onboard.log';
             var ARGS_FILE_ID = 'onboard_' + Date.now();
-            var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
+
+            var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password', '--big-iq-password'];
             var REQUIRED_OPTIONS = ['host', 'user'];
 
             options = require('./commonOptions');
@@ -79,12 +80,18 @@
 
             try {
                 options = options.getCommonOptions(DEFAULT_LOG_FILE)
-                    .option('--ntp <ntp-server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
+                    .option('--ntp <ntp_server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
                     .option('--tz <timezone>', 'Set timezone for NTP setting.')
                     .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', util.collect, [])
                     .option('--ssl-port <ssl_port>', 'Set the SSL port for the management IP', parseInt)
                     .option('-l, --license <license_key>', 'License BIG-IP with <license_key>.')
                     .option('-a, --add-on <add_on_key>', 'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.', util.collect, [])
+                    .option('--license-pool', 'License BIG-IP from a BIG-IQ license pool. Supply the following:')
+                    .option('    --big-iq-host <ip_address or FQDN>', '    IP address or FQDN of BIG-IQ')
+                    .option('    --big-iq-user <user>', '    BIG-IQ admin user name')
+                    .option('    --big-iq-password <password>', '    BIG-IQ admin user password.')
+                    .option('    --license-pool-name <pool_name>', '    Name of BIG-IQ license pool.')
+                    .option('    --big-ip-mgmt-address <big_ip_address>', '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.')
                     .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
                     .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.pair, globalSettings)
                     .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.pair, dbVars)
@@ -105,6 +112,19 @@
                 logger = Logger.getLogger(loggerOptions);
                 util.logger = logger;
 
+                // Log the input, but don't log passwords
+                loggableArgs = argv.slice();
+                for (i = 0; i < loggableArgs.length; ++i) {
+                    if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
+                        loggableArgs[i + 1] = "*******";
+                    }
+                }
+                index = loggableArgs.indexOf('--update-user');
+                if (index !== -1) {
+                    loggableArgs[index + 1] = loggableArgs[index + 1].replace(/password:([^,])+/, '*******');
+                }
+                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
+
                 for (i = 0; i < REQUIRED_OPTIONS.length; ++i) {
                     if (!options[REQUIRED_OPTIONS[i]]) {
                         logger.error(REQUIRED_OPTIONS[i], "is a required command line option.");
@@ -124,19 +144,6 @@
                     logger.info("Spawning child process to do the work. Output will be in", logFileName);
                     util.runInBackgroundAndExit(process, logFileName);
                 }
-
-                // Log the input, but don't log passwords
-                loggableArgs = argv.slice();
-                for (i = 0; i < loggableArgs.length; ++i) {
-                    if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
-                        loggableArgs[i + 1] = "*******";
-                    }
-                }
-                index = loggableArgs.indexOf('--update-user');
-                if (index !== -1) {
-                    loggableArgs[index + 1] = loggableArgs[index + 1].replace(/password:([^,])+/, '*******');
-                }
-                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
                 // Use hostname if both hostname and global-settings hostname are set
                 if (globalSettings && options.hostname) {
@@ -298,6 +305,22 @@
                                 }
                             );
                         }
+
+                        else {
+                            if (options.licensePool) {
+                                if (!options.bigIqHost || !options.bigIqUser || !options.bigIqPassword || !options.licensePoolName) {
+                                    logger.error('When using a BIG-IQ license pool, all of big-iq-host, big-iq-user, big-iq-password, and license-pool-name are required');
+                                    return;
+                                }
+
+                                logger.info("Getting license from BIG-IQ license pool.");
+                                return bigIp.onboard.licenseViaBigIq(options.bigIqHost,
+                                                                     options.bigIqUser,
+                                                                     options.bigIqPassword,
+                                                                     options.licensePoolName,
+                                                                     options.bigIpMgmtAddress);
+                            }
+                        }
                     })
                     .then(function(response) {
                         logger.debug(response);
@@ -358,7 +381,7 @@
                         ipc.send(options.signal || signals.ONBOARD_DONE);
                     })
                     .catch(function(err) {
-                        logger.error("BIG-IP onboard failed", err.message);
+                        logger.error("BIG-IP onboard failed:", err.message);
 
                         if (err instanceof ActiveError) {
                             logger.warn("BIG-IP active check failed. Preparing for reboot.");
