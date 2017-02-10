@@ -27,6 +27,49 @@ module.exports = {
         callback();
     },
 
+    testAuthToken: function(test) {
+        iControl = new IControl({authToken: 'foofoofoo'});
+        iControl.https = httpMock;
+        iControl.list('somepath')
+            .then(function() {
+                test.strictEqual(httpMock.lastRequest.headers['X-F5-Auth-Token'], 'foofoofoo');
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testBadJsonResponse: function(test) {
+        httpMock.setResponse('badjson', {'Content-Type': 'application/json'});
+        iControl.list('somepath')
+            .then(function() {
+                test.ok(false, 'should have thrown bad json');
+            })
+            .catch(function(err) {
+                test.notStrictEqual(err.indexOf('Unable to parse JSON'), -1);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testBadStatusCode: function(test) {
+        httpMock.setResponse({foo: 'bar'}, {'Content-Type': 'application/json'}, 300);
+        iControl.list('somepath')
+            .then(function() {
+                test.ok(false, 'should have thrown bad status code');
+            })
+            .catch(function() {
+                test.ok(true);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
     testCreate: function(test) {
         var body = {foo: 'bar'};
         iControl.create('somepath', body)
@@ -155,6 +198,21 @@ module.exports = {
             .then(function() {
                 test.deepEqual(httpMock.lastRequest.method, 'PUT');
                 test.deepEqual(httpMock.clientRequest.data, JSON.stringify({foo: 'bar'}));
+            })
+            .catch(function(err) {
+                test.ok(false, err.message);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testNoWait: function(test) {
+        var expectedResponse = 'foo';
+        httpMock.setResponse(expectedResponse);
+        iControl.list('somepath', {noWait: true})
+            .then(function(response) {
+                test.strictEqual(response, undefined);
             })
             .catch(function(err) {
                 test.ok(false, err.message);
