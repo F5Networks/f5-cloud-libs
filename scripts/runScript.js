@@ -99,8 +99,11 @@
                         argv[clArgIndex] = "'" + argv[clArgIndex] + "'";
                     }
                 }
+
+                logger.debug("Saving args for", options.file || options.url);
                 util.saveArgs(argv, ARGS_FILE_ID)
                     .then(function() {
+                        logger.debug("Args saved for", options.file || options.url);
                         if (options.waitFor) {
                             logger.info("Waiting for", options.waitFor);
                             return ipc.once(options.waitFor);
@@ -109,12 +112,16 @@
                     .then(function() {
                         // Whatever we're waiting for is done, so don't wait for
                         // that again in case of a reboot
-                        return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                        if (options.waitFor) {
+                            logger.debug("Signal received.");
+                            return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                        }
                     })
                     .then(function() {
                         var deferred = q.defer();
 
                         if (options.url) {
+                            logger.debug("Downloading", options.url);
                             util.download(options.url)
                                 .then(function(fileName) {
                                     options.file = fileName;
@@ -139,8 +146,8 @@
                         var cp_options = {};
                         var cp;
 
+                        logger.info(options.file, "starting.");
                         if (options.file) {
-                            logger.info("Custom script starting.");
                             ipc.send(signals.SCRIPT_RUNNING);
 
                             if (options.clArgs) {
@@ -161,9 +168,13 @@
                                 logger.error(data.toString().trim());
                             });
 
-                            cp.on('close', function(code) {
-                                logger.info('child process exited with code', code);
+                            cp.on('exit', function(code) {
+                                logger.info(options.file, 'exited with code', code.toString());
                                 deferred.resolve();
+                            });
+
+                            cp.on('error', function(err) {
+                                logger.error(options.file, 'error', err);
                             });
                         }
                         else {
