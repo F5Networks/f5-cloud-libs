@@ -28,6 +28,6 @@
     "test": "if ! node_modules/nodeunit/bin/nodeunit --reporter eclipse test/lib; then exit 1; fi; if ! node_modules/nodeunit/bin/nodeunit --reporter eclipse test/scripts; then exit 1; fi",
     "coveralls": "node_modules/jscoverage/bin/jscoverage lib && TEST_COVERAGE=1 node_modules/nodeunit/bin/nodeunit --reporter=lcov test/lib | node_modules/coveralls/bin/coveralls.js",
     "package": "./package.sh",
-    "doc": "node node_modules/jsdoc/jsdoc.js -c jsdoc.conf"
+    "doc": "./doc.sh; node node_modules/jsdoc/jsdoc.js -c jsdoc.conf"
   }
 }

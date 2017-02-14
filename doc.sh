@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# This script generates the README.md file
+
+README_FILE=README.md
+
+writeHelp () {
+    IFS=''
+    node "$1" --help | while read LINE; do
+        if [[ -z $LINE ]]; then
+            LINE="  "
+        fi
+        echo "  ""$LINE" >> $README_FILE
+    done
+}
+
+cat > $README_FILE << EOL
+[![Build Status](https://travis-ci.org/F5Networks/f5-cloud-libs.svg?branch=master)](https://travis-ci.org/F5Networks/f5-cloud-libs)
+[![Coverage Status](https://coveralls.io/repos/github/F5Networks/f5-cloud-libs/badge.svg?branch=develop)](https://coveralls.io/github/F5Networks/f5-cloud-libs?branch=develop)
+
+# Library code and scripts for deploying BIG-IP in a cloud
+
+This project consists of two main parts
+- scripts
+    - Command line scripts for configuring BIG-IP
+    - These are meant to be called either directly from the command line or from cloud deployment templates
+    - See usage below
+
+- lib
+    - Library code for controlling a BIG-IP
+    - Called from the scripts
+
+## Release notes
+### Version 2.1.0
+* Allows for autoscaling and clustering without providing a password in the template
+* Adds hash verification for all downloaded files
+* Fixes race condition when running multiple f5-cloud-libs scripts at once
+
+### Version 2.0.0
+* onboard.js option of --set-password is no longer available, use --update-user instead.
+* All scripts that take --password now also support --password-url. Only 'file' URLs are supported for now.
+* Added option to suppress console output (--no-console).
+* Added support for verifying hash of downloaded f5-cloud-libs tarball.
+* Added some parsing of sync messages to get sync to work more often.
+
+## Scripts
+
+### onboard.js
+
+Does initial configuration and provisioning of a BIG-IP.
+EOL
+
+writeHelp scripts/onboard.js
+
+cat >> $README_FILE << EOL
+### cluster.js
+
+Sets up BIG-IPs in a cluster.
+EOL
+
+writeHelp scripts/cluster.js
+
+cat >> $README_FILE << EOL
+### network.js
+
+Sets up default gateway, VLANs and self IPs
+EOL
+
+writeHelp scripts/network.js
+
+cat >> $README_FILE << EOL
+### runScript.js
+
+Runs an arbitrary script.
+EOL
+
+writeHelp scripts/runScript.js

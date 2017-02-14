@@ -31,7 +31,7 @@ This project consists of two main parts
 ### onboard.js
 
 Does initial configuration and provisioning of a BIG-IP.
-
+    
     Usage: onboard [options]
     
     Options:
@@ -50,12 +50,18 @@ Does initial configuration and provisioning of a BIG-IP.
       --log-level <level>                                                                        Log level (none, error, warn, info, verbose, debug, silly). Default is info.
       -o, --output <file>                                                                        Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log
       --no-console                                                                               Do not log to console. Default false (log to console).
-      --ntp <ntp-server>                                                                         Set NTP server. For multiple NTP servers, use multiple --ntp entries.
+      --ntp <ntp_server>                                                                         Set NTP server. For multiple NTP servers, use multiple --ntp entries.
       --tz <timezone>                                                                            Set timezone for NTP setting.
       --dns <DNS server>                                                                         Set DNS server. For multiple DNS severs, use multiple --dns entries.
       --ssl-port <ssl_port>                                                                      Set the SSL port for the management IP
       -l, --license <license_key>                                                                License BIG-IP with <license_key>.
       -a, --add-on <add_on_key>                                                                  License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.
+      --license-pool                                                                             License BIG-IP from a BIG-IQ license pool. Supply the following:
+          --big-iq-host <ip_address or FQDN>                                                         IP address or FQDN of BIG-IQ
+          --big-iq-user <user>                                                                       BIG-IQ admin user name
+          --big-iq-password <password>                                                               BIG-IQ admin user password.
+          --license-pool-name <pool_name>                                                            Name of BIG-IQ license pool.
+          --big-ip-mgmt-address <big_ip_address>                                                     IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.
       -n, --hostname <hostname>                                                                  Set BIG-IP hostname.
       -g, --global-setting <name:value>                                                          Set global setting <name> to <value>. For multiple settings, use multiple -g entries.
       -d, --db <name:value>                                                                      Set db variable <name> to <value>. For multiple settings, use multiple -d entries.
@@ -64,12 +70,11 @@ Does initial configuration and provisioning of a BIG-IP.
       -m, --module <name:level>                                                                  Provision module <name> to <level>. For multiple modules, use multiple -m entries.
       --ping [address]                                                                           Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
       --update-sigs                                                                              Update ASM signatures
-
-
+    
 ### cluster.js
 
 Sets up BIG-IPs in a cluster.
-
+    
     Usage: cluster [options]
     
     Options:
@@ -112,11 +117,11 @@ Sets up BIG-IPs in a cluster.
       --remove-from-cluster                            Remove a device from the cluster
           --device-group <device_group>                    Name of the device group.
           --device <device_name>                           Device name to remove.
-
+    
 ### network.js
 
 Sets up default gateway, VLANs and self IPs
-
+    
     Usage: network [options]
     
     Options:
@@ -140,11 +145,11 @@ Sets up default gateway, VLANs and self IPs
       --vlan <name, nic_number, [tag]>         Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated. For multiple vlans, use multiple --vlan entries.
       --self-ip <name, ip_address, vlan_name>  Create self IP with name and ip_address on vlan. Values should be comma-separated. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.
       --force-reboot                           Force a reboot at the end. This is necessary for some 2+ NIC configurations.
-
+    
 ### runScript.js
 
 Runs an arbitrary script.
-
+    
     Usage: runScript [options]
     
     Options:
@@ -160,4 +165,4 @@ Runs an arbitrary script.
       --cwd <directory>              Current working directory for the script to run in.
       --log-level <level>            Log level (none, error, warn, info, verbose, debug, silly). Default is info.
       -o, --output <file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log
-
+    
