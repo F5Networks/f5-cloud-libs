@@ -119,18 +119,6 @@
                     return;
                 }
 
-                // Create the bigIp client object
-                bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                    options.user,
-                                                    options.password || options.passwordUrl,
-                                                    {
-                                                        port: options.port,
-                                                        logger: logger,
-                                                        passwordIsUrl: typeof options.passwordUrl !== 'undefined'
-                                                    });
-
-                // Start processing...
-
                 // Save args in restart script in case we need to reboot to recover from an error
                 util.saveArgs(argv, ARGS_FILE_ID)
                     .then(function() {
@@ -148,6 +136,21 @@
                         logger.info("Network setup starting.");
                         ipc.send(signals.NETWORK_RUNNING);
 
+                        // Create the bigIp client object
+                        bigIp = testOpts.bigIp || new BigIp({logger: logger});
+
+                        logger.info("Initializing BIG-IP.");
+                        return bigIp.init(
+                            options.host,
+                            options.user,
+                            options.password || options.passwordUrl,
+                            {
+                                port: options.port,
+                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                            }
+                        );
+                    })
+                    .then(function() {
                         logger.info("Waiting for BIG-IP to be ready.");
                         return bigIp.ready();
                     })

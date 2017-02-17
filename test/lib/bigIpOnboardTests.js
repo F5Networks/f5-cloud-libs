@@ -20,16 +20,20 @@ var BigIp = require('../../../f5-cloud-libs').bigIp;
 var util = require('../../../f5-cloud-libs').util;
 var icontrolMock = require('../testUtil/icontrolMock');
 
-var bigIp = new BigIp('host', 'user', 'password');
-bigIp.icontrol = icontrolMock;
-bigIp.ready = function() {
-    return q();
-};
+var bigIp;
 
 module.exports = {
     setUp: function(callback) {
-        icontrolMock.reset();
-        callback();
+        bigIp = new BigIp();
+        bigIp.init('host', 'user', 'password')
+            .then(function() {
+                bigIp.icontrol = icontrolMock;
+                bigIp.ready = function() {
+                    return q();
+                };
+                icontrolMock.reset();
+                callback();
+            });
     },
 
     testDbVars: {
@@ -305,6 +309,35 @@ module.exports = {
                 });
         },
 
+        testLicenseFailure: function(test) {
+            var regKey = "1234-5678-ABCD-EFGH";
+            var failureMessage = "Foo foo";
+
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {}
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: failureMessage
+                }
+            );
+
+            bigIp.onboard.license({registrationKey: regKey}, util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, 'Should have failed with license failure');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err, failureMessage);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
         testAddOnKeys: function(test) {
             var addOnKeys = ["1234-5678"];
 
@@ -326,6 +359,19 @@ module.exports = {
                     var licenseRequest = icontrolMock.getRequest('create', '/tm/sys/license');
                     test.strictEqual(licenseRequest.command, 'install');
                     test.deepEqual(licenseRequest.addOnKeys, addOnKeys);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoKeys: function(test) {
+            bigIp.onboard.license()
+                .then(function(response) {
+                    test.notStrictEqual(response.indexOf('No registration key'), -1);
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
@@ -548,42 +594,78 @@ module.exports = {
         }
     },
 
-    testPasswordNonRoot: function(test) {
-        var user = 'someuser';
-        var newPassword = 'abc123';
+    testPassword: {
+        testNonRoot: function(test) {
+            var user = 'someuser';
+            var newPassword = 'abc123';
 
-        bigIp.onboard.password(user, newPassword)
-            .then(function() {
-                test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                test.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user/' + user);
-                test.strictEqual(icontrolMock.lastCall.body.password, newPassword);
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
-    },
+            bigIp.onboard.password(user, newPassword)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user/' + user);
+                    test.strictEqual(icontrolMock.lastCall.body.password, newPassword);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
 
-    testPasswordRoot: function(test) {
-        var user = 'root';
-        var newPassword = 'abc123';
-        var oldPassword = 'def456';
+        testRoot: function(test) {
+            var user = 'root';
+            var newPassword = 'abc123';
+            var oldPassword = 'def456';
 
-        bigIp.onboard.password(user, newPassword, oldPassword)
-            .then(function() {
-                test.strictEqual(icontrolMock.lastCall.method, 'create');
-                test.strictEqual(icontrolMock.lastCall.path, '/shared/authn/root');
-                test.strictEqual(icontrolMock.lastCall.body.newPassword, newPassword);
-                test.strictEqual(icontrolMock.lastCall.body.oldPassword, oldPassword);
-            })
-            .catch(function(err) {
-                test.ok(false, err.message);
-            })
-            .finally(function() {
-                test.done();
-            });
+            bigIp.onboard.password(user, newPassword, oldPassword)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.strictEqual(icontrolMock.lastCall.path, '/shared/authn/root');
+                    test.strictEqual(icontrolMock.lastCall.body.newPassword, newPassword);
+                    test.strictEqual(icontrolMock.lastCall.body.oldPassword, oldPassword);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testCurrentUser: function(test) {
+            var user = 'user';
+            var newPassword = 'abc123';
+
+            bigIp.onboard.password(user, newPassword)
+                .then(function() {
+                    test.strictEqual(bigIp.password, newPassword);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testFailure: function(test) {
+            var user = 'someuser';
+            var newPassword = 'abc123';
+
+            icontrolMock.fail('modify', '/tm/auth/user/someuser');
+
+            bigIp.onboard.password(user, newPassword, null, util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, 'Should have failed');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testProvision: {
@@ -871,6 +953,7 @@ module.exports = {
             // a new iControl and we lose our icontrolMock
             BigIp.prototype.init = function(host, user, password) {
                 newPassword = password;
+                return q();
             };
 
             icontrolMock.when(

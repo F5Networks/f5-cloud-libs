@@ -126,16 +126,6 @@
                     util.runInBackgroundAndExit(process, logFileName);
                 }
 
-                // Create the bigIp client object
-                bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                    options.user,
-                                                    options.password,
-                                                    {
-                                                        port: options.port,
-                                                        logger: logger
-                                                    });
-                // Start processing...
-
                 if (options.cloud) {
                     // Get the concrete provider instance
                     Provider = require('f5-cloud-libs-' + options.cloud).provider;
@@ -160,15 +150,20 @@
                         ipc.send(signals.CLUSTER_RUNNING);
 
                         // Create the bigIp client object
-                        bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                            options.user,
-                                                            options.password || options.passwordUrl,
-                                                            {
-                                                                port: options.port,
-                                                                logger: logger,
-                                                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
-                                                            });
+                        bigIp = testOpts.bigIp || new BigIp({logger: logger});
 
+                        logger.info("Initializing BIG-IP.");
+                        return bigIp.init(
+                            options.host,
+                            options.user,
+                            options.password || options.passwordUrl,
+                            {
+                                port: options.port,
+                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                            }
+                        );
+                    })
+                    .then(function() {
                         logger.info("Waiting for BIG-IP to be ready.");
                         return bigIp.ready();
                     })

@@ -22,6 +22,7 @@ module.exports = {
             eventMap: {},
             headers: {},
             statusCode: 200,
+            setEncoding: function() {},
             on: function(event, cb) {
                 this.eventMap[event] = cb;
             },
@@ -53,6 +54,18 @@ module.exports = {
         this.lastRequest = options;
         this.clientRequest.cb = cb;
         return this.clientRequest;
+    },
+
+    get: function(path, cb) {
+        var clientRequest = this.request(
+            {
+                method: 'GET',
+                path: path
+            },
+            cb
+        );
+        clientRequest.end();
+        return clientRequest;
     },
 
     setResponse: function(response, headers, statusCode) {

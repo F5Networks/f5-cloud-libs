@@ -44,6 +44,7 @@
             var util = require('../lib/util');
             var loggerOptions = {};
             var providerOptions = [];
+            var bigIp;
             var loggableArgs;
             var logFileName;
             var masterIid;
@@ -165,10 +166,28 @@
                     }
                 })
                 .then(function() {
+                    if (testOpts.bigIp) {
+                        bigIp = testOpts.bigIp;
+                    }
+                    else {
+                        bigIp = new BigIp({logger: logger});
+
+                        logger.info("Initializing BIG-IP.");
+                        return bigIp.init(
+                            options.host,
+                            options.user,
+                            options.password || options.passwordUrl,
+                            {
+                                port: options.port,
+                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                            }
+                        );
+                    }
+                })
+                .then(function() {
                     var promises = [];
                     var thisInstance;
                     var thisInstanceIid;
-                    var bigIp;
 
                     thisInstanceIid = provider.getInstanceId();
                     thisInstance = this.instances[thisInstanceIid];
@@ -176,15 +195,6 @@
                     if (thisInstanceIid === masterIid) {
                         thisInstance.isMaster = true;
                     }
-
-                    bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                        options.user,
-                                                        options.password || options.passwordUrl,
-                                                        {
-                                                            port: options.port,
-                                                            logger: logger,
-                                                            passwordIsUrl: typeof options.passwordUrl !== 'undefined'
-                                                        });
 
                     if (options.clusterAction === 'update') {
                         // Only run if master is self
