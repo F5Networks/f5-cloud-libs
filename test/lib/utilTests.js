@@ -112,6 +112,21 @@ module.exports = {
         }
     },
 
+    testDeleteArgs: function(test) {
+        var id = 'foo';
+        var deletedPath;
+
+        fs.existsSync = function() {return true;};
+        fs.unlinkSync = function(path) {
+            deletedPath = path;
+        };
+
+        util.deleteArgs(id);
+        test.strictEqual(deletedPath, '/tmp/rebootScripts/foo.sh');
+        delete require.cache.fs;
+        test.done();
+    },
+
     testDownload: {
         setUp: function(callback) {
             dataWritten = false;
@@ -171,29 +186,61 @@ module.exports = {
         }
     },
 
-    testGetPasswordFromUrl: {
-        testBasic: function(test) {
+    testGetDataFromUrl: {
+        testFile: function(test) {
             var password = 'foobar';
             var passwordFile = '/tmp/mypass';
 
             fs.writeFileSync(passwordFile, password, {encoding: 'ascii'});
 
-            var readPassword = util.getPasswordFromUrl('file://' + passwordFile);
-            test.strictEqual(readPassword, password);
-
-            fs.unlinkSync(passwordFile);
-            test.done();
+            util.getDataFromUrl('file://' + passwordFile)
+                .then(function(readPassword) {
+                    test.strictEqual(readPassword, password);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    fs.unlinkSync(passwordFile);
+                    test.done();
+                });
         },
 
-        testNonFileUrl: function(test) {
+        testHttp: function(test) {
+            var httpMock = require('../testUtil/httpMock');
+            var password = 'foobar';
+
+            require.cache.http = {
+                exports: httpMock
+            };
+
+            httpMock.setResponse(password);
+
+            util.getDataFromUrl('http://www.example.com')
+                .then(function(readPassword) {
+                    test.strictEqual(readPassword, password);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    delete require.cache.http;
+                    test.done();
+                });
+        },
+
+        testUnsupportedUrl: function(test) {
             test.expect(1);
-            try {
-                util.getPasswordFromUrl('http://www.foo.com');
-            }
-            catch (err) {
-                test.notStrictEqual(err.message.indexOf('Only file URLs'), -1);
-                test.done();
-            }
+            util.getDataFromUrl('ftp://www.foo.com')
+                .then(function() {
+                    test.ok(false, 'Unsupported URL should have failed');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('URLs are currently supported'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     },
 

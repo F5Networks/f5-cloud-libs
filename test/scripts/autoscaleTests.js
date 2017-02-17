@@ -33,9 +33,6 @@ var instanceId;
 var options = require('commander');
 options.setMaxListeners(0);
 
-bigIpMock = new BigIp('localhost', 'admin', 'admin');
-bigIpMock.icontrol = icontrolMock;
-
 instanceId = "two";
 instances = {
     "one": {
@@ -96,14 +93,20 @@ module.exports = {
             return q(instances);
         };
 
-        icontrolMock.reset();
+        bigIpMock = new BigIp();
+        bigIpMock.init('localhost', 'admin', 'admin')
+            .then(function() {
+                bigIpMock.icontrol = icontrolMock;
 
-        testOptions = {
-            bigIp: bigIpMock,
-            provider: providerMock
-        };
+                icontrolMock.reset();
 
-        callback();
+                testOptions = {
+                    bigIp: bigIpMock,
+                    provider: providerMock
+                };
+
+                callback();
+            });
     },
 
     commonTests: {
@@ -247,6 +250,8 @@ module.exports = {
                     }
                 ]
             );
+
+            argv.push('--host', 'host', '--user', 'user', '--password', 'password');
 
             // We expect that host3 and host4 will be removed. host1 will not because the cloud provider
             // says it is still in the list of known instances

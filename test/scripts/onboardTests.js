@@ -20,6 +20,10 @@ var ipc = require('../../lib/ipc');
 var q = require('q');
 
 var bigIpMock = {
+    init: function() {
+        return q();
+    },
+
     list: function() {
         return q();
     },

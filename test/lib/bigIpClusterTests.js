@@ -31,14 +31,17 @@ var ready;
 
 module.exports = {
     setUp: function(callback) {
-        bigIp = new BigIp('host', 'user', 'password');
-        bigIp.icontrol = icontrolMock;
-        bigIp.ready = function() {
-            return q();
-        };
+        bigIp = new BigIp();
+        bigIp.init('host', 'user', 'passowrd')
+            .then(function() {
+                bigIp.icontrol = icontrolMock;
+                bigIp.ready = function() {
+                    return q();
+                };
 
-        icontrolMock.reset();
-        callback();
+                icontrolMock.reset();
+                callback();
+            });
     },
 
     testAddToTrust: {

@@ -25,14 +25,19 @@ var realReady;
 
 module.exports = {
     setUp: function(callback) {
-        bigIp = new BigIp('host', 'user', 'password');
-        realReady = bigIp.ready;  // Store this so we can test the ready function
-        bigIp.icontrol = icontrolMock;
-        bigIp.ready = function() {
-            return q();
-        };
-        icontrolMock.reset();
-        callback();
+        bigIp = new BigIp();
+
+        // we have to call init so we can wait till it's done to set icontrol
+        bigIp.init('host', 'user', 'password')
+            .then(function() {
+                realReady = bigIp.ready;  // Store this so we can test the ready function
+                bigIp.icontrol = icontrolMock;
+                bigIp.ready = function() {
+                    return q();
+                };
+                icontrolMock.reset();
+                callback();
+            });
     },
 
     testActive: {
@@ -135,42 +140,73 @@ module.exports = {
             var user = 'myUser';
             var password = 'myPassword';
             var port = 1234;
-            bigIp = new BigIp(host, user, password, {port: port});
-
-            test.strictEqual(bigIp.host, host);
-            test.strictEqual(bigIp.user, user);
-            test.strictEqual(bigIp.password, password);
-            test.strictEqual(bigIp.port, port);
-            test.done();
+            bigIp = new BigIp();
+            // we have to call init here w/ the same params as the ctor can't
+            // be async.
+            bigIp.init(host, user, password, {port: port})
+                .then(function() {
+                    test.strictEqual(bigIp.host, host);
+                    test.strictEqual(bigIp.user, user);
+                    test.strictEqual(bigIp.password, password);
+                    test.strictEqual(bigIp.port, port);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
         testPasswordUrl: function(test) {
+            var fs = require('fs');
             var host = 'myHost';
             var user = 'myUser';
             var password = 'myPassword';
-            var passwordFile = '/fooBar';
+            var passwordFile = '/tmp/passwordFromUrlTest';
             var passwordUrl = 'file://' + passwordFile;
-            var fs = require('fs');
-            var readFileSync = fs.readFileSync;
-            var calledPath;
 
-            fs.readFileSync = function(path) {
-                calledPath = path;
-                return password;
-            };
+            fs.writeFileSync(passwordFile, password);
+            bigIp = new BigIp();
+            bigIp.init(host, user, passwordUrl, {passwordIsUrl: true})
+                .then(function() {
+                    test.strictEqual(bigIp.password, password);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    fs.unlinkSync(passwordFile);
+                    test.done();
+                });
+        },
 
-            bigIp = new BigIp(host, user, passwordUrl, {passwordIsUrl: true});
-            test.strictEqual(calledPath, passwordFile);
-            test.strictEqual(bigIp.password, password);
-            fs.readFileSync = readFileSync;
-            test.done();
+        testNotInitialized: function(test) {
+            bigIp = new BigIp();
+            bigIp.ready(util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, 'Uninitialized BIG-IP should not be ready');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     },
 
-    testListSuccess: function(test) {
-        bigIp.list();
-        test.strictEqual(icontrolMock.lastCall.method, 'list');
-        test.done();
+    testList: function(test) {
+        bigIp.list()
+            .then(function() {
+                test.strictEqual(icontrolMock.lastCall.method, 'list');
+            })
+            .catch(function(err) {
+                test.ok(false, err);
+            })
+            .finally(function() {
+                test.done();
+            });
     },
 
     testLoad: {

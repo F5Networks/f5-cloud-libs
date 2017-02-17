@@ -90,6 +90,7 @@
                     .option('    --big-iq-host <ip_address or FQDN>', '    IP address or FQDN of BIG-IQ')
                     .option('    --big-iq-user <user>', '    BIG-IQ admin user name')
                     .option('    --big-iq-password <password>', '    BIG-IQ admin user password.')
+                    .option('    --big-iq-password-url <password_url>', '    URL (only file URL is currently supported) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.')
                     .option('    --license-pool-name <pool_name>', '    Name of BIG-IQ license pool.')
                     .option('    --big-ip-mgmt-address <big_ip_address>', '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.')
                     .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
@@ -174,15 +175,20 @@
                         ipc.send(signals.ONBOARD_RUNNING);
 
                         // Create the bigIp client object
-                        bigIp = testOpts.bigIp || new BigIp(options.host,
-                                                            options.user,
-                                                            options.password || options.passwordUrl,
-                                                            {
-                                                                port: options.port,
-                                                                logger: logger,
-                                                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
-                                                            });
+                        bigIp = testOpts.bigIp || new BigIp({logger: logger});
 
+                        logger.info("Initializing BIG-IP.");
+                        return bigIp.init(
+                            options.host,
+                            options.user,
+                            options.password || options.passwordUrl,
+                            {
+                                port: options.port,
+                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                            }
+                        );
+                    })
+                    .then(function() {
                         logger.info("Waiting for BIG-IP to be ready.");
                         return bigIp.ready();
                     })
@@ -308,17 +314,20 @@
 
                         else {
                             if (options.licensePool) {
-                                if (!options.bigIqHost || !options.bigIqUser || !options.bigIqPassword || !options.licensePoolName) {
-                                    logger.error('When using a BIG-IQ license pool, all of big-iq-host, big-iq-user, big-iq-password, and license-pool-name are required');
+                                if (!options.bigIqHost || !options.bigIqUser || !(options.bigIqPassword || options.bigIqPasswordUrl) || !options.licensePoolName) {
+                                    logger.error('When using a BIG-IQ license pool, all of big-iq-host, big-iq-user, big-iq-password[-url], and license-pool-name are required');
                                     return;
                                 }
 
                                 logger.info("Getting license from BIG-IQ license pool.");
                                 return bigIp.onboard.licenseViaBigIq(options.bigIqHost,
                                                                      options.bigIqUser,
-                                                                     options.bigIqPassword,
+                                                                     options.bigIqPassword || options.bigIqPasswordUrl,
                                                                      options.licensePoolName,
-                                                                     options.bigIpMgmtAddress);
+                                                                     options.bigIpMgmtAddress,
+                                                                     {
+                                                                        passwordIsUrl: typeof options.bigIqPasswordUrl !== 'undefined'
+                                                                     });
                             }
                         }
                     })
