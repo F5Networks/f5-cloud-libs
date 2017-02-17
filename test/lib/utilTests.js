@@ -113,6 +113,8 @@ module.exports = {
     },
 
     testDeleteArgs: function(test) {
+        var fsExistsSync = fs.existsSync;
+        var fsUnlinkSync = fs.unlinkSync;
         var id = 'foo';
         var deletedPath;
 
@@ -120,10 +122,10 @@ module.exports = {
         fs.unlinkSync = function(path) {
             deletedPath = path;
         };
-
         util.deleteArgs(id);
         test.strictEqual(deletedPath, '/tmp/rebootScripts/foo.sh');
-        delete require.cache.fs;
+        fs.existsSync = fsExistsSync;
+        fs.unlinkSync = fsUnlinkSync;
         test.done();
     },
 
@@ -435,14 +437,20 @@ module.exports = {
         },
 
         tearDown: function(callback) {
+            var filesToDelete;
             fs.stat = fsStat;
             fs.mkdirSync = fsMkdirSync;
             try {
-                fs.unlinkSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh');
-                fs.rmdirSync('/tmp/rebootScripts');
+                if (fs.existsSync('/tmp/rebootScripts')) {
+                    filesToDelete = fs.readdirSync('/tmp/rebootScripts/');
+                    filesToDelete.forEach(function(fileToDelete) {
+                        fs.unlinkSync('/tmp/rebootScripts/' + fileToDelete);
+                    });
+                    fs.rmdirSync('/tmp/rebootScripts');
+                }
             }
             catch(err) {
-
+                console.log('Error deleting test directory', err);
             }
             finally {
                 callback();
