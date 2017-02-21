@@ -18,6 +18,7 @@ package:
     stage: package
     only:
         - /^release-.*/
+        - /^hf-.*/
         - triggers
     script:
         - npm install
