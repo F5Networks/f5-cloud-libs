@@ -14,7 +14,7 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
-### Version 2.1.1
+### Version 2.1.2
 * Better password handling for add-to-trust during clustering.
 
 ### Version 2.1.0
