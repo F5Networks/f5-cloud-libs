@@ -208,27 +208,99 @@ module.exports = {
                 });
         },
 
-        testHttp: function(test) {
-            var httpMock = require('../testUtil/httpMock');
-            var password = 'foobar';
+        testHttp: {
+            testBasic: function(test) {
+                var httpMock = require('../testUtil/httpMock');
+                var password = 'foobar';
 
-            require.cache.http = {
-                exports: httpMock
-            };
+                require.cache.http = {
+                    exports: httpMock
+                };
 
-            httpMock.setResponse(password);
+                httpMock.setResponse(password);
 
-            util.getDataFromUrl('http://www.example.com')
-                .then(function(readPassword) {
-                    test.strictEqual(readPassword, password);
-                })
-                .catch(function(err) {
-                    test.ok(false, err);
-                })
-                .finally(function() {
-                    delete require.cache.http;
-                    test.done();
-                });
+                util.getDataFromUrl('http://www.example.com')
+                    .then(function(readPassword) {
+                        test.strictEqual(readPassword, password);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err);
+                    })
+                    .finally(function() {
+                        delete require.cache.http;
+                        test.done();
+                    });
+            },
+
+            testJson: function(test) {
+                var httpMock = require('../testUtil/httpMock');
+                var response = {foo: 'bar', hello: 'world'};
+
+                require.cache.http = {
+                    exports: httpMock
+                };
+
+                httpMock.setResponse(response, {'content-type': 'application/json'});
+
+                util.getDataFromUrl('http://www.example.com')
+                    .then(function(data) {
+                        test.deepEqual(data, response);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err);
+                    })
+                    .finally(function() {
+                        delete require.cache.http;
+                        test.done();
+                    });
+            },
+
+            testBadJson: function(test) {
+                var httpMock = require('../testUtil/httpMock');
+                var response = 'foobar';
+
+                require.cache.http = {
+                    exports: httpMock
+                };
+
+                httpMock.setResponse(response, {'content-type': 'application/json'});
+
+                util.getDataFromUrl('http://www.example.com')
+                    .then(function() {
+                        test.ok(false, 'Should have thrown bad json');
+                    })
+                    .catch(function() {
+                        test.ok(true);
+                    })
+                    .finally(function() {
+                        delete require.cache.http;
+                        test.done();
+                    });
+            },
+
+            testBadStatus: function(test) {
+                var httpMock = require('../testUtil/httpMock');
+                var status = 400;
+
+                require.cache.http = {
+                    exports: httpMock
+                };
+
+                httpMock.setResponse('foo', {}, status);
+
+                test.expect(1);
+                util.getDataFromUrl('http://www.example.com')
+                    .then(function() {
+                        test.ok(false, 'Should have been a bad status');
+                    })
+                    .catch(function(err) {
+                        test.notStrictEqual(err.message.indexOf(400), -1);
+                    })
+                    .finally(function() {
+                        delete require.cache.http;
+                        test.done();
+                    });
+            }
         },
 
         testUnsupportedUrl: function(test) {
@@ -424,6 +496,23 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
+
+        testWriteFileSyncError: function(test) {
+            fs.writeFileSync = function() {
+                throw new Error();
+            };
+
+            util.prepareArgsForReboot()
+                .then(function(response) {
+                    test.strictEqual(response, false);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     },
 
@@ -582,6 +671,64 @@ module.exports = {
                     test.ok(false, err);
                 })
                 .finally(function() {
+                    test.done();
+                });
+        },
+
+        testStatThrows: function(test) {
+            fs.stat = function() {
+                throw new Error('fsStat threw');
+            };
+
+            test.expect(1);
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testOpenThrows: function(test) {
+            var fsOpen = fs.open;
+            fs.open = function() {
+                throw new Error('fsOpen threw');
+            };
+
+            test.expect(1);
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    fs.open = fsOpen;
+                    test.done();
+                });
+        },
+
+        testWriteSyncThrows: function(test) {
+            var fsWriteSync = fs.writeSync;
+            fs.writeSync = function() {
+                throw new Error('fsWriteSync threw');
+            };
+
+            test.expect(1);
+            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    fs.writeSync = fsWriteSync;
                     test.done();
                 });
         }
