@@ -14,6 +14,9 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 2.1.1
+* Better password handling for add-to-trust during clustering.
+
 ### Version 2.1.0
 * Allows for autoscaling and clustering without providing a password in the template
 * Adds hash verification for all downloaded files
