@@ -53,7 +53,7 @@
 
             try {
                 options
-                    .version('2.1.2')
+                    .version('2.1.3')
                     .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                     .option('-f, --file <script>', 'File name of script to run.')
                     .option('-u, --url <url>', 'URL from which to download script to run. This will override --file.')

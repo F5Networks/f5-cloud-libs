@@ -21,3 +21,4 @@ rm -f package.json.bak
 rm -f scripts/commonOptions.js.bak
 rm -f scripts/network.js.bak
 rm -f scripts/runScript.js.bak
+rm -f scripts/generatePassword.js.bak
