@@ -13,6 +13,12 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 2.1.4
+* Handling for updating UCS for new BIG-IP versions added to a cluster
+
+### Version 2.1.3
+* Escape \ in passwords
+
 ### Version 2.1.2
 * Better password handling for add-to-trust during clustering.
 
