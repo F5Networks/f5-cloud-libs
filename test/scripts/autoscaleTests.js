@@ -32,6 +32,7 @@ var instanceId;
 // Our tests cause too many event listeners. Turn off the check.
 var options = require('commander');
 options.setMaxListeners(0);
+process.setMaxListeners(0);
 
 instanceId = "two";
 instances = {
