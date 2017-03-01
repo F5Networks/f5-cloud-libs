@@ -91,15 +91,18 @@
                 }
                 logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
 
-                // Save args in restart script in case we need to reboot to recover from an error
                 // With cl-args, we need to restore the single quotes around the args - shells remove them
                 if (options.clArgs) {
+                    logger.debug("Found clArgs - checking for single quotes");
                     clArgIndex = argv.indexOf('--cl-args') + 1;
+                    logger.debug("clArgIndex:", clArgIndex);
                     if (argv[clArgIndex][0] !== "'") {
+                        logger.debug("Wrapping clArgs in single quotes");
                         argv[clArgIndex] = "'" + argv[clArgIndex] + "'";
                     }
                 }
 
+                // Save args in restart script in case we need to reboot to recover from an error
                 logger.debug("Saving args for", options.file || options.url);
                 util.saveArgs(argv, ARGS_FILE_ID)
                     .then(function() {
