@@ -307,7 +307,11 @@
                                             return bigIp.cluster.joinCluster(options.deviceGroup, masterInstance.mgmtIp, credentials.username, credentials.password, {remotePort: options.port});
                                         });
                                 }
-                            }.bind(this));
+                            }.bind(this))
+                            .catch(function(err) {
+                                // rethrow here, otherwise error is hidden
+                                throw(err);
+                            });
                     }
                     else if (options.clusterAction === 'unblock-sync') {
                         logger.info("Cluster action UNBLOCK-SYNC");
