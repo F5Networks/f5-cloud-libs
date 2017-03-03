@@ -345,7 +345,7 @@
                             var ARGS_TO_STRIP = ['--wait-for', '--single-nic', '--multi-nic', '--default-gw', '--local-only', '--vlan', '--self-ip', '--force-reboot'];
                             return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP)
                                 .then(function() {
-                                    logger.info("Rebooting and exitting. Will continue after reboot.");
+                                    logger.info("Rebooting and exiting. Will continue after reboot.");
                                     util.prepareArgsForReboot();
                                     return bigIp.reboot();
                                 });
@@ -382,8 +382,8 @@
                 if (!options.forceReboot) {
                     ipc.once('REBOOT')
                         .then(function() {
-                            // Make sure the last log message is flushed before exitting.
-                            util.logAndExit("REBOOT signalled. Exitting.");
+                            // Make sure the last log message is flushed before exiting.
+                            util.logAndExit("REBOOT signalled. Exiting.");
                         });
                 }
             }

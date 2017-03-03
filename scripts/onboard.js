@@ -90,7 +90,7 @@
                     .option('    --big-iq-host <ip_address or FQDN>', '    IP address or FQDN of BIG-IQ')
                     .option('    --big-iq-user <user>', '    BIG-IQ admin user name')
                     .option('    --big-iq-password <password>', '    BIG-IQ admin user password.')
-                    .option('    --big-iq-password-url <password_url>', '    URL (only file URL is currently supported) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.')
+                    .option('    --big-iq-password-url <password_url>', '    URL (file, http(s)) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.')
                     .option('    --license-pool-name <pool_name>', '    Name of BIG-IQ license pool.')
                     .option('    --big-ip-mgmt-address <big_ip_address>', '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.')
                     .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')

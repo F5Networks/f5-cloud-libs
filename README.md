@@ -50,7 +50,7 @@ Does initial configuration and provisioning of a BIG-IP.
       --host <ip_address>                                                                        BIG-IP management IP to which to send commands.
       -u, --user <user>                                                                          BIG-IP admin user name.
       -p, --password <password>                                                                  BIG-IP admin user password. Use this or --password-url
-      --password-url <password_url>                                                              URL (only file URL is currently supported) to locatoin that contains BIG-IP admin user password. Use this or --password
+      --password-url <password_url>                                                              URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
       --port <port>                                                                              BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                                                                Skip reboot even if it is recommended.
       --background                                                                               Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
@@ -69,7 +69,7 @@ Does initial configuration and provisioning of a BIG-IP.
           --big-iq-host <ip_address or FQDN>                                                         IP address or FQDN of BIG-IQ
           --big-iq-user <user>                                                                       BIG-IQ admin user name
           --big-iq-password <password>                                                               BIG-IQ admin user password.
-          --big-iq-password-url <password_url>                                                       URL (only file URL is currently supported) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
+          --big-iq-password-url <password_url>                                                       URL (file, http(s)) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
           --license-pool-name <pool_name>                                                            Name of BIG-IQ license pool.
           --big-ip-mgmt-address <big_ip_address>                                                     IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.
       -n, --hostname <hostname>                                                                  Set BIG-IP hostname.
@@ -94,7 +94,7 @@ Sets up BIG-IPs in a cluster.
       --host <ip_address>                              BIG-IP management IP to which to send commands.
       -u, --user <user>                                BIG-IP admin user name.
       -p, --password <password>                        BIG-IP admin user password. Use this or --password-url
-      --password-url <password_url>                    URL (only file URL is currently supported) to locatoin that contains BIG-IP admin user password. Use this or --password
+      --password-url <password_url>                    URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
       --port <port>                                    BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                      Skip reboot even if it is recommended.
       --background                                     Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
@@ -120,7 +120,7 @@ Sets up BIG-IPs in a cluster.
           --remote-host <remote_ip_address>                Managemnt IP for the BIG-IP on which the group exists.
           --remote-user <remote_user                       Remote BIG-IP admin user name.
           --remote-password <remote_password>              Remote BIG-IP admin user password. Use this or --remote-password-url
-          --remote-password-url <remote_password_url>      URL (only file URL is currently supported) that contains. Use this or --remote-password
+          --remote-password-url <remote_password_url>      URL (file, http(s)) that contains. Use this or --remote-password
           --remote-port <remote_port>                      Remote BIG-IP port to connect to. Default is port of this BIG-IP.
           --device-group <remote_device_group_name>        Name of existing device group on remote BIG-IP to join.
           --sync                                           Tell the remote to sync to us after joining the group.
