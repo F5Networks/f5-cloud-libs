@@ -75,7 +75,7 @@
                     .option('    --remote-host <remote_ip_address>', '    Managemnt IP for the BIG-IP on which the group exists.')
                     .option('    --remote-user <remote_user', '    Remote BIG-IP admin user name.')
                     .option('    --remote-password <remote_password>', '    Remote BIG-IP admin user password. Use this or --remote-password-url')
-                    .option('    --remote-password-url <remote_password_url>', '    URL (only file URL is currently supported) that contains. Use this or --remote-password')
+                    .option('    --remote-password-url <remote_password_url>', '    URL (file, http(s)) that contains. Use this or --remote-password')
                     .option('    --remote-port <remote_port>', '    Remote BIG-IP port to connect to. Default is port of this BIG-IP.', parseInt)
                     .option('    --device-group <remote_device_group_name>', '    Name of existing device group on remote BIG-IP to join.')
                     .option('    --sync', '    Tell the remote to sync to us after joining the group.')
