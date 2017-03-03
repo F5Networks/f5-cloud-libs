@@ -20,6 +20,7 @@ var q = require('q');
 var autoscale = require('../../scripts/autoscale');
 var BigIp = require('../../lib/bigIp');
 var AutoscaleProvider = require('../../lib/autoscaleProvider');
+var ipc = require('../../lib/ipc');
 var icontrolMock = require('../testUtil/icontrolMock');
 var deviceGroup = 'testDeviceGroup';
 var argv;
@@ -48,6 +49,16 @@ instances = {
     }
 };
 
+// Don't let autoscale exit - we need the nodeunit process to run to completion
+process.exit = function() {};
+
+// Just resolve right away, otherwise these tests never exit
+ipc.once = function() {
+    var deferred = q.defer();
+    deferred.resolve();
+    return deferred;
+};
+
 util.inherits(ProviderMock, AutoscaleProvider);
 function ProviderMock() {
     ProviderMock.super_.call(this);
@@ -66,7 +77,7 @@ ProviderMock.prototype.getInstances = function() {
 
 ProviderMock.prototype.getInstanceId = function() {
     this.functionCalls.getInstanceId = true;
-    return instanceId;
+    return q(instanceId);
 };
 
 ProviderMock.prototype.isValidMaster = function() {
