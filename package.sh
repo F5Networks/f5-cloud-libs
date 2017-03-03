@@ -10,7 +10,7 @@ if [[ $1 == '--no-deps' ]]; then
     npm install --production
 fi
 
-tar -C .. --exclude=".git*" --exclude="test" --exclude="dist" --exclude="doc" -zcvf dist/f5-cloud-libs.tar.gz f5-cloud-libs
+tar -C .. --exclude=".git*" --exclude="test" --exclude="${PWD##*/}/dist" --exclude="doc" -zcvf dist/f5-cloud-libs.tar.gz f5-cloud-libs
 pushd dist
 hash=`openssl dgst -sha512 f5-cloud-libs.tar.gz | cut -d ' ' -f 2`
 sed $SED_ARGS "s/set hashes\(f5-cloud-libs.tar.gz\) .*/set hashes\(f5-cloud-libs.tar.gz\) $hash/" verifyHash

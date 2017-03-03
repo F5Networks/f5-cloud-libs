@@ -17,9 +17,9 @@
 
 (function() {
 
-    var fs = require('fs');
     var childProcess = require('child_process');
     var waiting = 0;
+    var baseDir;
     var runner;
     var logger;
 
@@ -44,7 +44,7 @@
             module,
             args,
             {
-                cwd: '/config/f5-cloud-libs/scripts',
+                cwd: baseDir + '/scripts',
                 stdio: 'ignore',
                 detached: true
             }
@@ -99,9 +99,6 @@
                 var clArgEnd;
                 var scriptArgs;
                 var shellOutput;
-                var f5CloudLibsTag;
-                var fstats;
-                var doInstall;
                 var i;
                 var j;
 
@@ -141,10 +138,12 @@
                     console.log("  Options:");
                     console.log();
                     console.log("    --help\t\t\tOutputusage information");
-                    console.log("    --onboard <args>\t\tRun the onboard.js script with args.");
-                    console.log("    --cluster <args>\t\tRun the cluster.js script with args.");
-                    console.log("    --network <args>\t\tRun the network.js script with args.");
-                    console.log("    --script <args>\t\tRun the runScript.js script with args. To run multiple scripts, use multiple --script entrires.");
+                    console.log("    --base-dir  <dir>\t\tBase directory of f5-cloud-libs (eg. /config/cloud/node_modules/f5-cloud-libs)");
+                    console.log("    --onboard   <args>\t\tRun the onboard.js script with args.");
+                    console.log("    --cluster   <args>\t\tRun the cluster.js script with args.");
+                    console.log("    --network   <args>\t\tRun the network.js script with args.");
+                    console.log("    --autoscale <args>\t\tRun the autoscale.js script with args.");
+                    console.log("    --script    <args>\t\tRun the runScript.js script with args. To run multiple scripts, use multiple --script entrires.");
                     process.exit();
                 }
 
@@ -153,8 +152,8 @@
                 shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
                 console.log(shellOutput.toString());
 
-                ipc = require('/config/f5-cloud-libs/lib/ipc');
-                Logger = require('/config/f5-cloud-libs/lib/logger');
+                ipc = require('../../lib/ipc');
+                Logger = require('../../lib/logger');
                 loggerOptions.console = true;
                 loggerOptions.logLevel = 'info';
                 loggerOptions.fileName = '/var/log/runScripts.log';
@@ -167,6 +166,13 @@
                 }
 
                 logger = Logger.getLogger(loggerOptions);
+
+                argIndex = argv.indexOf('--base-dir');
+                if (argIndex === -1) {
+                    logger.error("--base-dir is required");
+                    process.exit(1);
+                }
+                baseDir = argv[argIndex + 1];
 
                 logger.info("Running scripts.");
 
@@ -192,6 +198,14 @@
                     scriptArgs = argv[argIndex + 1];
                     spawnScript("network.js", undefined, scriptArgs);
                     argIndex = argv.indexOf('--network', argIndex + 1);
+                }
+
+                argIndex = argv.indexOf('--autoscale');
+                while (argIndex !== -1) {
+                    logger.debug("autoscale arg index", argIndex);
+                    scriptArgs = argv[argIndex + 1];
+                    spawnScript("autoscale.js", undefined, scriptArgs);
+                    argIndex = argv.indexOf('--autoscale', argIndex + 1);
                 }
 
                 argIndex = argv.indexOf('--script');

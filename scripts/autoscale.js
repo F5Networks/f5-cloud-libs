@@ -37,11 +37,13 @@
         run: function(argv, testOpts, cb) {
 
             var DEFAULT_LOG_FILE = "/tmp/autoscale.log";
+            var ARGS_FILE_ID = 'autoscale_' + Date.now();
             var options = require('commander');
             var q = require('q');
             var BigIp = require('../lib/bigIp');
             var Logger = require('../lib/logger');
             var util = require('../lib/util');
+            var ipc = require('../lib/ipc');
             var loggerOptions = {};
             var providerOptions = [];
             var bigIp;
@@ -60,7 +62,7 @@
 
             options = options.getCommonOptions(DEFAULT_LOG_FILE)
                 .option('--cloud <provider>', 'Cloud provider (aws | azure | etc.)')
-                .option('--provider-options <cloud_options>', 'Any options (JSON stringified) that are required for the specific cloud provider.', util.map, providerOptions)
+                .option('--provider-options <cloud_options>', 'Any options that are required for the specific cloud provider. Ex: param1:value1,param2:value2', util.map, providerOptions)
                 .option('-c, --cluster-action <type>', 'join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)')
                 .option('--device-group <device_group>', 'Device group name.')
                 .option('--block-sync', 'If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.')
@@ -105,11 +107,33 @@
                 provider = new Provider({clOptions: options, logger: logger});
             }
 
-            provider.init(providerOptions[0], {autoscale: true})
+            // Save args in restart script in case we need to reboot to recover from an error
+            util.saveArgs(argv, ARGS_FILE_ID)
                 .then(function() {
+                    if (options.waitFor) {
+                        logger.info("Waiting for", options.waitFor);
+                        return ipc.once(options.waitFor);
+                    }
+                })
+                .then(function() {
+                    // Whatever we're waiting for is done, so don't wait for
+                    // that again in case of a reboot
+                    return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                })
+                .then(function() {
+                    return provider.init(providerOptions[0], {autoscale: true});
+                })
+                .then(function() {
+                    logger.info('Getting this instance ID.');
+                    return provider.getInstanceId();
+                })
+                .then(function(response) {
+                    logger.debug(response);
+                    this.instanceId = response;
+
                     logger.info('Getting info on all instances.');
                     return provider.getInstances();
-                })
+                }.bind(this))
                 .then(function (response) {
                     var instanceIds;
 
@@ -120,7 +144,7 @@
                     if (instanceIds.length === 0) {
                         throw new Error('Instance list is empty. Exitting.');
                     }
-                    else if (instanceIds.indexOf(provider.getInstanceId()) === -1) {
+                    else if (instanceIds.indexOf(this.instanceId) === -1) {
                         throw new Error('Our instance ID is not in instance list. Exitting');
                     }
 
@@ -160,11 +184,11 @@
                     return provider.masterElected(masterIid);
                 })
                 .then(function() {
-                    if (provider.getInstanceId() === masterIid) {
+                    if (this.instanceId === masterIid) {
                         logger.info('Storing master credentials.');
                         return provider.putMasterCredentials();
                     }
-                })
+                }.bind(this))
                 .then(function() {
                     if (testOpts.bigIp) {
                         bigIp = testOpts.bigIp;
@@ -187,12 +211,10 @@
                 .then(function() {
                     var promises = [];
                     var thisInstance;
-                    var thisInstanceIid;
 
-                    thisInstanceIid = provider.getInstanceId();
-                    thisInstance = this.instances[thisInstanceIid];
+                    thisInstance = this.instances[this.instanceId];
 
-                    if (thisInstanceIid === masterIid) {
+                    if (this.instanceId === masterIid) {
                         thisInstance.isMaster = true;
                     }
 
@@ -296,12 +318,22 @@
                     logger.error(err.message);
                 })
                 .done(function() {
-                    logger.info('Autoscale done.');
+                    util.deleteArgs(ARGS_FILE_ID);
 
                     if (cb) {
                         cb();
                     }
+
+                    // Exit so that any listeners don't keep us alive
+                    util.logAndExit("Autoscale finished.");
                 });
+
+                // If we reboot, exit - otherwise cloud providers won't know we're done
+                ipc.once('REBOOT')
+                    .then(function() {
+                        util.logAndExit("REBOOT signalled. Exitting.");
+                    });
+
             }
     };
 
