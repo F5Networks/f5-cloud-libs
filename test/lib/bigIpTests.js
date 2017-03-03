@@ -72,6 +72,37 @@ module.exports = {
                 });
         },
 
+        testStandby: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/failover-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/failover-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    status: {
+                                        description: 'STANDBY'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            bigIp.active()
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
         testNotActive: function(test) {
             icontrolMock.when(
                 'list',
