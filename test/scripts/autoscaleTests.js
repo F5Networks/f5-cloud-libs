@@ -15,14 +15,16 @@
  */
 'use strict';
 
+var deviceGroup = 'testDeviceGroup';
 var util = require('util');
 var q = require('q');
 var autoscale = require('../../scripts/autoscale');
-var BigIp = require('../../lib/bigIp');
 var AutoscaleProvider = require('../../lib/autoscaleProvider');
-var ipc = require('../../lib/ipc');
-var icontrolMock = require('../testUtil/icontrolMock');
-var deviceGroup = 'testDeviceGroup';
+var fsMock;
+var childProcessMock;
+var BigIp;
+var icontrolMock;
+var ipcMock;
 var argv;
 var providerMock;
 var bigIpMock;
@@ -34,30 +36,6 @@ var instanceId;
 var options = require('commander');
 options.setMaxListeners(0);
 process.setMaxListeners(0);
-
-instanceId = "two";
-instances = {
-    "one": {
-        isMaster: false,
-        hostname: 'host1',
-        privateIp: '1.2.3.4'
-    },
-    "two": {
-        isMaster: true,
-        hostname: 'host2',
-        privateIp: '5.6.7.8'
-    }
-};
-
-// Don't let autoscale exit - we need the nodeunit process to run to completion
-process.exit = function() {};
-
-// Just resolve right away, otherwise these tests never exit
-ipc.once = function() {
-    var deferred = q.defer();
-    deferred.resolve();
-    return deferred;
-};
 
 util.inherits(ProviderMock, AutoscaleProvider);
 function ProviderMock() {
@@ -72,7 +50,7 @@ ProviderMock.prototype.init = function() {
 
 ProviderMock.prototype.getInstances = function() {
     this.functionCalls.getInstances = true;
-    return q();
+    return q(instances);
 };
 
 ProviderMock.prototype.getInstanceId = function() {
@@ -95,14 +73,44 @@ ProviderMock.prototype.instancesRemoved = function(instances) {
     return q();
 };
 
+ProviderMock.prototype.getStoredUcs = function() {
+        return q();
+};
+
+instanceId = "two";
+instances = {
+    "one": {
+        isMaster: false,
+        hostname: 'host1',
+        privateIp: '1.2.3.4'
+    },
+    "two": {
+        isMaster: true,
+        hostname: 'host2',
+        privateIp: '5.6.7.8'
+    }
+};
+
+// Don't let autoscale exit - we need the nodeunit process to run to completion
+process.exit = function() {};
+
 module.exports = {
     setUp: function(callback) {
         argv = ['node', 'autoscale', '--password', 'foobar', '--device-group', deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
+
+        fsMock = require('fs');
+        childProcessMock = require('child_process');
+        BigIp = require('../../lib/bigIp');
+        icontrolMock = require('../testUtil/icontrolMock');
+        ipcMock = require('../../lib/ipc');
+
         providerMock = new ProviderMock();
 
-        providerMock.getInstances = function() {
-            this.functionCalls.getInstances = true;
-            return q(instances);
+        // Just resolve right away, otherwise these tests never exit
+        ipcMock.once = function() {
+            var deferred = q.defer();
+            deferred.resolve();
+            return deferred;
         };
 
         bigIpMock = new BigIp();
@@ -119,6 +127,13 @@ module.exports = {
 
                 callback();
             });
+    },
+
+    tearDown: function(callback) {
+        Object.keys(require.cache).forEach(function(key) {
+            delete require.cache[key];
+        });
+        callback();
     },
 
     commonTests: {
@@ -280,6 +295,21 @@ module.exports = {
     joinTests: {
         setUp: function(callback) {
             argv.push('--cluster-action', 'join');
+
+            fsMock.writeFile = function(path, Data, cb) {
+                cb();
+            };
+
+            fsMock.unlinkSync = function() {};
+
+            childProcessMock.execFile = function(file, args, cb) {
+                cb();
+            };
+
+            bigIpMock.loadUcs = function() {
+                return q();
+            };
+
             callback();
         },
 

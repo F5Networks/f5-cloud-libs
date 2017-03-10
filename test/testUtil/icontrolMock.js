@@ -35,6 +35,11 @@ module.exports = {
         return this.respond('modify', path);
     },
 
+    replace: function(path, body, opts) {
+        this.recordRequest('replace', path, body, opts);
+        return this.respond('replace', path);
+    },
+
     delete: function(path, opts) {
         this.recordRequest('delete', path, null, opts);
         return this.respond('delete', path);
@@ -94,4 +99,3 @@ module.exports = {
         }
     }
 };
-
