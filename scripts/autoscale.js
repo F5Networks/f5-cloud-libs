@@ -17,6 +17,8 @@
 
 (function() {
 
+    var fs = require('fs');
+    var q = require('q');
     var runner;
     var logger;
 
@@ -36,8 +38,10 @@
          */
         run: function(argv, testOpts, cb) {
 
-            var DEFAULT_LOG_FILE = "/tmp/autoscale.log";
-            var ARGS_FILE_ID = 'autoscale_' + Date.now();
+            const DEFAULT_LOG_FILE = "/tmp/autoscale.log";
+            const ARGS_FILE_ID = 'autoscale_' + Date.now();
+            const MASTER_FILE_PATH = "/config/cloud/master";
+
             var options = require('commander');
             var q = require('q');
             var BigIp = require('../lib/bigIp');
@@ -46,6 +50,7 @@
             var ipc = require('../lib/ipc');
             var loggerOptions = {};
             var providerOptions = [];
+            var hasUcs = false;
             var bigIp;
             var loggableArgs;
             var logFileName;
@@ -121,6 +126,25 @@
                     return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
                 })
                 .then(function() {
+                    if (testOpts.bigIp) {
+                        bigIp = testOpts.bigIp;
+                    }
+                    else {
+                        bigIp = new BigIp({logger: logger});
+
+                        logger.info("Initializing BIG-IP.");
+                        return bigIp.init(
+                            options.host,
+                            options.user,
+                            options.password || options.passwordUrl,
+                            {
+                                port: options.port,
+                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                            }
+                        );
+                    }
+                }.bind(this))
+                .then(function() {
                     return provider.init(providerOptions[0], {autoscale: true});
                 })
                 .then(function() {
@@ -138,6 +162,7 @@
                     var instanceIds;
 
                     this.instances = response || {};
+                    this.instance = this.instances[this.instanceId];
                     logger.debug('instances:', this.instances);
 
                     instanceIds = Object.keys(this.instances);
@@ -179,56 +204,28 @@
                 }.bind(this))
                 .then(function(response) {
                     masterIid = response;
-                    logger.info('Using master ID:', masterIid);
-
-                    return provider.masterElected(masterIid);
-                })
-                .then(function() {
                     if (this.instanceId === masterIid) {
-                        logger.info('Storing master credentials.');
-                        return provider.putMasterCredentials();
+                        this.instance.isMaster = true;
                     }
+                    logger.info('Using master ID:', masterIid);
+                    logger.info('This instance', (this.instance.isMaster ? 'is' : 'is not'), 'master');
+                    return provider.masterElected(masterIid);
                 }.bind(this))
                 .then(function() {
-                    if (testOpts.bigIp) {
-                        bigIp = testOpts.bigIp;
-                    }
-                    else {
-                        bigIp = new BigIp({logger: logger});
-
-                        logger.info("Initializing BIG-IP.");
-                        return bigIp.init(
-                            options.host,
-                            options.user,
-                            options.password || options.passwordUrl,
-                            {
-                                port: options.port,
-                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
-                            }
-                        );
-                    }
-                })
-                .then(function() {
                     var promises = [];
-                    var thisInstance;
-
-                    thisInstance = this.instances[this.instanceId];
-
-                    if (this.instanceId === masterIid) {
-                        thisInstance.isMaster = true;
-                    }
 
                     if (options.clusterAction === 'update') {
                         // Only run if master is self
-                        if (thisInstance.isMaster) {
+                        if (this.instance.isMaster) {
                             logger.info('Cluster action UPDATE');
 
                             return getCmSyncStatus(bigIp)
                                 .then(function(response) {
-                                    var hostnameMap = {};
+                                    logger.silly('cmSyncStatus:', response);
+
+                                    var hostnames = [];
                                     var hostnamesToRemove = [];
                                     var instanceId;
-                                    var hostname;
 
                                     response = response || {};
 
@@ -237,19 +234,15 @@
                                     if (disconnected.length > 0) {
 
                                         logger.info('Possibly disconnected devices:', disconnected);
-                                        // get a map of hostname -> instance id
+
+                                        // get a list of hostnames still in the instances list
                                         for (instanceId in this.instances) {
-                                            hostname = this.instances[instanceId].hostname;
-                                            if (hostname) {
-                                                hostnameMap[hostname] = instanceId;
-                                            }
+                                            hostnames.push(this.instances[instanceId].hostname);
                                         }
 
                                         // make sure this is not still in the instances list
                                         disconnected.forEach(function(hostname) {
-                                            var instanceIdToCheck = hostnameMap[hostname];
-
-                                            if (!instanceIdToCheck) {
+                                            if (hostnames.indexOf(hostname) === -1) {
                                                 logger.info('Disconnected device:', hostname);
                                                 hostnamesToRemove.push(hostname);
                                             }
@@ -263,7 +256,11 @@
                                     else {
                                         logger.debug('No disconnected devices detected.');
                                     }
-                                }.bind(this));
+                                }.bind(this))
+                                .catch(function(err) {
+                                    logger.warn('Could not get sync status');
+                                    return q.reject(err);
+                                });
                         }
                         else {
                             logger.debug('Not master. Cluster update will be done by master.');
@@ -273,14 +270,59 @@
                         logger.info('Cluster action JOIN');
 
                         // Store our info
-                        return provider.putInstance(thisInstance)
+                        return provider.putInstance(this.instance)
+                            .then(function() {
+                                if (this.instance.isMaster) {
+                                    return provider.getStoredUcs();
+                                }
+                            }.bind(this))
+                            .then(function(response) {
+                                if (this.instance.isMaster && response) {
+                                    hasUcs = true;
+                                    return loadUcs(bigIp, response);
+                                }
+                            }.bind(this))
+                            .then(function() {
+                                var deferred = q.defer();
+                                var masterInfo = {
+                                    ucsLoaded: hasUcs
+                                };
+
+                                if (this.instance.isMaster) {
+                                    // Mark ourself as master on disk so other scripts have access to this info
+                                    fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
+                                        if (err) {
+                                            logger.warn('Error saving master file', err);
+                                            deferred.reject(err);
+                                            return;
+                                        }
+
+                                        deferred.resolve();
+                                    });
+                                }
+                                else {
+                                    // Make sure the master file is not on our disk
+                                    if (fs.existsSync(MASTER_FILE_PATH)) {
+                                        fs.unlinkSync(MASTER_FILE_PATH);
+                                    }
+                                    deferred.resolve();
+                                }
+
+                                return deferred.promise;
+                            }.bind(this))
+                            .then(function() {
+                                if (this.instance.isMaster) {
+                                    logger.info('Storing master credentials.');
+                                    return provider.putMasterCredentials();
+                                }
+                            }.bind(this))
                             .then(function(response) {
                                 logger.debug(response);
 
                                 // Configure cm configsync-ip on this BIG-IP node
-                                if (!thisInstance.isMaster || !options.blockSync) {
+                                if (!this.instance.isMaster || !options.blockSync) {
                                     logger.info("Setting config sync IP.");
-                                    return bigIp.cluster.configSyncIp(thisInstance.privateIp);
+                                    return bigIp.cluster.configSyncIp(this.instance.privateIp);
                                 }
                                 else {
                                     logger.info("Not seting config sync IP because we're master and block-sync is specified.");
@@ -290,10 +332,10 @@
                                 var masterInstance;
 
                                 // If we're the master, create the device group and protect ourselves from scale in
-                                if (thisInstance.isMaster) {
+                                if (this.instance.isMaster) {
                                     logger.info('Creating device group.');
 
-                                    promises.push(bigIp.cluster.createDeviceGroup(options.deviceGroup, 'sync-failover', [thisInstance.hostname], {autoSync: true}),
+                                    promises.push(bigIp.cluster.createDeviceGroup(options.deviceGroup, 'sync-failover', [this.instance.hostname], {autoSync: true}),
                                                   provider.setInstanceProtection());
                                     return q.all(promises);
                                 }
@@ -315,7 +357,7 @@
                     }
                     else if (options.clusterAction === 'unblock-sync') {
                         logger.info("Cluster action UNBLOCK-SYNC");
-                        return bigIp.cluster.configSyncIp(thisInstance.privateIp);
+                        return bigIp.cluster.configSyncIp(this.instance.privateIp);
                     }
                 }.bind(this))
                 .catch(function(err) {
@@ -382,20 +424,78 @@
         return bigIp.list(path, undefined, {maxRetries: 120, retryIntervalMs: 10000})
             .then(function(response) {
                 logger.debug(response);
-                entries = response.entries['https://localhost/mgmt/tm/cm/sync-status/0'].nestedStats.entries['https://localhost/mgmt/tm/cm/syncStatus/0/details'].nestedStats.entries;
+                entries = response.entries['https://localhost/mgmt/tm/cm/sync-status/0'].nestedStats.entries['https://localhost/mgmt/tm/cm/syncStatus/0/details'];
 
-                for (detail in entries) {
-                    description = entries[detail].nestedStats.entries.details.description;
-                    lArray = description.split(": ");
-                    if (lArray[1] === 'connected') {
-                        cmSyncStatus.connected.push(lArray[0]);
-                    } else if (lArray[1] === 'disconnected') {
-                        cmSyncStatus.disconnected.push(lArray[0]);
+                if (entries) {
+                    for (detail in entries.nestedStats.entries) {
+                        description = entries.nestedStats.entries[detail].nestedStats.entries.details.description;
+                        lArray = description.split(": ");
+                        if (lArray[1] === 'connected') {
+                            cmSyncStatus.connected.push(lArray[0]);
+                        }
+                        else if (lArray[1] === 'disconnected') {
+                            cmSyncStatus.disconnected.push(lArray[0]);
+                        }
                     }
                 }
+                else {
+                    logger.debug('No entries in sync status');
+                }
+
                 logger.debug(cmSyncStatus);
                 return(cmSyncStatus);
             });
+    };
+
+    var loadUcs = function(bigIp, ucsData) {
+        const timeStamp = Date.now();
+        const originalPath = '/config/ucsOriginal_' + timeStamp + '.ucs';
+        const updatedPath = '/config/ucsUpdated_' + timeStamp + '.ucs';
+        const updateScript = '/config/cloud/aws/node_modules/f5-cloud-libs/scripts/updateAutoScaleUcs';
+
+        var deferred = q.defer();
+
+        fs.writeFile(originalPath, ucsData, function(err) {
+            var childProcess = require('child_process');
+            var args = ['--original-ucs', originalPath, '--updated-ucs', updatedPath];
+            var cp;
+
+            if (err) {
+                deferred.reject(err);
+                return;
+            }
+
+            cp = childProcess.execFile(updateScript, args, function(err) {
+                if (err) {
+                    logger.warn(updateScript + ' failed:', err);
+                    deferred.reject(err);
+                    return;
+                }
+
+                if (!fs.existsSync(updatedPath)) {
+                    logger.warn(updatedPath + ' does not exist after running ' + updateScript);
+                    deferred.reject(new Error('load ucs failed'));
+                    return;
+                }
+
+                bigIp.loadUcs(updatedPath, {"no-license": true, "reset-trust": true})
+                    .then(function() {
+                        // Attempt to delete the file, but ignore errors
+                        try {
+                            fs.unlinkSync(originalPath);
+                            fs.unlinkSync(updatedPath);
+                        }
+                        finally {
+                            deferred.resolve();
+                        }
+                    })
+                    .catch(function(err) {
+                        deferred.reject(err);
+                    });
+            });
+        });
+
+        return deferred.promise;
     };
 
     // If we're called from the command line, run

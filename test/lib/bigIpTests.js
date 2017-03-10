@@ -23,6 +23,8 @@ var icontrolMock = require('../testUtil/icontrolMock');
 var bigIp;
 var realReady;
 
+const TASK_PATH = '/tm/task/sys/ucs';
+
 module.exports = {
     setUp: function(callback) {
         bigIp = new BigIp();
@@ -60,6 +62,7 @@ module.exports = {
                 }
             );
 
+            test.expect(1);
             bigIp.active()
                 .then(function() {
                     test.ok(true);
@@ -91,6 +94,7 @@ module.exports = {
                 }
             );
 
+            test.expect(1);
             bigIp.active()
                 .then(function() {
                     test.ok(true);
@@ -122,6 +126,7 @@ module.exports = {
                 }
             );
 
+            test.expect(1);
             bigIp.active(util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "BIG-IP should not be active.");
@@ -137,6 +142,7 @@ module.exports = {
         testActiveThrow: function(test) {
             icontrolMock.fail('list', '/tm/cm/failover-status');
 
+            test.expect(1);
             bigIp.active(util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "BIG-IP should not be active.");
@@ -152,6 +158,8 @@ module.exports = {
 
     testDelete: function(test) {
         icontrolMock.when('delete', '/tm/sys/foo/bar', {});
+
+        test.expect(2);
         bigIp.delete('/tm/sys/foo/bar')
             .then(function() {
                   test.strictEqual(icontrolMock.lastCall.method, 'delete');
@@ -172,6 +180,8 @@ module.exports = {
             var password = 'myPassword';
             var port = 1234;
             bigIp = new BigIp();
+
+            test.expect(4);
             // we have to call init here w/ the same params as the ctor can't
             // be async.
             bigIp.init(host, user, password, {port: port})
@@ -199,6 +209,8 @@ module.exports = {
 
             fs.writeFileSync(passwordFile, password);
             bigIp = new BigIp();
+
+            test.expect(1);
             bigIp.init(host, user, passwordUrl, {passwordIsUrl: true})
                 .then(function() {
                     test.strictEqual(bigIp.password, password);
@@ -214,6 +226,8 @@ module.exports = {
 
         testNotInitialized: function(test) {
             bigIp = new BigIp();
+
+            test.expect(1);
             bigIp.ready(util.NO_RETRY)
                 .then(function() {
                     test.ok(false, 'Uninitialized BIG-IP should not be ready');
@@ -228,6 +242,8 @@ module.exports = {
     },
 
     testList: function(test) {
+
+        test.expect(1);
         bigIp.list()
             .then(function() {
                 test.strictEqual(icontrolMock.lastCall.method, 'list');
@@ -240,9 +256,11 @@ module.exports = {
             });
     },
 
-    testLoad: {
-        testLoadNoFile: function(test) {
-            bigIp.load()
+    testLoadConfig: {
+        testNoFile: function(test) {
+
+            test.expect(4);
+            bigIp.loadConfig()
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
@@ -257,10 +275,11 @@ module.exports = {
                 });
         },
 
-        testLoadFile: function(test) {
+        testFile: function(test) {
             var fileName = 'foobar';
 
-            bigIp.load(fileName)
+            test.expect(1);
+            bigIp.loadConfig(fileName)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.body.options[0].file, fileName);
                 })
@@ -272,13 +291,14 @@ module.exports = {
                 });
         },
 
-        testLoadOptions: function(test) {
+        testOptions: function(test) {
             var options = {
                 foo: 'bar',
                 hello: 'world'
             };
 
-            bigIp.load(null, options)
+            test.expect(2);
+            bigIp.loadConfig(null, options)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.body.options[0].foo, options.foo);
                     test.strictEqual(icontrolMock.lastCall.body.options[1].hello, options.hello);
@@ -290,6 +310,90 @@ module.exports = {
                     test.done();
                 });
         },
+    },
+
+    testLoadUcs: {
+        setUp: function(callback) {
+            icontrolMock.when('create', TASK_PATH, {_taskId: '1234'});
+            icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'COMPLETED'});
+
+            callback();
+        },
+
+        testBasic: function(test) {
+
+            test.expect(1);
+            bigIp.loadUcs('/tmp/foo')
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest('replace', TASK_PATH + '/1234'), {_taskState: 'VALIDATING'});
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testOptions: function(test) {
+            test.expect(1);
+            bigIp.loadUcs('/tmp/foo', {foo: 'bar', hello: 'world'})
+                .then(function() {
+                    var command = icontrolMock.getRequest('create', TASK_PATH);
+                    test.deepEqual(command.options, [{foo: 'bar'}, {hello: 'world'}]);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNeverComplete: function(test) {
+            icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'PENDING'});
+            test.expect(1);
+            bigIp.loadUcs('/tmp/foo', undefined, util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, 'Should not have completed');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testFailed: function(test) {
+            icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'FAILED'});
+            test.expect(1);
+            bigIp.loadUcs('/tmp/foo')
+                .then(function() {
+                    test.ok(false, 'Should not have completed');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testRestjavadRestart: function(test) {
+            icontrolMock.fail('list', TASK_PATH + '/1234/result');
+            test.expect(1);
+            bigIp.loadUcs('/tmp/foo', undefined, util.NO_RETRY)
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testPing: {
@@ -313,6 +417,7 @@ module.exports = {
                               {
                                   commandResult: "PING 104.219.104.168 (104.219.104.168) 56(84) bytes of data.\n64 bytes from 104.219.104.168: icmp_seq=1 ttl=240 time=43.5 ms\n\n--- 104.219.104.168 ping statistics ---\n1 packets transmitted, 1 received, 0% packet loss, time 43ms\nrtt min/avg/max/mdev = 43.593/43.593/43.593/0.000 ms\n"
                               });
+            test.expect(1);
             bigIp.ping('1.2.3.4')
                 .then(function() {
                     test.ok(true);
@@ -331,6 +436,7 @@ module.exports = {
                               {
                                   commandResult: "PING 1.2.3.4 (1.2.3.4) 56(84) bytes of data.\n\n--- 1.2.3.4 ping statistics ---\n2 packets transmitted, 0 received, 100% packet loss, time 2000ms\n\n"
                               });
+            test.expect(1);
             bigIp.ping('1.2.3.4', util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ping with no packets should have failed.");
@@ -349,6 +455,7 @@ module.exports = {
                               {
                                   commandResult: "ping: unknown host f5.com\n"
                               });
+            test.expect(1);
             bigIp.ping('1.2.3.4', util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ping with unknown host should have failed.");
@@ -367,6 +474,7 @@ module.exports = {
                               {
                                   commandResult: "foobar"
                               });
+            test.expect(1);
             bigIp.ping('1.2.3.4', util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ping with unexpected response should have failed.");
@@ -430,6 +538,7 @@ module.exports = {
         },
 
         testBasic: function(test) {
+            test.expect(1);
             bigIp.ready(util.NO_RETRY)
                 .then(function() {
                     test.ok(true);
@@ -448,6 +557,7 @@ module.exports = {
                 '/shared/echo-js/available'
             );
 
+            test.expect(1);
             bigIp.ready(util.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ready should have failed availability.");
@@ -511,6 +621,7 @@ module.exports = {
 
     testReboot: function(test) {
         icontrolMock.when('create', '/tm/sys', {});
+        test.expect(3);
         bigIp.reboot()
             .then(function() {
                 test.strictEqual(icontrolMock.lastCall.method, 'create');
@@ -535,6 +646,7 @@ module.exports = {
                 }
             );
 
+            test.expect(3);
             bigIp.rebootRequired()
                 .then(function(rebootRequired) {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
@@ -558,6 +670,7 @@ module.exports = {
                 }
             );
 
+            test.expect(1);
             bigIp.rebootRequired()
                 .then(function(rebootRequired) {
                     test.ifError(rebootRequired);
@@ -577,6 +690,7 @@ module.exports = {
                 {}
             );
 
+            test.expect(1);
             bigIp.rebootRequired(util.NO_RETRY)
                 .then(function() {
                     test.ok(false, 'rebootRequired with no value should not have resolved.');
@@ -609,6 +723,7 @@ module.exports = {
         testNoFile: function(test) {
             icontrolMock.when('create', '/tm/sys/config', {});
 
+            test.expect(4);
             bigIp.save()
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
@@ -627,6 +742,7 @@ module.exports = {
         testFile: function(test) {
             icontrolMock.when('create', '/tm/sys/config', {});
 
+            test.expect(1);
             bigIp.save('foo')
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.body.options[0].file, 'foo');
@@ -683,6 +799,7 @@ module.exports = {
                               }
                               );
 
+            test.expect(5);
             bigIp.transaction(commands)
                 .then(function() {
                     test.strictEqual(icontrolMock.getRequest('list', '/foo/bar'), null);
@@ -722,6 +839,7 @@ module.exports = {
                               }
                               );
 
+            test.expect(1);
             bigIp.transaction(commands)
                 .then(function() {
                     test.ok(false, "Transaction should have rejected incomplete");
