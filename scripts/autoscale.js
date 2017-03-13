@@ -250,7 +250,7 @@
 
                                         if (hostnamesToRemove.length > 0) {
                                             logger.info('Removing devices from cluster:', hostnamesToRemove);
-                                            return bigIp.cluster.removeFromCluster(hostnamesToRemove, options.deviceGroup);
+                                            return bigIp.cluster.removeFromCluster(hostnamesToRemove);
                                         }
                                     }
                                     else {
@@ -279,7 +279,7 @@
                             .then(function(response) {
                                 if (this.instance.isMaster && response) {
                                     hasUcs = true;
-                                    return loadUcs(bigIp, response);
+                                    return loadUcs(bigIp, response, options.cloud);
                                 }
                             }.bind(this))
                             .then(function() {
@@ -447,7 +447,7 @@
             });
     };
 
-    var loadUcs = function(bigIp, ucsData) {
+    var loadUcs = function(bigIp, ucsData, cloudProvider) {
         const timeStamp = Date.now();
         const originalPath = '/config/ucsOriginal_' + timeStamp + '.ucs';
         const updatedPath = '/config/ucsUpdated_' + timeStamp + '.ucs';
@@ -457,7 +457,7 @@
 
         fs.writeFile(originalPath, ucsData, function(err) {
             var childProcess = require('child_process');
-            var args = ['--original-ucs', originalPath, '--updated-ucs', updatedPath];
+            var args = ['--original-ucs', originalPath, '--updated-ucs', updatedPath, '--cloud-provider', cloudProvider];
             var cp;
 
             if (err) {
