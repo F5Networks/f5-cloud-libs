@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016 - 2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -860,33 +860,52 @@ module.exports = {
     },
 
     testRemoveFromCluster: {
+        setUp: function(callback) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device-group',
+                [
+                    {
+                        name: 'myDeviceGroup'
+                    }
+                ]
+            );
+            callback();
+        },
+
         testOneDevice: function(test) {
             var device1 = 'device1';
             var device2 = 'device2';
             var deviceGroup = 'myDeviceGroup';
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                   {
-                                       name: device1
-                                   },
-                                   {
-                                       name: device2
-                                   }
-                              ]
-                            );
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/' + device1, '/Common/' + device2]
-                              });
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device-group/' + deviceGroup + '/devices',
+                [
+                     {
+                         name: device1
+                     },
+                     {
+                         name: device2
+                     }
+                ]
+            );
 
-            icontrolMock.when ('create',
-                               '/tm/cm/remove-from-trust',
-                               {});
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['/Common/' + device1, '/Common/' + device2]
+                }
+            );
 
-            bigIp.cluster.removeFromCluster(device1, deviceGroup)
+            icontrolMock.when (
+                'create',
+                 '/tm/cm/remove-from-trust',
+                 {}
+             );
+
+            bigIp.cluster.removeFromCluster(device1)
                 .then(function() {
                     var modifyFromDeviceGroupRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/' + deviceGroup);
                     var removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
@@ -928,7 +947,7 @@ module.exports = {
                                '/tm/cm/remove-from-trust',
                                {});
 
-            bigIp.cluster.removeFromCluster([device1, device2], deviceGroup)
+            bigIp.cluster.removeFromCluster([device1, device2])
                 .then(function() {
                     var modifyFromDeviceGroupRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/' + deviceGroup);
                     var removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');

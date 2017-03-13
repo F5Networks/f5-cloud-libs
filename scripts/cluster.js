@@ -246,8 +246,7 @@
 
                         if (options.removeFromCluster) {
                             logger.info("Removing", options.device, "from", options.deviceGroup);
-                            return bigIp.cluster.removeFromCluster(options.device,
-                                                                   options.deviceGroup);
+                            return bigIp.cluster.removeFromCluster(options.device);
                         }
                     })
                     .then(function(response) {

@@ -253,6 +253,16 @@ module.exports = {
 
             icontrolMock.when(
                 'list',
+                '/tm/cm/device-group',
+                [
+                    {
+                        name: deviceGroup
+                    }
+                ]
+            );
+
+            icontrolMock.when(
+                'list',
                 '/tm/cm/sync-status',
                 {
                     entries: entries

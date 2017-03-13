@@ -110,7 +110,7 @@ def main():
 
     parser = OptionParser()
     parser.add_option("--debug-level", action="store", type="int", dest="debug_level", default=0, help="debug level print debug (0-9)")
-    parser.add_option("--cloud-provider", action="store", type="string", dest="cloud_provider", help="Cloud being utilized, azure or aws, etc...")
+    parser.add_option("--cloud-provider", action="store", type="string", dest="cloud_provider", default="" , help="Cloud being utilized, azure or aws, etc...")
     parser.add_option("--original-ucs", action="store", type="string", dest="original_ucs", help="Original UCS file name")
     parser.add_option("--updated-ucs", action="store", type="string", dest="updated_ucs", default="updated.ucs", help="Modified UCS file name")
     parser.add_option("--extract-directory", action="store", type="string", dest="extract_dir", default="ucs_extract_dir", help="name of directory to extract to")
@@ -147,10 +147,13 @@ def main():
 
     # Grab instance's IP from UCS or local config file
     bigip_base_file = "/config/bigip_base.conf"
-    if cloud_provider in ('azure'):
+    if cloud_provider == 'azure':
         gateway_file = "/config/bigip.conf"
-    else:
+    elif cloud_provider == 'aws':
         gateway_file = "/config/partitions/LOCAL_ONLY/bigip.conf"
+    else:
+        print "Unsupported cloud provider " + cloud_provider
+        sys.exit()
 
     if not original_ucs_ip:
         original_ucs_ip = get_ip(extract_ucs_dir + bigip_base_file)

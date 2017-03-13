@@ -393,6 +393,32 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
+
+        testPasswordUrl: function(test) {
+            var fs = require('fs');
+            var password = 'myPassword';
+            var passwordFile = '/tmp/passwordFromUrlTest';
+            var passwordUrl = 'file://' + passwordFile;
+
+            fs.writeFileSync(passwordFile, password);
+
+            bigIp.init('host', 'user', passwordUrl, {passwordIsUrl: true})
+                .then(function() {
+                    bigIp.icontrol = icontrolMock;
+                    bigIp.password = '';
+                    bigIp.loadUcs('/tmp/foo')
+                        .then(function() {
+                            test.strictEqual(bigIp.password, password);
+                        })
+                        .catch(function(err) {
+                            test.ok(false, err);
+                        })
+                        .finally(function() {
+                            fs.unlinkSync(passwordFile);
+                            test.done();
+                        });
+                    });
         }
     },
 
