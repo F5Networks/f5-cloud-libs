@@ -14,11 +14,11 @@
     "winston": "^2.2.0"
   },
   "devDependencies": {
-    "coveralls": "^2.11.15",
+    "coveralls": "^2.12.0",
     "jscoverage": "^0.6.0",
     "jsdoc": "^3.4.3",
     "jshint": "latest",
-    "nodeunit": "^0.10"
+    "nodeunit": "^0.11"
   },
   "config": {
     "cloudProvider": "",
