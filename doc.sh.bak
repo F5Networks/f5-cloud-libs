@@ -31,6 +31,9 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 2.2.0
+* Restore from saved UCS file if present in storage account
+
 ### Version 2.1.0
 * Allows for autoscaling and clustering without providing a password in the template
 * Adds hash verification for all downloaded files
@@ -59,6 +62,14 @@ Sets up BIG-IPs in a cluster.
 EOL
 
 writeHelp scripts/cluster.js
+
+cat >> $README_FILE << EOL
+### autoscale.js
+
+Runs autoscale code to elect master and cluster
+EOL
+
+writeHelp scripts/autoscale.js
 
 cat >> $README_FILE << EOL
 ### network.js

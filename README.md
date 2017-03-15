@@ -14,14 +14,8 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
-### Version 2.1.4
-* Handling for updating UCS for new BIG-IP versions added to a cluster
-
-### Version 2.1.3
-* Escape \ in passwords
-
-### Version 2.1.2
-* Better password handling for add-to-trust during clustering.
+### Version 2.2.0
+* Restore from saved UCS file if present in storage account
 
 ### Version 2.1.0
 * Allows for autoscaling and clustering without providing a password in the template
@@ -127,6 +121,34 @@ Sets up BIG-IPs in a cluster.
       --remove-from-cluster                            Remove a device from the cluster
           --device-group <device_group>                    Name of the device group.
           --device <device_name>                           Device name to remove.
+    
+### autoscale.js
+
+Runs autoscale code to elect master and cluster
+    
+    Usage: autoscale [options]
+    
+    Options:
+    
+      -h, --help                          output usage information
+      -V, --version                       output the version number
+      --host <ip_address>                 BIG-IP management IP to which to send commands.
+      -u, --user <user>                   BIG-IP admin user name.
+      -p, --password <password>           BIG-IP admin user password. Use this or --password-url
+      --password-url <password_url>       URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      --port <port>                       BIG-IP management SSL port to connect to. Default 443.
+      --no-reboot                         Skip reboot even if it is recommended.
+      --background                        Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
+      --signal <signal>                   Signal to send when done. Default ONBOARD_DONE.
+      --wait-for <signal>                 Wait for the named signal before running.
+      --log-level <level>                 Log level (none, error, warn, info, verbose, debug, silly). Default is info.
+      -o, --output <file>                 Log to file as well as console. This is the default if background process is spawned. Default is /tmp/autoscale.log
+      --no-console                        Do not log to console. Default false (log to console).
+      --cloud <provider>                  Cloud provider (aws | azure | etc.)
+      --provider-options <cloud_options>  Any options that are required for the specific cloud provider. Ex: param1:value1,param2:value2
+      -c, --cluster-action <type>         join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)
+      --device-group <device_group>       Device group name.
+      --block-sync                        If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.
     
 ### network.js
 
