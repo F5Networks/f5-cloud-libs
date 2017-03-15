@@ -1,6 +1,6 @@
 {
   "name": "f5-cloud-libs",
-  "version": "2.1.4",
+  "version": "2.2.0",
   "description": "Common library code for deploying a BIG-IP in a cloud environment",
   "main": "index.js",
   "repository": {
