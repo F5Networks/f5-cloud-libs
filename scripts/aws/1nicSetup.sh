@@ -52,18 +52,26 @@ fi
 
 # Get the management IP address. Need to wait till it's available via ifconfig
 # since tmsh will have the DHCP address before the correct management IP is ready
-# Then need wait till tmsh agrees since that is updated after eth0 is configured
+# Then need wait till tmsh agrees since that is updated after the nic is configured
 function wait_for_management_ip() {
     RETRY_INTERVAL=10
     MAX_TRIES=60
     failed=0
 
+    # Prior to BIG-IP v13, single NIC hosts have eth0 configured, v13 and later
+    # use mgmt
+    if ! ifconfig mgmt &> /dev/null; then
+        NIC=eth0
+    else
+        NIC=mgmt
+    fi
+
     while true; do
         MGMT_ADDR_TMSH=$(tmsh list sys management-ip | awk '/management-ip/ {print $3}' | awk -F "/" '{print $1}')
-        MGMT_ADDR_ETH0=`ifconfig eth0 | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
+        MGMT_ADDR_ETH0=$(ifconfig $NIC | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}')
 
         if [[ $MGMT_ADDR_TMSH != $MGMT_ADDR_ETH0 ]]; then
-            echo "Management IP and eth0 not yet in sync."
+            echo "Management IP and $NIC not yet in sync."
         elif [ -n $MGMT_ADDR_TMSH ]; then
             MGMT_ADDR=$MGMT_ADDR_TMSH
             return 0
@@ -84,11 +92,11 @@ function wait_for_cidr_block() {
     MAX_TRIES=60
     failed=0
 
-    GATEWAY_CIDR_BLOCK=`curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block`
+    GATEWAY_CIDR_BLOCK=$(curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block)
     while [ -z "$GATEWAY_CIDR_BLOCK" ] && [[ $failed -lt $MAX_TRIES ]]; do
         sleep $RETRY_INTERVAL
         ((failed=failed+1))
-        GATEWAY_CIDR_BLOCK=`curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block`
+        GATEWAY_CIDR_BLOCK=$(curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block)
     done
 }
 
@@ -107,7 +115,7 @@ fi
 echo MGMT_ADDR: "$MGMT_ADDR"
 
 # Get the Gateway info
-GATEWAY_MAC=`ifconfig eth0 | egrep HWaddr | awk '{print tolower($5)}'`
+GATEWAY_MAC=$(ifconfig eth0 | egrep HWaddr | awk '{print tolower($5)}')
 echo GATEWAY_MAC: "$GATEWAY_MAC"
 
 wait_for_cidr_block
