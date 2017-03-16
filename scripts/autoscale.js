@@ -447,23 +447,29 @@
             });
     };
 
+    /**
+     * Loads UCS
+     *
+     * @param {Object} bigIp - bigIp instances
+     * @param {Buffer|Stream} ucsData - Either a Buffer or a ReadableStream containing UCS data
+     * @param {String} cloudProvider - Cloud provider (aws, azure, etc)
+     *
+     * @returns {Promise} Promise that will be resolved when the UCS is loaded or rejected
+     *                    if an error occurs.
+     */
     var loadUcs = function(bigIp, ucsData, cloudProvider) {
         const timeStamp = Date.now();
         const originalPath = '/config/ucsOriginal_' + timeStamp + '.ucs';
         const updatedPath = '/config/ucsUpdated_' + timeStamp + '.ucs';
-        const updateScript = '/config/cloud/aws/node_modules/f5-cloud-libs/scripts/updateAutoScaleUcs';
+        const updateScript = '/config/cloud/' + (cloudProvider === 'aws' ? 'aws/' : '') + 'node_modules/f5-cloud-libs/scripts/updateAutoScaleUcs';
 
         var deferred = q.defer();
+        var originalFile;
 
-        fs.writeFile(originalPath, ucsData, function(err) {
+        var doLoad = function() {
             var childProcess = require('child_process');
             var args = ['--original-ucs', originalPath, '--updated-ucs', updatedPath, '--cloud-provider', cloudProvider];
             var cp;
-
-            if (err) {
-                deferred.reject(err);
-                return;
-            }
 
             cp = childProcess.execFile(updateScript, args, function(err) {
                 if (err) {
@@ -492,8 +498,48 @@
                     .catch(function(err) {
                         deferred.reject(err);
                     });
+                }
+            );
+        };
+
+        // If ucsData has a pipe method (is a stream), use it
+        if (ucsData.pipe) {
+            logger.silly('ucsData is a Stream');
+            originalFile = fs.createWriteStream(originalPath);
+
+            ucsData.pipe(originalFile);
+
+            originalFile.on('finish', function() {
+                logger.silly('finished piping ucsData');
+                originalFile.close(function() {
+                    doLoad();
+                });
             });
-        });
+
+            originalFile.on('error', function(err) {
+                logger.warn('Error piping ucsData', err);
+                deferred.reject(err);
+            });
+
+            ucsData.on('error', function(err) {
+                logger.warn('Error reading ucs data');
+                deferred.reject(err);
+            });
+        }
+
+        // Otherwise, assume it's a Buffer
+        else {
+            logger.silly('ucsData is a Buffer');
+            fs.writeFile(originalPath, ucsData, function(err) {
+                logger.silly('finished writing ucsData');
+                if (err) {
+                    logger.warn('Error writing ucsData', err);
+                    deferred.reject(err);
+                    return;
+                }
+                doLoad();
+            });
+        }
 
         return deferred.promise;
     };
