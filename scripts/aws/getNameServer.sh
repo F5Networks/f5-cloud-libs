@@ -17,7 +17,7 @@
 # For DNS name servers, AWS uses the CIDR of an interface +2 on the last octet
 # To use this script, pass in the name of the external interface
 
-. ../util.sh
+. /config/cloud/aws/node_modules/f5-cloud-libs/scripts/util.sh
 
 if ! wait_for_management_ip; then
     echo "Could not get management ip."
