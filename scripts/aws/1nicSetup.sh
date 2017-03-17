@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2016 F5 Networks, Inc.
+# Copyright 2016-2017 F5 Networks, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,43 +50,6 @@ fi
 
 . ../util.sh
 
-# Get the management IP address. Need to wait till it's available via ifconfig
-# since tmsh will have the DHCP address before the correct management IP is ready
-# Then need wait till tmsh agrees since that is updated after the nic is configured
-function wait_for_management_ip() {
-    RETRY_INTERVAL=10
-    MAX_TRIES=60
-    failed=0
-
-    # Prior to BIG-IP v13, single NIC hosts have eth0 configured, v13 and later
-    # use mgmt
-    if ! ifconfig mgmt &> /dev/null; then
-        NIC=eth0
-    else
-        NIC=mgmt
-    fi
-
-    while true; do
-        MGMT_ADDR_TMSH=$(tmsh list sys management-ip | awk '/management-ip/ {print $3}' | awk -F "/" '{print $1}')
-        MGMT_ADDR_ETH0=$(ifconfig $NIC | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}')
-
-        if [[ $MGMT_ADDR_TMSH != $MGMT_ADDR_ETH0 ]]; then
-            echo "Management IP and $NIC not yet in sync."
-        elif [ -n $MGMT_ADDR_TMSH ]; then
-            MGMT_ADDR=$MGMT_ADDR_TMSH
-            return 0
-        fi
-
-        if [[ $failed -ge $MAX_TRIES ]]; then
-            echo "Failed to get management IP after $failed attempts."
-            return 1
-        fi
-
-        ((failed=failed+1))
-        sleep $RETRY_INTERVAL
-    done
-}
-
 function wait_for_cidr_block() {
     RETRY_INTERVAL=2
     MAX_TRIES=60
@@ -100,14 +63,12 @@ function wait_for_cidr_block() {
     done
 }
 
-wait_mcp_running
-if [ $? -ne 0 ]; then
+if ! wait_mcp_running; then
     echo "mcpd not ready in time."
     exit 1
 fi
 
-wait_for_management_ip
-if [ $? -ne 0 ]; then
+if ! wait_for_management_ip; then
     echo "Could not get management ip."
     exit 1
 fi
