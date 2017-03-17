@@ -522,7 +522,7 @@
             });
 
             ucsData.on('error', function(err) {
-                logger.warn('Error reading ucs data');
+                logger.warn('Error reading ucs data', err);
                 deferred.reject(err);
             });
         }
