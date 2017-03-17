@@ -162,7 +162,8 @@ Sets up default gateway, VLANs and self IPs
       -V, --version                            output the version number
       --host <ip_address>                      BIG-IP management IP to which to send commands.
       -u, --user <user>                        BIG-IP admin user name.
-      -p, --password <password>                BIG-IP admin user password.
+      -p, --password <password>                BIG-IP admin user password. Use this or --password-url
+      --password-url <password_url>            URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
       --port <port>                            BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                              Skip reboot even if it is recommended.
       --background                             Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
