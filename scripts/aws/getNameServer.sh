@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2016 F5 Networks, Inc.
+# Copyright 2016-2017 F5 Networks, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,13 @@
 
 # For DNS name servers, AWS uses the CIDR of an interface +2 on the last octet
 # To use this script, pass in the name of the external interface
+
+. ../util.sh
+
+if ! wait_for_management_ip; then
+    echo "Could not get management ip."
+    exit 1
+fi
 
 INTERFACE=$1
 INTERFACE_MAC=`ifconfig ${INTERFACE} | egrep HWaddr | awk '{print tolower($5)}'`
