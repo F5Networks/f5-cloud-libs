@@ -203,7 +203,11 @@ def main():
         replace(filename, original_ucs_ip_str, dest_ip_str)
 
     # Remove the /config/cloud directory so we don't overwrite it with old data
-    shutil.rmtree(extract_ucs_dir + "/config/cloud", ignore_errors=True)
+    path_to_exclude = "/config/cloud"
+    if cloud_provider == "aws":
+        path_to_exclude += "/aws"
+    path_to_exclude += "/node_modules"
+    shutil.rmtree(extract_ucs_dir + path_to_exclude, ignore_errors=True)
 
     tar_updated.add(extract_ucs_dir, arcname='.')
 
