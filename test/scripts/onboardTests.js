@@ -15,9 +15,11 @@
  */
 'use strict';
 
-var onboard = require('../../scripts/onboard');
-var ipc = require('../../lib/ipc');
+var fs = require('fs');
 var q = require('q');
+var ipc;
+var onboard;
+var utilMock;
 
 var bigIpMock = {
     init: function() {
@@ -76,6 +78,10 @@ var bigIpMock = {
             });
 
             return q();
+        },
+
+        sslPort: function() {
+            return q();
         }
     },
 };
@@ -94,17 +100,28 @@ options.setMaxListeners(0);
 // Don't let onboard exit - we need the nodeunit process to run to completion
 process.exit = function() {};
 
-// Just resolve right away, otherwise these tests never exit
-ipc.once = function() {
-    var deferred = q.defer();
-    deferred.resolve();
-    return deferred;
-};
-
 module.exports = {
     setUp: function(callback) {
+        ipc = require('../../lib/ipc');
+
+        // Just resolve right away, otherwise these tests never exit
+        ipc.once = function() {
+            var deferred = q.defer();
+            deferred.resolve();
+            return deferred;
+        };
+
+        utilMock = require('../../lib/util');
+        onboard = require('../../scripts/onboard');
         argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
         rebootRequested = false;
+        callback();
+    },
+
+    tearDown: function(callback) {
+        Object.keys(require.cache).forEach(function(key) {
+            delete require.cache[key];
+        });
         callback();
     },
 
@@ -155,6 +172,35 @@ module.exports = {
             test.ifError(rebootRequested);
             test.done();
         });
+    },
+
+    testSslPortArgs: {
+        setUp: function(callback) {
+            utilMock.deleteArgs = function() {};
+            Date.now = function() {
+                return '1234';
+            };
+            callback();
+        },
+
+        testNoPort: function(test) {
+            argv.push('--ssl-port', '8443');
+            onboard.run(argv, testOptions, function() {
+                var argsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
+                test.notStrictEqual(argsFile.indexOf('--port 8443'), -1);
+                test.done();
+            });
+        },
+
+        testPort: function(test) {
+            argv.push('--port', '443', '--ssl-port', '8443');
+            onboard.run(argv, testOptions, function() {
+                var argsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
+                test.strictEqual(argsFile.indexOf('--port 443'), -1);
+                test.notStrictEqual(argsFile.indexOf('--port 8443'), -1);
+                test.done();
+            });
+        }
     },
 
     testUpdateUser: function(test) {
