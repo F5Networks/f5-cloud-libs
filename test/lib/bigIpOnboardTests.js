@@ -331,7 +331,7 @@ module.exports = {
                     test.ok(false, 'Should have failed with license failure');
                 })
                 .catch(function(err) {
-                    test.strictEqual(err, failureMessage);
+                    test.strictEqual(err.message, failureMessage);
                 })
                 .finally(function() {
                     test.done();
