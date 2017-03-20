@@ -447,7 +447,7 @@
                     .then(function() {
                         // If we forced the reboot ourselves, we will exit when that call completes
                         if (!forceReboot) {
-                            util.logAndExit("REBOOT signalled. Exitting.");
+                            util.logAndExit("REBOOT signaled. Exiting.");
                         }
                     });
             }

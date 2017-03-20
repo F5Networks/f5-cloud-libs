@@ -167,10 +167,10 @@
 
                     instanceIds = Object.keys(this.instances);
                     if (instanceIds.length === 0) {
-                        throw new Error('Instance list is empty. Exitting.');
+                        throw new Error('Instance list is empty. Exiting.');
                     }
                     else if (instanceIds.indexOf(this.instanceId) === -1) {
-                        throw new Error('Our instance ID is not in instance list. Exitting');
+                        throw new Error('Our instance ID is not in instance list. Exiting');
                     }
 
                     logger.info('Determining master instance id.');
@@ -377,7 +377,7 @@
                 // If we reboot, exit - otherwise cloud providers won't know we're done
                 ipc.once('REBOOT')
                     .then(function() {
-                        util.logAndExit("REBOOT signalled. Exitting.");
+                        util.logAndExit("REBOOT signaled. Exiting.");
                     });
 
             }

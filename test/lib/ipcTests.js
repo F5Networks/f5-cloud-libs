@@ -29,48 +29,48 @@ module.exports = {
     },
 
     testOnce: function(test) {
-        var signalled = 0;
+        var signaled = 0;
 
-        var checkSignalled = function(expected) {
-            test.strictEqual(signalled, expected);
+        var checkSignaled = function(expected) {
+            test.strictEqual(signaled, expected);
         };
 
         test.expect(2);
 
         ipc.once('foo')
             .then(function() {
-                signalled++;
+                signaled++;
             });
 
-        test.strictEqual(signalled, 0);
+        test.strictEqual(signaled, 0);
         setTimeout(ipc.send, 50, 'foo');
         setTimeout(ipc.send, 50, 'foo');
-        setTimeout(checkSignalled, 100, 1);
+        setTimeout(checkSignaled, 100, 1);
         setTimeout(test.done, 200);
     },
 
     testOnceTwice: function(test) {
-        var signalled = 0;
+        var signaled = 0;
 
-        var checkSignalled = function(expected) {
-            test.strictEqual(signalled, expected);
+        var checkSignaled = function(expected) {
+            test.strictEqual(signaled, expected);
         };
 
         test.expect(2);
 
         ipc.once('foo')
             .then(function() {
-                signalled++;
+                signaled++;
             });
         ipc.once('foo')
             .then(function() {
-                signalled++;
+                signaled++;
             });
 
-        test.strictEqual(signalled, 0);
+        test.strictEqual(signaled, 0);
         setTimeout(ipc.send, 50, 'foo');
         setTimeout(ipc.send, 50, 'foo');
-        setTimeout(checkSignalled, 100, 2);
+        setTimeout(checkSignaled, 100, 2);
         setTimeout(test.done, 200);
     }
 };

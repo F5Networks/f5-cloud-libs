@@ -384,7 +384,7 @@
                     ipc.once('REBOOT')
                         .then(function() {
                             // Make sure the last log message is flushed before exiting.
-                            util.logAndExit("REBOOT signalled. Exiting.");
+                            util.logAndExit("REBOOT signaled. Exiting.");
                         });
                 }
             }
