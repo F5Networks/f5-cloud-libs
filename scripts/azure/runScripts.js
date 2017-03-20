@@ -253,7 +253,7 @@
                 ipc.once('REBOOT')
                     .then(function() {
                         // Make sure the last log message is flushed before exiting.
-                        logger.info("REBOOT signalled. Exiting.", function() {
+                        logger.info("REBOOT signaled. Exiting.", function() {
                             process.exit();
                         });
                     });

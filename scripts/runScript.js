@@ -217,7 +217,7 @@
             // If we reboot, exit - otherwise cloud providers won't know we're done
             ipc.once('REBOOT')
                 .then(function() {
-                    util.logAndExit("REBOOT signalled. Exitting.");
+                    util.logAndExit("REBOOT signaled. Exiting.");
                 });
         },
 
