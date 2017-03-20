@@ -201,6 +201,26 @@
                         }
                     })
                     .then(function(response) {
+                        var portIndex;
+
+                        logger.debug(response);
+
+                        // If we just successfully changed the SSL port, save --port
+                        // as an argument in case we reboot
+                        if (options.sslPort) {
+
+                            // If there is already a port argument, remove it
+                            if (options.port) {
+                                portIndex = argv.indexOf('--port');
+                                if (portIndex !== -1) {
+                                    argv.splice(portIndex, 2);
+                                }
+                            }
+                            argv.push('--port', options.sslPort);
+                            return util.saveArgs(argv, ARGS_FILE_ID);
+                        }
+                    })
+                    .then(function(response) {
                         logger.debug(response);
 
                         if (Object.keys(rootPasswords).length > 0) {
