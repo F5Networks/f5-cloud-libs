@@ -889,7 +889,7 @@ module.exports = {
                     test.ok(false, "Transaction should have rejected incomplete");
                 })
                 .catch(function(err) {
-                    test.notStrictEqual(err.indexOf('not completed'), -1);
+                    test.notStrictEqual(err.message.indexOf('not completed'), -1);
                 })
                 .finally(function() {
                     test.done();

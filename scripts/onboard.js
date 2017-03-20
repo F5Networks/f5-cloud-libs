@@ -410,6 +410,7 @@
                         ipc.send(options.signal || signals.ONBOARD_DONE);
                     })
                     .catch(function(err) {
+                        err = err || new Error();
                         logger.error("BIG-IP onboard failed:", err.message);
 
                         if (err instanceof ActiveError) {
