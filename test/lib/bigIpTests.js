@@ -511,6 +511,24 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
+
+        testNoResponse: function(test) {
+            icontrolMock.setDefaultResponse(undefined);
+            icontrolMock.when('create',
+                              '/tm/util/ping',
+                              undefined);
+            test.expect(1);
+            bigIp.ping('1.2.3.4', util.NO_RETRY)
+                .then(function() {
+                    test.ok(false, "Ping with no response should have failed.");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     },
 

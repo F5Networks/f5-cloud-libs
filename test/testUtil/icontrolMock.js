@@ -67,6 +67,11 @@ module.exports = {
         this.lastCall.path = '';
         this.lastCall.body = null;
         this.lastCall.opts = {};
+        this.defaultResponse = true;
+    },
+
+    setDefaultResponse: function(defaultResponse) {
+        this.defaultResponse = defaultResponse;
     },
 
     recordRequest: function(method, path, body, opts) {
@@ -95,7 +100,7 @@ module.exports = {
             return q.reject(new Error('We were told to fail this.'));
         }
         else {
-            return q(response || true);
+            return q(response || this.defaultResponse);
         }
     }
 };
