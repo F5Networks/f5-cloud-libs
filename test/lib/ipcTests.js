@@ -33,6 +33,7 @@ module.exports = {
 
         var checkSignaled = function(expected) {
             test.strictEqual(signaled, expected);
+            test.done();
         };
 
         test.expect(2);
@@ -43,10 +44,9 @@ module.exports = {
             });
 
         test.strictEqual(signaled, 0);
-        setTimeout(ipc.send, 50, 'foo');
-        setTimeout(ipc.send, 50, 'foo');
-        setTimeout(checkSignaled, 100, 1);
-        setTimeout(test.done, 200);
+        ipc.send('foo');
+        ipc.send('foo');
+        setTimeout(checkSignaled, 1, 1);
     },
 
     testOnceTwice: function(test) {
@@ -54,6 +54,7 @@ module.exports = {
 
         var checkSignaled = function(expected) {
             test.strictEqual(signaled, expected);
+            test.done();
         };
 
         test.expect(2);
@@ -68,9 +69,8 @@ module.exports = {
             });
 
         test.strictEqual(signaled, 0);
-        setTimeout(ipc.send, 50, 'foo');
-        setTimeout(ipc.send, 50, 'foo');
-        setTimeout(checkSignaled, 100, 2);
-        setTimeout(test.done, 200);
+        ipc.send('foo');
+        ipc.send('foo');
+        setTimeout(checkSignaled, 1, 2);
     }
 };
