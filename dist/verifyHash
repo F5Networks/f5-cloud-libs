@@ -1,11 +1,18 @@
+
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) e0db1904839b38571f69e083d8dbab8a2381459e28546d41441caa458fc70c8f48f6de8ec61c793ba63373e05839fa0ea5618b80807b4c9a066d339305575b36
-            set hashes(f5-cloud-libs-aws.tar.gz) 3e9bd2e56bc7c40f6c0621d71b6b0e854f2061f66b433d75f836b4db6e7375acd7664558a60b05de5861a905ec791e2e57362031d3084a9556e98d9ade262a8b
+            set hashes(f5-cloud-libs.tar.gz) ca519a17d00d6bc754db72b83d4859fdf15ab99ce7ff0862d0fcb59fcb3ef005f4281c2edcde87afda507e644efb62bc78396dd6d18f14f74075e7cb470e9ef6
+            set hashes(f5-cloud-libs-aws.tar.gz) 2566f515fb46d89f5a245079b0efdad60fd78327c352e567bd5d573eb2ee0093d167a2f054b2408bd7df49c5debc4218074fdb50cfe135bb80ccc6c303a03f72
+            set hashes(f5-cloud-libs-azure.tar.gz) 16d2ce2086883ed5b47a3ba4e79541fd1a4bb64513222cf3a459297c2474d0bfc71a161ba2b8571707e1a6b273badaaf2c847993d0e60a4b52cd8c62cb03aba6
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
             set hashes(f5.http.v1.2.0rc4.tmpl) 47c19a83ebfc7bd1e9e9c35f3424945ef8694aa437eedd17b6a387788d4db1396fefe445199b497064d76967b0d50238154190ca0bd73941298fc257df4dc034
             set hashes(f5.http.v1.2.0rc6.tmpl) 811b14bffaab5ed0365f0106bb5ce5e4ec22385655ea3ac04de2a39bd9944f51e3714619dae7ca43662c956b5212228858f0592672a2579d4a87769186e2cbfe
+            set hashes(f5.http.v1.2.0rc7.tmpl) 21f413342e9a7a281a0f0e1301e745aa86af21a697d2e6fdc21dd279734936631e92f34bf1c2d2504c201f56ccd75c5c13baa2fe7653213689ec3c9e27dff77d
+            set hashes(f5.aws_advanced_ha.v1.3.0rc1.tmpl) 9e55149c010c1d395abdae3c3d2cb83ec13d31ed39424695e88680cf3ed5a013d626b326711d3d40ef2df46b72d414b4cb8e4f445ea0738dcbd25c4c843ac39d
+            set hashes(asm-policy.tar.gz) 2d39ec60d006d05d8a1567a1d8aae722419e8b062ad77d6d9a31652971e5e67bc4043d81671ba2a8b12dd229ea46d205144f75374ed4cae58cefa8f9ab6533e6
+            set hashes(deploy_waf.sh) 4db3176b45913a5e7ccf42ab9c7ac9d7de115cdbd030b9e735946f92456b6eb433087ed0e98ac4981c76d475cd38f4de49cd98c063e13d50328a270e5b3daa4a
+            set hashes(f5.policy_creator.tmpl) 54d265e0a573d3ae99864adf4e054b293644e48a54de1e19e8a6826aa32ab03bd04c7255fd9c980c3673e9cd326b0ced513665a91367add1866875e5ef3c4e3a
 
             set file_path [lindex $tmsh::argv 1]
             set file_name [file tail $file_path]
@@ -27,5 +34,3 @@ proc script::run {} {
             exit 1
         }
     }
-    signing-key /Common/f5-irule
-}

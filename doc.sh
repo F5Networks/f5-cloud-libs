@@ -31,6 +31,11 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 2.3.0
+* Support for Azure autoscaling
+* Support --password-url in network.js
+* Restore from stored UCS
+
 ### Version 2.2.0
 * Restore from saved UCS file if present in storage account
 
