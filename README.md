@@ -22,7 +22,7 @@ See node scripts/network.js --help for details**
 * More options for network.js
     * Add arbitrary routes
     * Support mtu on vlans
-    * Support port lockdown on selv IPs
+    * Support port lockdown on self IPs
 
 ### Version 2.3.0
 * Support for Azure autoscaling
@@ -189,7 +189,7 @@ Sets up default gateway, VLANs and self IPs
       --single-nic                                                                                      Set db variables for single NIC configuration.
       --multi-nic                                                                                       Set db variables for multi NIC configuration.
       --default-gw <gateway_address>                                                                    Set default gateway to gateway_address.
-      --route <name:name,gw:address,network:network>                                                    Create arbitrary route with name for destination network via gateway address.
+      --route <name:name, gw:address, network:network>                                                  Create arbitrary route with name for destination network via gateway address.
       --local-only                                                                                      Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.
       --vlan <name:name, nic:nic, [mtu:mtu], [tag:tag]>                                                 Create vlan with name on nic (for example, 1.1). Optionally specify mtu and tag. For multiple vlans, use multiple --vlan entries.
       --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.
