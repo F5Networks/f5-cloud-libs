@@ -74,7 +74,7 @@
                     .option('--single-nic', 'Set db variables for single NIC configuration.')
                     .option('--multi-nic', 'Set db variables for multi NIC configuration.')
                     .option('--default-gw <gateway_address>', 'Set default gateway to gateway_address.')
-                    .option('--route <name:name,gw:address,network:network>', 'Create arbitrary route with name for destination network via gateway address.', util.map, routes)
+                    .option('--route <name:name, gw:address, network:network>', 'Create arbitrary route with name for destination network via gateway address.', util.map, routes)
                     .option('--local-only', 'Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.')
                     .option('--vlan <name:name, nic:nic, [mtu:mtu], [tag:tag]>', 'Create vlan with name on nic (for example, 1.1). Optionally specify mtu and tag. For multiple vlans, use multiple --vlan entries.', util.map, vlans)
                     .option('--self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2]>', 'Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.', util.map, selfIps)
