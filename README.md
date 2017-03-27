@@ -14,6 +14,16 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 3.0.0
+
+**This version is not backwards compatible. The format for options on network.js has changed.
+See node scripts/network.js --help for details**
+
+* More options for network.js
+    * Add arbitrary routes
+    * Support mtu on vlans
+    * Support port lockdown on selv IPs
+
 ### Version 2.3.0
 * Support for Azure autoscaling
 * Support --password-url in network.js
@@ -163,26 +173,27 @@ Sets up default gateway, VLANs and self IPs
     
     Options:
     
-      -h, --help                               output usage information
-      -V, --version                            output the version number
-      --host <ip_address>                      BIG-IP management IP to which to send commands.
-      -u, --user <user>                        BIG-IP admin user name.
-      -p, --password <password>                BIG-IP admin user password. Use this or --password-url
-      --password-url <password_url>            URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
-      --port <port>                            BIG-IP management SSL port to connect to. Default 443.
-      --no-reboot                              Skip reboot even if it is recommended.
-      --background                             Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
-      --signal <signal>                        Signal to send when done. Default ONBOARD_DONE.
-      --wait-for <signal>                      Wait for the named signal before running.
-      --log-level <level>                      Log level (none, error, warn, info, verbose, debug, silly). Default is info.
-      -o, --output <file>                      Log to file as well as console. This is the default if background process is spawned. Default is /tmp/network.log
-      --single-nic                             Set db variables for single NIC configuration.
-      --multi-nic                              Set db variables for multi NIC configuration.
-      --default-gw <gateway_address>           Set default gateway to gateway_address.
-      --local-only                             Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.
-      --vlan <name, nic_number, [tag]>         Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated. For multiple vlans, use multiple --vlan entries.
-      --self-ip <name, ip_address, vlan_name>  Create self IP with name and ip_address on vlan. Values should be comma-separated. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.
-      --force-reboot                           Force a reboot at the end. This is necessary for some 2+ NIC configurations.
+      -h, --help                                                                                        output usage information
+      -V, --version                                                                                     output the version number
+      --host <ip_address>                                                                               BIG-IP management IP to which to send commands.
+      -u, --user <user>                                                                                 BIG-IP admin user name.
+      -p, --password <password>                                                                         BIG-IP admin user password. Use this or --password-url
+      --password-url <password_url>                                                                     URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      --port <port>                                                                                     BIG-IP management SSL port to connect to. Default 443.
+      --no-reboot                                                                                       Skip reboot even if it is recommended.
+      --background                                                                                      Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
+      --signal <signal>                                                                                 Signal to send when done. Default ONBOARD_DONE.
+      --wait-for <signal>                                                                               Wait for the named signal before running.
+      --log-level <level>                                                                               Log level (none, error, warn, info, verbose, debug, silly). Default is info.
+      -o, --output <file>                                                                               Log to file as well as console. This is the default if background process is spawned. Default is /tmp/network.log
+      --single-nic                                                                                      Set db variables for single NIC configuration.
+      --multi-nic                                                                                       Set db variables for multi NIC configuration.
+      --default-gw <gateway_address>                                                                    Set default gateway to gateway_address.
+      --route <name:name,gw:address,network:network>                                                    Create arbitrary route with name for destination network via gateway address.
+      --local-only                                                                                      Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.
+      --vlan <name:name, nic:nic, [mtu:mtu], [tag:tag]>                                                 Create vlan with name on nic (for example, 1.1). Optionally specify mtu and tag. For multiple vlans, use multiple --vlan entries.
+      --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.
+      --force-reboot                                                                                    Force a reboot at the end. This is necessary for some 2+ NIC configurations.
     
 ### runScript.js
 

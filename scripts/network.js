@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 (function() {
 
+    var q = require('q');
     var options;
     var runner;
 
@@ -37,6 +38,9 @@
             var ipc = require('../lib/ipc');
             var signals = require('../lib/signals');
             var util = require('../lib/util');
+            var vlans = [];
+            var selfIps = [];
+            var routes = [];
             var loggerOptions = {};
             var loggableArgs;
             var logger;
@@ -44,11 +48,11 @@
             var bigIp;
             var i;
 
-            var DEFAULT_LOG_FILE = '/tmp/network.log';
-            var ARGS_FILE_ID = 'network_' + Date.now();
-            var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
-            var REQUIRED_OPTIONS = ['host', 'user'];
-            var DEFAULT_CIDR = '/24';
+            const DEFAULT_LOG_FILE = '/tmp/network.log';
+            const ARGS_FILE_ID = 'network_' + Date.now();
+            const KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
+            const REQUIRED_OPTIONS = ['host', 'user'];
+            const DEFAULT_CIDR = '/24';
 
             testOpts = testOpts || {};
 
@@ -70,9 +74,10 @@
                     .option('--single-nic', 'Set db variables for single NIC configuration.')
                     .option('--multi-nic', 'Set db variables for multi NIC configuration.')
                     .option('--default-gw <gateway_address>', 'Set default gateway to gateway_address.')
+                    .option('--route <name:name,gw:address,network:network>', 'Create arbitrary route with name for destination network via gateway address.', util.map, routes)
                     .option('--local-only', 'Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.')
-                    .option('--vlan <name, nic_number, [tag]>', 'Create vlan with name on nic_number. Optionally specify a tag. Values should be comma-separated. For multiple vlans, use multiple --vlan entries.', util.csv, [])
-                    .option('--self-ip <name, ip_address, vlan_name>', 'Create self IP with name and ip_address on vlan. Values should be comma-separated. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.', util.csv, [])
+                    .option('--vlan <name:name, nic:nic, [mtu:mtu], [tag:tag]>', 'Create vlan with name on nic (for example, 1.1). Optionally specify mtu and tag. For multiple vlans, use multiple --vlan entries.', util.map, vlans)
+                    .option('--self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2]>', 'Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.', util.map, selfIps)
                     .option('--force-reboot', 'Force a reboot at the end. This is necessary for some 2+ NIC configurations.')
                     .parse(argv);
 
@@ -138,18 +143,24 @@
                         ipc.send(signals.NETWORK_RUNNING);
 
                         // Create the bigIp client object
-                        bigIp = testOpts.bigIp || new BigIp({logger: logger});
+                        if (testOpts.bigIp) {
+                            logger.warn("Using test BIG-IP.");
+                            bigIp = testOpts.bigIp;
+                        }
+                        else {
+                            bigIp = new BigIp({logger: logger});
 
-                        logger.info("Initializing BIG-IP.");
-                        return bigIp.init(
-                            options.host,
-                            options.user,
-                            options.password || options.passwordUrl,
-                            {
-                                port: options.port,
-                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
-                            }
-                        );
+                            logger.info("Initializing BIG-IP.");
+                            return bigIp.init(
+                                options.host,
+                                options.user,
+                                options.password || options.passwordUrl,
+                                {
+                                    port: options.port,
+                                    passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                                }
+                            );
+                        }
                     })
                     .then(function() {
                         logger.info("Waiting for BIG-IP to be ready.");
@@ -203,34 +214,30 @@
                         logger.debug(response);
 
                         var promises = [];
-                        var vlanName;
-                        var nicName;
-                        var tag;
                         var vlanBody;
 
-                        if (options.vlan) {
-                            options.vlan.forEach(function(vlan) {
-                                if (vlan.length < 2) {
-                                    logger.warn("Invalid vlan parameters. Must have at least 2 values. Use --help for description");
-                                    return;
+                        if (vlans.length > 0) {
+                            vlans.forEach(function(vlan) {
+                                if (!vlan.name || !vlan.nic) {
+                                    return q.reject(new Error("Invalid vlan parameters. Must specify both name and nic"));
                                 }
 
-                                vlanName = vlan[0];
-                                nicName = vlan[1];
-                                tag = vlan.length > 2 ? vlan[2] : undefined;
-
                                 vlanBody = {
-                                    name: vlanName,
+                                    name: vlan.name,
                                     interfaces: [
                                         {
-                                            name: nicName,
-                                            tagged: tag ? true : false
+                                            name: vlan.nic,
+                                            tagged: vlan.tag ? true : false
                                         }
                                     ]
                                 };
 
-                                if (tag) {
-                                    vlanBody.tag = tag;
+                                if (vlan.mtu) {
+                                    vlanBody.mtu = vlan.mtu;
+                                }
+
+                                if (vlan.tag) {
+                                    vlanBody.tag = vlan.tag;
                                 }
 
                                 promises.push(
@@ -240,56 +247,51 @@
                                             '/tm/net/vlan',
                                             vlanBody
                                         ],
-                                        message: "Creating vlan " + vlanName + " on interface " + nicName + (tag ? " with tag " + tag : " untagged")
+                                        message: "Creating vlan " + vlan.name + " on interface " + vlan.nic + (vlan.mtu ? " mtu " + vlan.mtu : "") + (vlan.tag ? " with tag " + vlan.tag : " untagged")
                                     }
                                 );
                             });
-                        }
 
-                        return util.callInSerial(bigIp, promises);
+                            return util.callInSerial(bigIp, promises);
+                        }
                     }.bind(this))
                     .then(function(response) {
                         logger.debug(response);
 
                         var promises = [];
-                        var name;
-                        var ipAddress;
-                        var vlan;
+                        var selfIpBody;
 
-                        if (options.selfIp) {
-                            options.selfIp.forEach(function(selfIp) {
-                                if (selfIp.length < 3) {
-                                    logger.warn("Invalid self-ip parameters. Must be 3 values. Use --help for description.");
-                                    return;
+                        if (selfIps.length > 0) {
+                            selfIps.forEach(function(selfIp) {
+                                if (!selfIp.name || !selfIp.address || !selfIp.vlan) {
+                                    return q.reject(new Error('Invalid self-ip parameters. All of name, address, and vlan must be specified'));
                                 }
 
-                                name = selfIp[0];
-                                ipAddress = selfIp[1];
-                                vlan = selfIp[2];
-
-                                if (ipAddress.indexOf('/') === -1) {
-                                    ipAddress += DEFAULT_CIDR;
+                                if (selfIp.address.indexOf('/') === -1) {
+                                    selfIp.address += DEFAULT_CIDR;
                                 }
+
+                                selfIpBody = {
+                                    name: selfIp.name,
+                                    address: selfIp.address,
+                                    vlan: '/Common/' + selfIp.vlan,
+                                    allowService: selfIp.allow ? selfIp.allow.split(/\s+/) : 'default'
+                                };
 
                                 promises.push(
                                     {
                                         promise: bigIp.create,
                                         arguments: [
                                             '/tm/net/self',
-                                            {
-                                                name: name,
-                                                address: ipAddress,
-                                                vlan: '/Common/' + vlan,
-                                                allowService: 'default'
-                                            }
+                                            selfIpBody
                                         ],
-                                        message: "Creating self IP " + name + " with address " + ipAddress + " on vlan " + vlan
+                                        message: "Creating self IP " + selfIp.name + " with address " + selfIp.address + " on vlan " + selfIp.vlan + " allowing " + (selfIp.allow ? selfIp.allow : "default")
                                     }
                                 );
                             });
-                        }
 
-                        return util.callInSerial(bigIp, promises);
+                            return util.callInSerial(bigIp, promises);
+                        }
                     }.bind(this))
                     .then(function(response) {
                         logger.debug(response);
@@ -329,6 +331,43 @@
                                 '/tm/net/route',
                                 routeBody
                             );
+                        }
+                    }.bind(this))
+                    .then(function(response) {
+                        logger.debug(response);
+
+                        var promises = [];
+                        var routeBody;
+                        if (routes.length > 0) {
+
+                            routes.forEach(function(route) {
+                                if (!route.name || !route.gw || !route.network) {
+                                    return q.reject(new Error('Invalid route parameters. Name, gateway, and network must be specified'));
+                                }
+
+                                if (route.network.indexOf('/') === -1) {
+                                    route.network += DEFAULT_CIDR;
+                                }
+
+                                routeBody = {
+                                    name: route.name,
+                                    gw: route.gw,
+                                    network: route.network
+                                };
+
+                                promises.push(
+                                    {
+                                        promise: bigIp.create,
+                                        arguments: [
+                                            '/tm/net/route',
+                                            routeBody
+                                        ],
+                                        message: "Creating route " + route.name + " with gateway " + route.gw
+                                    }
+                                );
+                            });
+
+                            return util.callInSerial(bigIp, promises);
                         }
                     }.bind(this))
                     .then(function(response) {
