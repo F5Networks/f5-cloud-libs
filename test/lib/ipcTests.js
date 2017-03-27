@@ -46,7 +46,7 @@ module.exports = {
         test.strictEqual(signaled, 0);
         ipc.send('foo');
         ipc.send('foo');
-        setTimeout(checkSignaled, 1, 1);
+        setTimeout(checkSignaled, 10, 1);
     },
 
     testOnceTwice: function(test) {
@@ -71,6 +71,6 @@ module.exports = {
         test.strictEqual(signaled, 0);
         ipc.send('foo');
         ipc.send('foo');
-        setTimeout(checkSignaled, 1, 2);
+        setTimeout(checkSignaled, 10, 2);
     }
 };

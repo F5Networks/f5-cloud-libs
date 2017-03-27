@@ -31,6 +31,16 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 3.0.0
+
+**This version is not backwards compatible. The format for options on network.js has changed.
+See node scripts/network.js --help for details**
+
+* More options for network.js
+    * Add arbitrary routes
+    * Support mtu on vlans
+    * Support port lockdown on selv IPs
+
 ### Version 2.3.0
 * Support for Azure autoscaling
 * Support --password-url in network.js
