@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,9 +42,11 @@ var childMock = {
     }
 };
 
+var bigIpMock = {};
+
 // fs mock
 var fsStat;
-var fsStatSync;
+var fsExistsSync;
 var fsReadFileSync;
 var fsWriteFileSync;
 var fsMkdirSync;
@@ -61,6 +63,7 @@ var urlParse;
 
 // http mock
 var httpGet;
+
 
 var getSavedArgs = function() {
     return fs.readFileSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh').toString();
@@ -318,6 +321,23 @@ module.exports = {
         }
     },
 
+    testLogAndExit: function(test) {
+        var exit = process.exit;
+        var exitCalled;
+        var setImmediateTemp = setImmediate;
+
+        setImmediate = function(cb) {cb();};
+        process.exit = function() {
+            exitCalled = true;
+        };
+
+        util.logAndExit();
+        test.strictEqual(exitCalled, true);
+        test.done();
+        process.exit = exit;
+        setImmediate = setImmediateTemp;
+    },
+
     testRunInBackgroundAndExit: {
         setUp: function(callback) {
             processExit = process.exit;
@@ -404,17 +424,22 @@ module.exports = {
         }
     },
 
-    testPrepareArgsForReboot: {
+    testReboot: {
         setUp: function(callback) {
-            fsStatSync = fs.statSync;
+            fsExistsSync = fs.existsSync;
             fsReadFileSync = fs.readFileSync;
             fsWriteFileSync = fs.writeFileSync;
             fsReaddirSync = fs.readdirSync;
+            fsMkdirSync = fs.mkdirSync;
 
             startupCommands = 'command 1';
             startupScripts = ['script1', 'script2'];
 
-            fs.statSync = function() {};
+            writtenCommands = undefined;
+
+            fs.existsSync = function() {
+                return true;
+            };
             fs.readFileSync = function() {
                 return startupCommands;
             };
@@ -424,42 +449,47 @@ module.exports = {
             fs.readdirSync = function() {
                 return startupScripts;
             };
+            fs.mkdirSync = function() {};
+
+            bigIpMock.reboot = function() {
+                bigIpMock.rebootCalled = true;
+                return q();
+            };
 
             callback();
         },
 
         tearDown: function(callback) {
-            fs.statSync = fsStatSync;
+            fs.existsSync = fsExistsSync;
             fs.readFileSync = fsReadFileSync;
             fs.writeFileSync = fsWriteFileSync;
             fs.readdirSync = fsReaddirSync;
+            fs.mkdirSync = fsMkdirSync;
             callback();
         },
 
         testBasic: function(test) {
-            util.prepareArgsForReboot()
+            test.expect(4);
+            util.reboot(bigIpMock)
                 .then(function() {
                     startupScripts.forEach(function(script) {
                         test.notStrictEqual(writtenCommands.indexOf(script), -1);
+                        test.strictEqual(bigIpMock.rebootCalled, true);
                     });
                     test.done();
                 });
         },
 
         testMissingStartupDir: function(test) {
-            function enoentError() {
-                /*jshint validthis: true */
-                this.code = 'ENOENT';
-            }
-            enoentError.prototype = Error.prototype;
-
-            fs.statSync = function() {
-                throw new enoentError();
+            fs.existsSync = function() {
+                return false;
             };
 
-            util.prepareArgsForReboot()
-                .then(function(didRun) {
-                    test.ifError(didRun);
+            test.expect(2);
+            util.reboot(bigIpMock)
+                .then(function() {
+                    test.strictEqual(writtenCommands, undefined);
+                    test.strictEqual(bigIpMock.rebootCalled, true);
                     test.done();
                 });
         },
@@ -469,7 +499,8 @@ module.exports = {
                 throw new Error();
             };
 
-            util.prepareArgsForReboot()
+            test.expect(1);
+            util.reboot(bigIpMock)
                 .then(function() {
                     test.ok(false, 'fs.readFileSync should have thrown');
                 })
@@ -486,7 +517,8 @@ module.exports = {
                 throw new Error();
             };
 
-            util.prepareArgsForReboot()
+            test.expect(1);
+            util.reboot(bigIpMock)
                 .then(function() {
                     test.ok(false, 'fs.readdirSync should have thrown');
                 })
@@ -503,9 +535,10 @@ module.exports = {
                 throw new Error();
             };
 
-            util.prepareArgsForReboot()
-                .then(function(response) {
-                    test.strictEqual(response, false);
+            test.expect(1);
+            util.reboot(bigIpMock)
+                .then(function() {
+                    test.ok(true);
                 })
                 .catch(function(err) {
                     test.ok(false, err);

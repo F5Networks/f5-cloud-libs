@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@
             var logger;
             var logFileName;
             var bigIp;
-            var forceReboot;
+            var rebooting;
             var i;
 
             var DEFAULT_LOG_FILE = '/tmp/cluster.log';
@@ -254,47 +254,35 @@
                         logger.info("Waiting for BIG-IP to be active.");
                         return bigIp.active();
                     })
-                    .then(function(response) {
-                        logger.debug(response);
-                        ipc.send(options.signal || signals.CLUSTER_DONE);
-                    })
                     .catch(function(err) {
                         logger.error("BIG-IP cluster failed", err);
 
                         if (err instanceof ActiveError) {
-                            logger.warn("BIG-IP active check failed. Preparing for reboot.");
-                            forceReboot = util.prepareArgsForReboot();
+                            logger.warn("BIG-IP active check failed. Rebooting.");
+                            rebooting = true;
+                            return util.reboot(bigIp);
                         }
                     })
                     .done(function(response) {
                         logger.debug(response);
 
-                        if (forceReboot) {
-                            logger.warn("Rebooting.");
-                            bigIp.reboot()
-                                .then(function() {
-                                    process.exit();
-                                });
-                        }
-                        else {
+                        if (!rebooting) {
                             util.deleteArgs(ARGS_FILE_ID);
+                            ipc.send(options.signal || signals.CLUSTER_DONE);
                         }
 
                         if (cb) {
                             cb();
                         }
 
-                        // If we're not forcing a reboot, exit so that any listeners don't keep us alive
-                        if (!forceReboot) {
-                            util.logAndExit("Cluster finished.");
-                        }
+                        util.logAndExit("Cluster finished.");
                     });
 
-                // If we reboot, exit - otherwise cloud providers won't know we're done
+                // If we reboot due to some other script, exit - otherwise cloud providers won't know we're done.
+                // If we forced the reboot ourselves, we will exit when that call completes.
                 ipc.once('REBOOT')
                     .then(function() {
-                        // If we forced the reboot ourselves, we will exit when that call completes
-                        if (!forceReboot) {
+                        if (!rebooting) {
                             util.logAndExit("REBOOT signaled. Exiting.");
                         }
                     });

@@ -386,17 +386,8 @@
                             return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP)
                                 .then(function() {
                                     logger.info("Rebooting and exiting. Will continue after reboot.");
-                                    util.prepareArgsForReboot();
-                                    return bigIp.reboot();
+                                    return util.reboot(bigIp);
                                 });
-                        }
-                    })
-                    .then(function(response) {
-                        logger.debug(response);
-
-                        if (!options.forceReboot) {
-                            logger.info("BIG-IP network setup complete.");
-                            ipc.send(options.signal || signals.NETWORK_DONE);
                         }
                     })
                     .catch(function(err) {
@@ -407,6 +398,9 @@
 
                         if (!options.forceReboot) {
                             util.deleteArgs(ARGS_FILE_ID);
+
+                            logger.info("BIG-IP network setup complete.");
+                            ipc.send(options.signal || signals.NETWORK_DONE);
 
                             if (cb) {
                                 cb();

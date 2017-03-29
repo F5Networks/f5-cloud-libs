@@ -186,10 +186,6 @@
 
                         return deferred.promise;
                     })
-                    .then(function(response) {
-                        logger.debug(response);
-                        ipc.send(options.signal || signals.SCRIPT_DONE);
-                    })
                     .catch(function(err) {
                         logger.error("Running custom script failed", err);
                     })
@@ -197,6 +193,7 @@
                         logger.debug(response);
 
                         util.deleteArgs(ARGS_FILE_ID);
+                        ipc.send(options.signal || signals.SCRIPT_DONE);
 
                         if (cb) {
                             cb();
