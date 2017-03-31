@@ -173,11 +173,6 @@
                         throw new Error('Our instance ID is not in instance list. Exiting');
                     }
 
-                    return getCmSyncStatus(bigIp);
-                }.bind(this))
-                .then(function(response) {
-                    logger.debug('CM sync status', response);
-
                     logger.info('Determining master instance id.');
                     masterIid = getMasterInstanceId(this.instances);
 
