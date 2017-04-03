@@ -105,23 +105,16 @@ module.exports = {
         test.done();
     },
 
+    testUnimplementedMasterInvalidated: function(test) {
+        test.doesNotThrow(function() {
+            testAutoscaleProvider.masterInvalidated();
+        });
+        test.done();
+    },
+
     testUnimplementedPutInstance: function(test) {
         test.doesNotThrow(function() {
             testAutoscaleProvider.putInstance();
-        });
-        test.done();
-    },
-
-    testUnimplementedSetInstanceProtection: function(test) {
-        test.doesNotThrow(function() {
-            testAutoscaleProvider.setInstanceProtection();
-        });
-        test.done();
-    },
-
-    testUnimplementedUnsetInstanceProtection: function(test) {
-        test.doesNotThrow(function() {
-            testAutoscaleProvider.unsetInstanceProtection();
         });
         test.done();
     }

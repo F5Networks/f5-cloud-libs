@@ -195,7 +195,7 @@
                         // false or undefined response means no masterIid or invalid masterIid
                         if (masterIid) {
                             logger.info('Invalid master ID:', masterIid);
-                            provider.unsetInstanceProtection(masterIid);
+                            provider.masterInvalidated(masterIid);
                         }
 
                         logger.info('Electing master.');
@@ -212,8 +212,6 @@
                     return provider.masterElected(masterIid);
                 }.bind(this))
                 .then(function() {
-                    var promises = [];
-
                     if (options.clusterAction === 'update') {
                         // Only run if master is self
                         if (this.instance.isMaster) {
@@ -335,9 +333,7 @@
                                 if (this.instance.isMaster) {
                                     logger.info('Creating device group.');
 
-                                    promises.push(bigIp.cluster.createDeviceGroup(options.deviceGroup, 'sync-failover', [this.instance.hostname], {autoSync: true}),
-                                                  provider.setInstanceProtection());
-                                    return q.all(promises);
+                                    return bigIp.cluster.createDeviceGroup(options.deviceGroup, 'sync-failover', [this.instance.hostname], {autoSync: true});
                                 }
 
                                 // If we're not the master, join the cluster
