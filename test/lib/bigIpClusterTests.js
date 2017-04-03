@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 - 2017 F5 Networks, Inc.
+ * Copyright 2016-2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -495,6 +495,104 @@ module.exports = {
                 })
                 .catch(function() {
                     test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testGetCmSyncStatus: {
+        testBasic: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/sync-status',
+                {
+                    "entries": {
+                        "https://localhost/mgmt/tm/cm/sync-status/0": {
+                            "nestedStats": {
+                                "entries": {
+                                    "color": {
+                                        "description": "red"
+                                    },
+                                    "https://localhost/mgmt/tm/cm/syncStatus/0/details": {
+                                        "nestedStats": {
+                                            "entries": {
+                                                "https://localhost/mgmt/tm/cm/syncStatus/0/details/0": {
+                                                    "nestedStats": {
+                                                        "entries": {
+                                                            "details": {
+                                                                "description": "iAmDisconnected: disconnected"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "https://localhost/mgmt/tm/cm/syncStatus/0/details/1": {
+                                                    "nestedStats": {
+                                                        "entries": {
+                                                            "details": {
+                                                                "description": "iAmConnected: connected"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "kind": "tm:cm:sync-status:sync-statusstats",
+                    "selfLink": "https://localhost/mgmt/tm/cm/sync-status?ver=13.0.0"
+                }
+            );
+
+            test.expect(4);
+            bigIp.cluster.getCmSyncStatus()
+                .then(function(response) {
+                    test.strictEqual(response.connected.length, 1);
+                    test.notStrictEqual(response.connected.indexOf('iAmConnected'), -1);
+                    test.strictEqual(response.disconnected.length, 1);
+                    test.notStrictEqual(response.disconnected.indexOf('iAmDisconnected'), -1);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoEntries: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/sync-status',
+                {
+                    "entries": {
+                        "https://localhost/mgmt/tm/cm/sync-status/0": {
+                            "nestedStats": {
+                                "entries": {
+                                    "color": {
+                                        "description": "red"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "kind": "tm:cm:sync-status:sync-statusstats",
+                    "selfLink": "https://localhost/mgmt/tm/cm/sync-status?ver=13.0.0"
+                }
+            );
+
+            test.expect(2);
+            bigIp.cluster.getCmSyncStatus()
+                .then(function(response) {
+                    test.strictEqual(response.connected.length,0);
+                    test.strictEqual(response.disconnected.length, 0);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
                 })
                 .finally(function() {
                     test.done();

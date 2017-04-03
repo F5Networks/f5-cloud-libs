@@ -178,7 +178,7 @@
 
                     if (masterIid) {
                         logger.info('Possible master ID:', masterIid);
-                        return provider.isValidMaster(masterIid);
+                        return provider.isValidMaster(masterIid, this.instances);
                     }
                     else {
                         logger.info('No master ID found.');
@@ -219,7 +219,7 @@
                         if (this.instance.isMaster) {
                             logger.info('Cluster action UPDATE');
 
-                            return getCmSyncStatus(bigIp)
+                            return bigIp.cluster.getCmSyncStatus()
                                 .then(function(response) {
                                     logger.silly('cmSyncStatus:', response);
 
@@ -403,48 +403,6 @@
                 return instanceId;
             }
         }
-    };
-
-    /**
-     * Gets cm sync status
-     *
-     * @param {BigIp} bigIp - bigIp instance
-     *
-     * @returns {Object} Object containing list of connected and disconnected host names
-     */
-    var getCmSyncStatus = function(bigIp) {
-        var path = '/tm/cm/sync-status';
-        var cmSyncStatus = { 'connected':[], 'disconnected':[] }; // key = connected/disconnected, value = array of iids
-
-        var entries;
-        var detail;
-        var description;
-        var lArray;
-
-        return bigIp.list(path, undefined, {maxRetries: 120, retryIntervalMs: 10000})
-            .then(function(response) {
-                logger.debug(response);
-                entries = response.entries['https://localhost/mgmt/tm/cm/sync-status/0'].nestedStats.entries['https://localhost/mgmt/tm/cm/syncStatus/0/details'];
-
-                if (entries) {
-                    for (detail in entries.nestedStats.entries) {
-                        description = entries.nestedStats.entries[detail].nestedStats.entries.details.description;
-                        lArray = description.split(": ");
-                        if (lArray[1] === 'connected') {
-                            cmSyncStatus.connected.push(lArray[0]);
-                        }
-                        else if (lArray[1] === 'disconnected') {
-                            cmSyncStatus.disconnected.push(lArray[0]);
-                        }
-                    }
-                }
-                else {
-                    logger.debug('No entries in sync status');
-                }
-
-                logger.debug(cmSyncStatus);
-                return(cmSyncStatus);
-            });
     };
 
     /**
