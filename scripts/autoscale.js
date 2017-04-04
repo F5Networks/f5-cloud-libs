@@ -333,7 +333,12 @@
                                 if (this.instance.isMaster) {
                                     logger.info('Creating device group.');
 
-                                    return bigIp.cluster.createDeviceGroup(options.deviceGroup, 'sync-failover', [this.instance.hostname], {autoSync: true});
+                                    return bigIp.cluster.createDeviceGroup(
+                                        options.deviceGroup,
+                                        'sync-failover',
+                                        [this.instance.hostname],
+                                        {autoSync: true}
+                                    );
                                 }
 
                                 // If we're not the master, join the cluster
@@ -342,7 +347,13 @@
                                     masterInstance = this.instances[masterIid];
                                     return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
                                         .then(function(credentials) {
-                                            return bigIp.cluster.joinCluster(options.deviceGroup, masterInstance.mgmtIp, credentials.username, credentials.password, {remotePort: options.port});
+                                            return bigIp.cluster.joinCluster(
+                                                options.deviceGroup,
+                                                masterInstance.mgmtIp,
+                                                credentials.username,
+                                                credentials.password,
+                                                {remotePort: options.port}
+                                            );
                                         });
                                 }
                             }.bind(this))
