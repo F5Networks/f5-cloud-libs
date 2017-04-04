@@ -152,7 +152,7 @@
                     return provider.getInstanceId();
                 })
                 .then(function(response) {
-                    logger.debug(response);
+                    logger.debug('This instance ID:', response);
                     this.instanceId = response;
 
                     logger.info('Getting info on all instances.');
