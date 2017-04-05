@@ -329,7 +329,7 @@
                             .then(function() {
                                 var masterInstance;
 
-                                // If we're the master, create the device group and protect ourselves from scale in
+                                // If we're the master, create the device group
                                 if (this.instance.isMaster) {
                                     logger.info('Creating device group.');
 
