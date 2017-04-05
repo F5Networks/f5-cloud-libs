@@ -84,6 +84,13 @@ module.exports = {
         test.done();
     },
 
+    testUnimplementedGetMasterStatus: function(test) {
+        test.throws(function() {
+            testAutoscaleProvider.getMasterStatus();
+        });
+        test.done();
+    },
+
     testUnimplementedPutMasterCredentials: function(test) {
         test.doesNotThrow(function() {
             testAutoscaleProvider.putMasterCredentials();

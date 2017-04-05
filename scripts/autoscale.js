@@ -251,8 +251,22 @@
                                             return bigIp.cluster.removeFromCluster(hostnamesToRemove);
                                         }
                                     }
-                                    else {
-                                        logger.debug('No disconnected devices detected.');
+                                    else if (response.connected.length === 0 && response.disconnected.length === 0) {
+                                        logger.debug('No devices detected - checking to see if this instance is detached.');
+                                        return provider.getMasterStatus(Object.keys(this.instances))
+                                            .then(function(masterStatuses) {
+                                                var reportingInstance;
+
+                                                for (reportingInstance in masterStatuses) {
+                                                    if (masterStatuses[reportingInstance].instanceId === this.instanceId) {
+                                                        if (masterStatuses[reportingInstance].status === 'disconnected') {
+                                                            // add instance to cluster and tell it to sync to group
+                                                            //TODO: BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUser, remotePassword, options) {
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }.bind(this));
                                     }
                                 }.bind(this))
                                 .catch(function(err) {
