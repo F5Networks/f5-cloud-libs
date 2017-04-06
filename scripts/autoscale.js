@@ -367,6 +367,7 @@
                                     logger.info('Joining cluster.');
                                     masterInstance = this.instances[masterIid];
                                     if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                                        logger.debug('Sending message to join cluster.');
                                         return provider.sendMessage(
                                             AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
                                             {
@@ -375,6 +376,7 @@
                                         );
                                     }
                                     else {
+                                        logger.debug('Sending request to join cluster.');
                                         return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
                                             .then(function(credentials) {
                                                 return bigIp.cluster.joinCluster(
