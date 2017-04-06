@@ -45,6 +45,7 @@
             var options = require('commander');
             var q = require('q');
             var BigIp = require('../lib/bigIp');
+            var AutoscaleProvider = require('../lib/autoscaleProvider');
             var Logger = require('../lib/logger');
             var util = require('../lib/util');
             var ipc = require('../lib/ipc');
@@ -269,6 +270,12 @@
                                             }.bind(this));
                                     }
                                 }.bind(this))
+                                .then(function() {
+                                    if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                                        logger.info('Checking for devices to add to cluster');
+                                        return provider.getMessages();
+                                    }
+                                })
                                 .catch(function(err) {
                                     logger.warn('Could not get sync status');
                                     return q.reject(err);
@@ -359,16 +366,26 @@
                                 else {
                                     logger.info('Joining cluster.');
                                     masterInstance = this.instances[masterIid];
-                                    return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
-                                        .then(function(credentials) {
-                                            return bigIp.cluster.joinCluster(
-                                                options.deviceGroup,
-                                                masterInstance.mgmtIp,
-                                                credentials.username,
-                                                credentials.password,
-                                                {remotePort: options.port}
-                                            );
-                                        });
+                                    if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                                        return provider.sendMessage(
+                                            AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                                            {
+                                                deviceGroup: options.deviceGroup
+                                            }
+                                        );
+                                    }
+                                    else {
+                                        return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
+                                            .then(function(credentials) {
+                                                return bigIp.cluster.joinCluster(
+                                                    options.deviceGroup,
+                                                    masterInstance.mgmtIp,
+                                                    credentials.username,
+                                                    credentials.password,
+                                                    {remotePort: options.port}
+                                                );
+                                            });
+                                    }
                                 }
                             }.bind(this))
                             .catch(function(err) {

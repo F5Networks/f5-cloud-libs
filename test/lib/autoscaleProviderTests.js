@@ -77,11 +77,26 @@ module.exports = {
         test.done();
     },
 
-    testUnimplementedGetMasterCredentials: function(test) {
-        test.throws(function() {
-            testAutoscaleProvider.getMasterCredentials();
-        });
-        test.done();
+    testUnimplementedGetMasterCredentials: {
+        tearDown: function(callback) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = false;
+            callback();
+        },
+
+        testMessagingNotSupported: function(test) {
+            test.throws(function() {
+                testAutoscaleProvider.getMasterCredentials();
+            });
+            test.done();
+        },
+
+        testMessagingSupported: function(test) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = true;
+            test.doesNotThrow(function() {
+                testAutoscaleProvider.getMasterCredentials();
+            });
+            test.done();
+        }
     },
 
     testUnimplementedGetMasterStatus: function(test) {
@@ -124,5 +139,49 @@ module.exports = {
             testAutoscaleProvider.putInstance();
         });
         test.done();
+    },
+
+    testUnimplementedSendMessage: {
+        tearDown: function(callback) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = false;
+            callback();
+        },
+
+        testMessagingNotSupported: function(test) {
+            test.doesNotThrow(function() {
+                testAutoscaleProvider.sendMessage();
+            });
+            test.done();
+        },
+
+        testMessagingSupported: function(test) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = true;
+            test.throws(function() {
+                testAutoscaleProvider.sendMessage();
+            });
+            test.done();
+        }
+    },
+
+    testUnimplementedGetMessages: {
+        tearDown: function(callback) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = false;
+            callback();
+        },
+
+        testMessagingNotSupported: function(test) {
+            test.doesNotThrow(function() {
+                testAutoscaleProvider.getMessages();
+            });
+            test.done();
+        },
+
+        testMessagingSupported: function(test) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = true;
+            test.throws(function() {
+                testAutoscaleProvider.getMessages();
+            });
+            test.done();
+        }
     }
 };
