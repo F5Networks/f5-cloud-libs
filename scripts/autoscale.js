@@ -225,7 +225,7 @@
                         logger.info('Checking for messages');
                         return handleMessages.call(this, provider, bigIp);
                     }
-                })
+                }.bind(this))
                 .catch(function(err) {
                     logger.error(err.message);
                 })
@@ -353,6 +353,7 @@
                                     masterInstance.mgmtIp,
                                     credentials.username,
                                     credentials.password,
+                                    false,
                                     {remotePort: options.port}
                                 );
                             });
@@ -458,7 +459,11 @@
                                     message.data.host,
                                     message.data.username,
                                     message.data.password,
-                                    {remotePort: message.data.port}
+                                    true,
+                                    {
+                                        remotePort: message.data.port,
+                                        remoteHostname: message.data.hostname
+                                    }
                                 )
                             );
 
@@ -469,7 +474,7 @@
                 }
 
                 return q.all(promises);
-            })
+            }.bind(this))
             .then(function() {
                 deferred.resolve();
             })

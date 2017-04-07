@@ -692,6 +692,7 @@ module.exports = {
 
     testJoinCluster: {
         setUp: function(callback) {
+            icontrolMock.reset();
             icontrolMock.when(
                 'list',
                 '/tm/cm/device',
@@ -767,10 +768,10 @@ module.exports = {
             };
             util.callInSerial = function() {
                 return q([
-                    {},
                     {
                         configsyncIp: '1.2.3.4'
-                    }
+                    },
+                    {}
                 ]);
             };
 
@@ -822,7 +823,7 @@ module.exports = {
                 {}
             );
 
-            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', {syncDelay: 5})
+            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, {syncDelay: 5})
                 .then(function() {
                     var syncRequest = icontrolMock.getRequest('create', '/tm/cm');
                     test.strictEqual(syncRequest.command, 'run');
@@ -861,7 +862,7 @@ module.exports = {
                 {}
             );
 
-            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', {syncDelay: 5})
+            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, {syncDelay: 5})
                 .then(function() {
                     var syncRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/datasync-global-dg/devices/' + localHostname);
                     test.deepEqual(syncRequest, {'set-sync-leader': true});
@@ -933,7 +934,7 @@ module.exports = {
                 {}
             );
 
-            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', {syncDelay: 5, syncCompDelay: 5})
+            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, {syncDelay: 5, syncCompDelay: 5})
                 .then(function() {
                     test.ok(false, 'Should have been rejected due to our mock.');
                 })
