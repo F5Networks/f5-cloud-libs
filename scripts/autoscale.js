@@ -19,6 +19,7 @@
 
     var fs = require('fs');
     var q = require('q');
+    var AutoscaleProvider = require('../lib/autoscaleProvider');
     var runner;
     var logger;
 
@@ -40,18 +41,14 @@
 
             const DEFAULT_LOG_FILE = "/tmp/autoscale.log";
             const ARGS_FILE_ID = 'autoscale_' + Date.now();
-            const MASTER_FILE_PATH = "/config/cloud/master";
 
             var options = require('commander');
-            var q = require('q');
             var BigIp = require('../lib/bigIp');
-            var AutoscaleProvider = require('../lib/autoscaleProvider');
             var Logger = require('../lib/logger');
             var util = require('../lib/util');
             var ipc = require('../lib/ipc');
             var loggerOptions = {};
             var providerOptions = [];
-            var hasUcs = false;
             var bigIp;
             var loggableArgs;
             var logFileName;
@@ -213,193 +210,22 @@
                     return provider.masterElected(masterIid);
                 }.bind(this))
                 .then(function() {
-                    if (options.clusterAction === 'update') {
-                        // Only run if master is self
-                        if (this.instance.isMaster) {
-                            logger.info('Cluster action UPDATE');
-
-                            return bigIp.cluster.getCmSyncStatus()
-                                .then(function(response) {
-                                    logger.silly('cmSyncStatus:', response);
-
-                                    var hostnames = [];
-                                    var hostnamesToRemove = [];
-                                    var instanceId;
-
-                                    response = response || {};
-
-                                    // response is an object of two lists (connected/disconnected) from getCmSyncStatus()
-                                    var disconnected = response.disconnected;
-                                    if (disconnected.length > 0) {
-
-                                        logger.info('Possibly disconnected devices:', disconnected);
-
-                                        // get a list of hostnames still in the instances list
-                                        for (instanceId in this.instances) {
-                                            hostnames.push(this.instances[instanceId].hostname);
-                                        }
-
-                                        // make sure this is not still in the instances list
-                                        disconnected.forEach(function(hostname) {
-                                            if (hostnames.indexOf(hostname) === -1) {
-                                                logger.info('Disconnected device:', hostname);
-                                                hostnamesToRemove.push(hostname);
-                                            }
-                                        });
-
-                                        if (hostnamesToRemove.length > 0) {
-                                            logger.info('Removing devices from cluster:', hostnamesToRemove);
-                                            return bigIp.cluster.removeFromCluster(hostnamesToRemove);
-                                        }
-                                    }
-                                    else if (response.connected.length === 0 && response.disconnected.length === 0) {
-                                        logger.debug('No devices detected - checking to see if this instance is detached.');
-                                        return provider.getMasterStatus(Object.keys(this.instances))
-                                            .then(function(masterStatuses) {
-                                                var reportingInstance;
-
-                                                for (reportingInstance in masterStatuses) {
-                                                    if (masterStatuses[reportingInstance].instanceId === this.instanceId) {
-                                                        if (masterStatuses[reportingInstance].status === 'disconnected') {
-                                                            // add instance to cluster and tell it to sync to group
-                                                            //TODO: BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUser, remotePassword, options) {
-                                                            break;
-                                                        }
-                                                    }
-                                                }
-                                            }.bind(this));
-                                    }
-                                }.bind(this))
-                                .then(function() {
-                                    if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                                        logger.info('Checking for devices to add to cluster');
-                                        return provider.getMessages();
-                                    }
-                                })
-                                .catch(function(err) {
-                                    logger.warn('Could not get sync status');
-                                    return q.reject(err);
-                                });
-                        }
-                        else {
-                            logger.debug('Not master. Cluster update will be done by master.');
-                        }
-                    }
-                    else if (options.clusterAction === 'join') {
-                        logger.info('Cluster action JOIN');
-
-                        // Store our info
-                        return provider.putInstance(this.instance)
-                            .then(function() {
-                                if (this.instance.isMaster) {
-                                    return provider.getStoredUcs();
-                                }
-                            }.bind(this))
-                            .then(function(response) {
-                                if (this.instance.isMaster && response) {
-                                    hasUcs = true;
-                                    return loadUcs(bigIp, response, options.cloud);
-                                }
-                            }.bind(this))
-                            .then(function() {
-                                var deferred = q.defer();
-                                var masterInfo = {
-                                    ucsLoaded: hasUcs
-                                };
-
-                                if (this.instance.isMaster) {
-                                    // Mark ourself as master on disk so other scripts have access to this info
-                                    fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
-                                        if (err) {
-                                            logger.warn('Error saving master file', err);
-                                            deferred.reject(err);
-                                            return;
-                                        }
-
-                                        deferred.resolve();
-                                    });
-                                }
-                                else {
-                                    // Make sure the master file is not on our disk
-                                    if (fs.existsSync(MASTER_FILE_PATH)) {
-                                        fs.unlinkSync(MASTER_FILE_PATH);
-                                    }
-                                    deferred.resolve();
-                                }
-
-                                return deferred.promise;
-                            }.bind(this))
-                            .then(function() {
-                                if (this.instance.isMaster) {
-                                    logger.info('Storing master credentials.');
-                                    return provider.putMasterCredentials();
-                                }
-                            }.bind(this))
-                            .then(function(response) {
-                                logger.debug(response);
-
-                                // Configure cm configsync-ip on this BIG-IP node
-                                if (!this.instance.isMaster || !options.blockSync) {
-                                    logger.info("Setting config sync IP.");
-                                    return bigIp.cluster.configSyncIp(this.instance.privateIp);
-                                }
-                                else {
-                                    logger.info("Not seting config sync IP because we're master and block-sync is specified.");
-                                }
-                            }.bind(this))
-                            .then(function() {
-                                var masterInstance;
-
-                                // If we're the master, create the device group
-                                if (this.instance.isMaster) {
-                                    logger.info('Creating device group.');
-
-                                    return bigIp.cluster.createDeviceGroup(
-                                        options.deviceGroup,
-                                        'sync-failover',
-                                        [this.instance.hostname],
-                                        {autoSync: true}
-                                    );
-                                }
-
-                                // If we're not the master, join the cluster
-                                else {
-                                    logger.info('Joining cluster.');
-                                    masterInstance = this.instances[masterIid];
-                                    if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                                        logger.debug('Sending message to join cluster.');
-                                        return provider.sendMessage(
-                                            AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
-                                            {
-                                                deviceGroup: options.deviceGroup
-                                            }
-                                        );
-                                    }
-                                    else {
-                                        logger.debug('Sending request to join cluster.');
-                                        return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
-                                            .then(function(credentials) {
-                                                return bigIp.cluster.joinCluster(
-                                                    options.deviceGroup,
-                                                    masterInstance.mgmtIp,
-                                                    credentials.username,
-                                                    credentials.password,
-                                                    {remotePort: options.port}
-                                                );
-                                            });
-                                    }
-                                }
-                            }.bind(this))
-                            .catch(function(err) {
-                                // rethrow here, otherwise error is hidden
-                                throw(err);
-                            });
-                    }
-                    else if (options.clusterAction === 'unblock-sync') {
-                        logger.info("Cluster action UNBLOCK-SYNC");
-                        return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                    switch(options.clusterAction) {
+                        case 'join':
+                            return handleJoin.call(this, provider, bigIp, masterIid, options);
+                        case 'update':
+                            return handleUpdate.call(this, provider, bigIp);
+                        case 'unblock-sync':
+                            logger.info("Cluster action UNBLOCK-SYNC");
+                            return bigIp.cluster.configSyncIp(this.instance.privateIp);
                     }
                 }.bind(this))
+                .then(function() {
+                    if (this.instance.isMaster && provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                        logger.info('Checking for messages');
+                        return handleMessages.call(this, provider, bigIp);
+                    }
+                })
                 .catch(function(err) {
                     logger.error(err.message);
                 })
@@ -421,6 +247,237 @@
                     });
 
             }
+    };
+
+    var handleJoin = function(provider, bigIp, masterIid, options) {
+        var hasUcs = false;
+
+        const MASTER_FILE_PATH = "/config/cloud/master";
+
+        logger.info('Cluster action JOIN');
+
+        // Store our info
+        return provider.putInstance(this.instance)
+            .then(function() {
+                if (this.instance.isMaster) {
+                    return provider.getStoredUcs();
+                }
+            }.bind(this))
+            .then(function(response) {
+                if (this.instance.isMaster && response) {
+                    hasUcs = true;
+                    return loadUcs(bigIp, response, options.cloud);
+                }
+            }.bind(this))
+            .then(function() {
+                var deferred = q.defer();
+                var masterInfo = {
+                    ucsLoaded: hasUcs
+                };
+
+                if (this.instance.isMaster) {
+                    // Mark ourself as master on disk so other scripts have access to this info
+                    fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
+                        if (err) {
+                            logger.warn('Error saving master file', err);
+                            deferred.reject(err);
+                            return;
+                        }
+
+                        deferred.resolve();
+                    });
+                }
+                else {
+                    // Make sure the master file is not on our disk
+                    if (fs.existsSync(MASTER_FILE_PATH)) {
+                        fs.unlinkSync(MASTER_FILE_PATH);
+                    }
+                    deferred.resolve();
+                }
+
+                return deferred.promise;
+            }.bind(this))
+            .then(function() {
+                if (this.instance.isMaster && !provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                    logger.info('Storing master credentials.');
+                    return provider.putMasterCredentials();
+                }
+            }.bind(this))
+            .then(function(response) {
+                logger.debug(response);
+
+                // Configure cm configsync-ip on this BIG-IP node
+                if (!this.instance.isMaster || !options.blockSync) {
+                    logger.info("Setting config sync IP.");
+                    return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                }
+                else {
+                    logger.info("Not seting config sync IP because we're master and block-sync is specified.");
+                }
+            }.bind(this))
+            .then(function() {
+                var masterInstance;
+
+                // If we're the master, create the device group
+                if (this.instance.isMaster) {
+                    logger.info('Creating device group.');
+
+                    return bigIp.cluster.createDeviceGroup(
+                        options.deviceGroup,
+                        'sync-failover',
+                        [this.instance.hostname],
+                        {autoSync: true}
+                    );
+                }
+
+                // If we're not the master, join the cluster
+                else {
+                    logger.info('Joining cluster.');
+                    masterInstance = this.instances[masterIid];
+                    if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                        logger.debug('Sending message to join cluster.');
+                        return provider.sendMessage(
+                            AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                            {
+                                masterIid: masterIid,
+                                deviceGroup: options.deviceGroup
+                            }
+                        );
+                    }
+                    else {
+                        logger.debug('Sending request to join cluster.');
+                        return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
+                            .then(function(credentials) {
+                                return bigIp.cluster.joinCluster(
+                                    options.deviceGroup,
+                                    masterInstance.mgmtIp,
+                                    credentials.username,
+                                    credentials.password,
+                                    {remotePort: options.port}
+                                );
+                            });
+                    }
+                }
+            }.bind(this))
+            .catch(function(err) {
+                // rethrow here, otherwise error is hidden
+                throw(err);
+            });
+    };
+
+    var handleUpdate = function(provider, bigIp) {
+        // Only run if master is self
+        if (this.instance.isMaster) {
+            logger.info('Cluster action UPDATE');
+
+            return bigIp.cluster.getCmSyncStatus()
+                .then(function(response) {
+                    logger.silly('cmSyncStatus:', response);
+
+                    var hostnames = [];
+                    var hostnamesToRemove = [];
+                    var instanceId;
+
+                    response = response || {};
+
+                    // response is an object of two lists (connected/disconnected) from getCmSyncStatus()
+                    var disconnected = response.disconnected;
+                    if (disconnected.length > 0) {
+
+                        logger.info('Possibly disconnected devices:', disconnected);
+
+                        // get a list of hostnames still in the instances list
+                        for (instanceId in this.instances) {
+                            hostnames.push(this.instances[instanceId].hostname);
+                        }
+
+                        // make sure this is not still in the instances list
+                        disconnected.forEach(function(hostname) {
+                            if (hostnames.indexOf(hostname) === -1) {
+                                logger.info('Disconnected device:', hostname);
+                                hostnamesToRemove.push(hostname);
+                            }
+                        });
+
+                        if (hostnamesToRemove.length > 0) {
+                            logger.info('Removing devices from cluster:', hostnamesToRemove);
+                            return bigIp.cluster.removeFromCluster(hostnamesToRemove);
+                        }
+                    }
+                    else if (response.connected.length === 0 && response.disconnected.length === 0) {
+                        logger.debug('No devices detected - checking to see if this instance is detached.');
+                        return provider.getMasterStatus(Object.keys(this.instances))
+                            .then(function(masterStatuses) {
+                                var reportingInstance;
+
+                                for (reportingInstance in masterStatuses) {
+                                    if (masterStatuses[reportingInstance].instanceId === this.instanceId) {
+                                        if (masterStatuses[reportingInstance].status === 'disconnected') {
+                                            // add instance to cluster and tell it to sync to group
+                                            // TODO: does this happen here, or do the non-masters tell the master to sync
+                                            // TODO: BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUser, remotePassword, options) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }.bind(this));
+                    }
+                }.bind(this))
+                .catch(function(err) {
+                    logger.warn('Could not get sync status');
+                    return q.reject(err);
+                });
+        }
+        else {
+            logger.debug('Not master. Cluster update will be done by master.');
+        }
+    };
+
+    var handleMessages = function(provider, bigIp) {
+        var deferred = q.defer();
+
+        provider.getMessages()
+            .then(function(messages) {
+                var promises = [];
+                var message;
+                var i;
+
+                for (i = 0; i < messages.length; ++i) {
+                    message = messages[i];
+                    switch (message.action) {
+                        case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
+                            // Make sure the message is for this instance not an old master
+                            if (message.data.masterIid !== this.instanceId) {
+                                logger.debug('Received message for a different master, discarding');
+                                break;
+                            }
+
+                            promises.push(
+                                bigIp.cluster.joinCluster(
+                                    message.data.deviceGroup,
+                                    message.data.host,
+                                    message.data.username,
+                                    message.data.password,
+                                    {remotePort: message.data.port}
+                                )
+                            );
+
+                            break;
+                        default:
+                            deferred.reject('Unknown message action', message.action);
+                    }
+                }
+
+                return q.all(promises);
+            })
+            .then(function() {
+                deferred.resolve();
+            })
+            .catch(function(err) {
+                deferred.reject(err);
+            });
+
+        return deferred.promise;
     };
 
     /**
