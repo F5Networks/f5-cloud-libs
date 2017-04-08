@@ -453,6 +453,8 @@
                                 break;
                             }
 
+                            logger.silly('message join cluster', message.data.host);
+
                             promises.push(
                                 bigIp.cluster.joinCluster(
                                     message.data.deviceGroup,
