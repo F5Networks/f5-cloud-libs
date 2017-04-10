@@ -335,14 +335,29 @@
                     logger.info('Joining cluster.');
                     masterInstance = this.instances[masterIid];
                     if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                        logger.debug('Sending message to join cluster.');
-                        return provider.sendMessage(
-                            AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
-                            {
-                                masterIid: masterIid,
-                                deviceGroup: options.deviceGroup
-                            }
-                        );
+                        return this.bigIp.deviceInfo()
+                            .then(function(response) {
+                                var managementIp = response.managementAddress;
+
+                                logger.debug('Sending message to join cluster.');
+                                return provider.sendMessage(
+                                    AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                                    {
+                                        masterIid: masterIid,
+                                        instanceId: this.instanceId,
+                                        host: managementIp,
+                                        port: bigIp.port,
+                                        username: bigIp.user,
+                                        password: bigIp.password,
+                                        hostname: this.instance.hostname,
+                                        deviceGroup: options.deviceGroup
+                                    }
+                                );
+                            }.bind(this))
+                            .catch(function(err) {
+                                // need to bubble up nested errors
+                                return q.reject(err);
+                            });
                     }
                     else {
                         logger.debug('Sending request to join cluster.');
@@ -436,6 +451,7 @@
 
     var handleMessages = function(provider, bigIp) {
         var deferred = q.defer();
+        var instanceIdsBeingAdded = [];
 
         provider.getMessages()
             .then(function(messages) {
@@ -450,10 +466,17 @@
                             // Make sure the message is for this instance not an old master
                             if (message.data.masterIid !== this.instanceId) {
                                 logger.debug('Received message for a different master, discarding');
-                                break;
+                                continue;
                             }
 
                             logger.silly('message join cluster', message.data.host);
+
+                            if (instanceIdsBeingAdded.indexOf(message.data.instanceId) !== -1) {
+                                logger.silly('Already adding', message.data.instanceId, '. Ignoring.');
+                                continue;
+                            }
+
+                            instanceIdsBeingAdded.push(message.data.instanceId);
 
                             promises.push(
                                 bigIp.cluster.joinCluster(
@@ -469,13 +492,45 @@
                                 )
                             );
 
+                            if (message.completionHandler) {
+                                message.completionHandler.callback(message.completionHandler.data);
+                            }
+
+                            break;
+                        case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
+                            // See if the message is for us
+                            if (message.data.toInstanceId === this.instanceId) {
+                                logger.debug('Got sync complete message');
+                                if (message.completionHandler) {
+                                    message.completionHandler.callback(message.completionHandler.data);
+                                }
+                            }
+
                             break;
                         default:
                             deferred.reject('Unknown message action', message.action);
+                            if (message.completionHandler) {
+                                message.completionHandler.callback(message.completionHandler.data);
+                            }
                     }
                 }
 
                 return q.all(promises);
+            }.bind(this))
+            .then(function(responses) {
+                var i;
+                for (i = 0; i < responses.length; ++i) {
+
+                    return provider.sendMessage(
+                        AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
+                        {
+                            toInstanceId: instanceIdsBeingAdded[i],
+                            fromInstanceId: this.instanceId,
+                            fromUser: bigIp.user,
+                            fromPassword: bigIp.password
+                        }
+                    );
+                }
             }.bind(this))
             .then(function() {
                 deferred.resolve();
