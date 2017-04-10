@@ -499,7 +499,7 @@
                                 continue;
                             }
                             logger.debug('Got sync complete message');
-                            updatePassword(message.data.fromUser, message.data.fromPassword);
+                            promises.push(provider.syncComplete(message.data.fromUser, message.data.fromPassword));
 
                             break;
                         default:
@@ -517,17 +517,19 @@
                 var i;
                 responses = responses || [];
 
-                for (i = 0; i < responses.length; ++i) {
+                if (instanceIdsBeingAdded.length > 0) {
+                    for (i = 0; i < responses.length; ++i) {
 
-                    return provider.sendMessage(
-                        AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
-                        {
-                            toInstanceId: instanceIdsBeingAdded[i],
-                            fromInstanceId: this.instanceId,
-                            fromUser: bigIp.user,
-                            fromPassword: bigIp.password
-                        }
-                    );
+                        return provider.sendMessage(
+                            AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
+                            {
+                                toInstanceId: instanceIdsBeingAdded[i],
+                                fromInstanceId: this.instanceId,
+                                fromUser: bigIp.user,
+                                fromPassword: bigIp.password
+                            }
+                        );
+                    }
                 }
             }.bind(this))
             .then(function() {
