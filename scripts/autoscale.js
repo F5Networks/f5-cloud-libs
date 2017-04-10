@@ -1,5 +1,5 @@
 /**
- * Copyright 2016, 2017 F5 Networks, Inc.
+ * Copyright 2016-2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -335,7 +335,7 @@
                     logger.info('Joining cluster.');
                     masterInstance = this.instances[masterIid];
                     if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                        return this.bigIp.deviceInfo()
+                        return bigIp.deviceInfo()
                             .then(function(response) {
                                 var managementIp = response.managementAddress;
 
@@ -492,26 +492,22 @@
                                 )
                             );
 
-                            if (message.completionHandler) {
-                                message.completionHandler.callback(message.completionHandler.data);
-                            }
-
                             break;
                         case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
                             // See if the message is for us
-                            if (message.data.toInstanceId === this.instanceId) {
-                                logger.debug('Got sync complete message');
-                                if (message.completionHandler) {
-                                    message.completionHandler.callback(message.completionHandler.data);
-                                }
+                            if (message.data.toInstanceId !== this.instanceId) {
+                                continue;
                             }
+                            logger.debug('Got sync complete message');
+                            updatePassword(message.data.fromUser, message.data.fromPassword);
 
                             break;
                         default:
                             deferred.reject('Unknown message action', message.action);
-                            if (message.completionHandler) {
-                                message.completionHandler.callback(message.completionHandler.data);
-                            }
+                    }
+
+                    if (message.completionHandler) {
+                        message.completionHandler.callback.call(message.completionHandler.this, message.completionHandler.data);
                     }
                 }
 
@@ -519,6 +515,8 @@
             }.bind(this))
             .then(function(responses) {
                 var i;
+                responses = responses || [];
+
                 for (i = 0; i < responses.length; ++i) {
 
                     return provider.sendMessage(
@@ -659,6 +657,10 @@
         }
 
         return deferred.promise;
+    };
+
+    var updatePassword = function(provider, user, password) {
+        provider.updatePassword(user, password);
     };
 
     // If we're called from the command line, run
