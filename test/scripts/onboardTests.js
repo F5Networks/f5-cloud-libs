@@ -55,7 +55,7 @@ var bigIpMock = {
     },
 
     rebootRequired: function() {
-        return q('reboot');
+        return q(true);
     },
 
     reboot: function() {
