@@ -395,7 +395,7 @@
                         return bigIp.rebootRequired();
                     })
                     .then(function(response) {
-                        if (response) {
+                        if (response === true) {
                             if (options.reboot) {
                                 logger.warn('Reboot required. Rebooting...');
                                 rebooting = true;
