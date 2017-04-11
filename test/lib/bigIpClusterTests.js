@@ -29,6 +29,9 @@ var callInSerial;
 var deviceInfo;
 var ready;
 
+// Our tests cause too many event listeners. Turn off the check.
+process.setMaxListeners(0);
+
 module.exports = {
     setUp: function(callback) {
         bigIp = new BigIp();
@@ -750,6 +753,13 @@ module.exports = {
                     }
                 }
             );
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device/~Common~remoteHost',
+                {
+                    configsyncIp: '1.2.3.4'
+                }
+            );
 
             callInSerial = util.callInSerial;
             deviceInfo = BigIp.prototype.deviceInfo;
@@ -765,14 +775,6 @@ module.exports = {
             };
             BigIp.prototype.ready = function() {
                 return q();
-            };
-            util.callInSerial = function() {
-                return q([
-                    {
-                        configsyncIp: '1.2.3.4'
-                    },
-                    {}
-                ]);
             };
 
             callback();
