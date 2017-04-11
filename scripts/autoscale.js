@@ -214,7 +214,7 @@
                         case 'join':
                             return handleJoin.call(this, provider, bigIp, masterIid, options);
                         case 'update':
-                            return handleUpdate.call(this, provider, bigIp);
+                            return handleUpdate.call(this, provider, bigIp, options);
                         case 'unblock-sync':
                             logger.info("Cluster action UNBLOCK-SYNC");
                             return bigIp.cluster.configSyncIp(this.instance.privateIp);
@@ -381,71 +381,15 @@
             });
     };
 
-    var handleUpdate = function(provider, bigIp) {
-        // Only run if master is self
+    var handleUpdate = function(provider, bigIp, options) {
+
+        logger.info('Cluster action UPDATE');
+
         if (this.instance.isMaster) {
-            logger.info('Cluster action UPDATE');
-
-            return bigIp.cluster.getCmSyncStatus()
-                .then(function(response) {
-                    logger.silly('cmSyncStatus:', response);
-
-                    var hostnames = [];
-                    var hostnamesToRemove = [];
-                    var instanceId;
-
-                    response = response || {};
-
-                    // response is an object of two lists (connected/disconnected) from getCmSyncStatus()
-                    var disconnected = response.disconnected;
-                    if (disconnected.length > 0) {
-
-                        logger.info('Possibly disconnected devices:', disconnected);
-
-                        // get a list of hostnames still in the instances list
-                        for (instanceId in this.instances) {
-                            hostnames.push(this.instances[instanceId].hostname);
-                        }
-
-                        // make sure this is not still in the instances list
-                        disconnected.forEach(function(hostname) {
-                            if (hostnames.indexOf(hostname) === -1) {
-                                logger.info('Disconnected device:', hostname);
-                                hostnamesToRemove.push(hostname);
-                            }
-                        });
-
-                        if (hostnamesToRemove.length > 0) {
-                            logger.info('Removing devices from cluster:', hostnamesToRemove);
-                            return bigIp.cluster.removeFromCluster(hostnamesToRemove);
-                        }
-                    }
-                    else if (response.connected.length === 0 && response.disconnected.length === 0) {
-                        logger.debug('No devices detected - checking to see if this instance is detached.');
-                        return provider.getMasterStatus(Object.keys(this.instances))
-                            .then(function(masterStatuses) {
-                                var reportingInstance;
-
-                                for (reportingInstance in masterStatuses) {
-                                    if (masterStatuses[reportingInstance].instanceId === this.instanceId) {
-                                        if (masterStatuses[reportingInstance].status === 'disconnected') {
-                                            // add instance to cluster and tell it to sync to group
-                                            // TODO: does this happen here, or do the non-masters tell the master to sync
-                                            // TODO: BigIpCluster.prototype.joinCluster = function(deviceGroup, remoteHost, remoteUser, remotePassword, options) {
-                                            break;
-                                        }
-                                    }
-                                }
-                            }.bind(this));
-                    }
-                }.bind(this))
-                .catch(function(err) {
-                    logger.warn('Could not get sync status');
-                    return q.reject(err);
-                });
+            return checkForDisconnectedDevices.call(this, bigIp);
         }
         else {
-            logger.debug('Not master. Cluster update will be done by master.');
+            return checkForDisconnectedMaster.call(this, provider, bigIp, options);
         }
     };
 
@@ -471,6 +415,7 @@
                 for (i = 0; i < messages.length; ++i) {
                     message = messages[i];
                     switch (message.action) {
+                        // Add an instance to our cluster
                         case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
                             // Make sure the message is for this instance not an old master
                             if (message.data.masterIid !== this.instanceId) {
@@ -485,7 +430,11 @@
                                 continue;
                             }
 
-                            instanceIdsBeingAdded.push(message.data.instanceId);
+                            instanceIdsBeingAdded.push({
+                                toInstanceId: message.data.instanceId,
+                                fromUser: bigIp.user,
+                                fromPassword: bigIp.password
+                            });
 
                             promises.push(
                                 bigIp.cluster.joinCluster(
@@ -498,6 +447,31 @@
                                         remotePort: message.data.port,
                                         remoteHostname: message.data.hostname,
                                         noWait: true
+                                    }
+                                )
+                            );
+
+                            break;
+
+                        // Add ourselves to another instance's cluster
+                        case AutoscaleProvider.MESSAGE_JOIN_CLUSTER:
+
+                            instanceIdsBeingAdded.push({
+                                toInstanceId: this.instanceId,
+                                fromUser: message.data.username,
+                                fromPassword: message.data.password
+                            });
+
+                            promises.push(
+                                bigIp.cluster.joinCluster(
+                                    message.data.deviceGroup,
+                                    message.data.host,
+                                    message.data.username,
+                                    message.data.password,
+                                    false,
+                                    {
+                                        remotePort: message.data.port,
+                                        remoteHostname: message.data.hostname,
                                     }
                                 )
                             );
@@ -531,10 +505,9 @@
                         return provider.sendMessage(
                             AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
                             {
-                                toInstanceId: instanceIdsBeingAdded[i],
-                                fromInstanceId: this.instanceId,
-                                fromUser: bigIp.user,
-                                fromPassword: bigIp.password
+                                toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
+                                fromUser: instanceIdsBeingAdded[i].fromUser,
+                                fromPassword: instanceIdsBeingAdded[i].fromPassword
                             }
                         );
                     }
@@ -548,6 +521,78 @@
             });
 
         return deferred.promise;
+    };
+
+    var checkForDisconnectedDevices = function(bigIp) {
+        return bigIp.cluster.getCmSyncStatus()
+            .then(function(response) {
+                logger.silly('cmSyncStatus:', response);
+
+                var hostnames = [];
+                var hostnamesToRemove = [];
+                var instanceId;
+
+                response = response || {};
+
+                // response is an object of two lists (connected/disconnected) from getCmSyncStatus()
+                var disconnected = response.disconnected;
+                if (disconnected.length > 0) {
+
+                    logger.info('Possibly disconnected devices:', disconnected);
+
+                    // get a list of hostnames still in the instances list
+                    for (instanceId in this.instances) {
+                        hostnames.push(this.instances[instanceId].hostname);
+                    }
+
+                    // make sure this is not still in the instances list
+                    disconnected.forEach(function(hostname) {
+                        if (hostnames.indexOf(hostname) === -1) {
+                            logger.info('Disconnected device:', hostname);
+                            hostnamesToRemove.push(hostname);
+                        }
+                    });
+
+                    if (hostnamesToRemove.length > 0) {
+                        logger.info('Removing devices from cluster:', hostnamesToRemove);
+                        return bigIp.cluster.removeFromCluster(hostnamesToRemove);
+                    }
+                }
+            }.bind(this))
+            .catch(function(err) {
+                logger.warn('Could not get sync status');
+                return q.reject(err);
+            });
+
+    };
+
+    var checkForDisconnectedMaster = function(provider, bigIp, options) {
+        return provider.getMasterStatus()
+            .then(function(masterStatus) {
+                var timeInState;
+                const MAX_BAD_MS = 10 * 60000; // 10 minutes
+
+                masterStatus = masterStatus || {};
+
+                if (masterStatus.status === AutoscaleProvider.DISCONNECTED || masterStatus.status === AutoscaleProvider.NOT_IN_GROUP) {
+                    timeInState = new Date() - masterStatus.lastStatusChange;
+                    if (timeInState > MAX_BAD_MS) {
+                        provider.sendMessage(
+                            AutoscaleProvider.MESSAGE_JOIN_CLUSTER,
+                            {
+                                masterIid: masterStatus.instanceId,
+                                instanceId: this.instanceId,
+                                host: this.instance.mgmtIp,
+                                port: bigIp.port,
+                                username: bigIp.user,
+                                password: bigIp.password,
+                                hostname: this.instance.hostname,
+                                deviceGroup: options.deviceGroup
+                            }
+                        );
+                    }
+                }
+            }.bind(this));
     };
 
     /**

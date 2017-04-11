@@ -100,7 +100,7 @@ module.exports = {
     },
 
     testUnimplementedGetMasterStatus: function(test) {
-        test.throws(function() {
+        test.doesNotThrow(function() {
             testAutoscaleProvider.getMasterStatus();
         });
         test.done();
