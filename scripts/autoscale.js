@@ -487,7 +487,8 @@
                                     true,
                                     {
                                         remotePort: message.data.port,
-                                        remoteHostname: message.data.hostname
+                                        remoteHostname: message.data.hostname,
+                                        noWait: true
                                     }
                                 )
                             );
