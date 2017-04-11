@@ -221,9 +221,9 @@
                     }
                 }.bind(this))
                 .then(function() {
-                    if (this.instance.isMaster && provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                    if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
                         logger.info('Checking for messages');
-                        return handleMessages.call(this, provider, bigIp);
+                        return handleMessages.call(this, provider, bigIp, options);
                     }
                 }.bind(this))
                 .catch(function(err) {
@@ -449,11 +449,20 @@
         }
     };
 
-    var handleMessages = function(provider, bigIp) {
+    var handleMessages = function(provider, bigIp, options) {
         var deferred = q.defer();
         var instanceIdsBeingAdded = [];
+        var actions = [];
 
-        provider.getMessages()
+        if (this.instance.isMaster && !options.blockSync) {
+            actions.push(AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER);
+        }
+
+        if (!this.instance.isMaster) {
+            actions.push(AutoscaleProvider.MESSAGE_SYNC_COMPLETE);
+        }
+
+        provider.getMessages(actions)
             .then(function(messages) {
                 var promises = [];
                 var message;
@@ -494,6 +503,7 @@
                             );
 
                             break;
+
                         case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
                             // See if the message is for us
                             if (message.data.toInstanceId !== this.instanceId) {
@@ -503,12 +513,9 @@
                             promises.push(provider.syncComplete(message.data.fromUser, message.data.fromPassword));
 
                             break;
+
                         default:
                             deferred.reject('Unknown message action', message.action);
-                    }
-
-                    if (message.completionHandler) {
-                        message.completionHandler.callback.call(message.completionHandler.this, message.completionHandler.data);
                     }
                 }
 
@@ -660,10 +667,6 @@
         }
 
         return deferred.promise;
-    };
-
-    var updatePassword = function(provider, user, password) {
-        provider.updatePassword(user, password);
     };
 
     // If we're called from the command line, run
