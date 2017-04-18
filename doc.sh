@@ -40,6 +40,8 @@ See node scripts/network.js --help for details**
     * Add arbitrary routes
     * Support mtu on vlans
     * Support port lockdown on self IPs
+* Updates to signaling. --wait-for now means 'run if the signal has been sent' rather than 'run when the signal is sent'
+* More robust reboot handling.
 
 ### Version 2.3.0
 * Support for Azure autoscaling
