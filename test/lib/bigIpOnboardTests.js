@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -516,7 +516,7 @@ module.exports = {
                         'create',
                         '/cm/shared/licensing/pools/1/members'),
                         {
-                            deviceAddress: 'bigIpMgmtAddress',
+                            deviceAddress: 'bigIpMgmtAddress:443',
                             username: 'user',
                             password: 'password'
                         });
@@ -580,7 +580,35 @@ module.exports = {
                         'create',
                         '/cm/shared/licensing/pools/1/members'),
                         {
-                            deviceAddress: 'bigIpMgmtAddress',
+                            deviceAddress: 'bigIpMgmtAddress:443',
+                            username: 'user',
+                            password: 'password'
+                        });
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testDifferentPort: function(test) {
+            icontrolMock.when(
+                'create',
+                '/cm/shared/licensing/pools/1/members',
+                {
+                    state: 'LICENSED'
+                }
+            );
+            bigIp.port = 8443;
+            bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', 'bigIpMgmtAddress')
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest(
+                        'create',
+                        '/cm/shared/licensing/pools/1/members'),
+                        {
+                            deviceAddress: 'bigIpMgmtAddress:8443',
                             username: 'user',
                             password: 'password'
                         });
