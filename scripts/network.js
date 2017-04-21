@@ -83,13 +83,15 @@
 
                 loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
+                loggerOptions.module = module;
 
                 if (options.output) {
                     loggerOptions.fileName = options.output;
                 }
 
                 logger = Logger.getLogger(loggerOptions);
-                util.logger = logger;
+                ipc.setLoggerOptions(loggerOptions);
+                util.setLoggerOptions(loggerOptions);
 
                 for (i = 0; i < REQUIRED_OPTIONS.length; ++i) {
                     if (!options[REQUIRED_OPTIONS[i]]) {
