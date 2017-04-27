@@ -16,7 +16,7 @@ writeHelp () {
 
 cat > $README_FILE << EOL
 [![Build Status](https://travis-ci.org/F5Networks/f5-cloud-libs.svg?branch=master)](https://travis-ci.org/F5Networks/f5-cloud-libs)
-[![Coverage Status](https://coveralls.io/repos/github/F5Networks/f5-cloud-libs/badge.svg?branch=develop)](https://coveralls.io/github/F5Networks/f5-cloud-libs?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/github/F5Networks/f5-cloud-libs/badge.svg)](https://coveralls.io/github/F5Networks/f5-cloud-libs)
 
 # Library code and scripts for deploying BIG-IP in a cloud
 
@@ -40,6 +40,8 @@ See node scripts/network.js --help for details**
     * Add arbitrary routes
     * Support mtu on vlans
     * Support port lockdown on self IPs
+* Updates to signaling. --wait-for now means 'run if the signal has been sent' rather than 'run when the signal is sent'
+* More robust reboot handling.
 
 ### Version 2.3.0
 * Support for Azure autoscaling
