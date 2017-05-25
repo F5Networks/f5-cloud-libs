@@ -1,3 +1,5 @@
+# Fix BZ657630
+
 function wait-for-bigip() {
     echo "** BigIP waiting ..."
     bigstart_wait mcpd ready
