@@ -103,3 +103,18 @@ tmsh create sys folder /LOCAL_ONLY device-group none traffic-group traffic-group
 
 echo tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
 tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
+
+# Added for bug#664393
+GW_SET=false
+while [ $GW_SET == false ] 
+do
+    if ! route -n|grep '^0.0.0.0.*external$' &> /dev/null; then
+        echo tmsh delete net route /LOCAL_ONLY/default
+        tmsh delete net route /LOCAL_ONLY/default
+        echo tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
+        tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
+    else
+        GW_SET=true
+    fi
+    echo "GW_SET = $GW_SET"
+done
