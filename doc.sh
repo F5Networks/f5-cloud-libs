@@ -31,11 +31,15 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 3.0.1
+* Add retry for password-url when licensing via BIG-IQ.
+
 ### Version 3.0.0
 
 **This version is not backwards compatible. The format for options on network.js has changed.
 See node scripts/network.js --help for details**
 
+* License from BIG-IP from BIG-IQ.
 * More options for network.js
     * Add arbitrary routes
     * Support mtu on vlans
