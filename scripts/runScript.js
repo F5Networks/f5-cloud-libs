@@ -53,7 +53,7 @@
 
             try {
                 options
-                    .version('2.3.0')
+                    .version('3.0.0')
                     .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                     .option('-f, --file <script>', 'File name of script to run.')
                     .option('-u, --url <url>', 'URL from which to download script to run. This will override --file.')
@@ -67,12 +67,15 @@
 
                 loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
+                loggerOptions.module = module;
 
                 if (options.output) {
                     loggerOptions.fileName = options.output;
                 }
 
                 logger = Logger.getLogger(loggerOptions);
+                ipc.setLoggerOptions(loggerOptions);
+                util.setLoggerOptions(loggerOptions);
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
                 // allow the BIG-IP services to start

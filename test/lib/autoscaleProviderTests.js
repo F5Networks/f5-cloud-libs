@@ -113,6 +113,20 @@ module.exports = {
         test.done();
     },
 
+    testUnimplementedGetNicsByTag: function(test) {
+            test.doesNotThrow(function() {
+                testAutoscaleProvider.getNicsByTag();
+            });
+            test.done();
+    },
+
+    testUnimplementedGetVmsByTag: function(test) {
+            test.doesNotThrow(function() {
+                testAutoscaleProvider.getVmsByTag();
+            });
+            test.done();
+    },
+
     testUnimplementedIsValidMaster: function(test) {
         test.doesNotThrow(function() {
             testAutoscaleProvider.isValidMaster();

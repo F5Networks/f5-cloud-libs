@@ -59,7 +59,7 @@
             try {
                 // Can't use getCommonOptions here because of the special reboot handling
                 options
-                    .version('2.3.0')
+                    .version('3.0.0')
                     .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
                     .option('-u, --user <user>', 'BIG-IP admin user name.')
                     .option('-p, --password <password>', 'BIG-IP admin user password. Use this or --password-url')
@@ -83,13 +83,15 @@
 
                 loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
+                loggerOptions.module = module;
 
                 if (options.output) {
                     loggerOptions.fileName = options.output;
                 }
 
                 logger = Logger.getLogger(loggerOptions);
-                util.logger = logger;
+                ipc.setLoggerOptions(loggerOptions);
+                util.setLoggerOptions(loggerOptions);
 
                 for (i = 0; i < REQUIRED_OPTIONS.length; ++i) {
                     if (!options[REQUIRED_OPTIONS[i]]) {
