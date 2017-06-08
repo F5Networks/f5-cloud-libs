@@ -1004,6 +1004,37 @@ module.exports = {
                     BigIp.prototype.init = init;
                     test.done();
                 });
+        },
+
+        testUpdateWithPasswordUrl: function(test) {
+            var fsMock = require('fs');
+            var realReadFile = fsMock.readFile;
+
+            fsMock.readFile = function(path, options, cb) {
+                cb(null, 'myPass');
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/auth/user',
+                [
+                    {
+                        name: 'myUser'
+                    }
+                ]
+            );
+            bigIp.onboard.updateUser('myUser', 'file:///foo/bar', 'myRole', null, {passwordIsUrl: true})
+                .then(function() {
+                    var userParams = icontrolMock.getRequest('modify', '/tm/auth/user/myUser');
+                    test.strictEqual(userParams.password, 'myPass');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    fsMock.readFile = realReadFile;
+                    test.done();
+                });
         }
     }
 };
