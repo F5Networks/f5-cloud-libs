@@ -13,6 +13,7 @@ proc script::run {} {
             set hashes(asm-policy.tar.gz) 2d39ec60d006d05d8a1567a1d8aae722419e8b062ad77d6d9a31652971e5e67bc4043d81671ba2a8b12dd229ea46d205144f75374ed4cae58cefa8f9ab6533e6
             set hashes(deploy_waf.sh) 4db3176b45913a5e7ccf42ab9c7ac9d7de115cdbd030b9e735946f92456b6eb433087ed0e98ac4981c76d475cd38f4de49cd98c063e13d50328a270e5b3daa4a
             set hashes(f5.policy_creator.tmpl) 54d265e0a573d3ae99864adf4e054b293644e48a54de1e19e8a6826aa32ab03bd04c7255fd9c980c3673e9cd326b0ced513665a91367add1866875e5ef3c4e3a
+            set hashes(f5.service_discovery.tmpl) 60014e85131844867f53e1ea8f31414601bfc7d2dc0c1b4a7726b0418de32696030fe6f3bf6a36b77975f7113240a97d4d4ffe0281bd5e18e8a63dc0aa7b3fe8
 
             set file_path [lindex $tmsh::argv 1]
             set file_name [file tail $file_path]
