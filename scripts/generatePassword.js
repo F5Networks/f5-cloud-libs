@@ -34,7 +34,7 @@
             };
 
             options
-                .version('3.0.0')
+                .version('3.1.0')
                 .option('--length <password_length>', 'Length of password. Default 32.', 32)
                 .option('--file <path/to/file>', 'Location in which to store the password. Default log to console.')
                 .parse(argv);
