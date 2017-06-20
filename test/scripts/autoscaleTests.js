@@ -82,12 +82,14 @@ instances = {
     "one": {
         isMaster: false,
         hostname: 'host1',
-        privateIp: '1.2.3.4'
+        privateIp: '1.2.3.4',
+        providerVisible: true
     },
     "two": {
         isMaster: true,
         hostname: 'host2',
-        privateIp: '5.6.7.8'
+        privateIp: '5.6.7.8',
+        providerVisible: true
     }
 };
 

@@ -17,6 +17,8 @@
 
 (function() {
 
+    const MAX_DISCONNECTED_MS = 10 * 60000; // 10 minutes
+
     var fs = require('fs');
     var q = require('q');
     var AutoscaleProvider = require('../lib/autoscaleProvider');
@@ -52,7 +54,9 @@
             var bigIp;
             var loggableArgs;
             var logFileName;
+            var masterInstance;
             var masterIid;
+            var masterExpired;
             var Provider;
             var provider;
             var i;
@@ -158,41 +162,65 @@
                     return provider.getInstances();
                 }.bind(this))
                 .then(function (response) {
-                    var instanceIds;
-
                     this.instances = response || {};
                     this.instance = this.instances[this.instanceId];
                     logger.debug('instances:', this.instances);
 
-                    instanceIds = Object.keys(this.instances);
-                    if (instanceIds.length === 0) {
+                    if (Object.keys(this.instances).length === 0) {
                         throw new Error('Instance list is empty. Exiting.');
                     }
-                    else if (instanceIds.indexOf(this.instanceId) === -1) {
+
+                    if (!this.instance) {
                         throw new Error('Our instance ID is not in instance list. Exiting');
                     }
 
                     logger.info('Determining master instance id.');
-                    masterIid = getMasterInstanceId(this.instances);
+                    masterInstance = getMasterInstance(this.instances);
+
+                    if (masterInstance) {
+                        // check to see if the master instance is currently visible to the cloud
+                        // provider
+                        if (masterInstance.instance.providerVisible) {
+                            masterIid = masterInstance.id;
+                        }
+                        else {
+                            // The cloud provider does not currently see this instance,
+                            // check to see if it's been gone for a while or if this is a
+                            // random error
+
+                            // update this instance's master status
+                            updateMasterStatus(provider, this.instance, AutoscaleProvider.STATUS_NOT_IN_CLOUD_LIST);
+
+                            if (isMasterExpired(this.instance)) {
+                                // delete master instance and elect new master
+                                // TODO: maybe just set isMaster = false on master instance?
+                                masterExpired = true;
+                                masterIid = undefined;
+                            }
+                        }
+                    }
 
                     if (masterIid) {
                         logger.info('Possible master ID:', masterIid);
                         return provider.isValidMaster(masterIid, this.instances);
                     }
+                    else if (masterExpired) {
+                        logger.info('Old master expired.');
+                    }
                     else {
                         logger.info('No master ID found.');
                     }
                 }.bind(this))
-                .then(function(response) {
+                .then(function(validMaster) {
 
-                    if (response) {
-                        // true response means we have a valid masterIid, just pass it on
+                    if (validMaster) {
+                        // true validMaster means we have a valid masterIid, just pass it on
                         logger.info('Valid master ID:', masterIid);
                         return masterIid;
                     }
                     else {
-                        // false or undefined response means no masterIid or invalid masterIid
-                        if (masterIid) {
+                        // false or undefined validMaster means no masterIid or invalid masterIid
+                        if (validMaster === false) {
                             logger.info('Invalid master ID:', masterIid);
                             provider.masterInvalidated(masterIid);
                         }
@@ -597,25 +625,64 @@
     };
 
     /**
-     * Gets the instance ID of the master
+     * Gets the instance marked as master
      *
      * @param {Object} instances - Instances map
      *
-     * @returns {String} instanceId of master if one is found.
+     * @returns {Object} master instance if one is found
+     *
+     *                   {
+     *                       id: instance_id,
+     *                       instance: instance_data
+     *                   }
      */
-    var getMasterInstanceId = function(instances) {
+    var getMasterInstance = function(instances) {
         var instanceIds = Object.keys(instances);
         var instanceId;
 
         if (instanceIds.length === 1) {
-            return instanceIds[0];
+            return instances[instanceIds[0]];
         }
 
         for (instanceId in instances) {
             if (instances[instanceId].isMaster) {
-                return instanceId;
+                return {
+                    id: instanceId,
+                    instance: instances[instanceId]
+                };
             }
         }
+    };
+
+    /*
+     * Determines if the master status has been bad for more than a certain
+     * amount of time.
+     *
+     * @param {Object} instance - instance as returned by getInstances
+     *
+     * @returns {Boolean} Whether or not the master status has been bad for too long
+     */
+    var isMasterExpired = function(instance) {
+        var masterStatus = instance.masterStatus || {};
+        var isExpired = false;
+        var disconnectedMs = new Date() - masterStatus.lastStatusChange;
+
+        if (disconnectedMs > MAX_DISCONNECTED_MS) {
+            logger.info('master has been disconnected for too long (', disconnectedMs, ') ms');
+            isExpired = true;
+        }
+
+        return isExpired;
+    };
+
+    var updateMasterStatus = function(provider, instance, status) {
+        var now = new Date();
+        instance.masterStatus.lastUpdate = now;
+        if (instance.masterStatus.status !== status) {
+            instance.masterStatus.status = status;
+            instance.masterStatus.lastStatusChange = now;
+        }
+        return provider.putInstance(instance);
     };
 
     /**
