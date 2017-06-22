@@ -189,17 +189,17 @@
                             // random error
 
                             // update this instance's master status
-                            updateMasterStatus(provider, this.instance, AutoscaleProvider.STATUS_NOT_IN_CLOUD_LIST);
+                            updateMasterStatus.call(this, provider, AutoscaleProvider.STATUS_NOT_IN_CLOUD_LIST);
 
                             if (isMasterExpired(this.instance)) {
-                                // delete master instance and elect new master
-                                // TODO: maybe just set isMaster = false on master instance?
+                                masterInstance.isMaster = false;
                                 masterExpired = true;
-                                masterIid = undefined;
+                                return provider.masterExpired(masterInstance.id, this.instances);
                             }
                         }
                     }
-
+                }.bind(this))
+                .then(function() {
                     if (masterIid) {
                         logger.info('Possible master ID:', masterIid);
                         return provider.isValidMaster(masterIid, this.instances);
@@ -212,7 +212,6 @@
                     }
                 }.bind(this))
                 .then(function(validMaster) {
-
                     if (validMaster) {
                         // true validMaster means we have a valid masterIid, just pass it on
                         logger.info('Valid master ID:', masterIid);
@@ -225,20 +224,26 @@
                             provider.masterInvalidated(masterIid);
                         }
 
-                        logger.info('Electing master.');
-                        return provider.electMaster(this.instances);
+                        // if master is visible or expired, elect, otherwise, wait
+                        if (masterInstance.instance.providerVisible || (!masterInstance.instance.providerVisible && masterExpired)) {
+                            logger.info('Electing master.');
+                            return provider.electMaster(this.instances);
+                        }
                     }
                 }.bind(this))
                 .then(function(response) {
-                    masterIid = response;
-                    if (this.instanceId === masterIid) {
-                        this.instance.isMaster = true;
+                    if (response) {
+                        masterIid = response;
+                        if (this.instanceId === masterIid) {
+                            this.instance.isMaster = true;
+                        }
+                        logger.info('Using master ID:', masterIid);
+                        logger.info('This instance', (this.instance.isMaster ? 'is' : 'is not'), 'master');
+                        return provider.masterElected(masterIid);
                     }
-                    logger.info('Using master ID:', masterIid);
-                    logger.info('This instance', (this.instance.isMaster ? 'is' : 'is not'), 'master');
-                    return provider.masterElected(masterIid);
                 }.bind(this))
                 .then(function() {
+                    // TODO: when to run this block? do we run always run or only valid unexpired, ...
                     switch(options.clusterAction) {
                         case 'join':
                             return handleJoin.call(this, provider, bigIp, masterIid, options);
@@ -278,7 +283,13 @@
             }
     };
 
+    /**
+     * Handles --cluster-action join
+     *
+     * Called with this bound to the caller
+     */
     var handleJoin = function(provider, bigIp, masterIid, options) {
+        var deferred = q.defer();
         var hasUcs = false;
 
         const MASTER_FILE_PATH = "/config/cloud/master";
@@ -286,130 +297,91 @@
         logger.info('Cluster action JOIN');
 
         // Store our info
-        return provider.putInstance(this.instance)
+        provider.putInstance(this.instanceId, this.instance)
             .then(function() {
                 if (this.instance.isMaster) {
-                    return provider.getStoredUcs();
-                }
-            }.bind(this))
-            .then(function(response) {
-                if (this.instance.isMaster && response) {
-                    hasUcs = true;
-                    return loadUcs(bigIp, response, options.cloud);
-                }
-            }.bind(this))
-            .then(function() {
-                var deferred = q.defer();
-                var masterInfo = {
-                    ucsLoaded: hasUcs
-                };
+                    return provider.getStoredUcs()
+                        .then(function(response) {
+                            if (response) {
+                                hasUcs = true;
+                                return loadUcs(bigIp, response, options.cloud);
+                            }
+                        }.bind(this))
+                        .then(function() {
+                            var fsDeferred = q.defer();
+                            var masterInfo = {
+                                ucsLoaded: hasUcs
+                            };
 
-                if (this.instance.isMaster) {
-                    // Mark ourself as master on disk so other scripts have access to this info
-                    fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
-                        if (err) {
-                            logger.warn('Error saving master file', err);
-                            deferred.reject(err);
-                            return;
-                        }
+                            // Mark ourself as master on disk so other scripts have access to this info
+                            fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
+                                if (err) {
+                                    logger.warn('Error saving master file', err);
+                                    fsDeferred.reject(err);
+                                    return;
+                                }
 
-                        deferred.resolve();
-                    });
-                }
-                else {
-                    // Make sure the master file is not on our disk
-                    if (fs.existsSync(MASTER_FILE_PATH)) {
-                        fs.unlinkSync(MASTER_FILE_PATH);
-                    }
-                    deferred.resolve();
-                }
-
-                return deferred.promise;
-            }.bind(this))
-            .then(function() {
-                if (this.instance.isMaster && !provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                    logger.info('Storing master credentials.');
-                    return provider.putMasterCredentials();
-                }
-            }.bind(this))
-            .then(function(response) {
-                logger.debug(response);
-
-                // Configure cm configsync-ip on this BIG-IP node
-                if (!this.instance.isMaster || !options.blockSync) {
-                    logger.info("Setting config sync IP.");
-                    return bigIp.cluster.configSyncIp(this.instance.privateIp);
-                }
-                else {
-                    logger.info("Not seting config sync IP because we're master and block-sync is specified.");
-                }
-            }.bind(this))
-            .then(function() {
-                var masterInstance;
-
-                // If we're the master, create the device group
-                if (this.instance.isMaster) {
-                    logger.info('Creating device group.');
-
-                    return bigIp.cluster.createDeviceGroup(
-                        options.deviceGroup,
-                        'sync-failover',
-                        [this.instance.hostname],
-                        {autoSync: true}
-                    );
-                }
-
-                // If we're not the master, join the cluster
-                else {
-                    logger.info('Joining cluster.');
-                    masterInstance = this.instances[masterIid];
-                    if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                        return bigIp.deviceInfo()
-                            .then(function(response) {
-                                var managementIp = response.managementAddress;
-
-                                logger.debug('Sending message to join cluster.');
-                                return provider.sendMessage(
-                                    AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
-                                    {
-                                        masterIid: masterIid,
-                                        instanceId: this.instanceId,
-                                        host: managementIp,
-                                        port: bigIp.port,
-                                        username: bigIp.user,
-                                        password: bigIp.password,
-                                        hostname: this.instance.hostname,
-                                        deviceGroup: options.deviceGroup
-                                    }
-                                );
-                            }.bind(this))
-                            .catch(function(err) {
-                                // need to bubble up nested errors
-                                return q.reject(err);
+                                fsDeferred.resolve();
                             });
+
+                            return fsDeferred.promise;
+                        }.bind(this))
+                        .then(function() {
+                            if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                                logger.info('Storing master credentials.');
+                                return provider.putMasterCredentials();
+                            }
+                        }.bind(this))
+                        .then(function(response) {
+                            logger.debug(response);
+
+                            // Configure cm configsync-ip on this BIG-IP node
+                            if (!options.blockSync) {
+                                logger.info("Setting config sync IP.");
+                                return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                            }
+                            else {
+                                logger.info("Not seting config sync IP because block-sync is specified.");
+                            }
+                        }.bind(this))
+                        .then(function() {
+                            // Create the device group
+                            logger.info('Creating device group.');
+
+                            return bigIp.cluster.createDeviceGroup(
+                                options.deviceGroup,
+                                'sync-failover',
+                                [this.instance.hostname],
+                                {autoSync: true}
+                            );
+
+                        }.bind(this))
+                        .catch(function(err) {
+                            // rethrow here, otherwise error is hidden
+                            throw(err);
+                        });
                     }
                     else {
-                        logger.debug('Sending request to join cluster.');
-                        return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
-                            .then(function(credentials) {
-                                return bigIp.cluster.joinCluster(
-                                    options.deviceGroup,
-                                    masterInstance.mgmtIp,
-                                    credentials.username,
-                                    credentials.password,
-                                    false,
-                                    {remotePort: options.port}
-                                );
-                            });
+                        // We're not the master
+
+                        // Make sure the master file is not on our disk
+                        if (fs.existsSync(MASTER_FILE_PATH)) {
+                            fs.unlinkSync(MASTER_FILE_PATH);
+                        }
+
+                        return joinCluster.call(this, provider, bigIp, masterIid, options);
                     }
-                }
-            }.bind(this))
-            .catch(function(err) {
-                // rethrow here, otherwise error is hidden
-                throw(err);
-            });
+                })
+                .catch(function(err) {
+                    throw(err);
+                });
+
+        return deferred.promise;
     };
 
+    /**
+     * Called with this bound to the caller
+     */
     var handleUpdate = function(provider, bigIp, options) {
 
         logger.info('Cluster action UPDATE');
@@ -418,10 +390,14 @@
             return checkForDisconnectedDevices.call(this, bigIp);
         }
         else {
+            // TODO: check to make sure we are in the cluster. If not, joinCluster.cal(...)
             return checkForDisconnectedMaster.call(this, provider, bigIp, options);
         }
     };
 
+    /**
+     * Called with this bound to the caller
+     */
     var handleMessages = function(provider, bigIp, options) {
         var deferred = q.defer();
         var instanceIdsBeingAdded = [];
@@ -552,6 +528,57 @@
         return deferred.promise;
     };
 
+    /**
+     * Called with this bound to the caller
+     */
+    var joinCluster = function(provider, bigIp, masterIid, options) {
+        logger.info('Joining cluster.');
+
+        var masterInstance = this.instances[masterIid];
+        if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+            return bigIp.deviceInfo()
+                .then(function(response) {
+                    var managementIp = response.managementAddress;
+
+                    logger.debug('Sending message to join cluster.');
+                    return provider.sendMessage(
+                        AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                        {
+                            masterIid: masterIid,
+                            instanceId: this.instanceId,
+                            host: managementIp,
+                            port: bigIp.port,
+                            username: bigIp.user,
+                            password: bigIp.password,
+                            hostname: this.instance.hostname,
+                            deviceGroup: options.deviceGroup
+                        }
+                    );
+                }.bind(this))
+                .catch(function(err) {
+                    // need to bubble up nested errors
+                    return q.reject(err);
+                });
+        }
+        else {
+            logger.debug('Sending request to join cluster.');
+            return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
+                .then(function(credentials) {
+                    return bigIp.cluster.joinCluster(
+                        options.deviceGroup,
+                        masterInstance.mgmtIp,
+                        credentials.username,
+                        credentials.password,
+                        false,
+                        {remotePort: options.port}
+                    );
+                });
+        }
+    };
+
+    /**
+     * Called with this bound to the caller
+     */
     var checkForDisconnectedDevices = function(bigIp) {
         return bigIp.cluster.getCmSyncStatus()
             .then(function(response) {
@@ -595,6 +622,9 @@
 
     };
 
+    /**
+     * Called with this bound to the caller
+     */
     var checkForDisconnectedMaster = function(provider, bigIp, options) {
         return provider.getMasterStatus()
             .then(function(masterStatus) {
@@ -675,14 +705,14 @@
         return isExpired;
     };
 
-    var updateMasterStatus = function(provider, instance, status) {
+    var updateMasterStatus = function(provider, status) {
         var now = new Date();
-        instance.masterStatus.lastUpdate = now;
-        if (instance.masterStatus.status !== status) {
-            instance.masterStatus.status = status;
-            instance.masterStatus.lastStatusChange = now;
+        this.instance.masterStatus.lastUpdate = now;
+        if (this.instance.masterStatus.status !== status) {
+            this.instance.masterStatus.status = status;
+            this.instance.masterStatus.lastStatusChange = now;
         }
-        return provider.putInstance(instance);
+        return provider.putInstance(this.instanceId, this.instance);
     };
 
     /**
