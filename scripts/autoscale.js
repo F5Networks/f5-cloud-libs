@@ -224,8 +224,11 @@
                             provider.masterInvalidated(masterIid);
                         }
 
-                        // if master is visible or expired, elect, otherwise, wait
-                        if (masterInstance.instance.providerVisible || (!masterInstance.instance.providerVisible && masterExpired)) {
+                        // if no master, master is visible or expired, elect, otherwise, wait
+                        if (!masterInstance ||
+                            masterInstance.instance.providerVisible ||
+                            (!masterInstance.instance.providerVisible && masterExpired)) {
+
                             logger.info('Electing master.');
                             return provider.electMaster(this.instances);
                         }
