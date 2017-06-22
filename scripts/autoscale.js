@@ -233,6 +233,7 @@
                 }.bind(this))
                 .then(function(response) {
                     if (response) {
+                        // we just elected a master
                         masterIid = response;
                         if (this.instanceId === masterIid) {
                             this.instance.isMaster = true;
@@ -243,15 +244,16 @@
                     }
                 }.bind(this))
                 .then(function() {
-                    // TODO: when to run this block? do we run always run or only valid unexpired, ...
-                    switch(options.clusterAction) {
-                        case 'join':
-                            return handleJoin.call(this, provider, bigIp, masterIid, options);
-                        case 'update':
-                            return handleUpdate.call(this, provider, bigIp, options);
-                        case 'unblock-sync':
-                            logger.info("Cluster action UNBLOCK-SYNC");
-                            return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                    if (masterIid) {
+                        switch(options.clusterAction) {
+                            case 'join':
+                                return handleJoin.call(this, provider, bigIp, masterIid, options);
+                            case 'update':
+                                return handleUpdate.call(this, provider, bigIp, options);
+                            case 'unblock-sync':
+                                logger.info("Cluster action UNBLOCK-SYNC");
+                                return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                        }
                     }
                 }.bind(this))
                 .then(function() {
@@ -356,6 +358,9 @@
                             );
 
                         }.bind(this))
+                        .then(function() {
+                            deferred.resolve();
+                        })
                         .catch(function(err) {
                             // rethrow here, otherwise error is hidden
                             throw(err);
@@ -371,7 +376,7 @@
 
                         return joinCluster.call(this, provider, bigIp, masterIid, options);
                     }
-                })
+                }.bind(this))
                 .catch(function(err) {
                     throw(err);
                 });
