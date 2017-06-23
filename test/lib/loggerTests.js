@@ -18,7 +18,7 @@
 var Logger = require('../../../f5-cloud-libs').logger;
 var fs = require('fs');
 
-const TEMP_LOGFILE = 'f5-cloud-libs-loggerTest.log.' + Date.now()
+const TEMP_LOGFILE = 'f5-cloud-libs-loggerTest.log.' + Date.now();
 
 module.exports = {
     testConsole: function(test) {
