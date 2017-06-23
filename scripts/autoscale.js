@@ -174,6 +174,9 @@
                         throw new Error('Our instance ID is not in instance list. Exiting');
                     }
 
+                    return provider.putInstance(this.instanceId, this.instance);
+                }.bind(this))
+                .then(function() {
                     logger.info('Determining master instance id.');
                     masterInstance = getMasterInstance(this.instances);
 
