@@ -305,87 +305,81 @@
         logger.info('Cluster action JOIN');
 
         // Store our info
-        provider.putInstance(this.instanceId, this.instance)
-            .then(function() {
-                if (this.instance.isMaster) {
-                    return provider.getStoredUcs()
-                        .then(function(response) {
-                            if (response) {
-                                hasUcs = true;
-                                return loadUcs(bigIp, response, options.cloud);
-                            }
-                        }.bind(this))
-                        .then(function() {
-                            var fsDeferred = q.defer();
-                            var masterInfo = {
-                                ucsLoaded: hasUcs
-                            };
-
-                            // Mark ourself as master on disk so other scripts have access to this info
-                            fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
-                                if (err) {
-                                    logger.warn('Error saving master file', err);
-                                    fsDeferred.reject(err);
-                                    return;
-                                }
-
-                                fsDeferred.resolve();
-                            });
-
-                            return fsDeferred.promise;
-                        }.bind(this))
-                        .then(function() {
-                            if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                                logger.info('Storing master credentials.');
-                                return provider.putMasterCredentials();
-                            }
-                        }.bind(this))
-                        .then(function(response) {
-                            logger.debug(response);
-
-                            // Configure cm configsync-ip on this BIG-IP node
-                            if (!options.blockSync) {
-                                logger.info("Setting config sync IP.");
-                                return bigIp.cluster.configSyncIp(this.instance.privateIp);
-                            }
-                            else {
-                                logger.info("Not seting config sync IP because block-sync is specified.");
-                            }
-                        }.bind(this))
-                        .then(function() {
-                            // Create the device group
-                            logger.info('Creating device group.');
-
-                            return bigIp.cluster.createDeviceGroup(
-                                options.deviceGroup,
-                                'sync-failover',
-                                [this.instance.hostname],
-                                {autoSync: true}
-                            );
-
-                        }.bind(this))
-                        .then(function() {
-                            deferred.resolve();
-                        })
-                        .catch(function(err) {
-                            // rethrow here, otherwise error is hidden
-                            throw(err);
-                        });
-                    }
-                    else {
-                        // We're not the master
-
-                        // Make sure the master file is not on our disk
-                        if (fs.existsSync(MASTER_FILE_PATH)) {
-                            fs.unlinkSync(MASTER_FILE_PATH);
-                        }
-
-                        return joinCluster.call(this, provider, bigIp, masterIid, options);
+        if (this.instance.isMaster) {
+            return provider.getStoredUcs()
+                .then(function(response) {
+                    if (response) {
+                        hasUcs = true;
+                        return loadUcs(bigIp, response, options.cloud);
                     }
                 }.bind(this))
+                .then(function() {
+                    var fsDeferred = q.defer();
+                    var masterInfo = {
+                        ucsLoaded: hasUcs
+                    };
+
+                    // Mark ourself as master on disk so other scripts have access to this info
+                    fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
+                        if (err) {
+                            logger.warn('Error saving master file', err);
+                            fsDeferred.reject(err);
+                            return;
+                        }
+
+                        fsDeferred.resolve();
+                    });
+
+                    return fsDeferred.promise;
+                }.bind(this))
+                .then(function() {
+                    if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                        logger.info('Storing master credentials.');
+                        return provider.putMasterCredentials();
+                    }
+                }.bind(this))
+                .then(function(response) {
+                    logger.debug(response);
+
+                    // Configure cm configsync-ip on this BIG-IP node
+                    if (!options.blockSync) {
+                        logger.info("Setting config sync IP.");
+                        return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                    }
+                    else {
+                        logger.info("Not seting config sync IP because block-sync is specified.");
+                    }
+                }.bind(this))
+                .then(function() {
+                    // Create the device group
+                    logger.info('Creating device group.');
+
+                    return bigIp.cluster.createDeviceGroup(
+                        options.deviceGroup,
+                        'sync-failover',
+                        [this.instance.hostname],
+                        {autoSync: true}
+                    );
+
+                }.bind(this))
+                .then(function() {
+                    deferred.resolve();
+                })
                 .catch(function(err) {
+                    // rethrow here, otherwise error is hidden
                     throw(err);
                 });
+        }
+        else {
+            // We're not the master
+
+            // Make sure the master file is not on our disk
+            if (fs.existsSync(MASTER_FILE_PATH)) {
+                fs.unlinkSync(MASTER_FILE_PATH);
+            }
+
+            return joinCluster.call(this, provider, bigIp, masterIid, options);
+        }
 
         return deferred.promise;
     };
