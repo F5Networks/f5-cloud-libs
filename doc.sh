@@ -31,11 +31,17 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 3.2.0
+* Support for S3 ARN for licensing via BIG-IQ
+
+### Version 3.1.0
+* Support for licensing via BIG-IQ
+* Support for service discovery
+
 ### Version 3.0.1
 * Add retry for password-url when licensing via BIG-IQ.
 
 ### Version 3.0.0
-
 **This version is not backwards compatible. The format for options on network.js has changed.
 See node scripts/network.js --help for details**
 
