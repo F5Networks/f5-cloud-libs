@@ -253,7 +253,7 @@
                         }
                         logger.info('Using master ID:', masterIid);
                         logger.info('This instance', (this.instance.isMaster ? 'is' : 'is not'), 'master');
-                        return provider.putInstance();
+                        return provider.putInstance(this.instanceId, this.instances);
                     }
                 }.bind(this))
                 .then(function() {
