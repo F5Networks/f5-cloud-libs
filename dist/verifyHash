@@ -1,8 +1,8 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) 64f3ae21b5d82febad00c50249590dc155f38a769609bf7bbf0ddc934ffa1fcd737e1fb7bcd76849cc2fdd53411d3751abcf66fe740ae94c657903745bd7ffdb
-            set hashes(f5-cloud-libs-aws.tar.gz) 21e0349325b3c15bc8026c98c83ddbdb4541b8f57dfcaa758990ac2b12604e02371238ebab34f37e7861557487182591cf2796fff4f09157ae0c4135733c72a1
+            set hashes(f5-cloud-libs.tar.gz) 5890718bc740a437d77af2d615e0d3718f5df1cbee1fe2d690ed8d121be8d3325709c1e3f07a24d1c9d05f566e5b45858fba31bda3df78ce4c446609fd936511
+            set hashes(f5-cloud-libs-aws.tar.gz) f1ef210c1e6291dc08974cbc27c413825780e7a45c5dec773ac8e006710ba14a8d4c57e1dee2c71be7d23dd9a21b79ea6d78e157868c0a6b178a50c672945b75
             set hashes(f5-cloud-libs-azure.tar.gz) a4ff4a9af058ce6058159531fd7bca07eb8808cdd1b1e13de0e1324ec7e4692211991ecaa58dc36021c6c88c7783837d480584393753c3dfc2fddf623781e3a9
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
             set hashes(f5.http.v1.2.0rc4.tmpl) 47c19a83ebfc7bd1e9e9c35f3424945ef8694aa437eedd17b6a387788d4db1396fefe445199b497064d76967b0d50238154190ca0bd73941298fc257df4dc034
@@ -35,6 +35,5 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature E8o0V7rV7w6KIWWp7sSHHWuetC+ZdVsJVUG+NLbcfzDXOhf/dHjauyFvY1kmgO1W2GKH70tJLtufL0do+iyVHQZsSfvcXx6Eyp1Q4gyvsy1U0w+VHJ1xlQXeKoeTQZSqGFOl1h1gcid2Rs/0ZQnyTJVr6Pa+mSXyWddUWDUdrkcCKZILDpdmwHI68JuwvHALuCJvGcqc8DVuAA+J0iXlcfze4odWOefLjDiZYJDMcUQT3vRXvMXhnjKDI9SC7I0kzxLX5NdWK6NTc2QUjSj42za0dQqn/PhwW1GNH+Tr8165ejrfiigxrAx1N0YVcEjYk0XbFoGbGk809F6C03lrTQ==
     signing-key /Common/f5-irule
 }
