@@ -502,7 +502,7 @@ module.exports = {
                 });
         },
 
-        testPasswordIsUrl: function(test) {
+        testPasswordIsUri: function(test) {
             var testArn = 'arn:aws:s3:::myBucket/myKey';
             var arnCalled;
             var provider = {
