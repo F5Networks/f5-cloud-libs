@@ -502,38 +502,67 @@ module.exports = {
                 });
         },
 
-        testPasswordIsUri: function(test) {
-            var testArn = 'arn:aws:s3:::myBucket/myKey';
-            var arnCalled;
-            var provider = {
-                init: function() {
-                    return q();
-                },
-                getDataFromUri: function(arn) {
-                    arnCalled = arn;
-                    return q();
-                }
-            };
-            bigIp.onboard.provider = provider;
+        testPasswordIsUri: {
+            testBasic: function(test) {
+                var testArn = 'arn:aws:s3:::myBucket/myKey';
+                var arnCalled;
+                var provider = {
+                    init: function() {
+                        return q();
+                    },
+                    getDataFromUri: function(arn) {
+                        arnCalled = arn;
+                        return q();
+                    }
+                };
+                bigIp.onboard.provider = provider;
 
-            icontrolMock.when(
-                'create',
-                '/cm/shared/licensing/pools/1/members',
-                {
-                    state: 'LICENSED'
-                }
-            );
+                icontrolMock.when(
+                    'create',
+                    '/cm/shared/licensing/pools/1/members',
+                    {
+                        state: 'LICENSED'
+                    }
+                );
 
-            bigIp.onboard.licenseViaBigIq('host', 'user', testArn, 'pool1', 'bigIpMgmtAddress', {passwordIsUri: true})
-                .then(function() {
-                    test.strictEqual(arnCalled, testArn);
-                })
-                .catch(function(err) {
-                    test.ok(false, err.message);
-                })
-                .finally(function() {
-                    test.done();
-                });
+                test.expect(1);
+
+                bigIp.onboard.licenseViaBigIq('host', 'user', testArn, 'pool1', 'bigIpMgmtAddress', {passwordIsUri: true})
+                    .then(function() {
+                        test.strictEqual(arnCalled, testArn);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err.message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
+            testUnimplementedGetDataFromUri: function(test) {
+                var provider = {
+                    init: function() {
+                        return q();
+                    },
+                    getDataFromUri: function() {
+                        throw new Error("Unimplemented abstract method getDataFromUri");
+                    }
+                };
+
+                test.expect(1);
+
+                bigIp.onboard.provider = provider;
+                bigIp.onboard.licenseViaBigIq('host', 'user', 'arn:aws:s3:::myBucket/myKey', 'pool1', 'bigIpMgmtAddress', {passwordIsUri: true})
+                    .then(function() {
+                        test.ok(false, 'Should have thrown unimplemented abstract method');
+                    })
+                    .catch(function(err) {
+                        test.notStrictEqual(err.message.indexOf('Unimplemented abstract method'), -1);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            }
         },
 
         testLicensedImmediately: function(test) {
