@@ -185,6 +185,10 @@
                         // provider
                         if (masterInstance.instance.providerVisible) {
                             masterIid = masterInstance.id;
+
+                            if (this.instanceId === masterIid) {
+                                this.instance.isMaster = true;
+                            }
                         }
                         else {
                             // The cloud provider does not currently see this instance,
