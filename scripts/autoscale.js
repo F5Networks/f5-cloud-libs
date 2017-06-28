@@ -724,6 +724,7 @@
 
     var updateMasterStatus = function(provider, status) {
         var now = new Date();
+        this.instance.masterStatus = this.instance.masterStatus || {};
         this.instance.masterStatus.lastUpdate = now;
         if (this.instance.masterStatus.status !== status) {
             this.instance.masterStatus.status = status;
