@@ -684,12 +684,7 @@
      *                   }
      */
     var getMasterInstance = function(instances) {
-        var instanceIds = Object.keys(instances);
         var instanceId;
-
-        if (instanceIds.length === 1) {
-            return instances[instanceIds[0]];
-        }
 
         for (instanceId in instances) {
             if (instances[instanceId].isMaster) {
