@@ -193,20 +193,20 @@
 
                             // update this instance's master status
                             updateMasterStatus.call(this, provider, AutoscaleProvider.STATUS_NOT_IN_CLOUD_LIST);
-                            return provider.putInstance(this.instanceId, this.instances);
+                            return provider.putInstance(this.instanceId, this.instance);
                         }
                     }
                 }.bind(this))
                 .then(function() {
-                    if (isMasterExpired(this.instance)) {
+                    if (masterInstance && isMasterExpired(this.instance)) {
                         masterInstance.isMaster = false;
                         masterExpired = true;
                         return provider.masterExpired(masterInstance.id, this.instances);
                     }
                 }.bind(this))
                 .then(function() {
-                    if (isMasterExpired(this.instance)) {
-                        return provider.putInstance(this.instanceId, this.instances);
+                    if (masterInstance && isMasterExpired(this.instance)) {
+                        return provider.putInstance(this.instanceId, this.instance);
                     }
                 }.bind(this))
                 .then(function() {
@@ -253,7 +253,7 @@
                         }
                         logger.info('Using master ID:', masterIid);
                         logger.info('This instance', (this.instance.isMaster ? 'is' : 'is not'), 'master');
-                        return provider.putInstance(this.instanceId, this.instances);
+                        return provider.putInstance(this.instanceId, this.instance);
                     }
                 }.bind(this))
                 .then(function() {
