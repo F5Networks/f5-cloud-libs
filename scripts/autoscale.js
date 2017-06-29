@@ -399,7 +399,7 @@
             bigIp.cluster.configSyncIp(this.instance.privateIp)
                 .then(function() {
                     return joinCluster.call(this, provider, bigIp, masterIid, options);
-                })
+                }.bind(this))
                 .then(function() {
                     deferred.resolve();
                 })
