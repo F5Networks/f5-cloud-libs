@@ -14,11 +14,17 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 3.2.0
+* Support for S3 ARN for licensing via BIG-IQ
+
+### Version 3.1.0
+* Support for licensing via BIG-IQ
+* Support for service discovery
+
 ### Version 3.0.1
 * Add retry for password-url when licensing via BIG-IQ.
 
 ### Version 3.0.0
-
 **This version is not backwards compatible. The format for options on network.js has changed.
 See node scripts/network.js --help for details**
 
@@ -84,7 +90,7 @@ Does initial configuration and provisioning of a BIG-IP.
           --big-iq-host <ip_address or FQDN>                                                         IP address or FQDN of BIG-IQ
           --big-iq-user <user>                                                                       BIG-IQ admin user name
           --big-iq-password <password>                                                               BIG-IQ admin user password.
-          --big-iq-password-url <password_url>                                                       URL (file, http(s)) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
+          --big-iq-password-uri <password_uri>                                                       URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
           --license-pool-name <pool_name>                                                            Name of BIG-IQ license pool.
           --big-ip-mgmt-address <big_ip_address>                                                     IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.
       -n, --hostname <hostname>                                                                  Set BIG-IP hostname.

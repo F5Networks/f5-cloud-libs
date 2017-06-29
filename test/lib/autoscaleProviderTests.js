@@ -56,6 +56,13 @@ module.exports = {
             });
     },
 
+    testUnimplementedGetDataFromUri: function(test) {
+        test.throws(function() {
+            testAutoscaleProvider.getDataFromUri();
+        });
+        test.done();
+    },
+
     testUnimplementedGetInstanceId: function(test) {
         test.throws(function() {
             testAutoscaleProvider.getInstanceId();

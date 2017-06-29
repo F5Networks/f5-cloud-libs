@@ -90,7 +90,7 @@
                     .option('    --big-iq-host <ip_address or FQDN>', '    IP address or FQDN of BIG-IQ')
                     .option('    --big-iq-user <user>', '    BIG-IQ admin user name')
                     .option('    --big-iq-password <password>', '    BIG-IQ admin user password.')
-                    .option('    --big-iq-password-url <password_url>', '    URL (file, http(s)) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.')
+                    .option('    --big-iq-password-uri <password_uri>', '    URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.')
                     .option('    --license-pool-name <pool_name>', '    Name of BIG-IQ license pool.')
                     .option('    --big-ip-mgmt-address <big_ip_address>', '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.')
                     .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
@@ -336,20 +336,21 @@
 
                         else {
                             if (options.licensePool) {
-                                if (!options.bigIqHost || !options.bigIqUser || !(options.bigIqPassword || options.bigIqPasswordUrl) || !options.licensePoolName) {
+                                if (!options.bigIqHost || !options.bigIqUser || !(options.bigIqPassword || options.bigIqPasswordUri) || !options.licensePoolName) {
                                     logger.error('When using a BIG-IQ license pool, all of big-iq-host, big-iq-user, big-iq-password[-url], and license-pool-name are required');
                                     return;
                                 }
 
                                 logger.info("Getting license from BIG-IQ license pool.");
-                                return bigIp.onboard.licenseViaBigIq(options.bigIqHost,
-                                                                     options.bigIqUser,
-                                                                     options.bigIqPassword || options.bigIqPasswordUrl,
-                                                                     options.licensePoolName,
-                                                                     options.bigIpMgmtAddress,
-                                                                     {
-                                                                        passwordIsUrl: typeof options.bigIqPasswordUrl !== 'undefined'
-                                                                     });
+                                return bigIp.onboard.licenseViaBigIq(
+                                    options.bigIqHost,
+                                    options.bigIqUser,
+                                    options.bigIqPassword || options.bigIqPasswordUri,
+                                    options.licensePoolName,
+                                    options.bigIpMgmtAddress,
+                                    {
+                                        passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined'
+                                    });
                             }
                         }
                     })
