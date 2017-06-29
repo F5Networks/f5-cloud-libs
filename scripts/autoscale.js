@@ -315,7 +315,6 @@
     var handleJoin = function(provider, bigIp, masterIid, options) {
         var deferred = q.defer();
         var hasUcs = false;
-        var promise;
 
         const MASTER_FILE_PATH = "/config/cloud/master";
 
@@ -396,16 +395,8 @@
             }
 
             // Configure cm configsync-ip on this BIG-IP node
-            if (!options.blockSync) {
-                logger.info("Setting config sync IP.");
-                promise = bigIp.cluster.configSyncIp(this.instance.privateIp);
-            }
-            else {
-                logger.info("Not seting config sync IP because block-sync is specified.");
-                promise = q();
-            }
-
-            promise
+            logger.info("Setting config sync IP.");
+            bigIp.cluster.configSyncIp(this.instance.privateIp)
                 .then(function() {
                     return joinCluster.call(this, provider, bigIp, masterIid, options);
                 })
