@@ -152,7 +152,7 @@
                         ipc.send(signals.CLUSTER_RUNNING);
 
                         // Create the bigIp client object
-                        bigIp = testOpts.bigIp || new BigIp({logger: logger});
+                        bigIp = testOpts.bigIp || new BigIp({loggerOptions: loggerOptions});
 
                         logger.info("Initializing BIG-IP.");
                         return bigIp.init(

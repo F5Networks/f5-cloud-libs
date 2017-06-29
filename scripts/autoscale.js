@@ -133,7 +133,7 @@
                         bigIp = testOpts.bigIp;
                     }
                     else {
-                        bigIp = new BigIp({logger: logger});
+                        bigIp = new BigIp({loggerOptions: loggerOptions});
 
                         logger.info("Initializing BIG-IP.");
                         return bigIp.init(
