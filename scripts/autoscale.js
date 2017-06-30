@@ -450,6 +450,8 @@
                 var message;
                 var i;
 
+                messages = messages || [];
+
                 for (i = 0; i < messages.length; ++i) {
                     message = messages[i];
                     logger.debug("Message", message.action);
