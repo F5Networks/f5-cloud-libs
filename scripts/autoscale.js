@@ -452,6 +452,7 @@
 
                 for (i = 0; i < messages.length; ++i) {
                     message = messages[i];
+                    logger.debug("Message", message.action);
                     switch (message.action) {
                         // Add an instance to our cluster
                         case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
@@ -461,7 +462,7 @@
                                 continue;
                             }
 
-                            logger.silly('message join cluster', message.data.host);
+                            logger.silly('message add to cluster', message.data.host);
 
                             if (instanceIdsBeingAdded.indexOf(message.data.instanceId) !== -1) {
                                 logger.silly('Already adding', message.data.instanceId, '. Ignoring.');
@@ -483,8 +484,7 @@
                                     true,
                                     {
                                         remotePort: message.data.port,
-                                        remoteHostname: message.data.hostname,
-                                        noWait: true
+                                        remoteHostname: message.data.hostname
                                     }
                                 )
                             );
@@ -493,6 +493,8 @@
 
                         // Add ourselves to another instance's cluster
                         case AutoscaleProvider.MESSAGE_JOIN_CLUSTER:
+
+                            logger.silly('message join cluster', message.data.host);
 
                             instanceIdsBeingAdded.push({
                                 toInstanceId: this.instanceId,
@@ -521,7 +523,8 @@
                             if (message.data.toInstanceId !== this.instanceId) {
                                 continue;
                             }
-                            logger.debug('Got sync complete message');
+
+                            logger.silly('calling sync complete');
                             promises.push(provider.syncComplete(message.data.fromUser, message.data.fromPassword));
 
                             break;
