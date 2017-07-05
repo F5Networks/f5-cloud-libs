@@ -177,6 +177,8 @@
                     return provider.putInstance(this.instanceId, this.instance);
                 }.bind(this))
                 .then(function() {
+                    var status = AutoscaleProvider.STATUS_UNKNOWN;
+
                     logger.info('Determining master instance id.');
                     masterInstance = getMasterInstance(this.instances);
 
@@ -189,28 +191,29 @@
                             if (this.instanceId === masterIid) {
                                 this.instance.isMaster = true;
                             }
+
+                            status = AutoscaleProvider.STATUS_OK;
                         }
                         else {
                             // The cloud provider does not currently see this instance,
                             // check to see if it's been gone for a while or if this is a
                             // random error
-
-                            // update this instance's master status
-                            updateMasterStatus.call(this, provider, AutoscaleProvider.STATUS_NOT_IN_CLOUD_LIST);
-                            return provider.putInstance(this.instanceId, this.instance);
+                            status = AutoscaleProvider.STATUS_NOT_IN_CLOUD_LIST;
                         }
                     }
+
+                    return updateMasterStatus.call(this, provider, status);
                 }.bind(this))
                 .then(function() {
                     if (masterInstance && isMasterExpired(this.instance)) {
                         masterInstance.isMaster = false;
                         masterExpired = true;
-                        return provider.masterExpired(masterInstance.id, this.instances);
+                        return provider.putInstance(this.instanceId, this.instance);
                     }
                 }.bind(this))
                 .then(function() {
                     if (masterInstance && isMasterExpired(this.instance)) {
-                        return provider.putInstance(this.instanceId, this.instance);
+                        return provider.masterExpired(masterInstance.id, this.instances);
                     }
                 }.bind(this))
                 .then(function() {
@@ -481,7 +484,7 @@
                                 continue;
                             }
 
-                            if (alreadyAdding(message.datga.instanceId)) {
+                            if (alreadyAdding(message.data.instanceId)) {
                                 logger.debug('Already adding', message.data.instanceId, ', discarding');
                                 continue;
                             }
@@ -729,13 +732,17 @@
     var isMasterExpired = function(instance) {
         var masterStatus = instance.masterStatus || {};
         var isExpired = false;
-        var disconnectedMs = new Date() - masterStatus.lastStatusChange;
+        var disconnectedMs;
 
-        if (disconnectedMs > MAX_DISCONNECTED_MS) {
-            logger.info('master has been disconnected for too long (', disconnectedMs, ') ms');
-            isExpired = true;
+        if (masterStatus.status !== AutoscaleProvider.STATUS_OK) {
+            disconnectedMs = new Date() - masterStatus.lastStatusChange;
+            logger.silly('master has been disconnected for', disconnectedMs);
+            if (disconnectedMs > MAX_DISCONNECTED_MS) {
+                logger.info('master has been disconnected for too long');
+                isExpired = true;
+            }
+
         }
-
         return isExpired;
     };
 
