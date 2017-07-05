@@ -252,6 +252,8 @@
                     }
                 }.bind(this))
                 .then(function(response) {
+                    var now = new Date();
+
                     if (response) {
                         // we just elected a master
                         masterIid = response;
@@ -260,6 +262,17 @@
                         }
                         logger.info('Using master ID:', masterIid);
                         logger.info('This instance', (this.instance.isMaster ? 'is' : 'is not'), 'master');
+
+                        if (this.instance.masterStatus.instanceId !== masterIid) {
+                            logger.info('New master elected');
+                            masterExpired = true;
+                            this.instance.masterStatus = {
+                                instanceId: masterIid,
+                                status: AutoscaleProvider.STATUS_OK,
+                                lastUpdate: now,
+                                lastStatusChange: now
+                            };
+                        }
                         return provider.putInstance(this.instanceId, this.instance);
                     }
                 }.bind(this))
