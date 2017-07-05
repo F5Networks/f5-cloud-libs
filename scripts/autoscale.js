@@ -269,9 +269,15 @@
                     if (masterIid) {
                         switch(options.clusterAction) {
                             case 'join':
-                                return handleJoin.call(this, provider, bigIp, masterIid, options);
+                                if (!masterExpired) {
+                                    return handleJoin.call(this, provider, bigIp, masterIid, options);
+                                }
+                                // If the master has expired, there is nothing to do here. Update action
+                                // on a non-master will handle this scenario by telling the master to sync
+                                // from the non-master
+                                break;
                             case 'update':
-                                return handleUpdate.call(this, provider, bigIp, options);
+                                return handleUpdate.call(this, provider, bigIp, masterIid, masterExpired, options);
                             case 'unblock-sync':
                                 logger.info("Cluster action UNBLOCK-SYNC");
                                 return bigIp.cluster.configSyncIp(this.instance.privateIp);
@@ -415,16 +421,15 @@
     /**
      * Called with this bound to the caller
      */
-    var handleUpdate = function(provider, bigIp, options) {
+    var handleUpdate = function(provider, bigIp, masterIid, masterExpired, options) {
 
         logger.info('Cluster action UPDATE');
 
-        if (this.instance.isMaster) {
+        if (this.instance.isMaster && !masterExpired) {
             return checkForDisconnectedDevices.call(this, bigIp);
         }
-        else {
-            // TODO: check to make sure we are in the cluster. If not, joinCluster.cal(...)
-            return checkForDisconnectedMaster.call(this, provider, bigIp, options);
+        else if (!this.instance.isMaster && masterExpired) {
+            return syncToMaster.call(this, provider, bigIp, masterIid, options);
         }
     };
 
@@ -438,6 +443,7 @@
 
         if (this.instance.isMaster && !options.blockSync) {
             actions.push(AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER);
+            actions.push(AutoscaleProvider.MESSAGE_JOIN_CLUSTER);
         }
 
         if (!this.instance.isMaster) {
@@ -452,22 +458,31 @@
 
                 messages = messages || [];
 
+                var alreadyAdding = function(instanceId) {
+                    return instanceIdsBeingAdded.find(function(element) {
+                        return instanceId === element.toInstanceId;
+                    });
+                };
+
+                var alreadyJoining = false;
+
                 for (i = 0; i < messages.length; ++i) {
                     message = messages[i];
                     logger.debug("Message", message.action);
                     switch (message.action) {
                         // Add an instance to our cluster
                         case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
+
+                            logger.silly('message add to cluster', message.data.host);
+
                             // Make sure the message is for this instance not an old master
                             if (message.data.masterIid !== this.instanceId) {
                                 logger.debug('Received message for a different master, discarding');
                                 continue;
                             }
 
-                            logger.silly('message add to cluster', message.data.host);
-
-                            if (instanceIdsBeingAdded.indexOf(message.data.instanceId) !== -1) {
-                                logger.silly('Already adding', message.data.instanceId, '. Ignoring.');
+                            if (alreadyAdding(message.datga.instanceId)) {
+                                logger.debug('Already adding', message.data.instanceId, ', discarding');
                                 continue;
                             }
 
@@ -498,11 +513,10 @@
 
                             logger.silly('message join cluster', message.data.host);
 
-                            instanceIdsBeingAdded.push({
-                                toInstanceId: this.instanceId,
-                                fromUser: message.data.username,
-                                fromPassword: message.data.password
-                            });
+                            if (alreadyJoining) {
+                                logger.debug('Already joining cluster, discarding');
+                                continue;
+                            }
 
                             promises.push(
                                 bigIp.cluster.joinCluster(
@@ -663,33 +677,20 @@
     /**
      * Called with this bound to the caller
      */
-    var checkForDisconnectedMaster = function(provider, bigIp, options) {
-        return provider.getMasterStatus()
-            .then(function(masterStatus) {
-                var timeInState;
-                const MAX_BAD_MS = 10 * 60000; // 10 minutes
-
-                masterStatus = masterStatus || {};
-
-                if (masterStatus.status === AutoscaleProvider.DISCONNECTED || masterStatus.status === AutoscaleProvider.NOT_IN_GROUP) {
-                    timeInState = new Date() - masterStatus.lastStatusChange;
-                    if (timeInState > MAX_BAD_MS) {
-                        provider.sendMessage(
-                            AutoscaleProvider.MESSAGE_JOIN_CLUSTER,
-                            {
-                                masterIid: masterStatus.instanceId,
-                                instanceId: this.instanceId,
-                                host: this.instance.mgmtIp,
-                                port: bigIp.port,
-                                username: bigIp.user,
-                                password: bigIp.password,
-                                hostname: this.instance.hostname,
-                                deviceGroup: options.deviceGroup
-                            }
-                        );
-                    }
-                }
-            }.bind(this));
+    var syncToMaster = function(provider, bigIp, masterIid, options) {
+        return provider.sendMessage(
+            AutoscaleProvider.MESSAGE_JOIN_CLUSTER,
+            {
+                masterIid: masterIid,
+                instanceId: this.instanceId,
+                host: this.instance.mgmtIp,
+                port: bigIp.port,
+                username: bigIp.user,
+                password: bigIp.password,
+                hostname: this.instance.hostname,
+                deviceGroup: options.deviceGroup
+            }
+        );
     };
 
     /**
