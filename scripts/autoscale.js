@@ -336,10 +336,12 @@
 
         logger.info('Cluster action JOIN');
 
-        // If we are master and are replacing an expired master, send requst for
-        // someone to sync to us
+        // If we are master and are replacing an expired master, some other host
+        // will send us a message with info on where to sync from. Just set our
+        // config sync ip
         if (this.instance.isMaster && masterExpired) {
-            return syncToMaster.call(this, provider, bigIp, masterIid, options);
+            logger.info('We are replacing a master. Setting config sync IP.');
+            return bigIp.cluster.configSyncIp(this.instance.privateIp);
         }
 
         // Otherwise this is a new cluster - check for UCS, and create device group
@@ -381,11 +383,11 @@
 
                     // Configure cm configsync-ip on this BIG-IP node
                     if (!options.blockSync) {
-                        logger.info("Setting config sync IP.");
+                        logger.info('Setting config sync IP.');
                         return bigIp.cluster.configSyncIp(this.instance.privateIp);
                     }
                     else {
-                        logger.info("Not seting config sync IP because block-sync is specified.");
+                        logger.info('Not seting config sync IP because block-sync is specified.');
                     }
                 }.bind(this))
                 .then(function() {
