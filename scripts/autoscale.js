@@ -208,11 +208,6 @@
                     if (masterInstance && isMasterExpired(this.instance)) {
                         masterInstance.isMaster = false;
                         masterExpired = true;
-                        return provider.putInstance(this.instanceId, this.instance);
-                    }
-                }.bind(this))
-                .then(function() {
-                    if (masterInstance && isMasterExpired(this.instance)) {
                         return provider.masterExpired(masterInstance.id, this.instances);
                     }
                 }.bind(this))
@@ -282,16 +277,14 @@
                     }
                 }.bind(this))
                 .then(function() {
-                    if (masterIid) {
-                        switch(options.clusterAction) {
-                            case 'join':
-                                return handleJoin.call(this, provider, bigIp, masterIid, masterExpired, options);
-                            case 'update':
-                                return handleUpdate.call(this, provider, bigIp, masterIid, masterExpired, options);
-                            case 'unblock-sync':
-                                logger.info("Cluster action UNBLOCK-SYNC");
-                                return bigIp.cluster.configSyncIp(this.instance.privateIp);
-                        }
+                    switch(options.clusterAction) {
+                        case 'join':
+                            return handleJoin.call(this, provider, bigIp, masterIid, masterExpired, options);
+                        case 'update':
+                            return handleUpdate.call(this, provider, bigIp, masterIid, masterExpired, options);
+                        case 'unblock-sync':
+                            logger.info("Cluster action UNBLOCK-SYNC");
+                            return bigIp.cluster.configSyncIp(this.instance.privateIp);
                     }
                 }.bind(this))
                 .then(function() {
@@ -336,10 +329,10 @@
 
         logger.info('Cluster action JOIN');
 
-        // If we are master and are replacing an expired master, some other host
-        // will send us a message with info on where to sync from. Just set our
-        // config sync ip
-        if (this.instance.isMaster && masterExpired) {
+        // If there is no master, or if we are master and are replacing an
+        // expired master, some other host will send us a message with info on
+        // where to sync from. Just set our config sync ip.
+        if (!masterIid || (this.instance.isMaster && masterExpired)) {
             logger.info('We are replacing a master. Setting config sync IP.');
             return bigIp.cluster.configSyncIp(this.instance.privateIp);
         }
@@ -484,9 +477,12 @@
 
                 var alreadyJoining = false;
 
+                logger.debug('Handling', messages.length, 'message(s)');
+
                 for (i = 0; i < messages.length; ++i) {
                     message = messages[i];
-                    logger.debug("Message", message.action);
+                    logger.verbose("Message:", message);
+
                     switch (message.action) {
                         // Add an instance to our cluster
                         case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
@@ -750,7 +746,7 @@
         var disconnectedMs;
 
         if (masterStatus.status !== AutoscaleProvider.STATUS_OK) {
-            disconnectedMs = new Date() - masterStatus.lastStatusChange;
+            disconnectedMs = new Date() - new Date(masterStatus.lastStatusChange);
             logger.silly('master has been disconnected for', disconnectedMs.toString(), 'ms');
             if (disconnectedMs > MAX_DISCONNECTED_MS) {
                 logger.info('master has been disconnected for too long (', disconnectedMs.toString(), 'ms )');
