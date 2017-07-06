@@ -285,13 +285,7 @@
                     if (masterIid) {
                         switch(options.clusterAction) {
                             case 'join':
-                                if (!masterExpired) {
-                                    return handleJoin.call(this, provider, bigIp, masterIid, options);
-                                }
-                                // If the master has expired, there is nothing to do here. Update action
-                                // on a non-master will handle this scenario by telling the master to sync
-                                // from the non-master
-                                break;
+                                return handleJoin.call(this, provider, bigIp, masterIid, masterExpired, options);
                             case 'update':
                                 return handleUpdate.call(this, provider, bigIp, masterIid, masterExpired, options);
                             case 'unblock-sync':
@@ -334,7 +328,7 @@
      *
      * Called with this bound to the caller
      */
-    var handleJoin = function(provider, bigIp, masterIid, options) {
+    var handleJoin = function(provider, bigIp, masterIid, masterExpired, options) {
         var deferred = q.defer();
         var hasUcs = false;
 
@@ -342,8 +336,14 @@
 
         logger.info('Cluster action JOIN');
 
-        // Store our info
-        if (this.instance.isMaster) {
+        // If we are master and are replacing an expired master, send requst for
+        // someone to sync to us
+        if (this.instance.isMaster && masterExpired) {
+            return syncToMaster.call(this, provider, bigIp, masterIid, options);
+        }
+
+        // Otherwise this is a new cluster - check for UCS, and create device group
+        else if (this.instance.isMaster) {
             return provider.getStoredUcs()
                 .then(function(response) {
                     if (response) {
