@@ -265,7 +265,7 @@
 
                         if (this.instance.masterStatus.instanceId !== masterIid) {
                             logger.info('New master elected');
-                            masterExpired = true;
+
                             this.instance.masterStatus = {
                                 instanceId: masterIid,
                                 status: AutoscaleProvider.STATUS_OK,
@@ -751,7 +751,7 @@
             disconnectedMs = new Date() - masterStatus.lastStatusChange;
             logger.silly('master has been disconnected for', disconnectedMs);
             if (disconnectedMs > MAX_DISCONNECTED_MS) {
-                logger.info('master has been disconnected for too long');
+                logger.info('master has been disconnected for too long (', disconnectedMs, 'ms )');
                 isExpired = true;
             }
 
