@@ -751,9 +751,9 @@
 
         if (masterStatus.status !== AutoscaleProvider.STATUS_OK) {
             disconnectedMs = new Date() - masterStatus.lastStatusChange;
-            logger.silly('master has been disconnected for', disconnectedMs);
+            logger.silly('master has been disconnected for', disconnectedMs.toString(), 'ms');
             if (disconnectedMs > MAX_DISCONNECTED_MS) {
-                logger.info('master has been disconnected for too long (', disconnectedMs, 'ms )');
+                logger.info('master has been disconnected for too long (', disconnectedMs.toString(), 'ms )');
                 isExpired = true;
             }
 
