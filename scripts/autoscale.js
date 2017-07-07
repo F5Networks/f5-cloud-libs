@@ -18,6 +18,7 @@
 (function() {
 
     const MAX_DISCONNECTED_MS = 10 * 60000; // 10 minutes
+    const MASTER_FILE_PATH = "/config/cloud/master";
 
     var fs = require('fs');
     var q = require('q');
@@ -325,8 +326,6 @@
         var deferred = q.defer();
         var hasUcs = false;
 
-        const MASTER_FILE_PATH = "/config/cloud/master";
-
         logger.info('Cluster action JOIN');
 
         // If there is no master, or if we are master and are replacing an
@@ -334,7 +333,13 @@
         // where to sync from. Just set our config sync ip.
         if (!masterIid || (this.instance.isMaster && masterExpired)) {
             logger.info('We are replacing a master. Setting config sync IP.');
-            return bigIp.cluster.configSyncIp(this.instance.privateIp);
+            return bigIp.cluster.configSyncIp(this.instance.privateIp)
+                .then(function() {
+                    return writeMasterFile(false);
+                })
+                .catch(function(err) {
+                    throw(err);
+                });
         }
 
         // Otherwise this is a new cluster - check for UCS, and create device group
@@ -347,23 +352,7 @@
                     }
                 }.bind(this))
                 .then(function() {
-                    var fsDeferred = q.defer();
-                    var masterInfo = {
-                        ucsLoaded: hasUcs
-                    };
-
-                    // Mark ourself as master on disk so other scripts have access to this info
-                    fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
-                        if (err) {
-                            logger.warn('Error saving master file', err);
-                            fsDeferred.reject(err);
-                            return;
-                        }
-
-                        fsDeferred.resolve();
-                    });
-
-                    return fsDeferred.promise;
+                    return writeMasterFile(hasUcs);
                 }.bind(this))
                 .then(function() {
                     if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
@@ -481,7 +470,6 @@
 
                 for (i = 0; i < messages.length; ++i) {
                     message = messages[i];
-                    logger.verbose("Message:", message);
 
                     switch (message.action) {
                         // Add an instance to our cluster
@@ -861,6 +849,26 @@
                 doLoad();
             });
         }
+
+        return deferred.promise;
+    };
+
+    var writeMasterFile = function(ucsLoaded) {
+        var deferred = q.defer();
+        var masterInfo = {
+            ucsLoaded: ucsLoaded
+        };
+
+        // Mark ourself as master on disk so other scripts have access to this info
+        fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), function(err) {
+            if (err) {
+                logger.warn('Error saving master file', err);
+                deferred.reject(err);
+                return;
+            }
+
+            deferred.resolve();
+        });
 
         return deferred.promise;
     };
