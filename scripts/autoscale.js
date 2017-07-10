@@ -439,16 +439,10 @@
                 fs.unlinkSync(MASTER_FILE_PATH);
             }
 
-            // make sure we are in the cluster, if not, join the cluster
-            return bigIp.hasDeviceGroup(options.deviceGroup)
-                .then(function(response) {
-                    if (response === false) {
-                        return joinCluster.call(this, provider, bigIp, masterIid, options);
-                    }
-                }.bind(this))
-                .catch(function(err) {
-                    throw(err);
-                });
+            // If there is a new master, join the cluster
+            if (masterExpired && masterIid) {
+                return joinCluster.call(this, provider, bigIp, masterIid, options);
+            }
         }
     };
 
