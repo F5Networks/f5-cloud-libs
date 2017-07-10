@@ -324,7 +324,6 @@
      */
     var handleJoin = function(provider, bigIp, masterIid, masterExpired, options) {
         var deferred = q.defer();
-        var hasUcs = false;
 
         logger.info('Cluster action JOIN');
 
@@ -333,10 +332,12 @@
         // sync from. Just set our config sync ip.
         if (this.instance.isMaster) {
             if (masterExpired) {
-                logger.info('We are replacing a master. Setting config sync IP.');
-                return bigIp.cluster.configSyncIp(this.instance.privateIp)
+                logger.info('We are replacing a master.');
+
+                return becomeMaster(provider, bigIp, options)
                     .then(function() {
-                        return writeMasterFile(false);
+                        logger.info("Setting config sync IP.");
+                        return bigIp.cluster.configSyncIp(this.instance.privateIp);
                     })
                     .catch(function(err) {
                         throw(err);
@@ -345,16 +346,7 @@
 
             // Otherwise this is a new cluster - check for UCS, and create device group
             else {
-                return provider.getStoredUcs()
-                    .then(function(response) {
-                        if (response) {
-                            hasUcs = true;
-                            return loadUcs(bigIp, response, options.cloud);
-                        }
-                    }.bind(this))
-                    .then(function() {
-                        return writeMasterFile(hasUcs);
-                    }.bind(this))
+                return becomeMaster(provider, bigIp, options)
                     .then(function() {
                         if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
                             logger.info('Storing master credentials.');
@@ -403,11 +395,15 @@
                 fs.unlinkSync(MASTER_FILE_PATH);
             }
 
-            // Configure cm configsync-ip on this BIG-IP node
+            // Configure cm configsync-ip on this BIG-IP node and join the cluster
             logger.info("Setting config sync IP.");
             bigIp.cluster.configSyncIp(this.instance.privateIp)
                 .then(function() {
-                    return joinCluster.call(this, provider, bigIp, masterIid, options);
+                    // If there is a master, joint it. Otherwise wait for an update event
+                    // when we have a master.
+                    if (masterIid) {
+                        return joinCluster.call(this, provider, bigIp, masterIid, options);
+                    }
                 }.bind(this))
                 .then(function() {
                     deferred.resolve();
@@ -425,25 +421,34 @@
      * Called with this bound to the caller
      */
     var handleUpdate = function(provider, bigIp, masterIid, masterExpired, options) {
-
         logger.info('Cluster action UPDATE');
 
         if (this.instance.isMaster && !masterExpired) {
             return checkForDisconnectedDevices.call(this, bigIp);
         }
+        else if (this.instance.isMaster) {
+            // Master has expired
+            return becomeMaster(provider, bigIp, options)
+                .catch(function(err) {
+                    throw(err);
+                });
+        }
         else if (!this.instance.isMaster) {
-
             // Make sure the master file is not on our disk
             if (fs.existsSync(MASTER_FILE_PATH)) {
                 fs.unlinkSync(MASTER_FILE_PATH);
             }
 
-            if (masterExpired) {
-                return syncToMaster.call(this, provider, bigIp, masterIid, options);
-            }
-            else {
-                // make sure we are in the cluster, if not, join the cluster
-            }
+            // make sure we are in the cluster, if not, join the cluster
+            return bigIp.hasDeviceGroup(options.deviceGroup)
+                .then(function(response) {
+                    if (response === false) {
+                        return joinCluster.call(this, provider, bigIp, masterIid, options);
+                    }
+                }.bind(this))
+                .catch(function(err) {
+                    throw(err);
+                });
         }
     };
 
@@ -596,13 +601,34 @@
         return deferred.promise;
     };
 
+    var becomeMaster = function(provider, bigIp, options) {
+        var hasUcs = false;
+        logger.info("Becoming master.");
+        logger.info("Checking for backup UCS.");
+        return provider.getStoredUcs()
+            .then(function(response) {
+                if (response) {
+                    hasUcs = true;
+                    return loadUcs(bigIp, response, options.cloud);
+                }
+            })
+            .then(function() {
+                logger.info("Writing master file.");
+                return writeMasterFile(hasUcs);
+            });
+    };
+
     /**
      * Called with this bound to the caller
      */
     var joinCluster = function(provider, bigIp, masterIid, options) {
-        logger.info('Joining cluster.');
-
         var masterInstance;
+
+        if (!masterIid) {
+            return q.reject(new Error('Must have a master ID to joing'));
+        }
+
+        logger.info('Joining cluster.');
 
         if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
             return bigIp.deviceInfo()
@@ -631,7 +657,6 @@
         }
         else {
             logger.debug('Sending request to join cluster.');
-
             masterInstance = this.instances[masterIid];
             return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
                 .then(function(credentials) {
@@ -691,25 +716,6 @@
                 return q.reject(err);
             });
 
-    };
-
-    /**
-     * Called with this bound to the caller
-     */
-    var syncToMaster = function(provider, bigIp, masterIid, options) {
-        return provider.sendMessage(
-            AutoscaleProvider.MESSAGE_JOIN_CLUSTER,
-            {
-                masterIid: masterIid,
-                instanceId: this.instanceId,
-                host: this.instance.mgmtIp,
-                port: bigIp.port,
-                username: bigIp.user,
-                password: bigIp.password,
-                hostname: this.instance.hostname,
-                deviceGroup: options.deviceGroup
-            }
-        );
     };
 
     /**
