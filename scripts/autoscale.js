@@ -447,10 +447,10 @@
                 // Double check that we are in the device group
                 return bigIp.cluster.hasDeviceGroup(options.deviceGroup)
                     .then(function(response) {
-                        if (response === true) {
+                        if (response === false) {
                             return joinCluster.call(this, provider, bigIp, masterIid, options);
                         }
-                    })
+                    }.bind(this))
                     .catch(function(err) {
                         throw(err);
                     });
