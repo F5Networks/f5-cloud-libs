@@ -632,7 +632,7 @@ logger.info("CALLING JOIN CLUSTER", message.data.deviceGroup, message.data.host,
         var masterInstance;
 
         if (!masterIid) {
-            return q.reject(new Error('Must have a master ID to joing'));
+            return q.reject(new Error('Must have a master ID to join'));
         }
 
         logger.info('Joining cluster.');
