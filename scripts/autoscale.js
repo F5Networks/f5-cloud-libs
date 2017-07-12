@@ -625,7 +625,8 @@
                     return bigIp.replace(
                         '/tm/cm/device-group/device_trust_group',
                         {
-                            devices: []
+                            devices: [],
+                            networkFailover: 'disabled'
                         }
                     );
                 }
