@@ -619,19 +619,6 @@
                 }
             })
             .then(function() {
-                if (hasUcs) {
-                    // If we loaded a UCS, the device_trust_group may contain old hosts.
-                    // Wipe them out and they will be re-created.
-                    return bigIp.replace(
-                        '/tm/cm/device-group/device_trust_group',
-                        {
-                            devices: [],
-                            networkFailover: 'disabled'
-                        }
-                    );
-                }
-            })
-            .then(function() {
                 logger.info("Writing master file.");
                 return writeMasterFile(hasUcs);
             });
