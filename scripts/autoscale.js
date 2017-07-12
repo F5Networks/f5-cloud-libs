@@ -518,7 +518,8 @@
                                 fromUser: bigIp.user,
                                 fromPassword: bigIp.password
                             });
-
+// TODO: REMOVE THIS
+logger.info("CALLING JOIN CLUSTER", message.data.deviceGroup, message.data.host, message.data.username, message.data.password, message.data.port, message.data.hostname);
                             promises.push(
                                 bigIp.cluster.joinCluster(
                                     message.data.deviceGroup,
