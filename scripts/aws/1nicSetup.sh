@@ -113,6 +113,8 @@ do
         tmsh delete net route /LOCAL_ONLY/default
         echo tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
         tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
+        echo tmsh save /sys config
+        tmsh save /sys config
     else
         GW_SET=true
     fi
