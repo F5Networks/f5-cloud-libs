@@ -104,6 +104,9 @@ tmsh create sys folder /LOCAL_ONLY device-group none traffic-group traffic-group
 echo tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
 tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
 
+echo tmsh save /sys config
+tmsh save /sys config
+
 # Added for bug#664393
 GW_SET=false
 while [ $GW_SET == false ] 
