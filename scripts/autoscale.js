@@ -207,7 +207,6 @@
                 }.bind(this))
                 .then(function() {
                     if (masterInstance && isMasterExpired(this.instance)) {
-                        masterInstance.isMaster = false;
                         masterExpired = true;
                         return provider.masterExpired(masterInstance.id, this.instances);
                     }
@@ -240,7 +239,7 @@
                         // if no master, master is visible or expired, elect, otherwise, wait
                         if (!masterInstance ||
                             masterInstance.instance.providerVisible ||
-                            (!masterInstance.instance.providerVisible && masterExpired)) {
+                            masterExpired) {
 
                             logger.info('Electing master.');
                             return provider.electMaster(this.instances);
@@ -327,64 +326,48 @@
 
         logger.info('Cluster action JOIN');
 
-        // If we are master and are replacing an expired master, some
-        // other host will send us a message with info on where to
-        // sync from. Just set our config sync ip.
+        // If we are master and are replacing an expired master, other instances
+        // will join to us. Just set our config sync ip.
         if (this.instance.isMaster) {
-            if (masterExpired) {
-                logger.info('We are replacing a master.');
 
-                return becomeMaster(provider, bigIp, options)
-                    .then(function() {
-                        logger.info("Setting config sync IP.");
+            return becomeMaster(provider, bigIp, options)
+                .then(function() {
+                    if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                        logger.info('Storing master credentials.');
+                        return provider.putMasterCredentials();
+                    }
+                }.bind(this))
+                .then(function(response) {
+                    logger.debug(response);
+
+                    // Configure cm configsync-ip on this BIG-IP node
+                    if (!options.blockSync) {
+                        logger.info('Setting config sync IP.');
                         return bigIp.cluster.configSyncIp(this.instance.privateIp);
-                    })
-                    .catch(function(err) {
-                        throw(err);
-                    });
-            }
+                    }
+                    else {
+                        logger.info('Not seting config sync IP because block-sync is specified.');
+                    }
+                }.bind(this))
+                .then(function() {
+                    // Create the device group
+                    logger.info('Creating device group.');
 
-            // Otherwise this is a new cluster - check for UCS, and create device group
-            else {
-                return becomeMaster(provider, bigIp, options)
-                    .then(function() {
-                        if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                            logger.info('Storing master credentials.');
-                            return provider.putMasterCredentials();
-                        }
-                    }.bind(this))
-                    .then(function(response) {
-                        logger.debug(response);
+                    return bigIp.cluster.createDeviceGroup(
+                        options.deviceGroup,
+                        'sync-failover',
+                        [this.instance.hostname],
+                        {autoSync: true}
+                    );
 
-                        // Configure cm configsync-ip on this BIG-IP node
-                        if (!options.blockSync) {
-                            logger.info('Setting config sync IP.');
-                            return bigIp.cluster.configSyncIp(this.instance.privateIp);
-                        }
-                        else {
-                            logger.info('Not seting config sync IP because block-sync is specified.');
-                        }
-                    }.bind(this))
-                    .then(function() {
-                        // Create the device group
-                        logger.info('Creating device group.');
-
-                        return bigIp.cluster.createDeviceGroup(
-                            options.deviceGroup,
-                            'sync-failover',
-                            [this.instance.hostname],
-                            {autoSync: true}
-                        );
-
-                    }.bind(this))
-                    .then(function() {
-                        deferred.resolve();
-                    })
-                    .catch(function(err) {
-                        // rethrow here, otherwise error is hidden
-                        throw(err);
-                    });
-            }
+                }.bind(this))
+                .then(function() {
+                    deferred.resolve();
+                })
+                .catch(function(err) {
+                    // rethrow here, otherwise error is hidden
+                    throw(err);
+                });
         }
 
         else {
@@ -418,6 +401,8 @@
     };
 
     /**
+     * Handles --cluster-action update
+     *
      * Called with this bound to the caller
      */
     var handleUpdate = function(provider, bigIp, masterIid, masterExpired, options) {
@@ -433,8 +418,8 @@
                     throw(err);
                 });
         }
-        else if (!this.instance.isMaster) {
-            // Make sure the master file is not on our disk
+        else {
+            // We're not the master, make sure the master file is not on our disk
             if (fs.existsSync(MASTER_FILE_PATH)) {
                 fs.unlinkSync(MASTER_FILE_PATH);
             }
@@ -443,12 +428,23 @@
             if (masterExpired && masterIid) {
                 return joinCluster.call(this, provider, bigIp, masterIid, options);
             }
-            else {
+            else if (masterIid) {
                 // Double check that we are in the device group
                 return bigIp.cluster.hasDeviceGroup(options.deviceGroup)
                     .then(function(response) {
                         if (response === false) {
-                            return joinCluster.call(this, provider, bigIp, masterIid, options);
+                            // Create the device group
+                            logger.info('Creating device group.');
+
+                            return bigIp.cluster.createDeviceGroup(
+                                options.deviceGroup,
+                                'sync-failover',
+                                [this.instance.hostname],
+                                {autoSync: true}
+                            )
+                            .then(function() {
+                                return joinCluster.call(this, provider, bigIp, masterIid, options);
+                            }.bind(this));
                         }
                     }.bind(this))
                     .catch(function(err) {
