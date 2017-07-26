@@ -56,6 +56,20 @@ module.exports = {
             });
     },
 
+    testEmptyResponse: function(test) {
+        httpMock.setResponse('', {'Content-Type': 'application/json'});
+        iControl.list('somepath')
+            .then(function(response) {
+                test.deepEqual(response, {});
+            })
+            .catch(function(err) {
+                test.ok(false, err);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
     testBadStatusCode: function(test) {
         httpMock.setResponse({foo: 'bar'}, {'Content-Type': 'application/json'}, 300);
         iControl.list('somepath')
