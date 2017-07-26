@@ -514,8 +514,7 @@
                                 fromUser: bigIp.user,
                                 fromPassword: bigIp.password
                             });
-// TODO: REMOVE THIS
-logger.info("CALLING JOIN CLUSTER", message.data.deviceGroup, message.data.host, message.data.username, message.data.password, message.data.port, message.data.hostname);
+
                             promises.push(
                                 bigIp.cluster.joinCluster(
                                     message.data.deviceGroup,
@@ -634,7 +633,12 @@ logger.info("CALLING JOIN CLUSTER", message.data.deviceGroup, message.data.host,
         logger.info('Joining cluster.');
 
         if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-            return bigIp.deviceInfo()
+                logger.debug('Resetting current device trust');
+                return bigIp.cluster.resetTrust()
+                .then(function(response) {
+                    logger.debug(response);
+                    return bigIp.deviceInfo();
+                })
                 .then(function(response) {
                     var managementIp = response.managementAddress;
 
@@ -659,10 +663,16 @@ logger.info("CALLING JOIN CLUSTER", message.data.deviceGroup, message.data.host,
                 });
         }
         else {
-            logger.debug('Sending request to join cluster.');
             masterInstance = this.instances[masterIid];
-            return provider.getMasterCredentials(masterInstance.mgmtIp, options.port)
+
+            logger.debug('Resetting current device trust');
+            return bigIp.cluster.resetTrust()
+                .then(function(response) {
+                    logger.debug(response);
+                    return provider.getMasterCredentials(masterInstance.mgmtIp, options.port);
+                })
                 .then(function(credentials) {
+                    logger.debug('Sending request to join cluster.');
                     return bigIp.cluster.joinCluster(
                         options.deviceGroup,
                         masterInstance.mgmtIp,
