@@ -92,7 +92,8 @@ Does initial configuration and provisioning of a BIG-IP.
           --big-iq-password <password>                                                               BIG-IQ admin user password.
           --big-iq-password-uri <password_uri>                                                       URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
           --license-pool-name <pool_name>                                                            Name of BIG-IQ license pool.
-          --big-ip-mgmt-address <big_ip_address>                                                     IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.
+          --big-ip-mgmt-address <big_ip_address>                                                     IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.
+          --big-ip-mgmt-port <big_ip_port>                                                           Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port
       -n, --hostname <hostname>                                                                  Set BIG-IP hostname.
       -g, --global-setting <name:value>                                                          Set global setting <name> to <value>. For multiple settings, use multiple -g entries.
       -d, --db <name:value>                                                                      Set db variable <name> to <value>. For multiple settings, use multiple -d entries.

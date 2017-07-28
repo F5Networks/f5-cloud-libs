@@ -92,7 +92,8 @@
                     .option('    --big-iq-password <password>', '    BIG-IQ admin user password.')
                     .option('    --big-iq-password-uri <password_uri>', '    URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.')
                     .option('    --license-pool-name <pool_name>', '    Name of BIG-IQ license pool.')
-                    .option('    --big-ip-mgmt-address <big_ip_address>', '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable by BIG-IQ.')
+                    .option('    --big-ip-mgmt-address <big_ip_address>', '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.')
+                    .option('    --big-ip-mgmt-port <big_ip_port>', '    Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port')
                     .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
                     .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.pair, globalSettings)
                     .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.pair, dbVars)
@@ -347,9 +348,10 @@
                                     options.bigIqUser,
                                     options.bigIqPassword || options.bigIqPasswordUri,
                                     options.licensePoolName,
-                                    options.bigIpMgmtAddress,
                                     {
-                                        passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined'
+                                        passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined',
+                                        bigIpMgmtAddress: options.bigIpMgmtAddress,
+                                        bigIpMgmtPort: options.bigIpMgmtPort
                                     });
                             }
                         }
