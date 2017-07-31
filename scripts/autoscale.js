@@ -571,15 +571,17 @@
 
                 if (instanceIdsBeingAdded.length > 0) {
                     for (i = 0; i < responses.length; ++i) {
-
-                        return provider.sendMessage(
-                            AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
-                            {
-                                toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
-                                fromUser: instanceIdsBeingAdded[i].fromUser,
-                                fromPassword: instanceIdsBeingAdded[i].fromPassword
-                            }
-                        );
+                        // responses[i] === true iff that instance was successfully synced
+                        if (responses[i] === true) {
+                            provider.sendMessage(
+                                AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
+                                {
+                                    toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
+                                    fromUser: instanceIdsBeingAdded[i].fromUser,
+                                    fromPassword: instanceIdsBeingAdded[i].fromPassword
+                                }
+                            );
+                        }
                     }
                 }
             }.bind(this))
