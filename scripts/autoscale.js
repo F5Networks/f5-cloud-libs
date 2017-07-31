@@ -433,18 +433,8 @@
                 return bigIp.cluster.hasDeviceGroup(options.deviceGroup)
                     .then(function(response) {
                         if (response === false) {
-                            // Create the device group
-                            logger.info('Creating device group.');
-
-                            return bigIp.cluster.createDeviceGroup(
-                                options.deviceGroup,
-                                'sync-failover',
-                                [this.instance.hostname],
-                                {autoSync: true}
-                            )
-                            .then(function() {
-                                return joinCluster.call(this, provider, bigIp, masterIid, options);
-                            }.bind(this));
+                            logger.info("This instance is not in cluster. Requesting join.");
+                            return joinCluster.call(this, provider, bigIp, masterIid, options);
                         }
                     }.bind(this))
                     .catch(function(err) {
