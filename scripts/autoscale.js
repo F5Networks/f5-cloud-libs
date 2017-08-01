@@ -58,6 +58,7 @@
             var masterInstance;
             var masterIid;
             var masterExpired;
+            var newMaster;
             var Provider;
             var provider;
             var i;
@@ -260,6 +261,7 @@
 
                         if (this.instance.masterStatus.instanceId !== masterIid) {
                             logger.info('New master elected');
+                            newMaster = true;
 
                             this.instance.masterStatus = {
                                 instanceId: masterIid,
@@ -268,14 +270,14 @@
                                 lastStatusChange: now
                             };
 
-                            if (this.instance.isMaster) {
-                                return becomeMaster(provider, bigIp, options);
-                            }
+                            return provider.putInstance(this.instanceId, this.instance);
                         }
                     }
                 }.bind(this))
                 .then(function() {
-                    return provider.putInstance(this.instanceId, this.instance);
+                    if (this.instance.isMaster && newMaster) {
+                        return becomeMaster(provider, bigIp, options);
+                    }
                 }.bind(this))
                 .then(function() {
                     if (masterIid) {
