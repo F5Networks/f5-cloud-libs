@@ -831,6 +831,11 @@
 
                 bigIp.loadUcs(updatedPath, {"no-license": true, "reset-trust": true})
                     .then(function() {
+                        // reset-trust on load does not always seem to work
+                        // use a belt-and-suspenders approach and reset now as well
+                        return bigIp.cluster.resetTrust();
+                    })
+                    .then(function() {
                         // Attempt to delete the file, but ignore errors
                         try {
                             fs.unlinkSync(originalPath);
