@@ -267,9 +267,15 @@
                                 lastUpdate: now,
                                 lastStatusChange: now
                             };
+
+                            if (this.instance.isMaster) {
+                                return becomeMaster(provider, bigIp, options);
+                            }
                         }
-                        return provider.putInstance(this.instanceId, this.instance);
                     }
+                }.bind(this))
+                .then(function() {
+                    return provider.putInstance(this.instanceId, this.instance);
                 }.bind(this))
                 .then(function() {
                     if (masterIid) {
@@ -323,6 +329,7 @@
      */
     var handleJoin = function(provider, bigIp, masterIid, masterExpired, options) {
         var deferred = q.defer();
+        var promise;
 
         logger.info('Cluster action JOIN');
 
@@ -330,13 +337,15 @@
         // will join to us. Just set our config sync ip.
         if (this.instance.isMaster) {
 
-            return becomeMaster(provider, bigIp, options)
-                .then(function() {
-                    if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                        logger.info('Storing master credentials.');
-                        return provider.putMasterCredentials();
-                    }
-                }.bind(this))
+            if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                logger.info('Storing master credentials.');
+                promise = provider.putMasterCredentials();
+            }
+            else {
+                promise = q();
+            }
+
+            promise
                 .then(function(response) {
                     logger.debug(response);
 
@@ -410,13 +419,6 @@
 
         if (this.instance.isMaster && !masterExpired) {
             return checkForDisconnectedDevices.call(this, bigIp);
-        }
-        else if (this.instance.isMaster) {
-            // Master has expired
-            return becomeMaster(provider, bigIp, options)
-                .catch(function(err) {
-                    throw(err);
-                });
         }
         else {
             // We're not the master, make sure the master file is not on our disk
