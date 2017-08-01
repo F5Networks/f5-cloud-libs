@@ -280,6 +280,7 @@
                     }
                 }.bind(this))
                 .then(function() {
+                    logger.silly('Became master');
                     if (masterIid) {
                         return provider.masterElected(masterIid);
                     }
@@ -899,6 +900,7 @@
                 return;
             }
 
+            logger.silly('Wrote master file', MASTER_FILE_PATH, masterInfo);
             deferred.resolve();
         });
 
