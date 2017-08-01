@@ -279,8 +279,11 @@
                         return becomeMaster(provider, bigIp, options);
                     }
                 }.bind(this))
-                .then(function() {
-                    logger.silly('Became master');
+                .then(function(response) {
+                    if (response === true) {
+                        logger.silly('Became master');
+                    }
+
                     if (masterIid) {
                         return provider.masterElected(masterIid);
                     }
@@ -901,7 +904,7 @@
             }
 
             logger.silly('Wrote master file', MASTER_FILE_PATH, masterInfo);
-            deferred.resolve();
+            deferred.resolve(true);
         });
 
         return deferred.promise;
