@@ -426,7 +426,7 @@
         if (this.instance.isMaster && !masterExpired) {
             return checkForDisconnectedDevices.call(this, bigIp);
         }
-        else {
+        else if (!this.instance.isMaster) {
             // We're not the master, make sure the master file is not on our disk
             if (fs.existsSync(MASTER_FILE_PATH)) {
                 fs.unlinkSync(MASTER_FILE_PATH);
