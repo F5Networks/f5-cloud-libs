@@ -31,6 +31,9 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 3.3.0
+* License BIG-IP from BIG-IQ 5.2 and 5.3
+
 ### Version 3.2.0
 * Support for S3 ARN for licensing via BIG-IQ
 
@@ -45,7 +48,7 @@ This project consists of two main parts
 **This version is not backwards compatible. The format for options on network.js has changed.
 See node scripts/network.js --help for details**
 
-* License from BIG-IP from BIG-IQ.
+* License BIG-IP from BIG-IQ 5.0 and 5.1
 * More options for network.js
     * Add arbitrary routes
     * Support mtu on vlans
