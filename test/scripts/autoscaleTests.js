@@ -77,21 +77,6 @@ ProviderMock.prototype.getStoredUcs = function() {
         return q();
 };
 
-instanceId = "two";
-instances = {
-    "one": {
-        isMaster: false,
-        hostname: 'host1',
-        privateIp: '1.2.3.4',
-        providerVisible: true
-    },
-    "two": {
-        isMaster: true,
-        hostname: 'host2',
-        privateIp: '5.6.7.8',
-        providerVisible: true
-    }
-};
 
 // Don't let autoscale exit - we need the nodeunit process to run to completion
 process.exit = function() {};
@@ -99,6 +84,22 @@ process.exit = function() {};
 module.exports = {
     setUp: function(callback) {
         argv = ['node', 'autoscale', '--password', 'foobar', '--device-group', deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
+
+        instanceId = "two";
+        instances = {
+            "one": {
+                isMaster: false,
+                hostname: 'host1',
+                privateIp: '1.2.3.4',
+                providerVisible: true
+            },
+            "two": {
+                isMaster: true,
+                hostname: 'host2',
+                privateIp: '5.6.7.8',
+                providerVisible: true
+            }
+        };
 
         fsMock = require('fs');
         childProcessMock = require('child_process');
@@ -198,6 +199,21 @@ module.exports = {
     updateTests: {
         setUp: function(callback) {
             argv.push('--cluster-action', 'update');
+
+            fsMock.writeFile = function(path, Data, cb) {
+                cb();
+            };
+
+            fsMock.unlinkSync = function() {};
+
+            childProcessMock.execFile = function(file, args, cb) {
+                cb();
+            };
+
+            bigIpMock.loadUcs = function() {
+                return q();
+            };
+
             callback();
         },
 

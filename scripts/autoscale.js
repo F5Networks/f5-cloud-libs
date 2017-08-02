@@ -282,23 +282,21 @@
                 .then(function() {
                     if (this.instance.isMaster && newMaster) {
                         this.instance.status = INSTANCE_STATUS_BECOMING_MASTER;
-                        return provider.putInstance(this.instanceId, this.instance);
-                    }
-                }.bind(this))
-                .then(function() {
-                    if (this.instance.isMaster && newMaster) {
-                        return becomeMaster(provider, bigIp, options);
+                        return provider.putInstance(this.instanceId, this.instance)
+                            .then(function() {
+                                return becomeMaster(provider, bigIp, options);
+                            });
                     }
                 }.bind(this))
                 .then(function(response) {
-                    this.instance.status = INSTANCE_STATUS_OK;
-                    if (response === true) {
+                    if (this.instance.status === INSTANCE_STATUS_BECOMING_MASTER && response === true) {
+                        this.instance.status = INSTANCE_STATUS_OK;
                         logger.silly('Became master');
                         return provider.putInstance(this.instanceId, this.instance);
                     }
                 }.bind(this))
                 .then(function() {
-                    if (masterIid) {
+                    if (masterIid && this.instance.status === INSTANCE_STATUS_OK) {
                         return provider.masterElected(masterIid);
                     }
                 }.bind(this))
@@ -869,6 +867,11 @@
                 }
 
                 bigIp.loadUcs(updatedPath, {"no-license": true, "reset-trust": true})
+                    .then(function() {
+                        // reset-trust on load does not always seem to work
+                        // use a belt-and-suspenders approach and reset now as well
+                        return bigIp.cluster.resetTrust();
+                    })
                     .then(function() {
                         // Attempt to delete the file, but ignore errors
                         try {
