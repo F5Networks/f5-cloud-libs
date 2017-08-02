@@ -282,7 +282,7 @@
                 .then(function() {
                     if (this.instance.isMaster && newMaster) {
                         this.instance.status = INSTANCE_STATUS_BECOMING_MASTER;
-                        return provider.putInstance(this.instanceId, this.insttance);
+                        return provider.putInstance(this.instanceId, this.instance);
                     }
                 }.bind(this))
                 .then(function() {
@@ -294,7 +294,7 @@
                     this.instance.status = INSTANCE_STATUS_OK;
                     if (response === true) {
                         logger.silly('Became master');
-                        return provider.putInstance(this.instanceId, this.insttance);
+                        return provider.putInstance(this.instanceId, this.instance);
                     }
                 }.bind(this))
                 .then(function() {
@@ -314,6 +314,9 @@
                                 return bigIp.cluster.configSyncIp(this.instance.privateIp);
                         }
                     }
+                    else {
+                        logger.debug('Instance status not OK. Waiting.', this.instance.status);
+                    }
                 }.bind(this))
                 .then(function() {
                     if (this.instance.status === INSTANCE_STATUS_OK) {
@@ -321,6 +324,9 @@
                             logger.info('Checking for messages');
                             return handleMessages.call(this, provider, bigIp, options);
                         }
+                    }
+                    else {
+                        logger.debug('Instance status not OK. Waiting.', this.instance.status);
                     }
                 }.bind(this))
                 .catch(function(err) {
