@@ -18,6 +18,7 @@
 (function() {
 
     const MAX_DISCONNECTED_MS = 10 * 60000; // 10 minutes
+    const MIN_MS_BETWEEN_JOIN_REQUESTS = 10 * 60000; // 10 minutes
     const MASTER_FILE_PATH = "/config/cloud/master";
 
     var fs = require('fs');
@@ -624,43 +625,58 @@
      * Called with this bound to the caller
      */
     var joinCluster = function(provider, bigIp, masterIid, options) {
+        var now = new Date();
         var masterInstance;
+        var elapsedMsFromLastJoin;
 
         if (!masterIid) {
             return q.reject(new Error('Must have a master ID to join'));
+        }
+
+        // don't send request too often - master might be in process of syncing
+        this.instance.lastJoinRequest = this.instance.lastJoinRequest || new Date(1970, 0);
+        elapsedMsFromLastJoin = now - new Date(this.instance.lastJoinRequest);
+        if (elapsedMsFromLastJoin < MIN_MS_BETWEEN_JOIN_REQUESTS) {
+            logger.silly('Join request is too soon after last join request.', elapsedMsFromLastJoin, 'ms');
+            return q();
         }
 
         logger.info('Joining cluster.');
 
         if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
                 logger.debug('Resetting current device trust');
-                return bigIp.cluster.resetTrust()
-                .then(function(response) {
-                    logger.debug(response);
-                    return bigIp.deviceInfo();
-                })
-                .then(function(response) {
-                    var managementIp = response.managementAddress;
+                this.instance.lastJoinRequest = now;
+                return provider.putInstance(this.instanceId, this.instance)
+                    .then(function(response) {
+                        logger.debug(response);
+                        return bigIp.cluster.resetTrust();
+                    })
+                    .then(function(response) {
+                        logger.debug(response);
+                        return bigIp.deviceInfo();
+                    })
+                    .then(function(response) {
+                        var managementIp = response.managementAddress;
 
-                    logger.debug('Sending message to join cluster.');
-                    return provider.sendMessage(
-                        AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
-                        {
-                            masterIid: masterIid,
-                            instanceId: this.instanceId,
-                            host: managementIp,
-                            port: bigIp.port,
-                            username: bigIp.user,
-                            password: bigIp.password,
-                            hostname: this.instance.hostname,
-                            deviceGroup: options.deviceGroup
-                        }
-                    );
-                }.bind(this))
-                .catch(function(err) {
-                    // need to bubble up nested errors
-                    return q.reject(err);
-                });
+                        logger.debug('Sending message to join cluster.');
+                        return provider.sendMessage(
+                            AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                            {
+                                masterIid: masterIid,
+                                instanceId: this.instanceId,
+                                host: managementIp,
+                                port: bigIp.port,
+                                username: bigIp.user,
+                                password: bigIp.password,
+                                hostname: this.instance.hostname,
+                                deviceGroup: options.deviceGroup
+                            }
+                        );
+                    }.bind(this))
+                    .catch(function(err) {
+                        // need to bubble up nested errors
+                        return q.reject(err);
+                    });
         }
         else {
             masterInstance = this.instances[masterIid];
