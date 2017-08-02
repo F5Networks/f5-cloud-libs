@@ -21,6 +21,9 @@
     const MIN_MS_BETWEEN_JOIN_REQUESTS = 10 * 60000; // 10 minutes
     const MASTER_FILE_PATH = "/config/cloud/master";
 
+    const INSTANCE_STATUS_BECOMING_MASTER = 'BECOMING_MASTER';
+    const INSTANCE_STATUS_OK = 'OK';
+
     var fs = require('fs');
     var q = require('q');
     var AutoscaleProvider = require('../lib/autoscaleProvider');
@@ -167,6 +170,7 @@
                 .then(function (response) {
                     this.instances = response || {};
                     this.instance = this.instances[this.instanceId];
+                    this.instance.status = this.instance.status || INSTANCE_STATUS_OK;
                     logger.debug('instances:', this.instances);
 
                     if (Object.keys(this.instances).length === 0) {
@@ -277,33 +281,46 @@
                 }.bind(this))
                 .then(function() {
                     if (this.instance.isMaster && newMaster) {
+                        this.instance.status = INSTANCE_STATUS_BECOMING_MASTER;
+                        return provider.putInstance(this.instanceId, this.insttance);
+                    }
+                }.bind(this))
+                .then(function() {
+                    if (this.instance.isMaster && newMaster) {
                         return becomeMaster(provider, bigIp, options);
                     }
                 }.bind(this))
                 .then(function(response) {
+                    this.instance.status = INSTANCE_STATUS_OK;
                     if (response === true) {
                         logger.silly('Became master');
+                        return provider.putInstance(this.instanceId, this.insttance);
                     }
-
+                }.bind(this))
+                .then(function() {
                     if (masterIid) {
                         return provider.masterElected(masterIid);
                     }
                 }.bind(this))
                 .then(function() {
-                    switch(options.clusterAction) {
-                        case 'join':
-                            return handleJoin.call(this, provider, bigIp, masterIid, masterExpired, options);
-                        case 'update':
-                            return handleUpdate.call(this, provider, bigIp, masterIid, masterExpired, options);
-                        case 'unblock-sync':
-                            logger.info("Cluster action UNBLOCK-SYNC");
-                            return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                    if (this.instance.status === INSTANCE_STATUS_OK) {
+                        switch(options.clusterAction) {
+                            case 'join':
+                                return handleJoin.call(this, provider, bigIp, masterIid, masterExpired, options);
+                            case 'update':
+                                return handleUpdate.call(this, provider, bigIp, masterIid, masterExpired, options);
+                            case 'unblock-sync':
+                                logger.info("Cluster action UNBLOCK-SYNC");
+                                return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                        }
                     }
                 }.bind(this))
                 .then(function() {
-                    if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
-                        logger.info('Checking for messages');
-                        return handleMessages.call(this, provider, bigIp, options);
+                    if (this.instance.status === INSTANCE_STATUS_OK) {
+                        if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                            logger.info('Checking for messages');
+                            return handleMessages.call(this, provider, bigIp, options);
+                        }
                     }
                 }.bind(this))
                 .catch(function(err) {
@@ -846,11 +863,6 @@
                 }
 
                 bigIp.loadUcs(updatedPath, {"no-license": true, "reset-trust": true})
-                    .then(function() {
-                        // reset-trust on load does not always seem to work
-                        // use a belt-and-suspenders approach and reset now as well
-                        return bigIp.cluster.resetTrust();
-                    })
                     .then(function() {
                         // Attempt to delete the file, but ignore errors
                         try {
