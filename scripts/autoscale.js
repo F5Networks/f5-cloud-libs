@@ -596,7 +596,9 @@
                 return q.all(promises);
             }.bind(this))
             .then(function(responses) {
+                var promises = [];
                 var i;
+
                 responses = responses || [];
 
                 if (instanceIdsBeingAdded.length > 0) {
@@ -604,17 +606,19 @@
                     for (i = 0; i < responses.length; ++i) {
                         // responses[i] === true iff that instance was successfully synced
                         if (responses[i] === true) {
-                            provider.sendMessage(
+                            promises.push(provider.sendMessage(
                                 AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
                                 {
                                     toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
                                     fromUser: instanceIdsBeingAdded[i].fromUser,
                                     fromPassword: instanceIdsBeingAdded[i].fromPassword
                                 }
-                            );
+                            ));
                         }
                     }
                 }
+
+                return q.all(promises);
             }.bind(this))
             .then(function() {
                 deferred.resolve();
