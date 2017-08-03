@@ -530,7 +530,7 @@
                             }
 
                             instanceIdsBeingAdded.push({
-                                toInstanceId: message.data.instanceId,
+                                toInstanceId: message.data.fromInstanceId,
                                 fromUser: bigIp.user,
                                 fromPassword: bigIp.password
                             });
@@ -580,6 +580,7 @@
                         case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
                             // See if the message is for us
                             if (message.data.toInstanceId !== this.instanceId) {
+                                logger.silly('SYNC_COMPLETE is not for us, ignoring');
                                 continue;
                             }
 
@@ -606,6 +607,7 @@
                     for (i = 0; i < responses.length; ++i) {
                         // responses[i] === true iff that instance was successfully synced
                         if (responses[i] === true) {
+                            logger.silly('sync complete for instance', instanceIdsBeingAdded[i].toInstanceId);
                             promises.push(provider.sendMessage(
                                 AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
                                 {
