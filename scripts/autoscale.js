@@ -491,7 +491,7 @@
             actions.push(AutoscaleProvider.MESSAGE_SYNC_COMPLETE);
         }
 
-        provider.getMessages(actions)
+        provider.getMessages(actions, {toInstanceId: this.instanceId})
             .then(function(messages) {
                 var promises = [];
                 var message;
@@ -519,7 +519,7 @@
                             logger.silly('message add to cluster', message.data.host);
 
                             // Make sure the message is for this instance not an old master
-                            if (message.data.masterIid !== this.instanceId) {
+                            if (message.data.toInstanceId !== this.instanceId) {
                                 logger.debug('Received message for a different master, discarding');
                                 continue;
                             }
@@ -610,6 +610,7 @@
                                 AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
                                 {
                                     toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
+                                    fromInstanceId: this.instanceId,
                                     fromUser: instanceIdsBeingAdded[i].fromUser,
                                     fromPassword: instanceIdsBeingAdded[i].fromPassword
                                 }
@@ -688,8 +689,8 @@
                         return provider.sendMessage(
                             AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
                             {
-                                masterIid: masterIid,
-                                instanceId: this.instanceId,
+                                toInstanceId: masterIid,
+                                fromInstanceId: this.instanceId,
                                 host: managementIp,
                                 port: bigIp.port,
                                 username: bigIp.user,
