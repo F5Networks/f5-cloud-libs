@@ -600,6 +600,7 @@
                 responses = responses || [];
 
                 if (instanceIdsBeingAdded.length > 0) {
+                    logger.silly('responses from sync complete', responses);
                     for (i = 0; i < responses.length; ++i) {
                         // responses[i] === true iff that instance was successfully synced
                         if (responses[i] === true) {
