@@ -338,8 +338,7 @@
                         else {
                             if (options.licensePool) {
                                 if (!options.bigIqHost || !options.bigIqUser || !(options.bigIqPassword || options.bigIqPasswordUri) || !options.licensePoolName) {
-                                    logger.error('When using a BIG-IQ license pool, all of big-iq-host, big-iq-user, big-iq-password[-url], and license-pool-name are required');
-                                    return;
+                                    return q.reject(new Error('When using a BIG-IQ license pool, all of big-iq-host, big-iq-user, big-iq-password[-url], and license-pool-name are required'));
                                 }
 
                                 logger.info("Getting license from BIG-IQ license pool.");
