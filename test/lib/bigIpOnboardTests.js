@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 'use strict';
-const LICENSE_PATH = '/cm/device/licensing/pool/regkey/licenses/';
+const LICENSE_PATH_5_2 = '/cm/device/licensing/pool/regkey/licenses/';
+const LICENSE_PATH_5_3 = '/cm/device/tasks/licensing/pool/member-management/';
 
 var q = require('q');
 var BigIp = require('../../../f5-cloud-libs').bigIp;
@@ -23,6 +24,8 @@ var icontrolMock = require('../testUtil/icontrolMock');
 var poolUuid = '1';
 
 var bigIp;
+
+var taskId = '1234';
 
 module.exports = {
     setUp: function(callback) {
@@ -810,7 +813,7 @@ module.exports = {
                 );
                 icontrolMock.when(
                     'list',
-                    LICENSE_PATH + '?$select=id,name',
+                    LICENSE_PATH_5_2 + '?$select=id,name',
                     [
                         {
                             name: 'pool1',
@@ -824,7 +827,7 @@ module.exports = {
             testEmptyPools: function(test) {
                 icontrolMock.when(
                     'list',
-                    LICENSE_PATH + '?$select=id,name',
+                    LICENSE_PATH_5_2 + '?$select=id,name',
                     []
                 );
 
@@ -844,7 +847,7 @@ module.exports = {
             testNoPools: function(test) {
                 icontrolMock.when(
                     'list',
-                    LICENSE_PATH + '?$select=id,name',
+                    LICENSE_PATH_5_2 + '?$select=id,name',
                     {}
                 );
 
@@ -864,7 +867,7 @@ module.exports = {
             testNoActiveRegKeys: function(test) {
                 icontrolMock.when(
                     'list',
-                    LICENSE_PATH + poolUuid + '/offerings',
+                    LICENSE_PATH_5_2 + poolUuid + '/offerings',
                     [
                         {
                             licenseState: {
@@ -892,7 +895,7 @@ module.exports = {
                 var regKey = '1234';
                 icontrolMock.when(
                     'list',
-                    LICENSE_PATH + poolUuid + '/offerings',
+                    LICENSE_PATH_5_2 + poolUuid + '/offerings',
                     [
                         {
                             licenseState: {
@@ -906,7 +909,7 @@ module.exports = {
 
                 icontrolMock.when(
                     'list',
-                    LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                    LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
                     [
                         {
                             foo: "bar"
@@ -932,7 +935,7 @@ module.exports = {
                     var regKey = '1234';
                     icontrolMock.when(
                         'list',
-                        LICENSE_PATH + poolUuid + '/offerings',
+                        LICENSE_PATH_5_2 + poolUuid + '/offerings',
                         [
                             {
                                 licenseState: {
@@ -946,7 +949,7 @@ module.exports = {
 
                     icontrolMock.when(
                         'list',
-                        LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
                         []
                     );
 
@@ -957,7 +960,7 @@ module.exports = {
                     var regKey = '1234';
                     icontrolMock.when(
                         'create',
-                        LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
                         {
                             status: 'LICENSED'
                         }
@@ -967,7 +970,7 @@ module.exports = {
                         .then(function() {
                             test.deepEqual(icontrolMock.getRequest(
                                 'create',
-                                LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members'),
+                                LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members'),
                                 {
                                     deviceAddress: 'bigIpMgmtAddress:443',
                                     username: 'user',
@@ -988,7 +991,7 @@ module.exports = {
 
                     icontrolMock.when(
                         'create',
-                        LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
                         {
                             id: memberId,
                             status: 'FOOBAR'
@@ -997,7 +1000,7 @@ module.exports = {
 
                     icontrolMock.when(
                         'list',
-                        LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members/' + memberId,
+                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members/' + memberId,
                         {
                             status: 'LICENSED'
                         }
@@ -1007,7 +1010,7 @@ module.exports = {
                     bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
                         .then(function() {
                             test.strictEqual(icontrolMock.lastCall.method, 'list');
-                            test.strictEqual(icontrolMock.lastCall.path, LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members/' + memberId);
+                            test.strictEqual(icontrolMock.lastCall.path, LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members/' + memberId);
                         })
                         .catch(function(err) {
                             test.ok(false, err.message);
@@ -1016,6 +1019,51 @@ module.exports = {
                             test.done();
                         });
                 }
+            }
+        },
+
+        testBigIq5_3: {
+            setUp: function(callback) {
+                icontrolMock.when(
+                    'list',
+                    '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
+                    [
+                        {
+                            version: '5.3.0'
+                        }
+                    ]
+                );
+                icontrolMock.when(
+                    'create',
+                     LICENSE_PATH_5_3,
+                     {
+                         id: taskId
+                     }
+                );
+                icontrolMock.when(
+                    'list',
+                    LICENSE_PATH_5_3 + taskId,
+                    {
+                        status: 'FINISHED'
+                    }
+                );
+                callback();
+            },
+
+            testBasic: function(test) {
+                test.expect(1);
+
+                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
+                .then(function() {
+                    var licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH_5_3);
+                    test.strictEqual(licenseRequest.licensePoolName, 'pool1');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
             }
         }
     },
