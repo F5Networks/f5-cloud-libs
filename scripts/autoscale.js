@@ -230,6 +230,9 @@
                     }
                 }.bind(this))
                 .then(function(validMaster) {
+
+                    logger.silly('validMaster:', validMaster, ', masterInstance: ', masterInstance, ', masterExpired:', masterExpired);
+
                     if (validMaster) {
                         // true validMaster means we have a valid masterIid, just pass it on
                         logger.info('Valid master ID:', masterIid);
