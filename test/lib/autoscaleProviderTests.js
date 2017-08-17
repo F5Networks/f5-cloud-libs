@@ -148,9 +148,23 @@ module.exports = {
         test.done();
     },
 
+    testUnimplementedMasterExpired: function(test) {
+        test.doesNotThrow(function() {
+            testAutoscaleProvider.masterExpired();
+        });
+        test.done();
+    },
+
     testUnimplementedMasterInvalidated: function(test) {
         test.doesNotThrow(function() {
             testAutoscaleProvider.masterInvalidated();
+        });
+        test.done();
+    },
+
+    testUnimplementedGetStoredUcs: function(test) {
+        test.doesNotThrow(function() {
+            testAutoscaleProvider.getStoredUcs();
         });
         test.done();
     },
@@ -202,6 +216,33 @@ module.exports = {
             test.throws(function() {
                 testAutoscaleProvider.getMessages();
             });
+            test.done();
+        }
+    },
+
+    testUnimplementedSyncComplete: function(test) {
+        test.doesNotThrow(function() {
+            testAutoscaleProvider.syncComplete();
+        });
+        test.done();
+    },
+
+    testIsInstanceExpired: {
+        testExpired: function(test) {
+            var instance = {
+                lastUpdate: new Date(1970, 1, 1)
+            };
+
+            test.strictEqual(testAutoscaleProvider.isInstanceExpired(instance), true);
+            test.done();
+        },
+
+        testNotExpired: function(test) {
+            var instance = {
+                lastUpdate: new Date()
+            };
+
+            test.strictEqual(testAutoscaleProvider.isInstanceExpired(instance), false);
             test.done();
         }
     }
