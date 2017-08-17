@@ -1065,6 +1065,34 @@ module.exports = {
                 });
         },
 
+        testLocalAlreadyInGroup: function(test) {
+            var deviceGroup = 'myDeviceGroup';
+            var remoteIp = '1.2.3.4';
+            icontrolMock.when(
+                'create',
+                '/tm/cm',
+                {}
+            );
+
+            var isInDeviceGroup = bigIp.cluster.isInDeviceGroup;
+            bigIp.cluster.isInDeviceGroup = function() {
+                return q(true);
+            };
+
+            test.expect(1);
+            bigIp.cluster.joinCluster(deviceGroup, remoteIp, 'remoteUser', 'remotePassword', true, {syncDelay: 5})
+                .then(function(response) {
+                    test.strictEqual(response, false);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    bigIp.cluster.isInDeviceGroup = isInDeviceGroup;
+                    test.done();
+                });
+        },
+
         testRemote: function(test) {
             var deviceGroup = 'myDeviceGroup';
             var remoteIp = '1.2.3.4';
