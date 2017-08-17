@@ -1392,5 +1392,22 @@ module.exports = {
                     test.done();
                 });
         }
-    }
+    },
+
+    testResetTrust: {
+        testBasic: function(test) {
+            test.expect(2);
+            bigIp.cluster.resetTrust()
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'delete');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+            }
+        }
 };
