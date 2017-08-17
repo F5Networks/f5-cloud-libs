@@ -624,6 +624,11 @@
         return deferred.promise;
     };
 
+    /**
+     * Handles becoming master.
+     *
+     * @returns {Promise} promise which is resolved tieh true if successful
+     */
     var becomeMaster = function(provider, bigIp, options) {
         var hasUcs = false;
         logger.info("Becoming master.");
@@ -636,10 +641,6 @@
                 }
             })
             .then(function() {
-                logger.info("Writing master file.");
-                return writeMasterFile(hasUcs);
-            })
-            .then(function() {
                 // Make sure device group exists
                 logger.info('Creating device group.');
 
@@ -650,7 +651,11 @@
                     {autoSync: true}
                 );
 
-            }.bind(this));
+            }.bind(this))
+            .then(function() {
+                logger.info("Writing master file.");
+                return writeMasterFile(hasUcs);
+            });
     };
 
     /**

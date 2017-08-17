@@ -856,6 +856,16 @@ module.exports = {
                 }
             );
 
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    hostname: localHostname,
+                    managementAddress: '5.6.7.8',
+                    version: '12.1.0'
+                }
+            );
+
             callInSerial = util.callInSerial;
             deviceInfo = BigIp.prototype.deviceInfo;
             ready = BigIp.prototype.ready;
@@ -870,6 +880,13 @@ module.exports = {
             };
             BigIp.prototype.ready = function() {
                 return q();
+            };
+            BigIp.prototype.deviceInfo = function() {
+                return q({
+                    hostname: 'remoteHost',
+                    managementAddress: '5.6.7.8',
+                    version: '12.1.0'
+                });
             };
 
             callback();
@@ -896,24 +913,8 @@ module.exports = {
                 });
         },
 
-        test121Plus: function(test) {
+        testBasic: function(test) {
             var deviceGroup = 'myDeviceGroup';
-            BigIp.prototype.deviceInfo = function() {
-                return q({
-                    hostname: 'remoteHost',
-                    managementAddress: '5.6.7.8',
-                    version: '12.1.0'
-                });
-            };
-            icontrolMock.when(
-                'list',
-                '/shared/identified-devices/config/device-info',
-                {
-                    hostname: localHostname,
-                    managementAddress: '5.6.7.8',
-                    version: '12.1.0'
-                }
-            );
             icontrolMock.when(
                 'create',
                 '/tm/cm',
@@ -1011,22 +1012,6 @@ module.exports = {
                 }
             );
 
-            BigIp.prototype.deviceInfo = function() {
-                return q({
-                    hostname: 'remoteHost',
-                    managementAddress: '5.6.7.8',
-                    version: '12.1.0'
-                });
-            };
-            icontrolMock.when(
-                'list',
-                '/shared/identified-devices/config/device-info',
-                {
-                    hostname: localHostname,
-                    managementAddress: '5.6.7.8',
-                    version: '12.1.0'
-                }
-            );
             icontrolMock.when(
                 'create',
                 '/tm/cm',
@@ -1051,6 +1036,52 @@ module.exports = {
                     test.strictEqual(lastSyncRequest.command, 'run');
                     test.notStrictEqual(lastSyncRequest.utilCmdArgs.indexOf('to-group'), -1);
                     test.notStrictEqual(lastSyncRequest.utilCmdArgs.indexOf(recommendedGroup), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testLocal: function(test) {
+            var deviceGroup = 'myDeviceGroup';
+            var remoteIp = '1.2.3.4';
+            icontrolMock.when(
+                'create',
+                '/tm/cm',
+                {}
+            );
+
+            test.expect(1);
+            bigIp.cluster.joinCluster(deviceGroup, remoteIp, 'remoteUser', 'remotePassword', true, {syncDelay: 5})
+                .then(function() {
+                    var addToTrustRequest = icontrolMock.getRequest('create', '/tm/cm/add-to-trust');
+                    test.strictEqual(addToTrustRequest.device, remoteIp);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testRemote: function(test) {
+            var deviceGroup = 'myDeviceGroup';
+            var remoteIp = '1.2.3.4';
+            icontrolMock.when(
+                'create',
+                '/tm/cm',
+                {}
+            );
+
+            test.expect(1);
+            bigIp.cluster.joinCluster(deviceGroup, remoteIp, 'remoteUser', 'remotePassword', false, {syncDelay: 5})
+                .then(function() {
+                    var addToTrustRequest = icontrolMock.getRequest('create', '/tm/cm/add-to-trust');
+                    test.strictEqual(addToTrustRequest.device, '5.6.7.8');
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
                 })
                 .finally(function() {
                     test.done();
