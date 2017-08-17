@@ -287,8 +287,8 @@
                         this.instance.status = INSTANCE_STATUS_BECOMING_MASTER;
                         return provider.putInstance(this.instanceId, this.instance)
                             .then(function() {
-                                return becomeMaster(provider, bigIp, options);
-                            });
+                                return becomeMaster.call(this, provider, bigIp, options);
+                            }.bind(this));
                     }
                 }.bind(this))
                 .then(function(response) {
@@ -388,18 +388,6 @@
                     else {
                         logger.info('Not seting config sync IP because block-sync is specified.');
                     }
-                }.bind(this))
-                .then(function() {
-                    // Create the device group
-                    logger.info('Creating device group.');
-
-                    return bigIp.cluster.createDeviceGroup(
-                        options.deviceGroup,
-                        'sync-failover',
-                        [this.instance.hostname],
-                        {autoSync: true}
-                    );
-
                 }.bind(this))
                 .then(function() {
                     deferred.resolve();
@@ -650,7 +638,19 @@
             .then(function() {
                 logger.info("Writing master file.");
                 return writeMasterFile(hasUcs);
-            });
+            })
+            .then(function() {
+                // Make sure device group exists
+                logger.info('Creating device group.');
+
+                return bigIp.cluster.createDeviceGroup(
+                    options.deviceGroup,
+                    'sync-failover',
+                    [this.instance.hostname],
+                    {autoSync: true}
+                );
+
+            }.bind(this));
     };
 
     /**
