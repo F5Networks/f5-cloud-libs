@@ -462,7 +462,7 @@
         const timeStamp = Date.now();
         const originalPath = '/config/ucsOriginal_' + timeStamp + '.ucs';
         const updatedPath = '/config/ucsUpdated_' + timeStamp + '.ucs';
-        const updateScript = '/config/cloud/' + (cloudProvider === 'aws' ? 'aws/' : '') + 'node_modules/f5-cloud-libs/scripts/updateAutoScaleUcs';
+        const updateScript = '/config/cloud/' + cloudProvider + '/node_modules/f5-cloud-libs/scripts/updateAutoScaleUcs';
 
         var deferred = q.defer();
         var originalFile;
