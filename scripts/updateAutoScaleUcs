@@ -215,20 +215,18 @@ def main():
                         "/SPEC-Manifest"
                       ]
 
-    # Replace hostname
-    if original_hostname and dest_hostname:
-        replace(extract_ucs_dir + bigip_base_file, original_hostname, dest_hostname)
-
     # Replace Gateway
     replace(extract_ucs_dir + gateway_file, original_ucs_gateway, dest_gateway)
 
-    # Replace IP, String Versions in other files
+    # Replace hostname, IP, String Versions in other files
     for f in files_to_update:
         filename = extract_ucs_dir + f
         if debug_level > 0:
             print "updating : " + filename
         replace(filename, original_ucs_ip, dest_ip)
         replace(filename, original_ucs_ip_str, dest_ip_str)
+        if original_hostname and dest_hostname:
+            replace(filename, original_hostname, dest_hostname)
 
     # Remove the /config/cloud directory so we don't overwrite it with old data
     path_to_exclude = "/config/cloud"
