@@ -17,7 +17,7 @@
 
 (function() {
 
-    const MAX_DISCONNECTED_MS = 10 * 60000; // 10 minutes
+    const MAX_DISCONNECTED_MS = 3 * 60000; // 3 minutes
     const MIN_MS_BETWEEN_JOIN_REQUESTS = 10 * 60000; // 10 minutes
     const MASTER_FILE_PATH = "/config/cloud/master";
 
