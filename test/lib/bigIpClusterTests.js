@@ -824,7 +824,7 @@ module.exports = {
             );
             icontrolMock.when(
                 'list',
-                '/tm/cm/device-group',
+                '/tm/cm/device-group/',
                 [
                     {
                         name: 'datasync-global-dg'
@@ -1121,7 +1121,7 @@ module.exports = {
         setUp: function(callback) {
             icontrolMock.when(
                 'list',
-                '/tm/cm/device-group',
+                '/tm/cm/device-group/',
                 [
                     {
                         name: 'myDeviceGroup'

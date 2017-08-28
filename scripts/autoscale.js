@@ -169,18 +169,18 @@
                 }.bind(this))
                 .then(function (response) {
                     this.instances = response || {};
-                    this.instance = this.instances[this.instanceId];
-                    this.instance.status = this.instance.status || INSTANCE_STATUS_OK;
                     logger.debug('instances:', this.instances);
 
                     if (Object.keys(this.instances).length === 0) {
                         throw new Error('Instance list is empty. Exiting.');
                     }
 
+                    this.instance = this.instances[this.instanceId];
                     if (!this.instance) {
                         throw new Error('Our instance ID is not in instance list. Exiting');
                     }
 
+                    this.instance.status = this.instance.status || INSTANCE_STATUS_OK;
                     return provider.putInstance(this.instanceId, this.instance);
                 }.bind(this))
                 .then(function() {

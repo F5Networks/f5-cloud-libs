@@ -271,7 +271,7 @@ module.exports = {
 
             icontrolMock.when(
                 'list',
-                '/tm/cm/device-group',
+                '/tm/cm/device-group/',
                 [
                     {
                         name: deviceGroup
