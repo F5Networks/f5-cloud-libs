@@ -501,8 +501,6 @@
                     });
                 };
 
-                var alreadyJoining = false;
-
                 logger.debug('Handling', messages.length, 'message(s)');
 
                 for (i = 0; i < messages.length; ++i) {
