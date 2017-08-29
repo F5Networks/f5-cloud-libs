@@ -181,6 +181,12 @@
                     }
 
                     this.instance.status = this.instance.status || INSTANCE_STATUS_OK;
+                    logger.silly('Instance status:', this.instance.status);
+
+                    if (this.instance.status === INSTANCE_STATUS_BECOMING_MASTER) {
+                        throw new Error('Currently becoming master. Exiting.');
+                    }
+
                     return provider.putInstance(this.instanceId, this.instance);
                 }.bind(this))
                 .then(function() {
