@@ -475,7 +475,6 @@
 
         if (this.instance.isMaster && !options.blockSync) {
             actions.push(AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER);
-            actions.push(AutoscaleProvider.MESSAGE_JOIN_CLUSTER);
         }
 
         if (!this.instance.isMaster) {
@@ -536,32 +535,6 @@
                                     {
                                         remotePort: message.data.port,
                                         remoteHostname: message.data.hostname
-                                    }
-                                )
-                            );
-
-                            break;
-
-                        // Add ourselves to another instance's cluster
-                        case AutoscaleProvider.MESSAGE_JOIN_CLUSTER:
-
-                            logger.silly('message join cluster', message.data.host);
-
-                            if (alreadyJoining) {
-                                logger.debug('Already joining cluster, discarding');
-                                continue;
-                            }
-
-                            promises.push(
-                                bigIp.cluster.joinCluster(
-                                    message.data.deviceGroup,
-                                    message.data.host,
-                                    message.data.username,
-                                    message.data.password,
-                                    false,
-                                    {
-                                        remotePort: message.data.port,
-                                        remoteHostname: message.data.hostname,
                                     }
                                 )
                             );
