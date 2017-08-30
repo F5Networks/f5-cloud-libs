@@ -56,14 +56,28 @@ module.exports = {
         return this.clientRequest;
     },
 
-    get: function(path, cb) {
-        var clientRequest = this.request(
-            {
-                method: 'GET',
-                path: path
-            },
-            cb
-        );
+    get: function(optionsOrPath, cb) {
+        var clientRequest;
+
+        if (typeof optionsOrPath === 'string') {
+            clientRequest = this.request(
+                {
+                    method: 'GET',
+                    path: optionsOrPath
+                },
+                cb
+            );
+        }
+        else {
+            clientRequest = this.request(
+                {
+                    method: 'GET',
+                    path: optionsOrPath.path,
+                    headers: optionsOrPath.headers
+                },
+                cb
+            );
+        }
         clientRequest.end();
         return clientRequest;
     },

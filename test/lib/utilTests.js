@@ -198,6 +198,7 @@ module.exports = {
 
             fs.writeFileSync(passwordFile, password, {encoding: 'ascii'});
 
+            test.expect(1);
             util.getDataFromUrl('file://' + passwordFile)
                 .then(function(readPassword) {
                     test.strictEqual(readPassword, password);
@@ -222,9 +223,36 @@ module.exports = {
 
                 httpMock.setResponse(password);
 
+                test.expect(2);
                 util.getDataFromUrl('http://www.example.com')
                     .then(function(readPassword) {
+                        test.strictEqual(httpMock.lastRequest.path, '/');
                         test.strictEqual(readPassword, password);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err);
+                    })
+                    .finally(function() {
+                        delete require.cache.http;
+                        test.done();
+                    });
+            },
+
+            testPathAndHeaders: function(test) {
+                var httpMock = require('../testUtil/httpMock');
+
+                var path = '/foo/bar';
+                var headers = {headerName: 'headerValue'};
+
+                require.cache.http = {
+                    exports: httpMock
+                };
+
+                test.expect(2);
+                util.getDataFromUrl('http://www.example.com' + path, {headers: headers})
+                    .then(function() {
+                        test.strictEqual(httpMock.lastRequest.path, path);
+                        test.deepEqual(httpMock.lastRequest.headers, headers);
                     })
                     .catch(function(err) {
                         test.ok(false, err);
@@ -245,6 +273,7 @@ module.exports = {
 
                 httpMock.setResponse(response, {'content-type': 'application/json'});
 
+                test.expect(1);
                 util.getDataFromUrl('http://www.example.com')
                     .then(function(data) {
                         test.deepEqual(data, response);
@@ -268,6 +297,7 @@ module.exports = {
 
                 httpMock.setResponse(response, {'content-type': 'application/json'});
 
+                test.expect(1);
                 util.getDataFromUrl('http://www.example.com')
                     .then(function() {
                         test.ok(false, 'Should have thrown bad json');
