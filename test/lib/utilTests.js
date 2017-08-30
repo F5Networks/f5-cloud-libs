@@ -781,6 +781,7 @@ module.exports = {
                 return deferred.promise;
             };
 
+            test.expect(1);
             util.tryUntil(this, util.NO_RETRY, func)
                 .then(function() {
                     test.strictEqual(funcCount, 1);
@@ -788,7 +789,7 @@ module.exports = {
                 });
         },
 
-        testCalledMultple: function(test) {
+        testCalledMultiple: function(test) {
             var retries = 3;
 
             var func = function() {
@@ -803,10 +804,39 @@ module.exports = {
                     deferred.resolve();
                 }
 
+                return deferred.promise;
+            };
+
+            test.expect(1);
+            util.tryUntil(this, {maxRetries: retries, retryIntervalMs: 10}, func)
+                .then(function() {
+                    test.strictEqual(funcCount, retries);
+                    test.done();
+                });
+        },
+
+        testWithThrow: function(test) {
+            var retries = 3;
+
+            var func = function() {
+                var deferred = q.defer();
+
+                funcCount++;
+
+                if (funcCount === 1) {
+                    deferred.reject();
+                }
+                else if (funcCount > 1 && funcCount < retries) {
+                    throw new Error('foo');
+                }
+                else if (funcCount === retries) {
+                    deferred.resolve();
+                }
 
                 return deferred.promise;
             };
 
+            test.expect(1);
             util.tryUntil(this, {maxRetries: retries, retryIntervalMs: 10}, func)
                 .then(function() {
                     test.strictEqual(funcCount, retries);
