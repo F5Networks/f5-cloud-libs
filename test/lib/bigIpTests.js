@@ -23,6 +23,8 @@ var icontrolMock = require('../testUtil/icontrolMock');
 var bigIp;
 var realReady;
 
+var removedFile;
+
 const TASK_PATH = '/tm/task/sys/ucs';
 
 module.exports = {
@@ -40,6 +42,13 @@ module.exports = {
                 icontrolMock.reset();
                 callback();
             });
+    },
+
+    tearDown: function(callback) {
+        Object.keys(require.cache).forEach(function(key) {
+            delete require.cache[key];
+        });
+        callback();
     },
 
     testActive: {
@@ -254,6 +263,43 @@ module.exports = {
             .finally(function() {
                 test.done();
             });
+    },
+
+    testInstallPrivateKey: {
+        setUp: function(callback) {
+            var fs = require('fs');
+            fs.unlink = function(path, cb) {
+                removedFile = path;
+                cb();
+            };
+            callback();
+        },
+
+        testBasic: function(test) {
+            var keyName = 'myKey';
+            var keyFile = '/foo/bar';
+            var expectedBody = {
+                command: 'install',
+                name: 'cloudLibsPrivate',
+                fromLocalFile: keyFile
+            };
+
+            icontrolMock.when('create', '/tm/sys/crypto/key', {});
+            icontrolMock.when('list', '/tm/sys/crypto/key/~Common~' + keyName + '.key', {});
+
+            test.expect(2);
+            bigIp.installPrivateKey(keyFile)
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
+                    test.strictEqual(removedFile, keyFile);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testLoadConfig: {

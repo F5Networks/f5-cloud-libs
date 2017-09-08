@@ -327,7 +327,7 @@
                 }.bind(this))
                 .then(function() {
                     if (this.instance.status === INSTANCE_STATUS_OK) {
-                        if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+                        if (provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
                             logger.info('Checking for messages');
                             return handleMessages.call(this, provider, bigIp, options);
                         }
@@ -374,7 +374,7 @@
         // will join to us. Just set our config sync ip.
         if (this.instance.isMaster) {
 
-            if (!provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+            if (!provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
                 logger.info('Storing master credentials.');
                 promise = provider.putMasterCredentials();
             }
@@ -607,15 +607,9 @@
      * @returns {Promise} promise which is resolved tieh true if successful
      */
     var becomeMaster = function(provider, bigIp, options) {
-        const cryptoUtil = require('../lib/cryptoUtil');
-        const privateKeyOutFile = '/tmp/tempPrivateKey.pem';
         var hasUcs = false;
         logger.info("Becoming master.");
-        logger.info("Generating public/private keys.");
-        return cryptoUtil.generateKeyPair(privateKeyOutFile)
-            .then(function(publicKey) {
-                return provider.putPublicKey(this.instanceId, publicKey);
-            }.bind(this))
+        return initEncryption.call(this, provider, bigIp)
             .then(function() {
                 logger.info("Checking for backup UCS.");
                 return provider.getStoredUcs();
@@ -666,7 +660,7 @@
 
         logger.info('Joining cluster.');
 
-        if (provider.features[AutoscaleProvider.FEATURE_MESSAGING]) {
+        if (provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
                 logger.debug('Resetting current device trust');
                 this.instance.lastJoinRequest = now;
                 return provider.putInstance(this.instanceId, this.instance)
@@ -768,6 +762,30 @@
                 return q.reject(err);
             });
 
+    };
+
+    /**
+     * If the provider supports encryption, initializes and stores keys.
+     *
+     * Called with this bound to the caller.
+     */
+    var initEncryption = function(provider, bigIp) {
+        const cryptoUtil = require('../lib/cryptoUtil');
+        const privateKeyOutFile = '/tmp/tempPrivateKey.pem';
+
+        if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
+            logger.info("Generating public/private keys.");
+            return cryptoUtil.generateKeyPair(privateKeyOutFile)
+                .then(function(publicKey) {
+                    return provider.putPublicKey(this.instanceId, publicKey);
+                }.bind(this))
+                .then(function() {
+                    return bigIp.installPrivateKey(privateKeyOutFile);
+                });
+        }
+        else {
+            return q();
+        }
     };
 
     /**
