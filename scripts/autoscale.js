@@ -607,10 +607,19 @@
      * @returns {Promise} promise which is resolved tieh true if successful
      */
     var becomeMaster = function(provider, bigIp, options) {
+        const cryptoUtil = require('../lib/cryptoUtil');
+        const privateKeyOutFile = '/tmp/tempPrivateKey.pem';
         var hasUcs = false;
         logger.info("Becoming master.");
-        logger.info("Checking for backup UCS.");
-        return provider.getStoredUcs()
+        logger.info("Generating public/private keys.");
+        return cryptoUtil.generateKeyPair(privateKeyOutFile)
+            .then(function(publicKey) {
+                return provider.putPublicKey(this.instanceId, publicKey);
+            }.bind(this))
+            .then(function() {
+                logger.info("Checking for backup UCS.");
+                return provider.getStoredUcs();
+            })
             .then(function(response) {
                 if (response) {
                     hasUcs = true;

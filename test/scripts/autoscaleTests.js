@@ -18,11 +18,12 @@
 var deviceGroup = 'testDeviceGroup';
 var util = require('util');
 var q = require('q');
-var autoscale = require('../../scripts/autoscale');
 var AutoscaleProvider = require('../../lib/autoscaleProvider');
+var autoscale;
 var fsMock;
 var childProcessMock;
 var BigIp;
+var cryptoUtilMock;
 var icontrolMock;
 var ipcMock;
 var argv;
@@ -74,9 +75,12 @@ ProviderMock.prototype.instancesRemoved = function(instances) {
 };
 
 ProviderMock.prototype.getStoredUcs = function() {
-        return q();
+    return q();
 };
 
+ProviderMock.prototype.putPublicKey = function() {
+    return q();
+};
 
 // Don't let autoscale exit - we need the nodeunit process to run to completion
 process.exit = function() {};
@@ -105,6 +109,7 @@ module.exports = {
         childProcessMock = require('child_process');
         BigIp = require('../../lib/bigIp');
         icontrolMock = require('../testUtil/icontrolMock');
+        cryptoUtilMock = require('../../lib/cryptoUtil');
         ipcMock = require('../../lib/ipc');
 
         providerMock = new ProviderMock();
@@ -130,6 +135,14 @@ module.exports = {
 
                 callback();
             });
+
+        cryptoUtilMock = {
+            generateKeyPair: function() {
+                return q();
+            }
+        };
+
+        autoscale  = require('../../scripts/autoscale');
     },
 
     tearDown: function(callback) {

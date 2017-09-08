@@ -120,6 +120,28 @@ module.exports = {
         test.done();
     },
 
+    testUnimplementedPutPublicKey: {
+        tearDown: function(callback) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_ENCRYPTION] = false;
+            callback();
+        },
+
+        testEncryptionSupported: function(test) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_ENCRYPTION] = true;
+            test.throws(function() {
+                testAutoscaleProvider.putPublicKey();
+            });
+            test.done();
+        },
+
+        testEncryptionNotSupported: function(test) {
+            test.doesNotThrow(function() {
+                testAutoscaleProvider.putPublicKey();
+            });
+            test.done();
+        }
+    },
+
     testUnimplementedGetNicsByTag: function(test) {
             test.doesNotThrow(function() {
                 testAutoscaleProvider.getNicsByTag();
