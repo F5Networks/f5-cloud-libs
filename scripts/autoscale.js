@@ -27,6 +27,7 @@
     var fs = require('fs');
     var q = require('q');
     var AutoscaleProvider = require('../lib/autoscaleProvider');
+    var cryptoUtil = require('../lib/cryptoUtil');
     var runner;
     var logger;
 
@@ -478,6 +479,7 @@
         var deferred = q.defer();
         var instanceIdsBeingAdded = [];
         var actions = [];
+        var actionPromises = [];
 
         if (this.instance.isMaster && !options.blockSync) {
             actions.push(AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER);
@@ -489,17 +491,11 @@
 
         provider.getMessages(actions, {toInstanceId: this.instanceId})
             .then(function(messages) {
-                var promises = [];
+                var decryptPromises = [];
                 var message;
                 var i;
 
                 messages = messages || [];
-
-                var alreadyAdding = function(instanceId) {
-                    return instanceIdsBeingAdded.find(function(element) {
-                        return instanceId === element.toInstanceId;
-                    });
-                };
 
                 logger.debug('Handling', messages.length, 'message(s)');
 
@@ -511,6 +507,48 @@
                         case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
 
                             logger.silly('message add to cluster', message.data.host);
+
+                            decryptPromises.push(decryptMessage.call(this, bigIp, message));
+
+                            break;
+
+                        case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
+                            // See if the message is for us
+                            if (message.data.toInstanceId !== this.instanceId) {
+                                logger.silly('SYNC_COMPLETE is not for us, ignoring');
+                                continue;
+                            }
+
+                            logger.silly('calling sync complete');
+                            actionPromises.push(provider.syncComplete(message.data.fromUser, message.data.fromPassword));
+
+                            break;
+
+                        default:
+                            deferred.reject('Unknown message action', message.action);
+                    }
+                }
+
+                return q.all(decryptPromises);
+            }.bind(this))
+            .then(function(decryptedMessages) {
+                var message;
+                var i;
+
+                var alreadyAdding = function(instanceId) {
+                    return instanceIdsBeingAdded.find(function(element) {
+                        return instanceId === element.toInstanceId;
+                    });
+                };
+
+                decryptedMessages = decryptedMessages || [];
+
+                for (i = 0; i < decryptedMessages.length; ++i) {
+                    message = decryptedMessages[i];
+
+                    switch (message.action) {
+                        // Add an instance to our cluster
+                        case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
 
                             // Make sure the message is for this instance not an old master
                             if (message.data.toInstanceId !== this.instanceId) {
@@ -529,7 +567,7 @@
                                 fromPassword: bigIp.password
                             });
 
-                            promises.push(
+                            actionPromises.push(
                                 bigIp.cluster.joinCluster(
                                     message.data.deviceGroup,
                                     message.data.host,
@@ -544,26 +582,11 @@
                             );
 
                             break;
-
-                        case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
-                            // See if the message is for us
-                            if (message.data.toInstanceId !== this.instanceId) {
-                                logger.silly('SYNC_COMPLETE is not for us, ignoring');
-                                continue;
-                            }
-
-                            logger.silly('calling sync complete');
-                            promises.push(provider.syncComplete(message.data.fromUser, message.data.fromPassword));
-
-                            break;
-
-                        default:
-                            deferred.reject('Unknown message action', message.action);
                     }
                 }
 
-                return q.all(promises);
-            }.bind(this))
+                return q.all(actionPromises);
+            })
             .then(function(responses) {
                 var promises = [];
                 var i;
@@ -674,22 +697,29 @@
                     })
                     .then(function(response) {
                         var managementIp = response.managementAddress;
+                        var messageData;
 
                         logger.debug('Sending message to join cluster.');
+
+                        messageData =  {
+                            toInstanceId: masterIid,
+                            fromInstanceId: this.instanceId,
+                            host: managementIp,
+                            port: bigIp.port,
+                            username: bigIp.user,
+                            password: bigIp.password,
+                            hostname: this.instance.hostname,
+                            deviceGroup: options.deviceGroup
+                        };
+
+                        return encryptMessageData.call(this, provider, masterIid, messageData);
+                    }.bind(this))
+                    .then(function(encryptedData) {
                         return provider.sendMessage(
                             AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
-                            {
-                                toInstanceId: masterIid,
-                                fromInstanceId: this.instanceId,
-                                host: managementIp,
-                                port: bigIp.port,
-                                username: bigIp.user,
-                                password: bigIp.password,
-                                hostname: this.instance.hostname,
-                                deviceGroup: options.deviceGroup
-                            }
+                            encryptedData
                         );
-                    }.bind(this))
+                    })
                     .catch(function(err) {
                         // need to bubble up nested errors
                         return q.reject(err);
@@ -770,7 +800,6 @@
      * Called with this bound to the caller.
      */
     var initEncryption = function(provider, bigIp) {
-        const cryptoUtil = require('../lib/cryptoUtil');
         const privateKeyOutFile = '/tmp/tempPrivateKey.pem';
 
         if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
@@ -970,6 +999,51 @@
         });
 
         return deferred.promise;
+    };
+
+    var encryptMessageData = function(provider, masterIid, messageData) {
+        var keyPromise;
+
+        if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
+            return q(messageData);
+        }
+
+        if (!this.cloudPublicKey) {
+            keyPromise = provider.getPublicKey(masterIid);
+        }
+        else {
+            keyPromise = q(this.keyPromise);
+        }
+
+        return keyPromise
+            .then(function(publicKey) {
+                return cryptoUtil.encrypt(publicKey, messageData);
+            });
+    };
+
+    var decryptMessage = function(provider, bigIp, message) {
+        var filePromise;
+
+        if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
+            return q(message);
+        }
+
+        if (!this.cloudPrivateKeyPath) {
+            return bigIp.getCloudPrivateKeyFilePath();
+        }
+        else {
+            filePromise = q(this.cloudPrivateKeyPath);
+        }
+
+        return filePromise
+            .then(function(cloudPrivateKeyPath) {
+                this.cloudPrivateKeyPath = cloudPrivateKeyPath;
+                return cryptoUtil.decrpt(this.cloudPrivateKeyPath, message.data);
+            })
+            .then(function(data) {
+                message.data = data;
+                return message;
+            });
     };
 
     // If we're called from the command line, run
