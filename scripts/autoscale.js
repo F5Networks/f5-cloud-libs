@@ -480,6 +480,7 @@
         var instanceIdsBeingAdded = [];
         var actions = [];
         var actionPromises = [];
+        var messageMetadata = [];
 
         if (this.instance.isMaster && !options.blockSync) {
             actions.push(AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER);
@@ -508,13 +509,20 @@
 
                             logger.silly('message add to cluster', message.data.host);
 
-                            decryptPromises.push(decryptMessage.call(this, bigIp, message));
+                            messageMetadata.push(
+                                {
+                                    action: message.action,
+                                    toInstanceId: message.toInstanceId,
+                                    fromInstanceId: message.fromInstanceId
+                                }
+                            );
+                            decryptPromises.push(decryptMessage.call(this, bigIp, message.data));
 
                             break;
 
                         case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
                             // See if the message is for us
-                            if (message.data.toInstanceId !== this.instanceId) {
+                            if (message.toInstanceId !== this.instanceId) {
                                 logger.silly('SYNC_COMPLETE is not for us, ignoring');
                                 continue;
                             }
@@ -532,7 +540,8 @@
                 return q.all(decryptPromises);
             }.bind(this))
             .then(function(decryptedMessages) {
-                var message;
+                var metadata;
+                var messageData;
                 var i;
 
                 var alreadyAdding = function(instanceId) {
@@ -544,39 +553,40 @@
                 decryptedMessages = decryptedMessages || [];
 
                 for (i = 0; i < decryptedMessages.length; ++i) {
-                    message = decryptedMessages[i];
+                    metadata = messageMetadata[i];
+                    messageData = decryptedMessages[i];
 
-                    switch (message.action) {
+                    switch (metadata.action) {
                         // Add an instance to our cluster
                         case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
 
                             // Make sure the message is for this instance not an old master
-                            if (message.data.toInstanceId !== this.instanceId) {
+                            if (metadata.toInstanceId !== this.instanceId) {
                                 logger.debug('Received message for a different master, discarding');
                                 continue;
                             }
 
-                            if (alreadyAdding(message.data.instanceId)) {
-                                logger.debug('Already adding', message.data.instanceId, ', discarding');
+                            if (alreadyAdding(metadata.fromInstanceId)) {
+                                logger.debug('Already adding', metadata.fromInstanceId, ', discarding');
                                 continue;
                             }
 
                             instanceIdsBeingAdded.push({
-                                toInstanceId: message.data.fromInstanceId,
+                                toInstanceId: metadata.fromInstanceId,
                                 fromUser: bigIp.user,
                                 fromPassword: bigIp.password
                             });
 
                             actionPromises.push(
                                 bigIp.cluster.joinCluster(
-                                    message.data.deviceGroup,
-                                    message.data.host,
-                                    message.data.username,
-                                    message.data.password,
+                                    messageData.deviceGroup,
+                                    messageData.host,
+                                    messageData.username,
+                                    messageData.password,
                                     true,
                                     {
-                                        remotePort: message.data.port,
-                                        remoteHostname: message.data.hostname
+                                        remotePort: messageData.port,
+                                        remoteHostname: messageData.hostname
                                     }
                                 )
                             );
@@ -604,8 +614,10 @@
                                 {
                                     toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
                                     fromInstanceId: this.instanceId,
-                                    fromUser: instanceIdsBeingAdded[i].fromUser,
-                                    fromPassword: instanceIdsBeingAdded[i].fromPassword
+                                    data: {
+                                        fromUser: instanceIdsBeingAdded[i].fromUser,
+                                        fromPassword: instanceIdsBeingAdded[i].fromPassword
+                                    }
                                 }
                             ));
                         }
@@ -702,8 +714,6 @@
                         logger.debug('Sending message to join cluster.');
 
                         messageData =  {
-                            toInstanceId: masterIid,
-                            fromInstanceId: this.instanceId,
                             host: managementIp,
                             port: bigIp.port,
                             username: bigIp.user,
@@ -717,9 +727,13 @@
                     .then(function(encryptedData) {
                         return provider.sendMessage(
                             AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
-                            encryptedData
+                            {
+                                toInstanceId: masterIid,
+                                fromInstanceId: this.instanceId,
+                                data: encryptedData
+                            }
                         );
-                    })
+                    }.bind(this))
                     .catch(function(err) {
                         // need to bubble up nested errors
                         return q.reject(err);
@@ -804,12 +818,12 @@
 
         if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
             logger.info("Generating public/private keys.");
-            return cryptoUtil.generateKeyPair(privateKeyOutFile)
+            return cryptoUtil.generateKeyPair(privateKeyOutFile, {keyLength: '4096'})
                 .then(function(publicKey) {
                     return provider.putPublicKey(this.instanceId, publicKey);
                 }.bind(this))
                 .then(function() {
-                    return bigIp.installPrivateKey(privateKeyOutFile);
+                    return bigIp.installCloudPrivateKey(privateKeyOutFile);
                 });
         }
         else {
@@ -1039,7 +1053,7 @@
         return filePromise
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
-                return cryptoUtil.decrpt(this.cloudPrivateKeyPath, message.data);
+                return cryptoUtil.decrypt(this.cloudPrivateKeyPath, message.data);
             }.bind(this))
             .then(function(data) {
                 message.data = JSON.parse(data);
