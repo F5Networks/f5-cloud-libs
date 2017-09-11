@@ -516,7 +516,7 @@
                                     fromInstanceId: message.fromInstanceId
                                 }
                             );
-                            decryptPromises.push(decryptMessage.call(this, bigIp, message.data));
+                            decryptPromises.push(decryptMessageData.call(this, provider, bigIp, message.data));
 
                             break;
 
@@ -539,7 +539,7 @@
 
                 return q.all(decryptPromises);
             }.bind(this))
-            .then(function(decryptedMessages) {
+            .then(function(decryptedMessageData) {
                 var metadata;
                 var messageData;
                 var i;
@@ -550,11 +550,11 @@
                     });
                 };
 
-                decryptedMessages = decryptedMessages || [];
+                decryptedMessageData = decryptedMessageData || [];
 
-                for (i = 0; i < decryptedMessages.length; ++i) {
+                for (i = 0; i < decryptedMessageData.length; ++i) {
                     metadata = messageMetadata[i];
-                    messageData = decryptedMessages[i];
+                    messageData = JSON.parse(decryptedMessageData[i]);
 
                     switch (metadata.action) {
                         // Add an instance to our cluster
@@ -596,7 +596,7 @@
                 }
 
                 return q.all(actionPromises);
-            })
+            }.bind(this))
             .then(function(responses) {
                 var promises = [];
                 var i;
@@ -1036,15 +1036,15 @@
             }.bind(this));
     };
 
-    var decryptMessage = function(provider, bigIp, message) {
+    var decryptMessageData = function(provider, bigIp, messageData) {
         var filePromise;
 
         if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
-            return q(message);
+            return q(messageData);
         }
 
         if (!this.cloudPrivateKeyPath) {
-            return bigIp.getCloudPrivateKeyFilePath();
+            filePromise = bigIp.getCloudPrivateKeyFilePath();
         }
         else {
             filePromise = q(this.cloudPrivateKeyPath);
@@ -1053,12 +1053,8 @@
         return filePromise
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
-                return cryptoUtil.decrypt(this.cloudPrivateKeyPath, message.data);
-            }.bind(this))
-            .then(function(data) {
-                message.data = JSON.parse(data);
-                return message;
-            });
+                return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
+            }.bind(this));
     };
 
     // If we're called from the command line, run
