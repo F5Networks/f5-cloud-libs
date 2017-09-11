@@ -712,7 +712,7 @@
                             deviceGroup: options.deviceGroup
                         };
 
-                        return encryptMessageData.call(this, provider, masterIid, messageData);
+                        return encryptMessageData.call(this, provider, masterIid, JSON.stringify(messageData));
                     }.bind(this))
                     .then(function(encryptedData) {
                         return provider.sendMessage(
@@ -1012,13 +1012,14 @@
             keyPromise = provider.getPublicKey(masterIid);
         }
         else {
-            keyPromise = q(this.keyPromise);
+            keyPromise = q(this.cloudPublicKey);
         }
 
         return keyPromise
             .then(function(publicKey) {
+                this.cloudPublicKey = publicKey;
                 return cryptoUtil.encrypt(publicKey, messageData);
-            });
+            }.bind(this));
     };
 
     var decryptMessage = function(provider, bigIp, message) {
@@ -1039,9 +1040,9 @@
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrpt(this.cloudPrivateKeyPath, message.data);
-            })
+            }.bind(this))
             .then(function(data) {
-                message.data = data;
+                message.data = JSON.parse(data);
                 return message;
             });
     };
