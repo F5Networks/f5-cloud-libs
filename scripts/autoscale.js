@@ -1057,6 +1057,9 @@
 
         return provider.getPublicKey(instanceId)
             .then(function(publicKey) {
+// TODO: remove this
+logger.debug("PUBLIC KEY:", publicKey);
+logger.debug("MESSAGE DATA:", messageData);
                 return cryptoUtil.encrypt(publicKey, messageData);
             }.bind(this));
     };
@@ -1078,6 +1081,9 @@
         return filePromise
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
+// TODO: remove this
+logger.debug("PRIVATE KEY PATH:", this.cloudPrivateKeyPath);
+logger.debug("MESSAGE DATA:", messageData);
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
     };
