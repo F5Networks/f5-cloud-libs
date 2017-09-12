@@ -512,7 +512,7 @@
                         }
                     );
                     decryptPromises.push(decryptMessageData.call(this, provider, bigIp, message.data));
-                });
+                }.bind(this));
 
                 return q.all(decryptPromises);
             }.bind(this))
@@ -640,7 +640,7 @@
                 }
 
                 return q.all(syncCompletePromises);
-            })
+            }.bind(this))
             .then(function() {
                 deferred.resolve();
             })
