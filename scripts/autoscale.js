@@ -733,7 +733,7 @@
                         tempPassword = response;
 
                         // Create the temp user account
-                        return bigIp.updateUser(tempUser, tempPassword, 'admin');
+                        return bigIp.onboard.updateUser(tempUser, tempPassword, 'admin');
                     })
                     .then(function() {
                         var messageData;
