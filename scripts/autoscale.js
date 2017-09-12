@@ -604,11 +604,14 @@
                                 fromUser: instanceIdsBeingAdded[i].fromUser,
                                 fromPassword: instanceIdsBeingAdded[i].fromPassword
                             };
+
+                            // We encrypt with our own public key here because after sync, our
+                            // private key will be the key on the box we just synced to
                             encryptPromises.push(
                                 encryptMessageData.call(
                                     this,
                                     provider,
-                                    instanceIdsBeingAdded[i].toInstanceId,
+                                    this.instanceId,
                                     JSON.stringify(messageData)
                                 )
                             );
