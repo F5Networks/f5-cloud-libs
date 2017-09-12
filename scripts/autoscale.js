@@ -481,6 +481,7 @@
         var actions = [];
         var actionPromises = [];
         var messageMetadata = [];
+        var tempUser;
 
         if (this.instance.isMaster && !options.blockSync) {
             actions.push(AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER);
@@ -528,7 +529,7 @@
                             }
 
                             logger.silly('calling sync complete');
-                            actionPromises.push(provider.syncComplete(message.data.fromUser, message.data.fromPassword));
+                            actionPromises.push(provider.syncComplete(message.data.fromUser, message.data.fromPassword, message.data.toUser));
 
                             break;
 
@@ -577,11 +578,13 @@
                                 fromPassword: bigIp.password
                             });
 
+                            tempUser = messageData.username;
+
                             actionPromises.push(
                                 bigIp.cluster.joinCluster(
                                     messageData.deviceGroup,
                                     messageData.host,
-                                    messageData.username,
+                                    tempUser,
                                     messageData.password,
                                     true,
                                     {
@@ -615,6 +618,7 @@
                                     toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
                                     fromInstanceId: this.instanceId,
                                     data: {
+                                        toUser: tempUser,
                                         fromUser: instanceIdsBeingAdded[i].fromUser,
                                         fromPassword: instanceIdsBeingAdded[i].fromPassword
                                     }
@@ -677,9 +681,15 @@
      * Called with this bound to the caller
      */
     var joinCluster = function(provider, bigIp, masterIid, options) {
+        const TEMP_USER_NAME_LENGHTH = 16;
+        const TEMP_USER_PASSWORD_LENGTH = 30;
+
         var now = new Date();
         var masterInstance;
         var elapsedMsFromLastJoin;
+        var managementIp;
+        var tempPassword;
+        var tempUser;
 
         if (!masterIid) {
             return q.reject(new Error('Must have a master ID to join'));
@@ -708,7 +718,24 @@
                         return bigIp.deviceInfo();
                     })
                     .then(function(response) {
-                        var managementIp = response.managementAddress;
+                        managementIp = response.managementAddress;
+
+                        // Get a random user name to use
+                        return cryptoUtil.generateRandomBytes(TEMP_USER_NAME_LENGHTH, 'hex');
+                    })
+                    .then(function(respomse) {
+                        tempUser = respomse;
+
+                        // Get a random password for the user
+                        return cryptoUtil.generateRandomBytes(TEMP_USER_PASSWORD_LENGTH, 'base64');
+                    })
+                    .then(function(response) {
+                        tempPassword = response;
+
+                        // Create the temp user account
+                        return bigIp.updateUser(tempUser, tempPassword, 'admin');
+                    })
+                    .then(function() {
                         var messageData;
 
                         logger.debug('Sending message to join cluster.');
@@ -716,8 +743,8 @@
                         messageData =  {
                             host: managementIp,
                             port: bigIp.port,
-                            username: bigIp.user,
-                            password: bigIp.password,
+                            username: tempUser,
+                            password: tempPassword,
                             hostname: this.instance.hostname,
                             deviceGroup: options.deviceGroup
                         };
