@@ -567,7 +567,7 @@
                             break;
 
                         // sync is complete
-                        case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
+                        case AutoscaleProvider.SYNC_COMPLETE:
                             logger.silly('message MESSAGE_SYNC_COMPLETE');
                             actionPromises.push(provider.syncComplete(messageData.fromUser, messageData.fromPassword));
 
