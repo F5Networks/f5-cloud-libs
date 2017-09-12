@@ -607,7 +607,7 @@
                 responses = responses || [];
 
                 if (instanceIdsBeingAdded.length > 0) {
-                    logger.silly('responses from sync complete', responses);
+                    logger.silly('responses from join cluster', responses);
                     for (i = 0; i < responses.length; ++i) {
                         // responses[i] === true iff that instance was successfully synced
                         if (responses[i] === true) {
@@ -681,8 +681,8 @@
      * Called with this bound to the caller
      */
     var joinCluster = function(provider, bigIp, masterIid, options) {
-        const TEMP_USER_NAME_LENGHTH = 16;
-        const TEMP_USER_PASSWORD_LENGTH = 30;
+        const TEMP_USER_NAME_LENGHTH = 10;    // these are hex bytes - user name will be 20 chars
+        const TEMP_USER_PASSWORD_LENGTH = 24; // use a multiple of 6 to prevent '=' at the end
 
         var now = new Date();
         var masterInstance;
