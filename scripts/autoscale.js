@@ -481,7 +481,6 @@
         var actions = [];
         var actionPromises = [];
         var messageMetadata = [];
-        var tempUser;
 
         if (this.instance.isMaster && !options.blockSync) {
             actions.push(AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER);
@@ -578,13 +577,11 @@
                                 fromPassword: bigIp.password
                             });
 
-                            tempUser = messageData.username;
-
                             actionPromises.push(
                                 bigIp.cluster.joinCluster(
                                     messageData.deviceGroup,
                                     messageData.host,
-                                    tempUser,
+                                    messageData.username,
                                     messageData.password,
                                     true,
                                     {
@@ -618,7 +615,6 @@
                                     toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
                                     fromInstanceId: this.instanceId,
                                     data: {
-                                        toUser: tempUser,
                                         fromUser: instanceIdsBeingAdded[i].fromUser,
                                         fromPassword: instanceIdsBeingAdded[i].fromPassword
                                     }
