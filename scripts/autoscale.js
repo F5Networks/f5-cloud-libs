@@ -1050,23 +1050,13 @@
         return deferred.promise;
     };
 
-    var encryptMessageData = function(provider, masterIid, messageData) {
-        var keyPromise;
-
+    var encryptMessageData = function(provider, instanceId, messageData) {
         if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
 
-        if (!this.cloudPublicKey) {
-            keyPromise = provider.getPublicKey(masterIid);
-        }
-        else {
-            keyPromise = q(this.cloudPublicKey);
-        }
-
-        return keyPromise
+        return provider.getPublicKey(instanceId)
             .then(function(publicKey) {
-                this.cloudPublicKey = publicKey;
                 return cryptoUtil.encrypt(publicKey, messageData);
             }.bind(this));
     };
