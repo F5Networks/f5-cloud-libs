@@ -367,70 +367,75 @@
      */
     var handleJoin = function(provider, bigIp, masterIid, masterExpired, options) {
         var deferred = q.defer();
-        var promise;
 
         logger.info('Cluster action JOIN');
 
-        // If we are master and are replacing an expired master, other instances
-        // will join to us. Just set our config sync ip.
-        if (this.instance.isMaster) {
+        logger.info('Initializing encryption');
+        initEncryption.call(this, provider, bigIp)
+            .then(function() {
+                var promise;
 
-            if (!provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
-                logger.info('Storing master credentials.');
-                promise = provider.putMasterCredentials();
-            }
-            else {
-                promise = q();
-            }
+                // If we are master and are replacing an expired master, other instances
+                // will join to us. Just set our config sync ip.
+                if (this.instance.isMaster) {
 
-            promise
-                .then(function(response) {
-                    logger.debug(response);
-
-                    // Configure cm configsync-ip on this BIG-IP node
-                    if (!options.blockSync) {
-                        logger.info('Setting config sync IP.');
-                        return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                    if (!provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
+                        logger.info('Storing master credentials.');
+                        promise = provider.putMasterCredentials();
                     }
                     else {
-                        logger.info('Not seting config sync IP because block-sync is specified.');
+                        promise = q();
                     }
-                }.bind(this))
-                .then(function() {
-                    deferred.resolve();
-                })
-                .catch(function(err) {
-                    // rethrow here, otherwise error is hidden
-                    throw(err);
-                });
-        }
 
-        else {
-            // We're not the master
+                    promise
+                        .then(function(response) {
+                            logger.debug(response);
 
-            // Make sure the master file is not on our disk
-            if (fs.existsSync(MASTER_FILE_PATH)) {
-                fs.unlinkSync(MASTER_FILE_PATH);
-            }
+                            // Configure cm configsync-ip on this BIG-IP node
+                            if (!options.blockSync) {
+                                logger.info('Setting config sync IP.');
+                                return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                            }
+                            else {
+                                logger.info('Not seting config sync IP because block-sync is specified.');
+                            }
+                        }.bind(this))
+                        .then(function() {
+                            deferred.resolve();
+                        })
+                        .catch(function(err) {
+                            // rethrow here, otherwise error is hidden
+                            throw(err);
+                        });
+                }
 
-            // Configure cm configsync-ip on this BIG-IP node and join the cluster
-            logger.info("Setting config sync IP.");
-            bigIp.cluster.configSyncIp(this.instance.privateIp)
-                .then(function() {
-                    // If there is a master, joint it. Otherwise wait for an update event
-                    // when we have a master.
-                    if (masterIid) {
-                        return joinCluster.call(this, provider, bigIp, masterIid, options);
+                else {
+                    // We're not the master
+
+                    // Make sure the master file is not on our disk
+                    if (fs.existsSync(MASTER_FILE_PATH)) {
+                        fs.unlinkSync(MASTER_FILE_PATH);
                     }
-                }.bind(this))
-                .then(function() {
-                    deferred.resolve();
-                })
-                .catch(function(err) {
-                    // rethrow here, otherwise error is hidden
-                    throw(err);
-                });
-        }
+
+                    // Configure cm configsync-ip on this BIG-IP node and join the cluster
+                    logger.info("Setting config sync IP.");
+                    bigIp.cluster.configSyncIp(this.instance.privateIp)
+                        .then(function() {
+                            // If there is a master, join it. Otherwise wait for an update event
+                            // when we have a master.
+                            if (masterIid) {
+                                return joinCluster.call(this, provider, bigIp, masterIid, options);
+                            }
+                        }.bind(this))
+                        .then(function() {
+                            deferred.resolve();
+                        })
+                        .catch(function(err) {
+                            // rethrow here, otherwise error is hidden
+                            throw(err);
+                        });
+                }
+            }.bind(this));
 
         return deferred.promise;
     };
@@ -493,49 +498,21 @@
         provider.getMessages(actions, {toInstanceId: this.instanceId})
             .then(function(messages) {
                 var decryptPromises = [];
-                var message;
-                var i;
 
                 messages = messages || [];
 
                 logger.debug('Handling', messages.length, 'message(s)');
 
-                for (i = 0; i < messages.length; ++i) {
-                    message = messages[i];
-
-                    switch (message.action) {
-                        // Add an instance to our cluster
-                        case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
-
-                            logger.silly('message add to cluster', message.data.host);
-
-                            messageMetadata.push(
-                                {
-                                    action: message.action,
-                                    toInstanceId: message.toInstanceId,
-                                    fromInstanceId: message.fromInstanceId
-                                }
-                            );
-                            decryptPromises.push(decryptMessageData.call(this, provider, bigIp, message.data));
-
-                            break;
-
-                        case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
-                            // See if the message is for us
-                            if (message.toInstanceId !== this.instanceId) {
-                                logger.silly('SYNC_COMPLETE is not for us, ignoring');
-                                continue;
-                            }
-
-                            logger.silly('calling sync complete');
-                            actionPromises.push(provider.syncComplete(message.data.fromUser, message.data.fromPassword, message.data.toUser));
-
-                            break;
-
-                        default:
-                            deferred.reject('Unknown message action', message.action);
-                    }
-                }
+                messages.forEach(function(message) {
+                    messageMetadata.push(
+                        {
+                            action: message.action,
+                            toInstanceId: message.toInstanceId,
+                            fromInstanceId: message.fromInstanceId
+                        }
+                    );
+                    decryptPromises.push(decryptMessageData.call(this, provider, bigIp, message.data));
+                });
 
                 return q.all(decryptPromises);
             }.bind(this))
@@ -560,11 +537,7 @@
                         // Add an instance to our cluster
                         case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
 
-                            // Make sure the message is for this instance not an old master
-                            if (metadata.toInstanceId !== this.instanceId) {
-                                logger.debug('Received message for a different master, discarding');
-                                continue;
-                            }
+                            logger.silly('message MESSAGE_ADD_TO_CLUSTER');
 
                             if (alreadyAdding(metadata.fromInstanceId)) {
                                 logger.debug('Already adding', metadata.fromInstanceId, ', discarding');
@@ -592,40 +565,82 @@
                             );
 
                             break;
+
+                        // sync is complete
+                        case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
+                            logger.silly('message MESSAGE_SYNC_COMPLETE');
+                            actionPromises.push(provider.syncComplete(messageData.fromUser, messageData.fromPassword));
+
+                            break;
                     }
                 }
 
                 return q.all(actionPromises);
             }.bind(this))
             .then(function(responses) {
-                var promises = [];
+                var encryptPromises = [];
+                var messageData;
                 var i;
 
                 responses = responses || [];
 
                 if (instanceIdsBeingAdded.length > 0) {
+                    messageMetadata = [];
+
                     logger.silly('responses from join cluster', responses);
                     for (i = 0; i < responses.length; ++i) {
                         // responses[i] === true iff that instance was successfully synced
                         if (responses[i] === true) {
-                            logger.silly('sync complete for instance', instanceIdsBeingAdded[i].toInstanceId);
-                            promises.push(provider.sendMessage(
-                                AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
+                            logger.silly('sync is complete for instance', instanceIdsBeingAdded[i].toInstanceId);
+
+                            messageMetadata.push(
                                 {
+                                    action: AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
                                     toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
-                                    fromInstanceId: this.instanceId,
-                                    data: {
-                                        fromUser: instanceIdsBeingAdded[i].fromUser,
-                                        fromPassword: instanceIdsBeingAdded[i].fromPassword
-                                    }
+                                    fromInstanceId: this.instanceId
                                 }
-                            ));
+                            );
+                            messageData = {
+                                fromUser: instanceIdsBeingAdded[i].fromUser,
+                                fromPassword: instanceIdsBeingAdded[i].fromPassword
+                            };
+                            encryptPromises.push(
+                                encryptMessageData.call(
+                                    this,
+                                    provider,
+                                    instanceIdsBeingAdded[i].toInstanceId,
+                                    JSON.stringify(messageData)
+                                )
+                            );
                         }
                     }
                 }
 
-                return q.all(promises);
+                return q.all(encryptPromises);
             }.bind(this))
+            .then(function(encryptedMessageData) {
+                var syncCompletePromises = [];
+                var metadata;
+                var messageData;
+                var i;
+
+                for (i = 0; i < encryptedMessageData.length; ++i) {
+                    metadata = messageMetadata[i];
+                    messageData = encryptedMessageData[i];
+                    syncCompletePromises.push(
+                        provider.sendMessage(
+                            AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
+                            {
+                                toInstanceId: metadata.toInstanceId,
+                                fromInstanceId: metadata.fromInstanceId,
+                                data: messageData
+                            }
+                        )
+                    );
+                }
+
+                return q.all(syncCompletePromises);
+            })
             .then(function() {
                 deferred.resolve();
             })
@@ -644,11 +659,8 @@
     var becomeMaster = function(provider, bigIp, options) {
         var hasUcs = false;
         logger.info("Becoming master.");
-        return initEncryption.call(this, provider, bigIp)
-            .then(function() {
-                logger.info("Checking for backup UCS.");
-                return provider.getStoredUcs();
-            })
+        logger.info("Checking for backup UCS.");
+        return provider.getStoredUcs()
             .then(function(response) {
                 if (response) {
                     hasUcs = true;
@@ -840,7 +852,7 @@
         const privateKeyOutFile = '/tmp/tempPrivateKey.pem';
 
         if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
-            logger.info("Generating public/private keys.");
+            logger.debug("Generating public/private keys.");
             return cryptoUtil.generateKeyPair(privateKeyOutFile, {keyLength: '4096'})
                 .then(function(publicKey) {
                     return provider.putPublicKey(this.instanceId, publicKey);
