@@ -535,6 +535,10 @@
 
                 for (i = 0; i < decryptedMessageData.length; ++i) {
                     metadata = messageMetadata[i];
+                    logger.silly('metadata:', metadata);
+
+// TODO: remove this
+logger.silly('decrypted data:', decryptedMessageData[i]);
                     messageData = JSON.parse(decryptedMessageData[i]);
 
                     switch (metadata.action) {
