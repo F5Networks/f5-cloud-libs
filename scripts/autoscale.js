@@ -541,6 +541,8 @@
 logger.silly('decrypted data:', decryptedMessageData[i]);
                     try {
                         messageData = JSON.parse(decryptedMessageData[i]);
+// TODO: remove this
+logger.silly('decrypted data:', messageData);
                     }
                     catch (err) {
                         logger.warn('JSON.parse error:', err);
@@ -551,7 +553,6 @@ logger.silly('decrypted data:', decryptedMessageData[i]);
                     switch (metadata.action) {
                         // Add an instance to our cluster
                         case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
-
                             logger.silly('message MESSAGE_ADD_TO_CLUSTER');
 
                             if (alreadyAdding(metadata.fromInstanceId)) {
@@ -582,7 +583,7 @@ logger.silly('decrypted data:', decryptedMessageData[i]);
                             break;
 
                         // sync is complete
-                        case AutoscaleProvider.SYNC_COMPLETE:
+                        case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
                             logger.silly('message MESSAGE_SYNC_COMPLETE');
 // TODO: remove this
 logger.debug("SYNC_COMPLETE DATA:", messageData);
