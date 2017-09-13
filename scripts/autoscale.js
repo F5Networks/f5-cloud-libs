@@ -588,10 +588,6 @@ logger.silly('decrypted data:', messageData);
 // TODO: remove this
 logger.debug("SYNC_COMPLETE DATA:", messageData);
                             actionPromises.push(provider.syncComplete(messageData.fromUser, messageData.fromPassword));
-
-                            // We have to regenerate keys because we just go the masters private key via the sync
-                            actionPromises.push(initEncryption.call(this, provider, bigIp));
-                            break;
                     }
                 }
 
