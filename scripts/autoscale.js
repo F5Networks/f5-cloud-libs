@@ -27,6 +27,7 @@
     var fs = require('fs');
     var q = require('q');
     var AutoscaleProvider = require('../lib/autoscaleProvider');
+    var cloudUtil = require('../lib/cloudUtil');
     var cryptoUtil = require('../lib/cryptoUtil');
     var runner;
     var logger;
@@ -1080,7 +1081,7 @@
             return q(messageData);
         }
 
-        return provider.getPublicKey(instanceId)
+        return cloudUtil.tryUntil(this, cloudUtil.DEFAULT_RETRY, provider.getPublicKey, [instanceId])
             .then(function(publicKey) {
                 return cryptoUtil.encrypt(publicKey, messageData);
             }.bind(this));
