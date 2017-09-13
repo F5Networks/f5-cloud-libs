@@ -156,6 +156,31 @@ Sets up BIG-IPs in a cluster.
 ### autoscale.js
 
 Runs autoscale code to elect master and cluster
+    
+    Usage: autoscale [options]
+    
+    Options:
+    
+      -h, --help                          output usage information
+      -V, --version                       output the version number
+      --host <ip_address>                 BIG-IP management IP to which to send commands.
+      -u, --user <user>                   BIG-IP admin user name.
+      -p, --password <password>           BIG-IP admin user password. Use this or --password-url
+      --password-url <password_url>       URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      --port <port>                       BIG-IP management SSL port to connect to. Default 443.
+      --no-reboot                         Skip reboot even if it is recommended.
+      --background                        Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
+      --signal <signal>                   Signal to send when done. Default ONBOARD_DONE.
+      --wait-for <signal>                 Wait for the named signal before running.
+      --log-level <level>                 Log level (none, error, warn, info, verbose, debug, silly). Default is info.
+      -o, --output <file>                 Log to file as well as console. This is the default if background process is spawned. Default is /tmp/autoscale.log
+      --no-console                        Do not log to console. Default false (log to console).
+      --cloud <provider>                  Cloud provider (aws | azure | etc.)
+      --provider-options <cloud_options>  Any options that are required for the specific cloud provider. Ex: param1:value1,param2:value2
+      -c, --cluster-action <type>         join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)
+      --device-group <device_group>       Device group name.
+      --block-sync                        If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.
+    
 ### network.js
 
 Sets up default gateway, VLANs and self IPs
