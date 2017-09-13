@@ -537,12 +537,8 @@
                     metadata = messageMetadata[i];
                     logger.silly('metadata:', metadata);
 
-// TODO: remove this
-logger.silly('decrypted data:', decryptedMessageData[i]);
                     try {
                         messageData = JSON.parse(decryptedMessageData[i]);
-// TODO: remove this
-logger.silly('decrypted data:', messageData);
                     }
                     catch (err) {
                         logger.warn('JSON.parse error:', err);
@@ -585,9 +581,15 @@ logger.silly('decrypted data:', messageData);
                         // sync is complete
                         case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
                             logger.silly('message MESSAGE_SYNC_COMPLETE');
-// TODO: remove this
-logger.debug("SYNC_COMPLETE DATA:", messageData);
                             actionPromises.push(provider.syncComplete(messageData.fromUser, messageData.fromPassword));
+
+                            // Since the masters private key was just synced to us, we need to
+                            // update our public key to the masters
+                            if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
+                                actionPromises.push(copyPublicKey(provider, metadata.fromInstanceId, metadata.toInstanceId));
+                            }
+
+                            break;
                     }
                 }
 
@@ -620,10 +622,6 @@ logger.debug("SYNC_COMPLETE DATA:", messageData);
                                 fromUser: instanceIdsBeingAdded[i].fromUser,
                                 fromPassword: instanceIdsBeingAdded[i].fromPassword
                             };
-
-// TODO: remove this
-logger.info('SYNC COMPLETE DATA:', messageData);
-logger.info('STRINGIFIED DATA:', JSON.stringify(messageData));
 
                             // We encrypt with our own public key here because after sync, our
                             // private key will be the key on the box we just synced to
@@ -683,8 +681,11 @@ logger.info('STRINGIFIED DATA:', JSON.stringify(messageData));
     var becomeMaster = function(provider, bigIp, options) {
         var hasUcs = false;
         logger.info("Becoming master.");
-        logger.info("Checking for backup UCS.");
-        return provider.getStoredUcs()
+        return initEncryption.call(this, provider, bigIp)
+            .then(function() {
+                logger.info("Checking for backup UCS.");
+                return provider.getStoredUcs();
+            })
             .then(function(response) {
                 if (response) {
                     hasUcs = true;
@@ -1081,9 +1082,6 @@ logger.info('STRINGIFIED DATA:', JSON.stringify(messageData));
 
         return provider.getPublicKey(instanceId)
             .then(function(publicKey) {
-// TODO: remove this
-logger.debug("PUBLIC KEY:", publicKey);
-logger.debug("MESSAGE DATA:", messageData);
                 return cryptoUtil.encrypt(publicKey, messageData);
             }.bind(this));
     };
@@ -1105,11 +1103,15 @@ logger.debug("MESSAGE DATA:", messageData);
         return filePromise
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
-// TODO: remove this
-logger.debug("PRIVATE KEY PATH:", this.cloudPrivateKeyPath);
-logger.debug("MESSAGE DATA:", messageData);
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
+    };
+
+    var copyPublicKey = function(provider, fromInstanceId, toInstanceId) {
+        return provider.getPublicKey(fromInstanceId)
+            .then(function(publicKey) {
+                return provider.putPublicKey(toInstanceId, publicKey);
+            });
     };
 
     // If we're called from the command line, run
