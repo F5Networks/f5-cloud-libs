@@ -539,7 +539,14 @@
 
 // TODO: remove this
 logger.silly('decrypted data:', decryptedMessageData[i]);
-                    messageData = JSON.parse(decryptedMessageData[i]);
+                    try {
+                        messageData = JSON.parse(decryptedMessageData[i]);
+                    }
+                    catch (err) {
+                        logger.warn('JSON.parse error:', err);
+                        deferred.reject(new Error('Unable to JSON parse message'));
+                        continue;
+                    }
 
                     switch (metadata.action) {
                         // Add an instance to our cluster
@@ -616,6 +623,10 @@ logger.debug("SYNC_COMPLETE DATA:", messageData);
                                 fromUser: instanceIdsBeingAdded[i].fromUser,
                                 fromPassword: instanceIdsBeingAdded[i].fromPassword
                             };
+
+// TODO: remove this
+logger.info('SYNC COMPLETE DATA:', messageData);
+logger.info('STRINGIFIED DATA:', JSON.stringify(messageData));
 
                             // We encrypt with our own public key here because after sync, our
                             // private key will be the key on the box we just synced to
