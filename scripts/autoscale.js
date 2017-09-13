@@ -514,6 +514,8 @@
                     decryptPromises.push(decryptMessageData.call(this, provider, bigIp, message.data));
                 }.bind(this));
 
+                logger.silly('number of messages to decrypt:', decryptPromises.length);
+
                 return q.all(decryptPromises);
             }.bind(this))
             .then(function(decryptedMessageData) {
@@ -528,6 +530,8 @@
                 };
 
                 decryptedMessageData = decryptedMessageData || [];
+
+                logger.silly('number of decrypted messages:', decryptedMessageData.length);
 
                 for (i = 0; i < decryptedMessageData.length; ++i) {
                     metadata = messageMetadata[i];
@@ -652,6 +656,7 @@ logger.debug("SYNC_COMPLETE DATA:", messageData);
                 deferred.resolve();
             })
             .catch(function(err) {
+                logger.warn('Error handling messages', err);
                 deferred.reject(err);
             });
 
