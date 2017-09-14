@@ -20,7 +20,6 @@
     const MAX_DISCONNECTED_MS = 3 * 60000; // 3 minutes
     const MIN_MS_BETWEEN_JOIN_REQUESTS = 10 * 60000; // 10 minutes
     const MASTER_FILE_PATH = "/config/cloud/master";
-    const CLOUD_LIBS_PRIVATE_KEY_PREFIX = 'cloudLibsPrivate_';
 
     const INSTANCE_STATUS_BECOMING_MASTER = 'BECOMING_MASTER';
     const INSTANCE_STATUS_OK = 'OK';
@@ -587,6 +586,12 @@
                             logger.silly('message MESSAGE_SYNC_COMPLETE');
                             actionPromises.push(provider.syncComplete(messageData.fromUser, messageData.fromPassword));
 
+                            // Since the masters private key was just synced to us, we need to
+                            // update our public key to the masters
+                            if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
+                                actionPromises.push(copyPublicKey(provider, metadata.fromInstanceId, metadata.toInstanceId));
+                            }
+
                             break;
                     }
                 }
@@ -621,11 +626,13 @@
                                 fromPassword: instanceIdsBeingAdded[i].fromPassword
                             };
 
+                            // We encrypt with our own public key here because after sync, our
+                            // private key will be the key on the box we just synced to
                             encryptPromises.push(
                                 encryptMessageData.call(
                                     this,
                                     provider,
-                                    instanceIdsBeingAdded[i].toInstanceId,
+                                    this.instanceId,
                                     JSON.stringify(messageData)
                                 )
                             );
@@ -689,12 +696,12 @@ logger.silly('ENCRYPTED DATA:', messageData);
                 }
             })
             .then(function() {
-                // If we loaded UCS, re-initialize encryption so we get our
-                // own keys
+                // If we loaded UCS, re-initialize encryption so our keys
+                // match each other
                 if (hasUcs) {
-                    return initEncryption.call(this, provider, bigIp);
+                    return initEncryption();
                 }
-            }.bind(this))
+            })
             .then(function() {
                 // Make sure device group exists
                 logger.info('Creating device group.');
@@ -895,10 +902,10 @@ logger.silly('ENCRYPTED DATA:', encryptedData);
             logger.debug("Generating public/private keys.");
             return cryptoUtil.generateKeyPair(privateKeyOutFile, {keyLength: '4096'})
                 .then(function(publicKey) {
-                    return provider.putPublicKey(publicKey, this.instanceId);
+                    return provider.putPublicKey(this.instanceId, publicKey);
                 }.bind(this))
                 .then(function() {
-                    return bigIp.installCloudPrivateKey(privateKeyOutFile, CLOUD_LIBS_PRIVATE_KEY_PREFIX + this.instanceId);
+                    return bigIp.installCloudPrivateKey(privateKeyOutFile);
                 });
         }
         else {
@@ -1119,7 +1126,7 @@ logger.info('DECRYPTING MESSAGE:', messageData);
 
         if (!this.cloudPrivateKeyPath) {
             logger.silly('getting private key path');
-            filePromise = bigIp.getCloudPrivateKeyFilePath(CLOUD_LIBS_PRIVATE_KEY_PREFIX + this.instanceId);
+            filePromise = bigIp.getCloudPrivateKeyFilePath();
         }
         else {
             logger.silly('using cached key');
@@ -1134,6 +1141,13 @@ logger.silly('PRIVATE KEY:', foo.toString());
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
+    };
+
+    var copyPublicKey = function(provider, fromInstanceId, toInstanceId) {
+        return provider.getPublicKey(fromInstanceId)
+            .then(function(publicKey) {
+                return provider.putPublicKey(toInstanceId, publicKey);
+            });
     };
 
     // If we're called from the command line, run
