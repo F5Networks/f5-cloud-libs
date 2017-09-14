@@ -277,7 +277,7 @@ module.exports = {
 
             bigIp.getCloudPrivateKeyFilePath()
                 .then(function(privateKeyFilePath) {
-                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/Common_d/certificate_key_d/:Common:cloudLibsPrivate.key_1234_1');
+                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:Common:cloudLibsPrivate.key_1234_1');
                 })
                 .catch(function(err) {
                     test.ok(false, err);
@@ -316,6 +316,15 @@ module.exports = {
                 removedFile = path;
                 cb();
             };
+
+            icontrolMock.when('list',
+                '/tm/sys/folder',
+                [
+                    {
+                        fullPath: '/CloudLibs'
+                    }
+                ]
+            );
             callback();
         },
 
@@ -324,12 +333,12 @@ module.exports = {
             var keyFile = '/foo/bar';
             var expectedBody = {
                 command: 'install',
-                name: 'cloudLibsPrivate',
+                name: '/CloudLibs/cloudLibsPrivate',
                 fromLocalFile: keyFile
             };
 
             icontrolMock.when('create', '/tm/sys/crypto/key', {});
-            icontrolMock.when('list', '/tm/sys/crypto/key/~Common~' + keyName + '.key', {});
+            icontrolMock.when('list', '/tm/sys/crypto/key/~CloudLibs~' + keyName + '.key', {});
 
             test.expect(2);
             bigIp.installCloudPrivateKey(keyFile)

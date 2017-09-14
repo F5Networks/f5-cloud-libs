@@ -586,12 +586,6 @@
                             logger.silly('message MESSAGE_SYNC_COMPLETE');
                             actionPromises.push(provider.syncComplete(messageData.fromUser, messageData.fromPassword));
 
-                            // Since the masters private key was just synced to us, we need to
-                            // update our public key to the masters
-                            if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
-                                actionPromises.push(copyPublicKey(provider, metadata.fromInstanceId, metadata.toInstanceId));
-                            }
-
                             break;
                     }
                 }
@@ -626,13 +620,11 @@
                                 fromPassword: instanceIdsBeingAdded[i].fromPassword
                             };
 
-                            // We encrypt with our own public key here because after sync, our
-                            // private key will be the key on the box we just synced to
                             encryptPromises.push(
                                 encryptMessageData.call(
                                     this,
                                     provider,
-                                    this.instanceId,
+                                    instanceIdsBeingAdded[i].toInstanceId,
                                     JSON.stringify(messageData)
                                 )
                             );
@@ -1138,13 +1130,6 @@ else {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
-    };
-
-    var copyPublicKey = function(provider, fromInstanceId, toInstanceId) {
-        return provider.getPublicKey(fromInstanceId)
-            .then(function(publicKey) {
-                return provider.putPublicKey(toInstanceId, publicKey);
-            });
     };
 
     // If we're called from the command line, run
