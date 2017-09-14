@@ -1114,7 +1114,7 @@ logger.info('DECRYPTING MESSAGE:', messageData);
         return filePromise
             .then(function(cloudPrivateKeyPath) {
 // TODO: remove this
-logger.silly('PRIVATE KEY:', this.cloudPrivateKeyPath);
+logger.silly('PRIVATE KEY:', cloudPrivateKeyPath);
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
