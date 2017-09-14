@@ -648,6 +648,8 @@
                 for (i = 0; i < encryptedMessageData.length; ++i) {
                     metadata = messageMetadata[i];
                     messageData = encryptedMessageData[i];
+// TODO: remove this
+logger.silly('ENCRYPTED DATA:', messageData);
                     syncCompletePromises.push(
                         provider.sendMessage(
                             AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
@@ -1106,10 +1108,10 @@ logger.info('DECRYPTING MESSAGE:', messageData);
             logger.silly('using cached key');
             filePromise = q(this.cloudPrivateKeyPath);
         }
-// TODO: remove this
         return filePromise
             .then(function(cloudPrivateKeyPath) {
-                logger.info('PRIVATE KEY:', this.cloudPrivateKeyPath);
+// TODO: remove this
+logger.silly('PRIVATE KEY:', this.cloudPrivateKeyPath);
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
