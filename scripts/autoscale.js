@@ -462,10 +462,10 @@
                 return joinCluster.call(this, provider, bigIp, masterIid, options);
             }
             else if (masterIid) {
-                // Double check that we are in the device group
-                return bigIp.cluster.hasDeviceGroup(options.deviceGroup)
+                // Double check that we are clustered
+                return bigIp.list('/tm/cm/trust-domain/Root')
                     .then(function(response) {
-                        if (response === false) {
+                        if (!response || response.status === 'standalone') {
                             logger.info("This instance is not in cluster. Requesting join.");
                             return joinCluster.call(this, provider, bigIp, masterIid, options);
                         }
@@ -1079,27 +1079,35 @@
         if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
-
-        return util.tryUntil(provider, util.DEFAULT_RETRY, provider.getPublicKey, [instanceId])
+// TODO: remove this
+logger.info('ENCRYPTING MESSAGE:', instanceId, messageData);
+        return util.tryUntil(provider, util.SHORT_RETRY, provider.getPublicKey, [instanceId])
             .then(function(publicKey) {
+// TODO: remove this
+logger.info('PUBLIC KEY:', publicKey);
                 return cryptoUtil.encrypt(publicKey, messageData);
             }.bind(this));
     };
 
     var decryptMessageData = function(provider, bigIp, messageData) {
         var filePromise;
+// TODO: remove this
+logger.info('DECRYPTING MESSAGE:', messageData);
 
         if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
 
         if (!this.cloudPrivateKeyPath) {
+            logger.silly('getting private key path');
             filePromise = bigIp.getCloudPrivateKeyFilePath();
         }
         else {
+            logger.silly('using cached key');
             filePromise = q(this.cloudPrivateKeyPath);
         }
-
+// TODO: remove this
+logger.info('PRIVATE KEY:', this.cloudPrivateKeyPath);
         return filePromise
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
