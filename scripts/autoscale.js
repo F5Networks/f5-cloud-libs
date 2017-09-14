@@ -684,11 +684,8 @@ logger.silly('ENCRYPTED DATA:', messageData);
     var becomeMaster = function(provider, bigIp, options) {
         var hasUcs = false;
         logger.info("Becoming master.");
-        return initEncryption.call(this, provider, bigIp)
-            .then(function() {
-                logger.info("Checking for backup UCS.");
-                return provider.getStoredUcs();
-            })
+        logger.info("Checking for backup UCS.");
+        return provider.getStoredUcs()
             .then(function(response) {
                 if (response) {
                     hasUcs = true;
