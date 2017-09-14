@@ -304,6 +304,9 @@
                         logger.silly('Became master');
                         return provider.putInstance(this.instanceId, this.instance);
                     }
+                    else if (response === false) {
+                        logger.warn('Error writing master file');
+                    }
                 }.bind(this))
                 .then(function() {
                     if (masterIid && this.instance.status === INSTANCE_STATUS_OK) {
@@ -690,6 +693,13 @@ logger.silly('ENCRYPTED DATA:', messageData);
                 if (response) {
                     hasUcs = true;
                     return loadUcs(bigIp, response, options.cloud);
+                }
+            })
+            .then(function() {
+                // If we loaded UCS, re-initialize encryption so our keys
+                // match each other
+                if (hasUcs) {
+                    return initEncryption();
                 }
             })
             .then(function() {
@@ -1113,7 +1123,7 @@ logger.info('DECRYPTING MESSAGE:', messageData);
 // TODO: remove this
 logger.silly('PRIVATE KEY PATH:', cloudPrivateKeyPath);
 var foo = fs.readFileSync(cloudPrivateKeyPath);
-logger.silly('PRIVATE KEY:', foo);
+logger.silly('PRIVATE KEY:', foo.toString());
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
