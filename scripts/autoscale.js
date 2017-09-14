@@ -898,8 +898,8 @@ logger.silly('ENCRYPTED DATA:', encryptedData);
                     return provider.putPublicKey(publicKey, this.instanceId);
                 }.bind(this))
                 .then(function() {
-                    return bigIp.installCloudPrivateKey(privateKeyOutFile, getPrivateKeyName.call(this));
-                }.bind(this));
+                    return bigIp.installCloudPrivateKey(privateKeyOutFile, CLOUD_LIBS_PRIVATE_KEY_PREFIX + this.instanceId);
+                });
         }
         else {
             return q();
@@ -1119,13 +1119,12 @@ logger.info('DECRYPTING MESSAGE:', messageData);
 
         if (!this.cloudPrivateKeyPath) {
             logger.silly('getting private key path');
-            filePromise = bigIp.getCloudPrivateKeyFilePath(getPrivateKeyName.call(this));
+            filePromise = bigIp.getCloudPrivateKeyFilePath(CLOUD_LIBS_PRIVATE_KEY_PREFIX + this.instanceId);
         }
         else {
             logger.silly('using cached key');
             filePromise = q(this.cloudPrivateKeyPath);
         }
-
         return filePromise
             .then(function(cloudPrivateKeyPath) {
 // TODO: remove this
@@ -1135,10 +1134,6 @@ logger.silly('PRIVATE KEY:', foo.toString());
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
-    };
-
-    var getPrivateKeyName = function() {
-        return CLOUD_LIBS_PRIVATE_KEY_PREFIX + this.instanceId;
     };
 
     // If we're called from the command line, run
