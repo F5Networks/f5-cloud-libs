@@ -649,6 +649,7 @@
                     metadata = messageMetadata[i];
                     messageData = encryptedMessageData[i];
 // TODO: remove this
+logger.silly('METADATA:', metadata);
 logger.silly('ENCRYPTED DATA:', messageData);
                     syncCompletePromises.push(
                         provider.sendMessage(
@@ -787,6 +788,8 @@ logger.silly('ENCRYPTED DATA:', messageData);
                         return encryptMessageData.call(this, provider, masterIid, JSON.stringify(messageData));
                     }.bind(this))
                     .then(function(encryptedData) {
+// TODO: remove this
+logger.silly('ENCRYPTED DATA:', encryptedData);
                         return provider.sendMessage(
                             AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
                             {
