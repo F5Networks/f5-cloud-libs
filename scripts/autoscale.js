@@ -729,6 +729,7 @@ logger.silly('ENCRYPTED DATA:', messageData);
 
         var now = new Date();
         var masterInstance;
+        var previousJoinTime;
         var elapsedMsFromLastJoin;
         var managementIp;
         var tempPassword;
@@ -750,6 +751,7 @@ logger.silly('ENCRYPTED DATA:', messageData);
 
         if (provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
                 logger.debug('Resetting current device trust');
+                previousJoinTime = this.instance.lastJoinRequest;
                 this.instance.lastJoinRequest = now;
                 return provider.putInstance(this.instanceId, this.instance)
                     .then(function(response) {
@@ -797,14 +799,22 @@ logger.silly('ENCRYPTED DATA:', messageData);
                     .then(function(encryptedData) {
 // TODO: remove this
 logger.silly('ENCRYPTED DATA:', encryptedData);
-                        return provider.sendMessage(
-                            AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
-                            {
-                                toInstanceId: masterIid,
-                                fromInstanceId: this.instanceId,
-                                data: encryptedData
-                            }
-                        );
+                        if (encryptedData) {
+                            return provider.sendMessage(
+                                AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                                {
+                                    toInstanceId: masterIid,
+                                    fromInstanceId: this.instanceId,
+                                    data: encryptedData
+                                }
+                            );
+                        }
+                        else {
+                            // Something failed. Perhaps the master key was not ready yet
+                            // Lets retry on the next update
+                            this.instance.lastJoinRequest = previousJoinTime;
+                            return provider.putInstance(this.instanceId, this.instance);
+                        }
                     }.bind(this))
                     .catch(function(err) {
                         // need to bubble up nested errors
@@ -1098,6 +1108,10 @@ logger.info('ENCRYPTING MESSAGE:', instanceId, messageData);
 // TODO: remove this
 logger.info('PUBLIC KEY:', publicKey);
                 return cryptoUtil.encrypt(publicKey, messageData);
+            }.bind(this))
+            .catch(function() {
+                logger.debug('Unable to get public key.');
+                return q();
             }.bind(this));
     };
 
