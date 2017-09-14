@@ -1111,7 +1111,9 @@ logger.info('DECRYPTING MESSAGE:', messageData);
         return filePromise
             .then(function(cloudPrivateKeyPath) {
 // TODO: remove this
-logger.silly('PRIVATE KEY:', cloudPrivateKeyPath);
+logger.silly('PRIVATE KEY PATH:', cloudPrivateKeyPath);
+var foo = fs.readFileSync(cloudPrivateKeyPath);
+logger.silly('PRIVATE KEY:', foo);
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
