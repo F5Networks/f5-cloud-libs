@@ -267,17 +267,19 @@ module.exports = {
 
     testGetCloudPrivateKeyFilePath: {
         testBasic: function(test) {
+            var keyName = 'myKeyFoo';
+
             icontrolMock.when(
                 'create',
                 '/tm/util/bash',
                 {
-                    commandResult: ':Common:cloudLibsPrivate.key_1234_1\n:Common:cloudLibsPrivate.key_5678_1\n:Common:default.key_44648_1\n:Common:default.key_20253_1\n'
+                    commandResult: ':Common:' + keyName + '.key_1234_1\n:Common:' + keyName + '.key_5678_1\n:Common:default.key_44648_1\n:Common:default.key_20253_1\n'
                 }
             );
 
-            bigIp.getCloudPrivateKeyFilePath()
+            bigIp.getCloudPrivateKeyFilePath(keyName)
                 .then(function(privateKeyFilePath) {
-                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/Common_d/certificate_key_d/:Common:cloudLibsPrivate.key_1234_1');
+                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/Common_d/certificate_key_d/:Common:' + keyName + '.key_1234_1');
                 })
                 .catch(function(err) {
                     test.ok(false, err);
@@ -324,7 +326,7 @@ module.exports = {
             var keyFile = '/foo/bar';
             var expectedBody = {
                 command: 'install',
-                name: 'cloudLibsPrivate',
+                name: keyName,
                 fromLocalFile: keyFile
             };
 
@@ -332,7 +334,7 @@ module.exports = {
             icontrolMock.when('list', '/tm/sys/crypto/key/~Common~' + keyName + '.key', {});
 
             test.expect(2);
-            bigIp.installCloudPrivateKey(keyFile)
+            bigIp.installCloudPrivateKey(keyFile, keyName)
                 .then(function() {
                     test.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
                     test.strictEqual(removedFile, keyFile);
