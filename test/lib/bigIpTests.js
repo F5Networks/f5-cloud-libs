@@ -265,19 +265,114 @@ module.exports = {
             });
     },
 
+    testCreateFolder: {
+        testBasic: function(test) {
+            var folderName = 'foo';
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/folder',
+                []
+            );
+
+            test.expect(2);
+            bigIp.createFolder(folderName)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.deepEqual(
+                        icontrolMock.lastCall.body,
+                        {
+                            name: folderName,
+                            subPath: '/Common',
+                            deviceGroup: 'none',
+                            trafficGroup: 'none'
+                        }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testAlreadyExists: function(test) {
+            var folderName = 'foo';
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/folder',
+                [
+                    {
+                        fullPath: '/Common/' + folderName
+                    }
+                ]
+            );
+
+            test.expect(1);
+            bigIp.createFolder(folderName)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testOptions: function(test) {
+            var folderName = 'foo';
+            var options = {
+                subPath: '/',
+                deviceGroup: 'myDevGroup',
+                trafficGroup: 'myTrafficGroup'
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/folder',
+                []
+            );
+
+            test.expect(2);
+            bigIp.createFolder(folderName, options)
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'create');
+                    test.deepEqual(
+                        icontrolMock.lastCall.body,
+                        {
+                            name: folderName,
+                            subPath: '/',
+                            deviceGroup: options.deviceGroup,
+                            trafficGroup: options.trafficGroup
+                        }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
     testGetCloudPrivateKeyFilePath: {
         testBasic: function(test) {
             icontrolMock.when(
                 'create',
                 '/tm/util/bash',
                 {
-                    commandResult: ':Common:cloudLibsPrivate.key_1234_1\n:Common:cloudLibsPrivate.key_5678_1\n:Common:default.key_44648_1\n:Common:default.key_20253_1\n'
+                    commandResult: ':CloudLibs:cloudLibsPrivate.key_1234_1\n:CloudLibs:cloudLibsPrivate.key_5678_1\n:Common:default.key_44648_1\n:Common:default.key_20253_1\n'
                 }
             );
 
             bigIp.getCloudPrivateKeyFilePath()
                 .then(function(privateKeyFilePath) {
-                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:Common:cloudLibsPrivate.key_1234_1');
+                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:CloudLibs:cloudLibsPrivate.key_1234_1');
                 })
                 .catch(function(err) {
                     test.ok(false, err);
