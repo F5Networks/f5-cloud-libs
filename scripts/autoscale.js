@@ -691,9 +691,9 @@ logger.silly('ENCRYPTED DATA:', messageData);
                 // If we loaded UCS, re-initialize encryption so our keys
                 // match each other
                 if (hasUcs) {
-                    return initEncryption();
+                    return initEncryption.call(this, provider, bigIp);
                 }
-            })
+            }.bind(this))
             .then(function() {
                 // Make sure device group exists
                 logger.info('Creating device group.');
