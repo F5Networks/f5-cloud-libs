@@ -500,7 +500,7 @@
 
         provider.getMessages(actions, {toInstanceId: this.instanceId})
             .then(function(messages) {
-                var decryptPromises = [];
+                var readPromises = [];
 
                 messages = messages || [];
 
@@ -514,12 +514,12 @@
                             fromInstanceId: message.fromInstanceId
                         }
                     );
-                    decryptPromises.push(decryptMessageData.call(this, provider, bigIp, message.data));
+                    readPromises.push(readMessageData.call(this, provider, bigIp, message.data));
                 }.bind(this));
 
-                logger.silly('number of messages to decrypt:', decryptPromises.length);
+                logger.silly('number of messages to decrypt:', readPromises.length);
 
-                return q.all(decryptPromises);
+                return q.all(readPromises);
             }.bind(this))
             .then(function(decryptedMessageData) {
                 var metadata;
@@ -593,7 +593,7 @@
                 return q.all(actionPromises);
             }.bind(this))
             .then(function(responses) {
-                var encryptPromises = [];
+                var messagePromises = [];
                 var messageData;
                 var i;
 
@@ -620,8 +620,8 @@
                                 fromPassword: instanceIdsBeingAdded[i].fromPassword
                             };
 
-                            encryptPromises.push(
-                                encryptMessageData.call(
+                            messagePromises.push(
+                                prepareMessageData.call(
                                     this,
                                     provider,
                                     instanceIdsBeingAdded[i].toInstanceId,
@@ -632,17 +632,17 @@
                     }
                 }
 
-                return q.all(encryptPromises);
+                return q.all(messagePromises);
             }.bind(this))
-            .then(function(encryptedMessageData) {
+            .then(function(preppedMessageData) {
                 var syncCompletePromises = [];
                 var metadata;
                 var messageData;
                 var i;
 
-                for (i = 0; i < encryptedMessageData.length; ++i) {
+                for (i = 0; i < preppedMessageData.length; ++i) {
                     metadata = messageMetadata[i];
-                    messageData = encryptedMessageData[i];
+                    messageData = preppedMessageData[i];
 // TODO: remove this
 logger.silly('METADATA:', metadata);
 logger.silly('ENCRYPTED DATA:', messageData);
@@ -784,18 +784,18 @@ logger.silly('ENCRYPTED DATA:', messageData);
                             deviceGroup: options.deviceGroup
                         };
 
-                        return encryptMessageData.call(this, provider, masterIid, JSON.stringify(messageData));
+                        return prepareMessageData.call(this, provider, masterIid, JSON.stringify(messageData));
                     }.bind(this))
-                    .then(function(encryptedData) {
-                        if (encryptedData) {
+                    .then(function(preppedData) {
+                        if (preppedData) {
                             // TODO: remove this
-                            logger.silly('ENCRYPTED DATA:', encryptedData);
+                            logger.silly('ENCRYPTED DATA:', preppedData);
                             return provider.sendMessage(
                                 AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
                                 {
                                     toInstanceId: masterIid,
                                     fromInstanceId: this.instanceId,
-                                    data: encryptedData
+                                    data: preppedData
                                 }
                             );
                         }
@@ -1084,7 +1084,7 @@ logger.silly('ENCRYPTED DATA:', messageData);
         return deferred.promise;
     };
 
-    var encryptMessageData = function(provider, instanceId, messageData) {
+    var prepareMessageData = function(provider, instanceId, messageData) {
         if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
@@ -1098,7 +1098,7 @@ logger.info('PUBLIC KEY:', publicKey);
             }.bind(this));
     };
 
-    var decryptMessageData = function(provider, bigIp, messageData) {
+    var readMessageData = function(provider, bigIp, messageData) {
         var filePromise;
 // TODO: remove this
 logger.info('DECRYPTING MESSAGE:', messageData);
