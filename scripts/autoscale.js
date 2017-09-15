@@ -517,7 +517,7 @@
                     readPromises.push(readMessageData.call(this, provider, bigIp, message.data));
                 }.bind(this));
 
-                logger.silly('number of messages to decrypt:', readPromises.length);
+                logger.silly('number of messages to read:', readPromises.length);
 
                 return q.all(readPromises);
             }.bind(this))
@@ -534,7 +534,7 @@
 
                 readMessages = readMessages || [];
 
-                logger.silly('number of decrypted messages:', readMessages.length);
+                logger.silly('number of read messages:', readMessages.length);
 
                 for (i = 0; i < readMessages.length; ++i) {
                     metadata = messageMetadata[i];
