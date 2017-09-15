@@ -113,6 +113,28 @@ module.exports = {
         test.done();
     },
 
+    testUnimplementedGetPublicKey: {
+        tearDown: function(callback) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_ENCRYPTION] = false;
+            callback();
+        },
+
+        testEncryptionSupported: function(test) {
+            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_ENCRYPTION] = true;
+            test.throws(function() {
+                testAutoscaleProvider.getPublicKey();
+            });
+            test.done();
+        },
+
+        testEncryptionNotSupported: function(test) {
+            test.doesNotThrow(function() {
+                testAutoscaleProvider.getPublicKey();
+            });
+            test.done();
+        }
+    },
+
     testUnimplementedPutMasterCredentials: function(test) {
         test.doesNotThrow(function() {
             testAutoscaleProvider.putMasterCredentials();
