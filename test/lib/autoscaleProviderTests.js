@@ -135,6 +135,26 @@ module.exports = {
         }
     },
 
+    testHasFeature: {
+        setUp: function(callback) {
+            testAutoscaleProvider.features = {};
+            callback();
+        },
+
+        testHasFeature: function(test) {
+            testAutoscaleProvider.features.FOO = true;
+            test.expect(1);
+            test.strictEqual(testAutoscaleProvider.hasFeature('FOO'), true);
+            test.done();
+        },
+
+        testDoesNotHaveFeature: function(test) {
+            test.expect(1);
+            test.strictEqual(testAutoscaleProvider.hasFeature('FOO'), false);
+            test.done();
+        }
+    },
+
     testUnimplementedPutMasterCredentials: function(test) {
         test.doesNotThrow(function() {
             testAutoscaleProvider.putMasterCredentials();

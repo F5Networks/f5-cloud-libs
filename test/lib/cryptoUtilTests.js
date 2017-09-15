@@ -34,7 +34,7 @@ module.exports = {
         callback();
     },
 
-    testRoundTripPublicKeyFile: function(test) {
+    testRoundTripPublicKeyInFile: function(test) {
         var testData = {
             foo: 'bar',
             hello: 'world',
@@ -66,7 +66,7 @@ module.exports = {
             });
     },
 
-    testRoundTripPublicKeyData: function(test) {
+    testRoundTripPublicKeyInData: function(test) {
         var testData = {
             foo: 'bar',
             hello: 'world',
@@ -90,6 +90,20 @@ module.exports = {
             })
             .catch(function(error) {
                 test.ok(false, error);
+                test.done();
+            });
+    },
+
+    testGenerateRandomBytes: function(test) {
+        test.expect(1);
+        cryptoUtil.generateRandomBytes(4, 'hex')
+            .then(function(bytes) {
+                test.strictEqual(bytes.length, 8);
+            })
+            .catch(function(err) {
+                test.ok(false, err);
+            })
+            .finally(function() {
                 test.done();
             });
     }
