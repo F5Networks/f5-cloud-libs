@@ -92,11 +92,25 @@ module.exports = {
         },
 
         testMap: function(test) {
-            var container = [];
+            var container = {};
             var input = 'foo:bar, hello:world';
             util.map(input, container);
+            test.deepEqual(container, {foo: 'bar', hello: 'world'});
             input = 'fooz:bazz';
             util.map(input, container);
+            test.deepEqual(container, {foo: 'bar', hello: 'world', fooz: 'bazz'});
+            input = 'hello:goodbye';
+            util.map(input, container);
+            test.deepEqual(container, {foo: 'bar', hello: 'goodbye', fooz: 'bazz'});
+            test.done();
+        },
+
+        testMapArray: function(test) {
+            var container = [];
+            var input = 'foo:bar, hello:world';
+            util.mapArray(input, container);
+            input = 'fooz:bazz';
+            util.mapArray(input, container);
             test.strictEqual(container[0].foo, 'bar');
             test.strictEqual(container[0].hello, 'world');
             test.strictEqual(container[1].fooz, 'bazz');

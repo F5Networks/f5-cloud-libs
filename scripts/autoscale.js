@@ -67,7 +67,7 @@
 
             options = options.getCommonOptions(DEFAULT_LOG_FILE)
                 .option('--cloud <provider>', 'Cloud provider (aws | azure | etc.)')
-                .option('--provider-options <cloud_options>', 'Any options that are required for the specific cloud provider. Ex: param1:value1,param2:value2', util.map, providerOptions)
+                .option('--provider-options <cloud_options>', 'Any options that are required for the specific cloud provider. Ex: param1:value1,param2:value2', util.mapArray, providerOptions)
                 .option('-c, --cluster-action <type>', 'join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)')
                 .option('--device-group <device_group>', 'Device group name.')
                 .option('--block-sync', 'If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.')
