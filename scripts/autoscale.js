@@ -521,7 +521,7 @@
 
                 return q.all(readPromises);
             }.bind(this))
-            .then(function(decryptedMessageData) {
+            .then(function(readMessages) {
                 var metadata;
                 var messageData;
                 var i;
@@ -532,16 +532,16 @@
                     });
                 };
 
-                decryptedMessageData = decryptedMessageData || [];
+                readMessages = readMessages || [];
 
-                logger.silly('number of decrypted messages:', decryptedMessageData.length);
+                logger.silly('number of decrypted messages:', readMessages.length);
 
-                for (i = 0; i < decryptedMessageData.length; ++i) {
+                for (i = 0; i < readMessages.length; ++i) {
                     metadata = messageMetadata[i];
                     logger.silly('metadata:', metadata);
 
                     try {
-                        messageData = JSON.parse(decryptedMessageData[i]);
+                        messageData = JSON.parse(readMessages[i]);
                     }
                     catch (err) {
                         logger.warn('JSON.parse error:', err);
