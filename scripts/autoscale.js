@@ -643,9 +643,7 @@
                 for (i = 0; i < preppedMessageData.length; ++i) {
                     metadata = messageMetadata[i];
                     messageData = preppedMessageData[i];
-// TODO: remove this
-logger.silly('METADATA:', metadata);
-logger.silly('ENCRYPTED DATA:', messageData);
+
                     syncCompletePromises.push(
                         provider.sendMessage(
                             AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
@@ -788,8 +786,6 @@ logger.silly('ENCRYPTED DATA:', messageData);
                     }.bind(this))
                     .then(function(preppedData) {
                         if (preppedData) {
-                            // TODO: remove this
-                            logger.silly('ENCRYPTED DATA:', preppedData);
                             return provider.sendMessage(
                                 AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
                                 {
@@ -1088,20 +1084,14 @@ logger.silly('ENCRYPTED DATA:', messageData);
         if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
-// TODO: remove this
-logger.info('ENCRYPTING MESSAGE:', instanceId, messageData);
         return util.tryUntil(provider, util.SHORT_RETRY, provider.getPublicKey, [instanceId])
             .then(function(publicKey) {
-// TODO: remove this
-logger.info('PUBLIC KEY:', publicKey);
                 return cryptoUtil.encrypt(publicKey, messageData);
             }.bind(this));
     };
 
     var readMessageData = function(provider, bigIp, messageData) {
         var filePromise;
-// TODO: remove this
-logger.info('DECRYPTING MESSAGE:', messageData);
 
         if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
@@ -1118,15 +1108,6 @@ logger.info('DECRYPTING MESSAGE:', messageData);
 
         return filePromise
             .then(function(cloudPrivateKeyPath) {
-// TODO: remove this
-logger.silly('PRIVATE KEY PATH:', cloudPrivateKeyPath);
-var foo = fs.readFileSync(cloudPrivateKeyPath);
-if (foo) {
-    logger.silly('PRIVATE KEY:', foo.toString());
-}
-else {
-    logger.silly("NO PRIVATE KEY");
-}
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
                 return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
             }.bind(this));
