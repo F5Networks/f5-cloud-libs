@@ -162,25 +162,33 @@ Runs autoscale code to elect master and cluster
     
     Options:
     
-      -h, --help                          output usage information
-      -V, --version                       output the version number
-      --host <ip_address>                 BIG-IP management IP to which to send commands.
-      -u, --user <user>                   BIG-IP admin user name.
-      -p, --password <password>           BIG-IP admin user password. Use this or --password-url
-      --password-url <password_url>       URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
-      --port <port>                       BIG-IP management SSL port to connect to. Default 443.
-      --no-reboot                         Skip reboot even if it is recommended.
-      --background                        Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
-      --signal <signal>                   Signal to send when done. Default ONBOARD_DONE.
-      --wait-for <signal>                 Wait for the named signal before running.
-      --log-level <level>                 Log level (none, error, warn, info, verbose, debug, silly). Default is info.
-      -o, --output <file>                 Log to file as well as console. This is the default if background process is spawned. Default is /tmp/autoscale.log
-      --no-console                        Do not log to console. Default false (log to console).
-      --cloud <provider>                  Cloud provider (aws | azure | etc.)
-      --provider-options <cloud_options>  Any options that are required for the specific cloud provider. Ex: param1:value1,param2:value2
-      -c, --cluster-action <type>         join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)
-      --device-group <device_group>       Device group name.
-      --block-sync                        If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.
+      -h, --help                                  output usage information
+      -V, --version                               output the version number
+      --host <ip_address>                         BIG-IP management IP to which to send commands.
+      -u, --user <user>                           BIG-IP admin user name.
+      -p, --password <password>                   BIG-IP admin user password. Use this or --password-url
+      --password-url <password_url>               URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      --port <port>                               BIG-IP management SSL port to connect to. Default 443.
+      --no-reboot                                 Skip reboot even if it is recommended.
+      --background                                Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
+      --signal <signal>                           Signal to send when done. Default ONBOARD_DONE.
+      --wait-for <signal>                         Wait for the named signal before running.
+      --log-level <level>                         Log level (none, error, warn, info, verbose, debug, silly). Default is info.
+      -o, --output <file>                         Log to file as well as console. This is the default if background process is spawned. Default is /tmp/autoscale.log
+      --no-console                                Do not log to console. Default false (log to console).
+      --cloud <provider>                          Cloud provider (aws | azure | etc.)
+      --provider-options <cloud_options>          Any options that are required for the specific cloud provider. Ex: param1:value1,param2:value2
+      -c, --cluster-action <type>                 join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)
+      --device-group <device_group>               Device group name.
+      --block-sync                                If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.
+      --license-pool                              BIG-IP was licensed from a BIG-IQ license pool. This is so licenses can be revoked when BIG-IPs are scaled in. Supply the following:
+          --big-iq-host <ip_address or FQDN>          IP address or FQDN of BIG-IQ
+          --big-iq-user <user>                        BIG-IQ admin user name
+          --big-iq-password <password>                BIG-IQ admin user password.
+          --big-iq-password-uri <password_uri>        URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
+          --license-pool-name <pool_name>             Name of BIG-IQ license pool.
+          --big-ip-mgmt-address <big_ip_address>      IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.
+          --big-ip-mgmt-port <big_ip_port>            Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port
     
 ### network.js
 
