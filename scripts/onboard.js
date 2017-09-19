@@ -46,6 +46,7 @@
             var rootPasswords = {};
             var updateUsers = [];
             var loggerOptions = {};
+            var metrics = {};
             var loggableArgs;
             var logger;
             var logFileName;
@@ -98,10 +99,11 @@
                     .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.pair, globalSettings)
                     .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.pair, dbVars)
                     .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords)
-                    .option('--update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>', 'Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create.', util.map, updateUsers)
+                    .option('--update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>', 'Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create.', util.mapArray, updateUsers)
                     .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.pair, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                     .option('--update-sigs', 'Update ASM signatures')
+                    .option('--metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]', 'Optional usage metrics to collect. Customer ID should not identify a specific customer.', util.map, metrics)
                     .parse(argv);
 
                 loggerOptions.console = options.console;

@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+BRANCH=`git rev-parse --abbrev-ref HEAD`
+
+if ! npm test; then
+    echo
+    echo "Rejecting commit: Unit tests failed."
+    echo
+    exit 1
+fi
+
+npm run doc
+git add README.md
+
+if [[ "$BRANCH" != master && "$BRANCH" != release-* && "$BRANCH" != hf-* ]]; then
+    npm run package
+    git add dist
+fi
