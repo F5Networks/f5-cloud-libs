@@ -66,6 +66,39 @@ module.exports = {
             });
     },
 
+    testRoundTripPublicKeyInFilePassphrase: function(test) {
+        var testData = {
+            foo: 'bar',
+            hello: 'world',
+            a: {
+                x: 1,
+                y: 2
+            }
+        };
+
+        var options = {
+            publicKeyOutFile: publicKeyFile,
+            passphrase: 'foobar'
+        };
+
+        test.expect(1);
+        cryptoUtil.generateKeyPair(privateKeyFile, options)
+            .then(function() {
+                return cryptoUtil.encrypt(publicKeyFile, JSON.stringify(testData));
+            })
+            .then(function(encryptedData) {
+                return cryptoUtil.decrypt(privateKeyFile, encryptedData, {passphrase: 'foobar'});
+            })
+            .then(function(decryptedData) {
+                test.deepEqual(JSON.parse(decryptedData), testData);
+                test.done();
+            })
+            .catch(function(error) {
+                test.ok(false, error);
+                test.done();
+            });
+    },
+
     testRoundTripPublicKeyInData: function(test) {
         var testData = {
             foo: 'bar',

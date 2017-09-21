@@ -24,6 +24,8 @@
     const INSTANCE_STATUS_BECOMING_MASTER = 'BECOMING_MASTER';
     const INSTANCE_STATUS_OK = 'OK';
 
+    const PASSPHRASE_LENGTH = 18;
+
     var fs = require('fs');
     var q = require('q');
     var AutoscaleProvider = require('../lib/autoscaleProvider');
@@ -887,16 +889,33 @@
      * Called with this bound to the caller.
      */
     var initEncryption = function(provider, bigIp) {
-        const privateKeyOutFile = '/tmp/tempPrivateKey.pem';
+        const PRIVATE_KEY_OUT_FILE = '/tmp/tempPrivateKey.pem';
+
+        var passphrase;
 
         if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
             logger.debug("Generating public/private keys.");
-            return cryptoUtil.generateKeyPair(privateKeyOutFile, {keyLength: '4096'})
+            return cryptoUtil.generateRandomBytes(PASSPHRASE_LENGTH, 'base64')
+                .then(function(response) {
+                    passphrase = response;
+                    return cryptoUtil.generateKeyPair(PRIVATE_KEY_OUT_FILE, {passphrase: passphrase, keyLength: '3072'});
+                })
                 .then(function(publicKey) {
                     return provider.putPublicKey(this.instanceId, publicKey);
                 }.bind(this))
                 .then(function() {
-                    return bigIp.installCloudPrivateKey(privateKeyOutFile);
+                    return bigIp.installCloudPrivateKey(PRIVATE_KEY_OUT_FILE, {passphrase: passphrase});
+                })
+                .then(function() {
+                    return bigIp.save();
+                })
+                .then(function() {
+                    // no need to wait for this to return - if it fails, no big deal
+                    fs.unlink(PRIVATE_KEY_OUT_FILE, function(err) {
+                        if (err) {
+                            logger.debug('failed to remove temp private file');
+                        }
+                    });
                 });
         }
         else {
@@ -1117,7 +1136,17 @@
         return filePromise
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
-                return cryptoUtil.decrypt(this.cloudPrivateKeyPath, messageData);
+                return bigIp.getCloudPrivateKey();
+            })
+            .then(function(privateKeyData) {
+                return cryptoUtil.decrypt(
+                    this.cloudPrivateKeyPath,
+                    messageData,
+                    {
+                        passphrase: privateKeyData.passphrase,
+                        passphraseEncrypted: true
+                    }
+                );
             }.bind(this));
     };
 
