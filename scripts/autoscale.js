@@ -1136,8 +1136,8 @@
         return filePromise
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
-                return bigIp.getCloudPrivateKey();
-            })
+                return bigIp.getCloudPrivateKeyMetadata();
+            }.bind(this))
             .then(function(privateKeyData) {
                 return cryptoUtil.decrypt(
                     this.cloudPrivateKeyPath,
