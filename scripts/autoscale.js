@@ -18,7 +18,7 @@
 (function() {
 
     const MAX_DISCONNECTED_MS = 3 * 60000; // 3 minutes
-    const MIN_MS_BETWEEN_JOIN_REQUESTS = 10 * 60000; // 10 minutes
+    const MIN_MS_BETWEEN_JOIN_REQUESTS = 5 * 60000; // 5 minutes
     const MASTER_FILE_PATH = "/config/cloud/master";
 
     const INSTANCE_STATUS_BECOMING_MASTER = 'BECOMING_MASTER';
@@ -916,7 +916,7 @@
                     // no need to wait for this to return - if it fails, no big deal
                     fs.unlink(PRIVATE_KEY_OUT_FILE, function(err) {
                         if (err) {
-                            logger.debug('failed to remove temp private file');
+                            logger.debug('failed to remove temp private file', err);
                         }
                     });
                 });
