@@ -911,14 +911,6 @@
                 })
                 .then(function() {
                     return bigIp.save();
-                })
-                .then(function() {
-                    // no need to wait for this to return - if it fails, no big deal
-                    fs.unlink(PRIVATE_KEY_OUT_FILE, function(err) {
-                        if (err) {
-                            logger.debug('failed to remove temp private file', err);
-                        }
-                    });
                 });
         }
         else {
