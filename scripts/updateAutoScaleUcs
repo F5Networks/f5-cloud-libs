@@ -236,7 +236,7 @@ def main():
     shutil.rmtree(extract_ucs_dir + path_to_exclude, ignore_errors=True)
 
     # Remove the cloud-libs private key info as you can't load a ucs w/ a passphrase
-    shutil.rmtre(extract_ucs_dir + '/config/partitions/CloudLibs', ignore_errors=True)
+    shutil.rmtree(extract_ucs_dir + '/config/partitions/CloudLibs', ignore_errors=True)
     shutil.rmtree(extract_ucs_dir + '/var/tmp/filestore_temp/files_d/CloudLibs_d', ignore_errors=True)
 
     tar_updated.add(extract_ucs_dir, arcname='.')
