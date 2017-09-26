@@ -867,7 +867,7 @@ module.exports = {
             testNoActiveRegKeys: function(test) {
                 icontrolMock.when(
                     'list',
-                    LICENSE_PATH_5_2 + poolUuid + '/offerings',
+                    LICENSE_PATH_5_2 + poolUuid + '/offerings?$select=licenseState',
                     [
                         {
                             licenseState: {
@@ -895,7 +895,7 @@ module.exports = {
                 var regKey = '1234';
                 icontrolMock.when(
                     'list',
-                    LICENSE_PATH_5_2 + poolUuid + '/offerings',
+                    LICENSE_PATH_5_2 + poolUuid + '/offerings?$select=licenseState',
                     [
                         {
                             licenseState: {
@@ -935,7 +935,7 @@ module.exports = {
                     var regKey = '1234';
                     icontrolMock.when(
                         'list',
-                        LICENSE_PATH_5_2 + poolUuid + '/offerings',
+                        LICENSE_PATH_5_2 + poolUuid + '/offerings?$select=licenseState',
                         [
                             {
                                 licenseState: {
