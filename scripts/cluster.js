@@ -236,6 +236,7 @@
                                                              options.remoteHost,
                                                              options.remoteUser,
                                                              options.remotePassword || options.remotePasswordUrl,
+                                                             false,
                                                              {
                                                                 remotePort: options.remotePort,
                                                                 sync: options.sync,
