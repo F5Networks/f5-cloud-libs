@@ -1,7 +1,7 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) 2953afbdb8ef4dcc96d6cc66e246d531ee4718e472a3178828d29be4e16769da13e2f62ea6cc5f552561797d0c68a67fdd1045af014edb8ce23d3cc10f550cd2
+            set hashes(f5-cloud-libs.tar.gz) c408b11ef24c08e96737007071941870648c21991200326511f1cd4ab73881adc08b1cccefa7a4e17c48576a5713c67a9fa15b115a7bf7488061d8d57d5c063b
             set hashes(f5-cloud-libs-aws.tar.gz) 76154c9b65b7c79d7f1ce9a7c5cfb0b41704beaf25e1cba74efc3bae83e7d28ce6586d842d084c50cfaeb31ea4599eb74ba60cc5968d56888485a9a6a64a6a48
             set hashes(f5-cloud-libs-azure.tar.gz) 6414f46344153eb2017b17bbbf09309c50c049dc2f008f06213df5a29b0dcd390667dc4dd45d4893a14ca25f6a70c3a57384ec88345e90949e8650f6250fe624
             set hashes(f5-cloud-libs-gce.tar.gz) 6ef33cc94c806b1e4e9e25ebb96a20eb1fe5975a83b2cd82b0d6ccbc8374be113ac74121d697f3bfc26bf49a55e948200f731607ce9aa9d23cd2e81299a653c1
@@ -12,9 +12,9 @@ proc script::run {} {
             set hashes(f5.aws_advanced_ha.v1.3.0rc1.tmpl) 9e55149c010c1d395abdae3c3d2cb83ec13d31ed39424695e88680cf3ed5a013d626b326711d3d40ef2df46b72d414b4cb8e4f445ea0738dcbd25c4c843ac39d
             set hashes(f5.aws_advanced_ha.v1.4.0rc1.tmpl) de068455257412a949f1eadccaee8506347e04fd69bfb645001b76f200127668e4a06be2bbb94e10fefc215cfc3665b07945e6d733cbe1a4fa1b88e881590396
             set hashes(asm-policy.tar.gz) 2d39ec60d006d05d8a1567a1d8aae722419e8b062ad77d6d9a31652971e5e67bc4043d81671ba2a8b12dd229ea46d205144f75374ed4cae58cefa8f9ab6533e6
-            set hashes(deploy_waf.sh) e242eb222ac3d1860df3305f6abec674c1e4f823318bb9d08d30a57dba3acd69e2a45eb52d141effd056a75b12ad4055a2d69b3d1d9a029a369de872dbef5a8a
-            set hashes(f5.policy_creator.tmpl) 06539e08d115efafe55aa507ecb4e443e83bdb1f5825a9514954ef6ca56d240ed00c7b5d67bd8f67b815ee9dd46451984701d058c89dae2434c89715d375a620
-            set hashes(f5.service_discovery.tmpl) 8d7491accdb1818f09353cd5b03d317ccd87e6801ac25b47aa49984a0f4ca313e8f3ecc1c9c904ce01c89dfeeacd3487655c8d45cc43f83c2ccd54d71f4f7d5f
+            set hashes(deploy_waf.sh) 4c125f7cbc4d701cf50f03de479ebe99a08c2b2c3fa6aae3e229eb3f0bba98bb513d630368229c98e7c5c907e6a3168ece2f8f576267514bad4f6730ea14d454
+            set hashes(f5.policy_creator.tmpl) 54d265e0a573d3ae99864adf4e054b293644e48a54de1e19e8a6826aa32ab03bd04c7255fd9c980c3673e9cd326b0ced513665a91367add1866875e5ef3c4e3a
+            set hashes(f5.service_discovery.tmpl) 74ffeeadd1f0b5653584ab9c380bd4a2850133066600aa3d2fdd617cd63ffc8483dee33c4b1a17c3c8128283a7b82e43662de5cfea07f887d28ec1c515ca2154
 
             set file_path [lindex $tmsh::argv 1]
             set file_name [file tail $file_path]
@@ -36,5 +36,6 @@ proc script::run {} {
             exit 1
         }
     }
+    script-signature qOBQSd2Tqsc8ZttP1XotovSPAXAuBWl2/qu9mMyzZekwkqZn7wNd5Hsl3EotFNZxyl35fMgP9nwz5bV7exWB/JtWof8IZE16LefHNODbZE5PYeWFcaBL/b4iYvUy6H042lWe3N06XuZIcOUH2Oc4HCQ2l3uW4hKtCdrdtqVkxf71ynlP/xVCnKe50as8RaeEY0zDKz/C/GHYo0rScXu3ZclzZOMISZso/QEHCHNGVfet159iyJtkCWAUNSfcVds0wgPKXMGwZMa1YehD0EWlAlaqzzbw55z4HLd+iZepdIg8nP60KLZmzEIq0l/slZE4cJNKBp06zDm78pwE5uBl/A==
     signing-key /Common/f5-irule
 }
