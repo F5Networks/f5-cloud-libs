@@ -31,6 +31,11 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 3.4.0
+* Autoscale improvements
+    * Handle replacing master
+    * Revoke license if licensed from BIG-IQ
+
 ### Version 3.3.0
 * License BIG-IP from BIG-IQ 5.2 and 5.3
 
