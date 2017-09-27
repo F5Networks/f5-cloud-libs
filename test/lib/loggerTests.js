@@ -18,7 +18,7 @@
 var Logger = require('../../../f5-cloud-libs').logger;
 var fs = require('fs');
 
-const TEMP_LOGFILE = '/tmp/f5-cloud-libs-loggerTest.log';
+const TEMP_LOGFILE = 'f5-cloud-libs-loggerTest.log.' + Date.now();
 
 module.exports = {
     testConsole: function(test) {
@@ -58,9 +58,25 @@ module.exports = {
             logger.warn('password=1234', {Password: '5678'});
 
             setTimeout(function() {
-                loggedMessage = fs.readFileSync(TEMP_LOGFILE);
+                loggedMessage = fs.readFileSync(TEMP_LOGFILE).toString();
                 test.notStrictEqual(loggedMessage.indexOf('password='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('Password'), -1);
+                test.strictEqual(loggedMessage.indexOf('1234'), -1);
+                test.strictEqual(loggedMessage.indexOf('5678'), -1);
+                test.done();
+            }, 10);
+        },
+
+        testPassphraseMask: function(test) {
+            var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
+            var loggedMessage;
+
+            logger.warn('passphrase=1234', {passphrase: '5678'});
+
+            setTimeout(function() {
+                loggedMessage = fs.readFileSync(TEMP_LOGFILE).toString();
+                test.notStrictEqual(loggedMessage.indexOf('passphrase='), -1);
+                test.notStrictEqual(loggedMessage.indexOf('passphrase'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
                 test.strictEqual(loggedMessage.indexOf('5678'), -1);
                 test.done();

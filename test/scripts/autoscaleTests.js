@@ -18,11 +18,12 @@
 var deviceGroup = 'testDeviceGroup';
 var util = require('util');
 var q = require('q');
-var autoscale = require('../../scripts/autoscale');
 var AutoscaleProvider = require('../../lib/autoscaleProvider');
+var autoscale;
 var fsMock;
 var childProcessMock;
 var BigIp;
+var cryptoUtilMock;
 var icontrolMock;
 var ipcMock;
 var argv;
@@ -74,21 +75,11 @@ ProviderMock.prototype.instancesRemoved = function(instances) {
 };
 
 ProviderMock.prototype.getStoredUcs = function() {
-        return q();
+    return q();
 };
 
-instanceId = "two";
-instances = {
-    "one": {
-        isMaster: false,
-        hostname: 'host1',
-        privateIp: '1.2.3.4'
-    },
-    "two": {
-        isMaster: true,
-        hostname: 'host2',
-        privateIp: '5.6.7.8'
-    }
+ProviderMock.prototype.putPublicKey = function() {
+    return q();
 };
 
 // Don't let autoscale exit - we need the nodeunit process to run to completion
@@ -98,10 +89,27 @@ module.exports = {
     setUp: function(callback) {
         argv = ['node', 'autoscale', '--password', 'foobar', '--device-group', deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
 
+        instanceId = "two";
+        instances = {
+            "one": {
+                isMaster: false,
+                hostname: 'host1',
+                privateIp: '1.2.3.4',
+                providerVisible: true
+            },
+            "two": {
+                isMaster: true,
+                hostname: 'host2',
+                privateIp: '5.6.7.8',
+                providerVisible: true
+            }
+        };
+
         fsMock = require('fs');
         childProcessMock = require('child_process');
         BigIp = require('../../lib/bigIp');
         icontrolMock = require('../testUtil/icontrolMock');
+        cryptoUtilMock = require('../../lib/cryptoUtil');
         ipcMock = require('../../lib/ipc');
 
         providerMock = new ProviderMock();
@@ -127,6 +135,14 @@ module.exports = {
 
                 callback();
             });
+
+        cryptoUtilMock = {
+            generateKeyPair: function() {
+                return q();
+            }
+        };
+
+        autoscale  = require('../../scripts/autoscale');
     },
 
     tearDown: function(callback) {
@@ -196,6 +212,21 @@ module.exports = {
     updateTests: {
         setUp: function(callback) {
             argv.push('--cluster-action', 'update');
+
+            fsMock.writeFile = function(path, Data, cb) {
+                cb();
+            };
+
+            fsMock.unlinkSync = function() {};
+
+            childProcessMock.execFile = function(file, args, cb) {
+                cb();
+            };
+
+            bigIpMock.loadUcs = function() {
+                return q();
+            };
+
             callback();
         },
 
@@ -253,7 +284,7 @@ module.exports = {
 
             icontrolMock.when(
                 'list',
-                '/tm/cm/device-group',
+                '/tm/cm/device-group/',
                 [
                     {
                         name: deviceGroup

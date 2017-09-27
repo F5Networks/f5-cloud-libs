@@ -17,6 +17,24 @@ from datetime import datetime
 from tempfile import mkstemp
 from optparse import OptionParser
 
+def get_hostname(config_file):
+    hostname = ""
+    global_settings_token_found = False
+    hostname_token_line = 0
+    with open(config_file, 'r') as f:
+        for line in f:
+            if global_settings_token_found:
+                match = re.search('\s+hostname (.+)', line)
+                if match:
+                    hostname = match.group(1)
+                    return hostname
+            else:
+                match = re.search('sys global-settings', line)
+                if match:
+                    global_settings_token_found = True
+
+    return
+
 
 def get_ip(config_file):
     # 1nic Autoscale IPv4 Specific
@@ -131,12 +149,12 @@ def main():
     dest_ip = options.dest_ip
     dest_gateway = options.dest_gateway
 
-    if not original_ucs:
+    if not original_ucs or not cloud_provider:
         print "Usage: "
-        print ("    ./%s --original-ucs <ucs_filename>" % (sys.argv[0]))
-        print ("    ./%s --original-ucs <ucs_filename> --updated-ucs <ucs_filename>" % (sys.argv[0]))
+        print ("    ./%s --cloud_provider <aws | azure> --original-ucs <ucs_filename>" % (sys.argv[0]))
+        print ("    ./%s --cloud_provider <aws | azure> --original-ucs <ucs_filename> --updated-ucs <ucs_filename>" % (sys.argv[0]))
         print "ex. "
-        print ("    ./%s --original-ucs original.ucs --updated-ucs updated.ucs" % (sys.argv[0]))
+        print ("    ./%s --cloud_provider <aws | azure> --original-ucs original.ucs --updated-ucs updated.ucs" % (sys.argv[0]))
         sys.exit()
 
     # Open files
@@ -145,7 +163,6 @@ def main():
 
     tar_original.extractall(path=extract_ucs_dir)
 
-    # Grab instance's IP from UCS or local config file
     bigip_base_file = "/config/bigip_base.conf"
     if cloud_provider == 'azure':
         gateway_file = "/config/bigip.conf"
@@ -155,6 +172,11 @@ def main():
         print "Unsupported cloud provider " + cloud_provider
         sys.exit()
 
+    # Grab instance's hostname from UCS
+    dest_hostname = get_hostname(bigip_base_file)
+    original_hostname = get_hostname(extract_ucs_dir + bigip_base_file)
+
+    # Grab instance's IP from UCS or local config file
     if not original_ucs_ip:
         original_ucs_ip = get_ip(extract_ucs_dir + bigip_base_file)
     if not original_ucs_gateway:
@@ -171,6 +193,8 @@ def main():
             dest_gateway = get_local_gateway()
 
     if debug_level > 0:
+        print "original_hostname: " + original_hostname
+        print "dest_hostname: " + dest_hostname
         print "original_ucs_ip: " + original_ucs_ip
         print "original_ucs_gateway: " + original_ucs_gateway
         print "dest_ip: " + dest_ip
@@ -194,13 +218,15 @@ def main():
     # Replace Gateway
     replace(extract_ucs_dir + gateway_file, original_ucs_gateway, dest_gateway)
 
-    # Replace IP, String Versions in other files
+    # Replace hostname, IP, String Versions in other files
     for f in files_to_update:
         filename = extract_ucs_dir + f
         if debug_level > 0:
             print "updating : " + filename
         replace(filename, original_ucs_ip, dest_ip)
         replace(filename, original_ucs_ip_str, dest_ip_str)
+        if original_hostname and dest_hostname:
+            replace(filename, original_hostname, dest_hostname)
 
     # Remove the /config/cloud directory so we don't overwrite it with old data
     path_to_exclude = "/config/cloud"
@@ -208,6 +234,10 @@ def main():
         path_to_exclude += "/aws"
     path_to_exclude += "/node_modules"
     shutil.rmtree(extract_ucs_dir + path_to_exclude, ignore_errors=True)
+
+    # Remove the cloud-libs private key info as you can't load a ucs w/ a passphrase
+    shutil.rmtree(extract_ucs_dir + '/config/partitions/CloudLibs', ignore_errors=True)
+    shutil.rmtree(extract_ucs_dir + '/var/tmp/filestore_temp/files_d/CloudLibs_d', ignore_errors=True)
 
     tar_updated.add(extract_ucs_dir, arcname='.')
 
