@@ -30,7 +30,7 @@ module.exports = {
         options.reboot = true;
         options.port = 443;
         return options
-            .version('3.3.1')
+            .version('3.4.0')
             .option('--host <ip_address>', 'BIG-IP management IP to which to send commands.')
             .option('-u, --user <user>', 'BIG-IP admin user name.')
             .option('-p, --password <password>', 'BIG-IP admin user password. Use this or --password-url')
