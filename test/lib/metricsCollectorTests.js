@@ -15,6 +15,7 @@
  */
 'use strict';
 
+var uuid = require('uuid5');
 var httpUtil = require('../../../f5-cloud-libs').httpUtil;
 var metricsCollector = require('../../../f5-cloud-libs').metricsCollector;
 
@@ -56,7 +57,7 @@ module.exports = {
             '&v=1' +
             '&t=event&ec=run' +
             '&tid=' + trackingId +
-            '&cid=' + metrics.customerId +
+            '&cid=' + uuid(metrics.customerId) +
             '&ea=' + metrics.action +
             '&an=' + metrics.templateName +
             '&aid=' + metrics.deploymentId +
