@@ -41,6 +41,7 @@
             var ipc = require('../lib/ipc');
             var signals = require('../lib/signals');
             var util = require('../lib/util');
+            var metricsCollector = require('../lib/metricsCollector');
             var dbVars = {};
             var modules = {};
             var rootPasswords = {};
@@ -55,11 +56,14 @@
             var index;
             var i;
 
+            const METRICS_TRACKING_ID = 'UA-107165927-1';
+
             var DEFAULT_LOG_FILE = '/tmp/onboard.log';
             var ARGS_FILE_ID = 'onboard_' + Date.now();
 
             var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password', '--big-iq-password'];
             var REQUIRED_OPTIONS = ['host', 'user'];
+
 
             options = require('./commonOptions');
             testOpts = testOpts || {};
@@ -103,7 +107,7 @@
                     .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.pair, modules)
                     .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
                     .option('--update-sigs', 'Update ASM signatures')
-                    .option('--metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]', 'Optional usage metrics to collect. Customer ID should not identify a specific customer.', util.map, metrics)
+                    .option('--metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:<aws | azure | gce | etc.>, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]', 'Optional usage metrics to collect. Customer ID should not identify a specific customer.', util.map, metrics)
                     .parse(argv);
 
                 loggerOptions.console = options.console;
@@ -158,6 +162,17 @@
                         delete globalSettings.hostName;
                         delete globalSettings.hostname;
                     }
+                }
+
+                try {
+                    if (Object.keys(metrics).length > 0) {
+                        metrics.action = 'onboard';
+                        metrics.cloudLibsVersion = options.version();
+                        metricsCollector.upload(METRICS_TRACKING_ID, metrics);
+                    }
+                }
+                catch (err) {
+                    logger.debug('Metrics collection failed:', err);
                 }
 
                 // Start processing...

@@ -64,7 +64,6 @@ var urlParse;
 // http mock
 var httpGet;
 
-
 var getSavedArgs = function() {
     return fs.readFileSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh').toString();
 };
