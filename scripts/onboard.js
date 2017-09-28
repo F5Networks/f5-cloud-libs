@@ -121,6 +121,7 @@
                 logger = Logger.getLogger(loggerOptions);
                 ipc.setLoggerOptions(loggerOptions);
                 util.setLoggerOptions(loggerOptions);
+                metricsCollector.setLoggerOptions(loggerOptions);
 
                 // Log the input, but don't log passwords
                 loggableArgs = argv.slice();
