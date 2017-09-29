@@ -1428,7 +1428,7 @@ module.exports = {
             bigIp.cluster.resetTrust()
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'delete');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain/Root');
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
