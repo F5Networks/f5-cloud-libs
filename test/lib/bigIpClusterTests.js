@@ -1423,7 +1423,15 @@ module.exports = {
     },
 
     testResetTrust: {
-        testBasic: function(test) {
+        testBelowV13: function(test) {
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    version: '12.1.0'
+                }
+            );
+
             test.expect(2);
             bigIp.cluster.resetTrust()
                 .then(function() {
@@ -1436,6 +1444,29 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
-            }
+        },
+
+        testV13Above: function(test) {
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    version: '13.0.0'
+                }
+            );
+
+            test.expect(2);
+            bigIp.cluster.resetTrust()
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'delete');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
+    }
 };
