@@ -2,15 +2,31 @@ image: node:4
 
 stages:
     - test
+    - update
     - package
+    - notify
 
 test:
     tags:
         - docker-executor
     stage: test
+    except:
+        - triggers
     script:
         - npm install
         - npm test
+
+update_hash:
+    tags:
+        - docker-executor
+    stage: update
+    only:
+        - triggers
+    script:
+        - if [[ -n "${UPDATE_HASH_REPO}" && "${UPDATE_HASH_BRANCH}" && "${UPDATE_HASH_FILE}" ]]; then
+        -     ./build/updateHash.sh "${UPDATE_HASH_REPO}" "${UPDATE_HASH_BRANCH}" "${UPDATE_HASH_FILE}"
+        -     ./build/commitAndPushHash.sh
+        - fi
 
 package:
     tags:
@@ -19,7 +35,6 @@ package:
     only:
         - /^release-.*/
         - /^hf-.*/
-        - triggers
     script:
         - npm install
         - npm run doc
@@ -29,3 +44,16 @@ package:
         paths:
             - dist/
             - doc/
+
+ # Do not run when triggered:
+ #   - triggers do not modify our hash, they only update the verifyHash file
+ #   - we are triggered by f5-cloud-iapps - do not trigger back or we get an infinite loop
+notify:
+    tags:
+        - docker-executor
+    stage: notify
+    except:
+        - master
+        - triggers
+    script:
+        - ./build/notifyProjects.sh

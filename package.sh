@@ -10,7 +10,12 @@ if [[ $1 == '--no-deps' ]]; then
     npm install --production
 fi
 
-tar -C .. --exclude=".git*" --exclude="test" --exclude="${PWD##*/}/dist" --exclude="doc" -zcvf dist/f5-cloud-libs.tar.gz f5-cloud-libs
+tar -C .. --exclude=".git*" --exclude=".DS_Store" --exclude="npm-debug.log" --exclude="test" --exclude="${PWD##*/}/dist" --exclude="build" --exclude="doc" --exclude="gitHooks" -cvf dist/f5-cloud-libs.tar f5-cloud-libs
+# Suppress gzips timetamp in the tarball - otherwise the digest hash changes on each
+# commit even if the contents do not change. This causes an infinite loop in the build scripts
+# due to packages triggering each other to uptdate hashes.
+gzip -nf dist/f5-cloud-libs.tar
+
 pushd dist
 hash=`openssl dgst -sha512 f5-cloud-libs.tar.gz | cut -d ' ' -f 2`
 sed $SED_ARGS "s/set hashes\(f5-cloud-libs.tar.gz\) .*/set hashes\(f5-cloud-libs.tar.gz\) $hash/" verifyHash
