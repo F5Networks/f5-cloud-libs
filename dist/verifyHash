@@ -3,7 +3,7 @@ proc script::run {} {
         if {[catch {
             set hashes(f5-cloud-libs.tar.gz) 9b890406fc85cce13655186304c4c76e819b7688051ef73376877363b98d3bb84bacc54134544651e2cbb8a8814afab1764e7907111005106ad6dace45e25e92
             set hashes(f5-cloud-libs-aws.tar.gz) a29748d80d9e998ff2ef7191df2d6862f9ee714a03e259afde62255e6cb8378710a6ef1a75b742a40a810f992ef7cee2aa96e9525985a122beeb50df479b532f
-            set hashes(f5-cloud-libs-azure.tar.gz) 62652d298bbf4931a49e7387358cda2e0a311fc66a577bc09a849b66e05bde23a4fc9940685b1bce146863992c923f25ca16c6b645d2a383ca419504c5d6e6e9
+            set hashes(f5-cloud-libs-azure.tar.gz) 1d88e6e5ad5f9ce635a91494c03c7eebb1197dd9ecae2ccef7b8ae455902840f9001023489f9fd7c9231088932592ce540eaab199764464be657d9070d948f00
             set hashes(f5-cloud-libs-gce.tar.gz) d52a733f708fe391704a7084b7e1819242e9a38ce5537d8a17bf84a373fb07a7edb60cf7331639b95b6d610f7d34ec1623d60d1569ff734e9efe58a172575517
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
             set hashes(f5.http.v1.2.0rc4.tmpl) 47c19a83ebfc7bd1e9e9c35f3424945ef8694aa437eedd17b6a387788d4db1396fefe445199b497064d76967b0d50238154190ca0bd73941298fc257df4dc034
@@ -14,7 +14,7 @@ proc script::run {} {
             set hashes(asm-policy.tar.gz) 2d39ec60d006d05d8a1567a1d8aae722419e8b062ad77d6d9a31652971e5e67bc4043d81671ba2a8b12dd229ea46d205144f75374ed4cae58cefa8f9ab6533e6
             set hashes(deploy_waf.sh) 7ac8caac0f4e6f3907cd541a2d905931e97cd0220b443403dfbaaa30f3cad615fcd9420a3123327c2609441bd4a87d86a1a35b7567dbe78e3f97bd954a3cc5df
             set hashes(f5.policy_creator.tmpl) 06539e08d115efafe55aa507ecb4e443e83bdb1f5825a9514954ef6ca56d240ed00c7b5d67bd8f67b815ee9dd46451984701d058c89dae2434c89715d375a620
-            set hashes(f5.service_discovery.tmpl) 9adb95f2983ca5666f0b9abc8f4f655f3650340a58c5ad00ddcf4318ccb4315272e3789efa4cf08c43711c08ce8ae305359f94880a26f0253ab5f58dcf19950f
+            set hashes(f5.service_discovery.tmpl) 6462f9d380bc5e12752b062a12069f6ffe680440a32509298d6bd114c6b7a3b11c3aed64f9330a9d046224791da55f1bd691d2fd9c9a55b272663ac180cc282c
 
             set file_path [lindex $tmsh::argv 1]
             set file_name [file tail $file_path]
