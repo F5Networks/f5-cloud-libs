@@ -80,6 +80,7 @@ Does initial configuration and provisioning of a BIG-IP.
       -u, --user <user>                                                                                                                                                                                                                        BIG-IP admin user name.
       -p, --password <password>                                                                                                                                                                                                                BIG-IP admin user password. Use this or --password-url
       --password-url <password_url>                                                                                                                                                                                                            URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      --password-encrypted                                                                                                                                                                                                                     Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                                                                                                                                                                                                            BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                                                                                                                                                                                                              Skip reboot even if it is recommended.
       --background                                                                                                                                                                                                                             Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
@@ -126,6 +127,7 @@ Sets up BIG-IPs in a cluster.
       -u, --user <user>                                BIG-IP admin user name.
       -p, --password <password>                        BIG-IP admin user password. Use this or --password-url
       --password-url <password_url>                    URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      --password-encrypted                             Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                    BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                      Skip reboot even if it is recommended.
       --background                                     Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
@@ -173,6 +175,7 @@ Runs autoscale code to elect master and cluster
       -u, --user <user>                           BIG-IP admin user name.
       -p, --password <password>                   BIG-IP admin user password. Use this or --password-url
       --password-url <password_url>               URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      --password-encrypted                        Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                               BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                 Skip reboot even if it is recommended.
       --background                                Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
@@ -209,6 +212,7 @@ Sets up default gateway, VLANs and self IPs
       -u, --user <user>                                                                                 BIG-IP admin user name.
       -p, --password <password>                                                                         BIG-IP admin user password. Use this or --password-url
       --password-url <password_url>                                                                     URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      --password-encrypted                                                                              Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                                                                     BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                                                                       Skip reboot even if it is recommended.
       --background                                                                                      Spawn a background process to do the work. If you are running in cloud init, you probably want this option.

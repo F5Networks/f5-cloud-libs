@@ -161,7 +161,8 @@
                             options.password || options.passwordUrl,
                             {
                                 port: options.port,
-                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                                passwordIsUrl: typeof options.passwordUrl !== 'undefined',
+                                passwordEncrypted: options.passwordEncrypted
                             }
                         );
                     })
@@ -175,6 +176,11 @@
                         if (options.cloud) {
                             logger.info("Initializing cloud provider.");
                             return provider.init(providerOptions[0]);
+                        }
+                    })
+                    .then(function() {
+                        if (options.cloud) {
+                            return provider.bigIpReady();
                         }
                     })
                     .then(function() {
@@ -215,6 +221,8 @@
                     .then(function(response) {
                         logger.debug(response);
 
+                        // options.cloud set indicates that the provider must use some storage
+                        // for its master credentials
                         if (options.cloud && options.joinGroup) {
                             logger.info("Getting master credentials.");
                             return provider.getMasterCredentials(options.remoteHost, options.remotePort);
@@ -227,21 +235,24 @@
 
                             options.remoteUser = response.username;
                             options.remotePassword = response.password;
+                            options.passwordEncrypted = false;
                         }
 
                         if (options.joinGroup) {
                             logger.info("Joining group.");
 
-                            return bigIp.cluster.joinCluster(options.deviceGroup,
-                                                             options.remoteHost,
-                                                             options.remoteUser,
-                                                             options.remotePassword || options.remotePasswordUrl,
-                                                             false,
-                                                             {
-                                                                remotePort: options.remotePort,
-                                                                sync: options.sync,
-                                                                passwordIsUrl: typeof options.remotePasswordUrl !== 'undefined'
-                                                             });
+                            return bigIp.cluster.joinCluster(
+                                options.deviceGroup,
+                                options.remoteHost,
+                                options.remoteUser,
+                                options.remotePassword || options.remotePasswordUrl,
+                                false,
+                                {
+                                    remotePort: options.remotePort,
+                                    sync: options.sync,
+                                    passwordIsUrl: typeof options.remotePasswordUrl !== 'undefined',
+                                    passwordEncrypted: options.passwordEncrypted
+                                });
                         }
                     })
                     .then(function(response) {

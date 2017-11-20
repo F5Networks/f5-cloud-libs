@@ -205,7 +205,8 @@
                             options.password || options.passwordUrl,
                             {
                                 port: options.port,
-                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
+                                passwordIsUrl: typeof options.passwordUrl !== 'undefined',
+                                passwordEncrypted: options.passwordEncrypted
                             }
                         );
                     })

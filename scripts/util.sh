@@ -20,6 +20,50 @@
 STATUS_CHECK_RETRIES=60
 STATUS_CHECK_INTERVAL=10
 
+MKDIR=/bin/mkdir
+MOUNT=/bin/mount
+RMDIR=/bin/rmdir
+UMOUNT=/bin/umount
+
+# creates a directory for in-memory files
+# usage: create_temp_dir name size
+function create_temp_dir() {
+    $MKDIR "$1"
+    $MOUNT -t tmpfs -o size="$2",mode=1700 tmpfs "$1"
+}
+
+# usage: remove_temp_dir name
+function remove_temp_dir() {
+    $UMOUNT "$1"
+    $RMDIR "$1"
+}
+
+# usage: wipe_temp_dir name
+function wipe_temp_dir() {
+    FILES=$(ls -1 "$1")
+
+    for f in $FILES; do
+        shred --remove "${1}/${f}"
+    done
+
+    remove_temp_dir "$1"
+}
+
+# usage: get_private_key_path folder_containing_private_key name_of_key
+function get_private_key_path() {
+    PRIVATE_KEY_DIR=/config/filestore/files_d/${1}_d/certificate_key_d/
+    FILES=$(ls -1t "$PRIVATE_KEY_DIR")
+
+    KEY_FILE_PREFIX=":${1}:${2}.key";
+
+    for f in $FILES; do
+        if [[ "$f" == ${KEY_FILE_PREFIX}* ]]; then
+            echo ${PRIVATE_KEY_DIR}${f}
+            break
+        fi
+    done
+}
+
 function wait_for_bigip() {
     echo "** BigIP waiting ..."
     bigstart_wait mcpd ready

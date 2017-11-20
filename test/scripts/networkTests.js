@@ -41,7 +41,7 @@ module.exports = {
         ipc.once = function() {
             var deferred = q.defer();
             deferred.resolve();
-            return deferred;
+            return deferred.promise;
         };
 
         network = require('../../scripts/network');

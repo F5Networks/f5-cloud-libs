@@ -23,11 +23,13 @@ module.exports = process.env.TEST_COVERAGE ?
     bigIpCluster: require('./lib-cov/bigIpCluster'),
     bigIpOnboard: require('./lib-cov/bigIpOnboard'),
     cryptoUtil: require('./lib-cov/cryptoUtil'),
+    localKeyUtil: require('./lib-cov/localKeyUtil'),
     httpUtil: require('./lib-cov/httpUtil'),
     iControl: require('./lib-cov/iControl'),
     ipc: require('./lib-cov/ipc'),
     logger: require('./lib-cov/logger'),
     metricsCollector: require('./lib-cov/metricsCollector'),
+    sharedConstants: require('./lib-cov/sharedConstants'),
     signals: require('./lib-cov/signals'),
     util: require('./lib-cov/util')
 } :
@@ -38,11 +40,13 @@ module.exports = process.env.TEST_COVERAGE ?
     bigIpCluster: require('./lib/bigIpCluster'),
     bigIpOnboard: require('./lib/bigIpOnboard'),
     cryptoUtil: require('./lib/cryptoUtil'),
+    localKeyUtil: require('./lib/localKeyUtil'),
     httpUtil: require('./lib/httpUtil'),
     iControl: require('./lib/iControl'),
     ipc: require('./lib/ipc'),
     logger: require('./lib/logger'),
     metricsCollector: require('./lib/metricsCollector'),
+    sharedConstants: require('./lib/sharedConstants'),
     signals: require('./lib/signals'),
     util: require('./lib/util')
 };

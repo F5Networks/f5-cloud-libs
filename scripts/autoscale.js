@@ -26,6 +26,9 @@
 
     const PASSPHRASE_LENGTH = 18;
 
+    const AUTOSCALE_PRIVATE_KEY = 'cloudLibsAutoscalePrivate';
+    const AUTOSCALE_PRIVATE_KEY_FOLDER = 'CloudLibsAutoscale';
+
     var fs = require('fs');
     var q = require('q');
     var AutoscaleProvider = require('../lib/autoscaleProvider');
@@ -101,7 +104,8 @@
             }
 
             logger = Logger.getLogger(loggerOptions);
-            util.logger = logger;
+            util.setLoggerOptions(loggerOptions);
+            cryptoUtil.setLoggerOptions(loggerOptions);
 
             if (!options.password && !options.passwordUrl) {
                 logger.error("One of --password or --password-url is required.");
@@ -146,25 +150,6 @@
                     return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
                 })
                 .then(function() {
-                    if (testOpts.bigIp) {
-                        bigIp = testOpts.bigIp;
-                    }
-                    else {
-                        bigIp = new BigIp({loggerOptions: loggerOptions});
-
-                        logger.info("Initializing BIG-IP.");
-                        return bigIp.init(
-                            options.host,
-                            options.user,
-                            options.password || options.passwordUrl,
-                            {
-                                port: options.port,
-                                passwordIsUrl: typeof options.passwordUrl !== 'undefined'
-                            }
-                        );
-                    }
-                }.bind(this))
-                .then(function() {
                     return provider.init(providerOptions[0], {autoscale: true});
                 })
                 .then(function() {
@@ -199,6 +184,29 @@
                     }
 
                     return provider.putInstance(this.instanceId, this.instance);
+                }.bind(this))
+                .then(function() {
+                    if (testOpts.bigIp) {
+                        bigIp = testOpts.bigIp;
+                    }
+                    else {
+                        bigIp = new BigIp({loggerOptions: loggerOptions});
+
+                        logger.info("Initializing BIG-IP.");
+                        return bigIp.init(
+                            options.host,
+                            options.user,
+                            options.password || options.passwordUrl,
+                            {
+                                port: options.port,
+                                passwordIsUrl: typeof options.passwordUrl !== 'undefined',
+                                passwordEncrypted: options.passwordEncrypted
+                            }
+                        );
+                    }
+                }.bind(this))
+                .then(function () {
+                    return provider.bigIpReady();
                 }.bind(this))
                 .then(function() {
                     var status = AutoscaleProvider.STATUS_UNKNOWN;
@@ -587,7 +595,8 @@
                                     true,
                                     {
                                         remotePort: messageData.port,
-                                        remoteHostname: messageData.hostname
+                                        remoteHostname: messageData.hostname,
+                                        passwordEncrypted: false
                                     }
                                 )
                             );
@@ -695,7 +704,7 @@
             .then(function(response) {
                 if (response) {
                     hasUcs = true;
-                    return loadUcs(bigIp, response, options.cloud);
+                    return loadUcs(provider, bigIp, response, options.cloud);
                 }
             })
             .then(function() {
@@ -834,9 +843,11 @@
                         credentials.username,
                         credentials.password,
                         false,
-                        {remotePort: options.port}
+                        {
+                            remotePort: options.port
+                        }
                     );
-                });
+                }.bind(this));
         }
     };
 
@@ -907,7 +918,7 @@
                     return provider.putPublicKey(this.instanceId, publicKey);
                 }.bind(this))
                 .then(function() {
-                    return bigIp.installCloudPrivateKey(PRIVATE_KEY_OUT_FILE, {passphrase: passphrase});
+                    return bigIp.installPrivateKey(PRIVATE_KEY_OUT_FILE, AUTOSCALE_PRIVATE_KEY_FOLDER, AUTOSCALE_PRIVATE_KEY, {passphrase: passphrase});
                 })
                 .then(function() {
                     return bigIp.save();
@@ -982,14 +993,14 @@
     /**
      * Loads UCS
      *
-     * @param {Object} bigIp - bigIp instances
+     * @param {Object}        bigIp - bigIp instances
      * @param {Buffer|Stream} ucsData - Either a Buffer or a ReadableStream containing UCS data
-     * @param {String} cloudProvider - Cloud provider (aws, azure, etc)
+     * @param {String}        cloudProvider - Cloud provider (aws, azure, etc)
      *
      * @returns {Promise} Promise that will be resolved when the UCS is loaded or rejected
      *                    if an error occurs.
      */
-    var loadUcs = function(bigIp, ucsData, cloudProvider) {
+    var loadUcs = function(provider, bigIp, ucsData, cloudProvider) {
         const timeStamp = Date.now();
         const originalPath = '/config/ucsOriginal_' + timeStamp + '.ucs';
         const updatedPath = '/config/ucsUpdated_' + timeStamp + '.ucs';
@@ -1001,6 +1012,9 @@
         var doLoad = function() {
             var childProcess = require('child_process');
             var args = ['--original-ucs', originalPath, '--updated-ucs', updatedPath, '--cloud-provider', cloudProvider];
+            var loadUcsOptions = {
+                initLocalKeys: true
+            };
             var cp;
 
             cp = childProcess.execFile(updateScript, args, function(err) {
@@ -1016,7 +1030,13 @@
                     return;
                 }
 
-                bigIp.loadUcs(updatedPath, {"no-license": true, "reset-trust": true})
+                // If we're not sharing the password, put our current user back after
+                // load
+                if (!provider.hasFeature(AutoscaleProvider.FEATURE_SHARED_PASSWORD)) {
+                    loadUcsOptions.restoreUser = true;
+                }
+
+                bigIp.loadUcs(updatedPath, {"no-license": true, "reset-trust": true}, loadUcsOptions)
                     .then(function() {
                         // reset-trust on load does not always seem to work
                         // use a belt-and-suspenders approach and reset now as well
@@ -1033,6 +1053,7 @@
                         }
                     })
                     .catch(function(err) {
+                        logger.info('error loading ucs', err);
                         deferred.reject(err);
                     });
                 }
@@ -1121,7 +1142,7 @@
 
         if (!this.cloudPrivateKeyPath) {
             logger.silly('getting private key path');
-            filePromise = bigIp.getCloudPrivateKeyFilePath();
+            filePromise = bigIp.getPrivateKeyFilePath(AUTOSCALE_PRIVATE_KEY_FOLDER, AUTOSCALE_PRIVATE_KEY);
         }
         else {
             logger.silly('using cached key');
@@ -1131,7 +1152,7 @@
         return filePromise
             .then(function(cloudPrivateKeyPath) {
                 this.cloudPrivateKeyPath = cloudPrivateKeyPath;
-                return bigIp.getCloudPrivateKeyMetadata();
+                return bigIp.getPrivateKeyMetadata(AUTOSCALE_PRIVATE_KEY_FOLDER, AUTOSCALE_PRIVATE_KEY);
             }.bind(this))
             .then(function(privateKeyData) {
                 return cryptoUtil.decrypt(

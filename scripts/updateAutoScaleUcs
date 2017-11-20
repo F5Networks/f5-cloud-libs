@@ -228,16 +228,18 @@ def main():
         if original_hostname and dest_hostname:
             replace(filename, original_hostname, dest_hostname)
 
-    # Remove the /config/cloud directory so we don't overwrite it with old data
-    path_to_exclude = "/config/cloud"
-    if cloud_provider == "aws":
-        path_to_exclude += "/aws"
-    path_to_exclude += "/node_modules"
+    # Remove the f5-cloud-libs directory so we don't overwrite it with old data
+    path_to_exclude = "/config/cloud/" + cloud_provider + "/node_modules"
     shutil.rmtree(extract_ucs_dir + path_to_exclude, ignore_errors=True)
 
     # Remove the cloud-libs private key info as you can't load a ucs w/ a passphrase
-    shutil.rmtree(extract_ucs_dir + '/config/partitions/CloudLibs', ignore_errors=True)
-    shutil.rmtree(extract_ucs_dir + '/var/tmp/filestore_temp/files_d/CloudLibs_d', ignore_errors=True)
+    shutil.rmtree(extract_ucs_dir + '/config/partitions/CloudLibsAutoscale', ignore_errors=True)
+    shutil.rmtree(extract_ucs_dir + '/var/tmp/filestore_temp/files_d/CloudLibsAutoscale_d', ignore_errors=True)
+    shutil.rmtree(extract_ucs_dir + '/config/partitions/CloudLibsLocal', ignore_errors=True)
+    shutil.rmtree(extract_ucs_dir + '/var/tmp/filestore_temp/files_d/CloudLibsLocal_d', ignore_errors=True)
+
+    # Remove the f5-cloud-libs local public keys as they won't match any private keys
+    shutil.rmtree(extract_ucs_dir + '/config/cloud/keys', ignore_errors=True)
 
     tar_updated.add(extract_ucs_dir, arcname='.')
 

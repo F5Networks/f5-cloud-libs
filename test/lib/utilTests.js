@@ -69,6 +69,14 @@ var getSavedArgs = function() {
 };
 
 module.exports = {
+    tearDown: function(callback) {
+        Object.keys(require.cache).forEach(function(key) {
+            delete require.cache[key];
+        });
+
+        callback();
+    },
+
     testCommandLineParsing: {
         testCollect: function(test) {
             var container = [];

@@ -15,10 +15,19 @@
  */
 'use strict';
 
-var q = require('q');
-var BigIp = require('../../../f5-cloud-libs').bigIp;
-var util = require('../../../f5-cloud-libs').util;
-var icontrolMock = require('../testUtil/icontrolMock');
+const fs = require('fs');
+const q = require('q');
+const childProcessMock = require('child_process');
+
+const realSetTimeout = setTimeout;
+const realUnlink = fs.unlink;
+const realExecFile = childProcessMock.execFile;
+
+var BigIp;
+var utilMock;
+var icontrolMock;
+var localKeyUtilMock;
+var cryptoUtilMock;
 
 var bigIp;
 var realReady;
@@ -29,6 +38,12 @@ const TASK_PATH = '/tm/task/sys/ucs';
 
 module.exports = {
     setUp: function(callback) {
+        utilMock = require('../../../f5-cloud-libs').util;
+        icontrolMock = require('../testUtil/icontrolMock');
+        localKeyUtilMock = require('../../../f5-cloud-libs').localKeyUtil;
+        cryptoUtilMock = require('../../../f5-cloud-libs').cryptoUtil;
+
+        BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIp = new BigIp();
 
         // we have to call init so we can wait till it's done to set icontrol
@@ -48,6 +63,10 @@ module.exports = {
         Object.keys(require.cache).forEach(function(key) {
             delete require.cache[key];
         });
+        setTimeout = realSetTimeout;
+        fs.unlink = realUnlink;
+        childProcessMock.execFile = realExecFile;
+
         callback();
     },
 
@@ -136,7 +155,7 @@ module.exports = {
             );
 
             test.expect(1);
-            bigIp.active(util.NO_RETRY)
+            bigIp.active(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "BIG-IP should not be active.");
                 })
@@ -152,7 +171,7 @@ module.exports = {
             icontrolMock.fail('list', '/tm/cm/failover-status');
 
             test.expect(1);
-            bigIp.active(util.NO_RETRY)
+            bigIp.active(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "BIG-IP should not be active.");
                 })
@@ -237,7 +256,7 @@ module.exports = {
             bigIp = new BigIp();
 
             test.expect(1);
-            bigIp.ready(util.NO_RETRY)
+            bigIp.ready(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, 'Uninitialized BIG-IP should not be ready');
                 })
@@ -360,8 +379,11 @@ module.exports = {
         }
     },
 
-    testGetCloudPrivateKeyFilePath: {
+    testGetPrivateKeyFilePath: {
         testBasic: function(test) {
+            const folder = 'CloudLibs';
+            const name = 'cloudLibsPrivate';
+
             icontrolMock.when(
                 'create',
                 '/tm/util/bash',
@@ -370,7 +392,7 @@ module.exports = {
                 }
             );
 
-            bigIp.getCloudPrivateKeyFilePath()
+            bigIp.getPrivateKeyFilePath(folder, name)
                 .then(function(privateKeyFilePath) {
                     test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:CloudLibs:cloudLibsPrivate.key_1234_1');
                 })
@@ -383,6 +405,9 @@ module.exports = {
         },
 
         testNotFound: function(test) {
+            const folder = 'CloudLibs';
+            const name = 'cloudLibsPrivate';
+
             icontrolMock.when(
                 'create',
                 '/tm/util/bash',
@@ -391,7 +416,7 @@ module.exports = {
                 }
             );
 
-            bigIp.getCloudPrivateKeyFilePath()
+            bigIp.getPrivateKeyFilePath(folder, name)
                 .then(function(privateKeyFilePath) {
                     test.strictEqual(privateKeyFilePath, undefined);
                 })
@@ -404,9 +429,8 @@ module.exports = {
         }
     },
 
-    testCloudInstallPrivateKey: {
+    testInstallPrivateKey: {
         setUp: function(callback) {
-            var fs = require('fs');
             fs.unlink = function(path, cb) {
                 removedFile = path;
                 cb();
@@ -424,7 +448,9 @@ module.exports = {
         },
 
         testBasic: function(test) {
-            var keyName = 'myKey';
+            const folder = 'CloudLibs';
+            const name = 'cloudLibsPrivate';
+
             var keyFile = '/foo/bar';
             var expectedBody = {
                 command: 'install',
@@ -433,10 +459,9 @@ module.exports = {
             };
 
             icontrolMock.when('create', '/tm/sys/crypto/key', {});
-            icontrolMock.when('list', '/tm/sys/crypto/key/~CloudLibs~' + keyName + '.key', {});
 
             test.expect(2);
-            bigIp.installCloudPrivateKey(keyFile)
+            bigIp.installPrivateKey(keyFile, folder, name)
                 .then(function() {
                     test.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
                     test.strictEqual(removedFile, keyFile);
@@ -511,6 +536,17 @@ module.exports = {
             icontrolMock.when('create', TASK_PATH, {_taskId: '1234'});
             icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'COMPLETED'});
 
+            setTimeout = function(cb) {
+                cb();
+            };
+
+            childProcessMock.execFile = function(file, optionsOrCb, cb) {
+                if (typeof optionsOrCb === 'function') {
+                    cb = optionsOrCb;
+                }
+                cb();
+            };
+
             callback();
         },
 
@@ -529,7 +565,7 @@ module.exports = {
                 });
         },
 
-        testOptions: function(test) {
+        testLoadOptions: function(test) {
             test.expect(1);
             bigIp.loadUcs('/tmp/foo', {foo: 'bar', hello: 'world'})
                 .then(function() {
@@ -544,10 +580,51 @@ module.exports = {
                 });
         },
 
+        testRestoreUser: function(test) {
+
+            const encryptedPassword = 'myEncryptedPassword';
+
+            var realExecFile = childProcessMock.execFile;
+            var dataWritten;
+
+            bigIp.initOptions = {
+                passwordIsUrl: true,
+                passwordEncrypted: true
+            };
+
+            utilMock.runTmshCommand = function() {
+                return q();
+            };
+            utilMock.writeDataToUrl = function(data) {
+                dataWritten = data;
+            };
+
+            localKeyUtilMock.generateAndInstallKeyPair = function() {
+                return q();
+            };
+
+            cryptoUtilMock.encrypt = function() {
+                return q(encryptedPassword);
+            };
+
+            test.expect(1);
+            bigIp.loadUcs('/tmp/foo', undefined, {initLocalKeys: true, restoreUser: true})
+                .then(function() {
+                    test.strictEqual(dataWritten, encryptedPassword);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    childProcessMock.execFile = realExecFile;
+                    test.done();
+                });
+        },
+
         testNeverComplete: function(test) {
             icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'PENDING'});
             test.expect(1);
-            bigIp.loadUcs('/tmp/foo', undefined, util.NO_RETRY)
+            bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, 'Should not have completed');
                 })
@@ -577,7 +654,7 @@ module.exports = {
         testRestjavadRestart: function(test) {
             icontrolMock.fail('list', TASK_PATH + '/1234/result');
             test.expect(1);
-            bigIp.loadUcs('/tmp/foo', undefined, util.NO_RETRY)
+            bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(true);
                 })
@@ -657,7 +734,7 @@ module.exports = {
                                   commandResult: "PING 1.2.3.4 (1.2.3.4) 56(84) bytes of data.\n\n--- 1.2.3.4 ping statistics ---\n2 packets transmitted, 0 received, 100% packet loss, time 2000ms\n\n"
                               });
             test.expect(1);
-            bigIp.ping('1.2.3.4', util.NO_RETRY)
+            bigIp.ping('1.2.3.4', utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ping with no packets should have failed.");
                 })
@@ -676,7 +753,7 @@ module.exports = {
                                   commandResult: "ping: unknown host f5.com\n"
                               });
             test.expect(1);
-            bigIp.ping('1.2.3.4', util.NO_RETRY)
+            bigIp.ping('1.2.3.4', utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ping with unknown host should have failed.");
                 })
@@ -695,7 +772,7 @@ module.exports = {
                                   commandResult: "foobar"
                               });
             test.expect(1);
-            bigIp.ping('1.2.3.4', util.NO_RETRY)
+            bigIp.ping('1.2.3.4', utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ping with unexpected response should have failed.");
                 })
@@ -713,7 +790,7 @@ module.exports = {
                               '/tm/util/ping',
                               undefined);
             test.expect(1);
-            bigIp.ping('1.2.3.4', util.NO_RETRY)
+            bigIp.ping('1.2.3.4', utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ping with no response should have failed.");
                 })
@@ -777,7 +854,7 @@ module.exports = {
 
         testBasic: function(test) {
             test.expect(1);
-            bigIp.ready(util.NO_RETRY)
+            bigIp.ready(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(true);
                 })
@@ -796,7 +873,7 @@ module.exports = {
             );
 
             test.expect(1);
-            bigIp.ready(util.NO_RETRY)
+            bigIp.ready(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ready should have failed availability.");
                 })
@@ -828,7 +905,7 @@ module.exports = {
             );
 
             test.expect(1);
-            bigIp.ready(util.NO_RETRY)
+            bigIp.ready(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "Ready should have failed MCP check.");
                 })
@@ -844,7 +921,7 @@ module.exports = {
             icontrolMock.fail('list', '/tm/sys/mcp-state/');
 
             test.expect(1);
-            bigIp.ready(util.NO_RETRY)
+            bigIp.ready(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, "MCP check should have rejected.");
                 })
@@ -929,7 +1006,7 @@ module.exports = {
             );
 
             test.expect(1);
-            bigIp.rebootRequired(util.NO_RETRY)
+            bigIp.rebootRequired(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, 'rebootRequired with no value should not have resolved.');
                 })
@@ -944,7 +1021,7 @@ module.exports = {
         testFailedActionCheck: function(test) {
             icontrolMock.fail('list', '/tm/sys/db/provision.action');
             test.expect(1);
-            bigIp.rebootRequired(util.NO_RETRY)
+            bigIp.rebootRequired(utilMock.NO_RETRY)
                 .then(function() {
                     test.ok(false, 'rebootRequired with failed action check should not have resolved.');
                 })

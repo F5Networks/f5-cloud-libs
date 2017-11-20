@@ -5,6 +5,7 @@
         return -1;
     }
 
+    coapi_login("admin");
     $query_result = coapi_query("master_key");
     $row = coapi_fetch($query_result);
     $master_key = $row["master_key"];
