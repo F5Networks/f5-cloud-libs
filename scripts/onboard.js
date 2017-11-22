@@ -56,8 +56,6 @@
             var index;
             var i;
 
-            const METRICS_TRACKING_ID = 'UA-107165927-1';
-
             var DEFAULT_LOG_FILE = '/tmp/onboard.log';
             var ARGS_FILE_ID = 'onboard_' + Date.now();
 
@@ -169,7 +167,7 @@
                     if (Object.keys(metrics).length > 0) {
                         metrics.action = 'onboard';
                         metrics.cloudLibsVersion = options.version();
-                        metricsCollector.upload(METRICS_TRACKING_ID, metrics);
+                        metricsCollector.upload(metrics);
                     }
                 }
                 catch (err) {

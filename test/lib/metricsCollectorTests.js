@@ -39,7 +39,6 @@ module.exports = {
     },
 
     testBasic: function(test) {
-        var trackingId = '1234';
         var metrics = {
             customerId: 'myCustomerId',
             action: 'myAction',
@@ -52,12 +51,13 @@ module.exports = {
             licenseType: 'myLicenseType',
             cloudLibsVersion: 'myCloudLibsVersion'
         };
-        metricsCollector.upload(trackingId, metrics);
+        metricsCollector.upload(metrics);
         test.strictEqual(calledBody,
             '&v=1' +
             '&t=event&ec=run' +
-            '&tid=' + trackingId +
+            '&tid=' + 'UA-107165927-1' +
             '&cid=' + uuid(metrics.customerId) +
+            '&cd1=' + uuid(metrics.customerId) +
             '&ea=' + metrics.action +
             '&an=' + metrics.templateName +
             '&aid=' + metrics.deploymentId +
