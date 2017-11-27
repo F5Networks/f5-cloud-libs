@@ -188,6 +188,11 @@ Runs autoscale code to elect master and cluster
       --provider-options <cloud_options>          Any options that are required for the specific cloud provider. Ex: param1:value1,param2:value2
       -c, --cluster-action <type>                 join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)
       --device-group <device_group>               Device group name.
+          --full-load-on-sync                         Enable full load on sync. Default false.
+          --asm-sync                                  Enable ASM sync. Default false. Default false.
+          --network-failover                          Enable network failover. Default false.
+          --no-auto-sync                              Enable auto sync. Default false (auto sync).
+          --no-save-on-auto-sync                      Enable save on sync if auto sync is enabled. Default false (save on auto sync).
       --block-sync                                If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.
       --license-pool                              BIG-IP was licensed from a BIG-IQ license pool. This is so licenses can be revoked when BIG-IPs are scaled in. Supply the following:
           --big-iq-host <ip_address or FQDN>          IP address or FQDN of BIG-IQ

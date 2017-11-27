@@ -382,6 +382,57 @@ module.exports = {
                 test.strictEqual(createGroupCall.name, deviceGroup);
                 test.done();
             });
+        },
+
+        testCreateGroupOptionsDefaults: function(test) {
+            autoscale.run(argv, testOptions, function() {
+                var createGroupCall = icontrolMock.getRequest(
+                    'create',
+                    '/tm/cm/device-group/'
+                );
+
+                test.expect(5);
+                test.strictEqual(createGroupCall.autoSync, 'enabled');
+                test.strictEqual(createGroupCall.asmSync, 'disabled');
+                test.strictEqual(createGroupCall.networkFailover, 'disabled');
+                test.strictEqual(createGroupCall.fullLoadOnSync, false);
+                test.strictEqual(createGroupCall.saveOnAutoSync, true);
+                test.done();
+            });
+        },
+
+        testCreateGroupOptionsNonDefaults: function(test) {
+            argv.push('--no-auto-sync', '--asm-sync', '--network-failover', '--full-load-on-sync');
+
+            autoscale.run(argv, testOptions, function() {
+                var createGroupCall = icontrolMock.getRequest(
+                    'create',
+                    '/tm/cm/device-group/'
+                );
+
+                test.expect(4);
+                test.strictEqual(createGroupCall.autoSync, 'disabled');
+                test.strictEqual(createGroupCall.asmSync, 'enabled');
+                test.strictEqual(createGroupCall.networkFailover, 'enabled');
+                test.strictEqual(createGroupCall.fullLoadOnSync, true);
+                test.done();
+            });
+        },
+
+        testCreateGroupOptionsNoSaveOnAutoSync: function(test) {
+            argv.push('--no-save-on-auto-sync');
+
+            autoscale.run(argv, testOptions, function() {
+                var createGroupCall = icontrolMock.getRequest(
+                    'create',
+                    '/tm/cm/device-group/'
+                );
+
+                test.expect(2);
+                test.strictEqual(createGroupCall.autoSync, 'enabled');
+                test.strictEqual(createGroupCall.saveOnAutoSync, false);
+                test.done();
+            });
         }
     }
 };
