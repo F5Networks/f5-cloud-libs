@@ -33,6 +33,7 @@ package:
         - docker-executor
     stage: package
     only:
+        - ese-1564
         - /^release-.*/
         - /^hf-.*/
     script:

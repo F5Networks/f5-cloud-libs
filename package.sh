@@ -1,8 +1,10 @@
 #!/bin/bash
 if [ `uname` == 'Darwin' ]; then
     SED_ARGS="-E -i .bak"
+    EXTRA_TAR_ARGS="--exclude=dist --exclude=build --exclude=test --exclude=.git*"
 else
     SED_ARGS="-r -i"
+    EXTRA_TAR_ARGS="--owner=root --group=root --exclude-from=.tarignore --exclude=.tarignore"
 fi
 
 if [[ $1 == '--no-deps' ]]; then
@@ -10,7 +12,20 @@ if [[ $1 == '--no-deps' ]]; then
     npm install --production
 fi
 
-tar -C .. --exclude=".git*" --exclude=".DS_Store" --exclude="npm-debug.log" --exclude="test" --exclude="${PWD##*/}/dist" --exclude="build" --exclude="doc" --exclude="gitHooks" -cvf dist/f5-cloud-libs.tar f5-cloud-libs
+# set perms for non-directories in the current directory
+ls -p | grep -v / | xargs chmod 644
+chmod 744 *.sh
+
+# set other perms
+chmod 755 .
+chmod 755 scripts
+chmod 755 lib
+chmod -R 744 scripts/*
+chmod -R 644 scripts/*.js
+chmod -R 644 lib/*
+
+tar -C .. $EXTRA_TAR_ARGS -cvf dist/f5-cloud-libs.tar f5-cloud-libs
+
 # Suppress gzips timetamp in the tarball - otherwise the digest hash changes on each
 # commit even if the contents do not change. This causes an infinite loop in the build scripts
 # due to packages triggering each other to uptdate hashes.

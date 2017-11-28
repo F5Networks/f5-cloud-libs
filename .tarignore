@@ -1,0 +1,15 @@
+.DS_Store
+.git*
+.jshintrc
+.travis.yml
+npm-debug.log
+build
+dist
+doc
+gitHooks
+test
+doc.sh
+jsdoc.conf
+package.sh
+README.md
+setVersion.sh
