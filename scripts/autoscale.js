@@ -924,7 +924,7 @@
         var passphrase;
 
         if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
-            logger.debug("Generating public/private keys.");
+            logger.debug("Generating public/private keys for autoscaling.");
             return cryptoUtil.generateRandomBytes(PASSPHRASE_LENGTH, 'base64')
                 .then(function(response) {
                     passphrase = response;

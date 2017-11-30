@@ -106,8 +106,12 @@ module.exports = {
 
         testPrivateKeyExists: function(test) {
             childProcessMock.exec = function(command, cb) {
-                var result = 'ok';
-                cb(null, result);
+                if (command.startsWith('/usr/bin/tmsh list sys crypto key')) {
+                    cb(null, 'ok');
+                }
+                else if (command.startsWith('ls -1t')) {
+                    cb(null, ':' + privateKeyFolder + ':' + privateKeyName + '.key');
+                }
             };
             test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
