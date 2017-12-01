@@ -55,7 +55,7 @@ module.exports = {
         test.strictEqual(calledBody,
             '&v=1' +
             '&t=event&ec=run' +
-            '&tid=' + 'UA-107165927-1' +
+            '&tid=' + 'UA-47575237-11' +
             '&cid=' + uuid(metrics.customerId) +
             '&cd1=' + uuid(metrics.customerId) +
             '&ea=' + metrics.action +
