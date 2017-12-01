@@ -436,6 +436,58 @@ module.exports = {
         }
     },
 
+    testDeleteDeviceGroup: {
+        testDeviceGroupDoesntExist: function(test) {
+            icontrolMock.when('list', '/tm/cm/device-group/', [{name: 'def'}]);
+
+            test.expect(2);
+            bigIp.cluster.deleteDeviceGroup('abc')
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testDeviceGroupExists: function(test) {
+            icontrolMock.when('list', '/tm/cm/device-group/', [{name: 'abc'}]);
+
+            test.expect(2);
+            bigIp.cluster.deleteDeviceGroup('abc')
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'delete');
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/abc');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testDevicesRemoved: function(test) {
+            icontrolMock.when('list', '/tm/cm/device-group/', [{name: 'abc'}]);
+
+            test.expect(1);
+            bigIp.cluster.deleteDeviceGroup('abc')
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest('modify', '/tm/cm/device-group/abc'), {devices: []});
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
     testConfigSync: {
         testSetConfigSyncIp: function(test) {
             var ip = '1.2.3.4';
@@ -1322,6 +1374,38 @@ module.exports = {
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup + '/devices');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testRemoveAllFromDeviceGroup: {
+        testBasic: function(test) {
+            test.expect(3);
+            bigIp.cluster.removeAllFromDeviceGroup('abc')
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, ('modify'));
+                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/abc');
+                    test.deepEqual(icontrolMock.lastCall.body, {devices: []});
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testDeviceTrustGroup: function(test) {
+            test.expect(1);
+            bigIp.cluster.removeAllFromDeviceGroup('device_trust_group')
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, '');
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);

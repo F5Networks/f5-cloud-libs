@@ -786,6 +786,12 @@
                     })
                     .then(function(response) {
                         logger.debug(response);
+
+                        // Make sure we don't have a current copy of the device group
+                        return bigIp.cluster.deleteDeviceGroup(options.deviceGroup);
+                    })
+                    .then(function(response) {
+                        logger.debug(response);
                         return bigIp.deviceInfo();
                     })
                     .then(function(response) {
@@ -847,6 +853,12 @@
 
             logger.debug('Resetting current device trust');
             return bigIp.cluster.resetTrust()
+                .then(function(response) {
+                    logger.debug(response);
+
+                    // Make sure we don't have a current copy of the device group
+                    return bigIp.cluster.deleteDeviceGroup(options.deviceGroup);
+                })
                 .then(function(response) {
                     logger.debug(response);
                     return provider.getMasterCredentials(masterInstance.mgmtIp, options.port);
