@@ -3,7 +3,7 @@ proc script::run {} {
         if {[catch {
             set hashes(f5-cloud-libs.tar.gz) b1e8cbbe4cf01050699f09f5ceed5f228269b7234ae1af641f03d71c07ab25d2bd9342c40bca0df6ca00cfb3d9df2a5472104ec136e5fcf2931f74b4a6f38522
             set hashes(f5-cloud-libs-aws.tar.gz) 82248342cb4db9c64fa7b99d8f610deb212c47788f66fc6c93bdd9c37f2de1592bbdda0953cfc8517c1a5cd3440e186cb19f720cbffd920edbf8a7cf08806ef0
-            set hashes(f5-cloud-libs-azure.tar.gz) 33786b65a5857f71edd1112707b5f162b056edcec46327f8f21432627561733e4cf041cdc7b529c6a32ddd7d73ceb1ede5c3fea2d54f1f7b318619164c13513f
+            set hashes(f5-cloud-libs-azure.tar.gz) 48240aa0281795f781866ecb18e2ee8f1cca46a98210a771d8a2c7eaab66b25ef7d71d649fbd54b07b56cf2d637e0ee8aace83709c6359d0894eec30c429d340
             set hashes(f5-cloud-libs-gce.tar.gz) 61f488c2de2ae78965598d261a92467c40ce0ead0ba9eca0dad22e64aee71132fe382129bd7ed8632ab88bb3d8a5f6c57137417f298c446205b1e42d808d5e1e
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
             set hashes(f5.http.v1.2.0rc4.tmpl) 47c19a83ebfc7bd1e9e9c35f3424945ef8694aa437eedd17b6a387788d4db1396fefe445199b497064d76967b0d50238154190ca0bd73941298fc257df4dc034
