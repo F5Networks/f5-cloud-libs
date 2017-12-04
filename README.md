@@ -14,6 +14,12 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
+### Version 3..50
+* Autoscale improvements
+    * More device group options in autoscale.js
+    * Use save-on-auto-sync when creating device group
+    * Fix password syncing in master election
+
 ### Version 3.4.0
 * Autoscale improvements
     * Handle replacing master
