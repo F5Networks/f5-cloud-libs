@@ -39,7 +39,7 @@
 
             try {
                 options
-                    .version('3.4.0')
+                    .version('3.5.0')
                     .option('--data-file <data_file>', 'Full path to file with data (use this or --data)')
                     .parse(argv);
 
