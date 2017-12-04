@@ -21,7 +21,10 @@ if [[ "$BRANCH" =~ $RELEASE || "$BRANCH" =~ $HOTFIX ]]; then
     echo Using build artifact
     URL="${CI_BASE_URL}/${PROJECT_ID}/builds/artifacts/$BRANCH/download?job=package"
     echo URL "$URL"
-    curl -s --insecure -o "$DOWNLOAD_LOCATION" -H "PRIVATE-TOKEN: $API_TOKEN" "$URL"
+    curl -s --insecure -o ${DOWNLOAD_LOCATION}.zip -H "PRIVATE-TOKEN: $API_TOKEN" "$URL"
+    echo Unzipping build
+    unzip ${DOWNLOAD_LOCATION}.zip
+    mv dist/* "$DOWNLOAD_LOCATION"
 else
     echo Using dist directory
     URL=${CM_BASE_URL}/${REPO}/raw/${BRANCH}/${FILE}
@@ -55,7 +58,8 @@ sed $SED_ARGS "s/set hashes\($FILE_NAME\) .*/set hashes\($FILE_NAME\) $NEW_HASH/
 sed $SED_ARGS "/script-signature/d" ../dist/verifyHash
 
 #cleanup
-rm -f DOWNLOAD_LOCATION
+rm -f ${DOWNLOAD_LOCATION}
+rm -f ${DOWNLOAD_LOCATION}.zip
 rm -f verifyHash.bak
 
 popd
