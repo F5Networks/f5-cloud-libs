@@ -19,12 +19,13 @@ DOWNLOAD_LOCATION=/tmp/"$FILE_NAME"
 
 if [[ "$BRANCH" =~ $RELEASE || "$BRANCH" =~ $HOTFIX ]]; then
     echo Using build artifact
+    UNZIP_DIR=/tmp/f5-cloud-dist
     URL="${CI_BASE_URL}/${PROJECT_ID}/builds/artifacts/$BRANCH/download?job=package"
     echo URL "$URL"
     curl -s --insecure -o ${DOWNLOAD_LOCATION}.zip -H "PRIVATE-TOKEN: $API_TOKEN" "$URL"
-    echo Unzipping build
-    unzip ${DOWNLOAD_LOCATION}.zip
-    mv dist/* /tmp
+    echo Unzipping build to ${UNZIP_DIR}
+    unzip -d ${UNZIP_DIR} ${DOWNLOAD_LOCATION}.zip
+    mv ${UNZIP_DIR}/dist/* /tmp
 else
     echo Using dist directory
     URL=${CM_BASE_URL}/${REPO}/raw/${BRANCH}/${FILE}
