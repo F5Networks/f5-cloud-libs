@@ -44,7 +44,7 @@ fi
 
 if [[ -n "$CLOUD_IAPPS_BRANCH_TO_TRIGGER" ]]; then
     echo Triggering build of f5-cloud-iapps "$CLOUD_IAPPS_BRANCH_TO_TRIGGER" branch
-    curl -s --insecure -X POST -F "token=$CLOUD_IAPPS_TRIGGER_TOKEN" -F "ref=$CLOUD_IAPPS_BRANCH_TO_TRIGGER" -F "variables[UPDATE_HASH_PROJECT_ID]=$CI_PROJECT_ID" -F "variables[UPDATE_HASH_REPO]=$CI_PROJECT_NAME" -F "variables[UPDATE_HASH_BRANCH]=$CI_BUILD_REF_NAME" -F "variables[UPDATE_HASH_FILE]=dist/${CI_PROJECT_NAME}.tar.gz" ${CI_BASE_URL}/${CLOUD_IAPPS_PROJECT_ID}/trigger/builds
+    curl -s --insecure -X POST -F "token=$CLOUD_IAPPS_TRIGGER_TOKEN" -F "ref=$CLOUD_IAPPS_BRANCH_TO_TRIGGER" -F "variables[UPDATE_HASH_PROJECT_ID]=$CI_PROJECT_ID" -F "variables[UPDATE_HASH_BUILD_ID]=${CI_BUILD_ID}" -F "variables[UPDATE_HASH_REPO]=$CI_PROJECT_NAME" -F "variables[UPDATE_HASH_BRANCH]=$CI_BUILD_REF_NAME" -F "variables[UPDATE_HASH_FILE]=dist/${CI_PROJECT_NAME}.tar.gz" ${CI_BASE_URL}/${CLOUD_IAPPS_PROJECT_ID}/trigger/builds
     echo
 else
     echo No branch to trigger
