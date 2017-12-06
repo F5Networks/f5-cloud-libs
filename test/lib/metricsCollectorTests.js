@@ -57,7 +57,7 @@ module.exports = {
             '&t=event&ec=run' +
             '&tid=' + 'UA-47575237-11' +
             '&cid=' + uuid(metrics.customerId) +
-            '&cd1=' + uuid(metrics.customerId) +
+            '&aiid=' + uuid(metrics.customerId) +
             '&ea=' + metrics.action +
             '&an=' + metrics.templateName +
             '&aid=' + metrics.deploymentId +
