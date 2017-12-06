@@ -65,4 +65,9 @@ notify:
         - master
         - triggers
     script:
-        - ./build/notifyProjects.sh
+        - if [[ "$AUTO_NOTIFY" == true ]]; then
+        -     echo 'Running notifyProjects.sh'
+        -     ./build/notifyProjects.sh
+        - else
+        -     echo AUTO_NOTIFY is off, skipping notification.
+        - fi
