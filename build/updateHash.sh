@@ -17,7 +17,7 @@ FILE_NAME=${FILE##*/}
 echo FILE_NAME "$FILE_NAME"
 DOWNLOAD_LOCATION=/tmp/"$FILE_NAME"
 
-if [[ "$BRANCH" =~ $RELEASE || "$BRANCH" =~ $HOTFIX ]]; then
+if [[ "$USE_DIST" != true && ("$BRANCH" =~ $RELEASE || "$BRANCH" =~ $HOTFIX) ]]; then
     echo Using build artifact
     UNZIP_DIR=/tmp/f5-cloud-dist
     URL="${CI_BASE_URL}/${PROJECT_ID}/builds/artifacts/$BRANCH/download?job=package"
@@ -26,6 +26,7 @@ if [[ "$BRANCH" =~ $RELEASE || "$BRANCH" =~ $HOTFIX ]]; then
     echo Unzipping build to ${UNZIP_DIR}
     unzip -d ${UNZIP_DIR} ${DOWNLOAD_LOCATION}.zip
     mv ${UNZIP_DIR}/dist/* /tmp
+    rm -rf ${UNZIP_DIR}
 else
     echo Using dist directory
     URL=${CM_BASE_URL}/${REPO}/raw/${BRANCH}/${FILE}

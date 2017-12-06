@@ -33,7 +33,7 @@ update_hash:
         - if [[ -n "${UPDATE_HASH_PROJECT_ID}" && "${UPDATE_HASH_REPO}" && "${UPDATE_HASH_BRANCH}" && "${UPDATE_HASH_FILE}" ]]; then
         -     apt-get update
         -     apt-get install -y unzip
-        -     ./build/updateHash.sh "${UPDATE_HASH_PROJECT_ID}" "${UPDATE_HASH_REPO}" "${UPDATE_HASH_BRANCH}" "${UPDATE_HASH_FILE}"
+        -     ./build/updateHash.sh "${UPDATE_HASH_PROJECT_ID}" "${UPDATE_HASH_REPO}" "${UPDATE_HASH_BRANCH}" "${UPDATE_HASH_FILE}" "${USE_DIST}"
         -     ./build/commitAndPushHash.sh
         - fi
 
