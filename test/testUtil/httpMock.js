@@ -41,6 +41,7 @@ module.exports = {
         },
         on: function(event, cb) {
             this.eventMap[event] = cb;
+            return this;
         },
         setTimeout: function(timeout) {
             this.timeout = timeout;
@@ -85,6 +86,8 @@ module.exports = {
     setResponse: function(response, headers, statusCode) {
         var key;
         var lowerCaseHeaders = {};
+
+        headers = headers || {};
         this.clientRequest.response = typeof response === 'object' ? JSON.stringify(response) : response;
         for (key in headers) {
             lowerCaseHeaders[key.toLowerCase()] = headers[key];
