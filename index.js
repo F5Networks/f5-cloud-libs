@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,7 @@
  */
 'use strict';
 
-module.exports = process.env.TEST_COVERAGE ?
-{
-    activeError: require('./lib-cov/activeError'),
-    autoscaleProvider: require('./lib-cov/autoscaleProvider'),
-    bigIp: require('./lib-cov/bigIp'),
-    bigIpCluster: require('./lib-cov/bigIpCluster'),
-    bigIpOnboard: require('./lib-cov/bigIpOnboard'),
-    cryptoUtil: require('./lib-cov/cryptoUtil'),
-    localKeyUtil: require('./lib-cov/localKeyUtil'),
-    httpUtil: require('./lib-cov/httpUtil'),
-    iControl: require('./lib-cov/iControl'),
-    ipc: require('./lib-cov/ipc'),
-    logger: require('./lib-cov/logger'),
-    metricsCollector: require('./lib-cov/metricsCollector'),
-    sharedConstants: require('./lib-cov/sharedConstants'),
-    signals: require('./lib-cov/signals'),
-    util: require('./lib-cov/util')
-} :
-{
+module.exports = {
     activeError: require('./lib/activeError'),
     autoscaleProvider: require('./lib/autoscaleProvider'),
     bigIp: require('./lib/bigIp'),

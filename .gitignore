@@ -1,6 +1,6 @@
 .vscode
 doc
 node_modules
-lib-cov
+coverage
 npm-debug.log
 out
