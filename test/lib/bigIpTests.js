@@ -23,6 +23,8 @@ const realSetTimeout = setTimeout;
 const realUnlink = fs.unlink;
 const realExecFile = childProcessMock.execFile;
 
+const decryptedPassword = 'foofoobarbar';
+
 var BigIp;
 var utilMock;
 var icontrolMock;
@@ -68,6 +70,15 @@ module.exports = {
         childProcessMock.execFile = realExecFile;
 
         callback();
+    },
+
+    testConstructor: function(test) {
+        test.doesNotThrow(function() {
+            new BigIp({
+                logger: {}
+            });
+        });
+        test.done();
     },
 
     testActive: {
@@ -250,6 +261,96 @@ module.exports = {
                     fs.unlinkSync(passwordFile);
                     test.done();
                 });
+        },
+
+        testPasswordEncrypted: {
+            setUp: function(callback) {
+                localKeyUtilMock.getPrivateKeyFilePath = function() {
+                    return q('/tmp/foo');
+                };
+                localKeyUtilMock.getPrivateKeyMetadata = function() {
+                    return q(
+                        {
+                            passphrase: 'abc123'
+                        }
+                    );
+                };
+                cryptoUtilMock.decrypt = function() {
+                    return q(decryptedPassword);
+                };
+
+                callback();
+            },
+
+            testBasic: function(test) {
+                test.expect(1);
+                bigIp.init('host', 'user', 'password', {passwordEncrypted: true})
+                    .then(function() {
+                        test.strictEqual(bigIp.password, decryptedPassword);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
+            testPrivateKeyFilePathError: function(test) {
+                localKeyUtilMock.getPrivateKeyFilePath = function() {
+                    return q();
+                };
+
+                test.expect(1);
+                bigIp.init('host', 'user', 'password', {passwordEncrypted: true})
+                    .then(function() {
+                        test.ok(false, 'should have thrown no private key');
+                    })
+                    .catch(function(err) {
+                        test.notStrictEqual(err.message.indexOf('No private key found'), -1);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
+            testPrivateKeyMetadataError: function(test) {
+                localKeyUtilMock.getPrivateKeyMetadata = function() {
+                    return q();
+                };
+
+                test.expect(1);
+                bigIp.init('host', 'user', 'password', {passwordEncrypted: true})
+                    .then(function() {
+                        test.ok(false, 'should have thrown no private key metadata');
+                    })
+                    .catch(function(err) {
+                        test.notStrictEqual(err.message.indexOf('No private key metadata'), -1);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
+            testDecryptError: function(test) {
+                const message = 'decrypt password error';
+
+                cryptoUtilMock.decrypt = function() {
+                    return q.reject(new Error(message));
+                };
+
+                test.expect(1);
+                bigIp.init('host', 'user', 'password', {passwordEncrypted: true})
+                    .then(function() {
+                        test.ok(false, 'should have thrown decryption error');
+                    })
+                    .catch(function(err) {
+                        test.strictEqual(err.message, message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            }
         },
 
         testNotInitialized: function(test) {
@@ -472,7 +573,100 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
+
+        testEncryptedPassphrase: function(test) {
+            const folder = 'CloudLibs';
+            const name = 'cloudLibsPrivate';
+            const passphrase = 'abc123';
+
+            var keyFile = '/foo/bar';
+            var expectedBody = {
+                command: 'install',
+                name: '/CloudLibs/cloudLibsPrivate',
+                fromLocalFile: keyFile,
+                passphrase: passphrase
+            };
+
+            icontrolMock.when('create', '/tm/sys/crypto/key', {});
+
+            test.expect(2);
+            bigIp.installPrivateKey(keyFile, folder, name, {passphrase: passphrase})
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
+                    test.strictEqual(removedFile, keyFile);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testUnlinkErrorIgnored: function(test) {
+            const folder = 'CloudLibs';
+            const name = 'cloudLibsPrivate';
+
+            var keyFile = '/foo/bar';
+
+            icontrolMock.when('create', '/tm/sys/crypto/key', {});
+
+            fs.unlink = function(file, cb) {
+                cb (new Error());
+            };
+
+            test.expect(1);
+            bigIp.installPrivateKey(keyFile, folder, name)
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
+    },
+
+    testGetPrivateKeyMetadata: function(test) {
+        const folder = 'aFolder';
+        const name = 'aKey';
+        const metadata = {
+            foo: 'bar',
+            hello: 'world'
+        };
+
+        icontrolMock.when(
+            'list',
+            '/tm/sys/file/ssl-key/~' + folder + '~' + name + '.key',
+            metadata
+        );
+
+        bigIp.getPrivateKeyMetadata(folder, name)
+            .then(function(response) {
+                test.deepEqual(response, metadata);
+            })
+            .catch(function(err) {
+                test.ok(false, err);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testGetPassword: function(test) {
+        bigIp.getPassword()
+            .then(function(response) {
+                test.strictEqual(response, 'password');
+            })
+            .catch(function(err) {
+                test.ok(false, err);
+            })
+            .finally(function() {
+                test.done();
+            });
     },
 
     testLoadConfig: {
@@ -636,6 +830,25 @@ module.exports = {
                 });
         },
 
+        testMcpNeverReady: function(test) {
+            const message = 'mcp not ready';
+            childProcessMock.execFile = function(file, cb) {
+                cb(new Error(message));
+            };
+
+            test.expect(1);
+            bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
+                .then(function() {
+                    test.ok(false, 'Should have thrown mcp not ready');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
         testFailed: function(test) {
             icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'FAILED'});
             test.expect(1);
@@ -666,30 +879,103 @@ module.exports = {
                 });
         },
 
-        testPasswordUrl: function(test) {
-            var fs = require('fs');
-            var password = 'myPassword';
-            var passwordFile = '/tmp/passwordFromUrlTest';
-            var passwordUrl = 'file://' + passwordFile;
+        testPasswordUrl: {
+            testBasic: function(test) {
+                var fs = require('fs');
+                var password = 'myPassword';
+                var passwordFile = '/tmp/passwordFromUrlTest';
+                var passwordUrl = 'file://' + passwordFile;
 
-            fs.writeFileSync(passwordFile, password);
+                fs.writeFileSync(passwordFile, password);
 
-            bigIp.init('host', 'user', passwordUrl, {passwordIsUrl: true})
-                .then(function() {
-                    bigIp.icontrol = icontrolMock;
-                    bigIp.password = '';
-                    bigIp.loadUcs('/tmp/foo')
-                        .then(function() {
-                            test.strictEqual(bigIp.password, password);
-                        })
-                        .catch(function(err) {
-                            test.ok(false, err);
-                        })
-                        .finally(function() {
-                            fs.unlinkSync(passwordFile);
-                            test.done();
+                test.expect(1);
+                bigIp.init('host', 'user', passwordUrl, {passwordIsUrl: true})
+                    .then(function() {
+                        bigIp.icontrol = icontrolMock;
+                        bigIp.password = '';
+                        bigIp.loadUcs('/tmp/foo')
+                            .then(function() {
+                                test.strictEqual(bigIp.password, password);
+                            })
+                            .catch(function(err) {
+                                test.ok(false, err);
+                            })
+                            .finally(function() {
+                                fs.unlinkSync(passwordFile);
+                                test.done();
+                            });
                         });
-                    });
+            },
+
+            testGetDataFromUrlError: function(test) {
+                const message = 'getDataFromUrl error';
+
+                var fs = require('fs');
+                var password = 'myPassword';
+                var passwordFile = '/tmp/passwordFromUrlTest';
+                var passwordUrl = 'file://' + passwordFile;
+
+                fs.writeFileSync(passwordFile, password);
+
+                test.expect(1);
+                bigIp.init('host', 'user', passwordUrl, {passwordIsUrl: true})
+                    .then(function() {
+                        utilMock.getDataFromUrl = function() {
+                            return q.reject(new Error(message));
+                        };
+
+                        bigIp.icontrol = icontrolMock;
+                        bigIp.password = '';
+                        bigIp.loadUcs('/tmp/foo')
+                            .then(function() {
+                                test.ok(false, 'should have thrown getDataFromUrl error');
+                            })
+                            .catch(function(err) {
+                                test.strictEqual(err.message, message);
+                            })
+                            .finally(function() {
+                                fs.unlinkSync(passwordFile);
+                                test.done();
+                            });
+                        });
+            },
+
+            testDecryptPasswordError: function(test) {
+                const message = 'encrypt password error';
+
+                var fs = require('fs');
+                var password = 'myPassword';
+                var passwordFile = '/tmp/passwordFromUrlTest';
+                var passwordUrl = 'file://' + passwordFile;
+
+                fs.writeFileSync(passwordFile, password);
+
+                test.expect(1);
+                bigIp.init('host', 'user', passwordUrl, {passwordIsUrl: true})
+                    .then(function() {
+                        cryptoUtilMock.encrypt = function() {
+                            return q.reject(new Error(message));
+                        };
+                        localKeyUtilMock.generateAndInstallKeyPair = function() {
+                            return q();
+                        };
+
+                        bigIp.initOptions.passwordEncrypted = true;
+                        bigIp.icontrol = icontrolMock;
+                        bigIp.password = '';
+                        bigIp.loadUcs('/tmp/foo', {}, {initLocalKeys: true})
+                            .then(function() {
+                                test.ok(false, 'should have thrown getDataFromUrl error');
+                            })
+                            .catch(function(err) {
+                                test.strictEqual(err.message, message);
+                            })
+                            .finally(function() {
+                                fs.unlinkSync(passwordFile);
+                                test.done();
+                            });
+                        });
+            }
         }
     },
 
@@ -1095,24 +1381,30 @@ module.exports = {
                 },
                 {
                     method: 'delete',
-                    path: '/okie/dokie'
+                    path: '/okie/dokie',
+                    body: {
+                        hello: 'world'
+                    }
                 }
             ];
 
             var transId = '1234';
 
-            icontrolMock.when('create',
-                              '/tm/transaction/',
-                              {
-                                  transId: transId
-                              });
+            icontrolMock.when(
+                'create',
+                '/tm/transaction/',
+                {
+                    transId: transId
+                }
+            );
 
-            icontrolMock.when('modify',
-                              '/tm/transaction/' + transId,
-                              {
-                                  state: 'COMPLETED'
-                              }
-                              );
+            icontrolMock.when(
+                'modify',
+                '/tm/transaction/' + transId,
+                {
+                    state: 'COMPLETED'
+                }
+            );
 
             test.expect(5);
             bigIp.transaction(commands)
@@ -1120,7 +1412,7 @@ module.exports = {
                     test.strictEqual(icontrolMock.getRequest('list', '/foo/bar'), null);
                     test.deepEqual(icontrolMock.getRequest('create', '/bar/foo'), {foo: 'bar'});
                     test.deepEqual(icontrolMock.getRequest('modify', 'hello/world', {roger: 'dodger'}));
-                    test.deepEqual(icontrolMock.getRequest('delete', '/okie/dokie'), null);
+                    test.deepEqual(icontrolMock.getRequest('delete', '/okie/dokie'), {hello: 'world'});
                     test.deepEqual(icontrolMock.getRequest('modify', '/tm/transaction/1234'), { state: 'VALIDATING' });
                 })
                 .catch(function(err) {

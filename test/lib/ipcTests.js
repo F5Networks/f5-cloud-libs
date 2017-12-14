@@ -166,5 +166,19 @@ module.exports = {
             test.strictEqual(fs.existsSync(SIGNAL_BASE_PATH), true);
             test.done();
         }
+    },
+
+    testSetLogger: function(test) {
+        test.doesNotThrow(function() {
+            ipc.setLogger({});
+        });
+        test.done();
+    },
+
+    testSetLoggerOptions: function(test) {
+        test.doesNotThrow(function() {
+            ipc.setLoggerOptions({});
+        });
+        test.done();
     }
 };

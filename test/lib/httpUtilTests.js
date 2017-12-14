@@ -19,15 +19,20 @@ const q = require('q');
 const httpUtil = require('../../../f5-cloud-libs').httpUtil;
 const httpMock = require('../testUtil/httpMock');
 
-const realRequest = httpUtil.request;
-
 const testUrl = 'https://one/two/three';
 const testOptions = {
     foo: "bar",
     hello: "world"
 };
 
-var http = require('http');
+const http = require('http');
+const https = require('https');
+
+const realHttpUtilRequest = httpUtil.request;
+const realHttpRequest = http.request;
+const realHttpsRequest = https.request;
+const realHttpClientRequest = http.clientRequest;
+const realHttpsClientRequest = https.clientRequest;
 
 var lastRequest;
 var requestOptions;
@@ -56,7 +61,7 @@ module.exports = {
         },
 
         tearDown: function(callback) {
-            httpUtil.request = realRequest;
+            httpUtil.request = realHttpUtilRequest;
             callback();
         },
 
@@ -146,7 +151,18 @@ module.exports = {
             httpMock.reset();
             http.request = httpMock.request;
             http.clientRequest = httpMock.clientRequest;
+            https.request = httpMock.request;
+            https.clientRequest = httpMock.clientRequest;
             requestOptions = {};
+
+            callback();
+        },
+
+        tearDown: function(callback) {
+            http.request = realHttpRequest;
+            http.clientRequest = realHttpClientRequest;
+            https.request = realHttpsRequest;
+            https.clientRequest = realHttpsClientRequest;
 
             callback();
         },
@@ -159,6 +175,82 @@ module.exports = {
                     test.strictEqual(http.lastRequest.hostname, 'www.example.com');
                     test.strictEqual(http.lastRequest.method, 'GET');
                     test.strictEqual(http.lastRequest.path, '/');
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testRequestOptionsWithPath: function(test) {
+            test.expect(1);
+            httpUtil.request('GET', 'http://www.example.com/foo/bar')
+                .then(function() {
+                    test.strictEqual(http.lastRequest.path, '/foo/bar');
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testRequestOptionsWithQuery: function(test) {
+            var query = '?hello=world&alpha=beta';
+            test.expect(1);
+            httpUtil.request('GET', 'http://www.example.com/foo/bar' + query)
+                .then(function() {
+                    test.strictEqual(http.lastRequest.path, '/foo/bar' + query);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testHttps: function(test) {
+            test.expect(1);
+            httpUtil.request('GET', 'https://www.example.com')
+            .then(function() {
+                test.strictEqual(https.lastRequest.protocol, 'https:');
+            })
+            .catch(function(err) {
+                test.ok(false, err);
+            })
+            .finally(function() {
+                test.done();
+            });
+        },
+
+        testBadProtocol: function(test) {
+            test.expect(1);
+            httpUtil.request('GET', 'file:///tmp/foo')
+                .then(function() {
+                    test.ok(false, 'Should have thrown bad protocol');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('supported'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testTextBody: function(test) {
+            var body = "hello, world";
+            var options = {
+                body: body,
+            };
+
+            test.expect(1);
+            httpUtil.request('GET', 'http://www.example.com', options)
+                .then(function() {
+                    test.strictEqual(httpMock.clientRequest.data, body);
                 })
                 .catch(function(err) {
                     test.ok(false, err);
@@ -222,7 +314,7 @@ module.exports = {
                 });
         },
 
-        testError: function(test) {
+        testBadStatus: function(test) {
             httpMock.setResponse(null, null, 300);
 
             test.expect(1);
@@ -232,6 +324,42 @@ module.exports = {
                 })
                 .catch(function(err) {
                     test.notStrictEqual(err.message.indexOf('300'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testError: function(test) {
+            const message = 'foo bar';
+            httpMock.setError(message);
+
+            test.expect(1);
+            httpUtil.request('GET', 'http://www.example.com')
+                .then(function() {
+                    test.ok(false, 'should have thrown error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testHttpThrows: function(test) {
+            const message = 'http threw';
+            http.request = function() {
+                throw new Error(message);
+            };
+
+            test.expect(1);
+            httpUtil.request('GET', 'http://www.example.com')
+                .then(function() {
+                    test.ok(false, 'should have thrown error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
                 })
                 .finally(function() {
                     test.done();

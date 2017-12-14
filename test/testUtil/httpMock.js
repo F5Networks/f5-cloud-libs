@@ -30,24 +30,38 @@ module.exports = {
                 if (this.eventMap[event]) {
                     this.eventMap[event](args);
                 }
-            }
+            },
+            resume: function() {}
         },
         end: function() {
-            if (this.cb) {
-                this.cb(this.incomingMessage);
+            if (this.errorToEmit) {
+                this.emit('error', this.errorToEmit);
             }
-            this.incomingMessage.emit('data', this.response);
-            this.incomingMessage.emit('end');
+            else {
+                if (this.cb) {
+                    this.cb(this.incomingMessage);
+                }
+                this.incomingMessage.emit('data', this.response);
+                this.incomingMessage.emit('end');
+            }
         },
         on: function(event, cb) {
             this.eventMap[event] = cb;
             return this;
+        },
+        emit: function(event, args) {
+            if (this.eventMap[event]) {
+                this.eventMap[event](args);
+            }
         },
         setTimeout: function(timeout) {
             this.timeout = timeout;
         },
         write: function(data) {
             this.data = data;
+        },
+        emitError: function(err) {
+            this.errorToEmit = err;
         }
     },
 
@@ -79,7 +93,11 @@ module.exports = {
                 cb
             );
         }
-        clientRequest.end();
+
+        setImmediate(function() {
+            clientRequest.end();
+        });
+
         return clientRequest;
     },
 
@@ -99,11 +117,16 @@ module.exports = {
         }
     },
 
+    setError: function(message) {
+        this.clientRequest.emitError(new Error(message));
+    },
+
     reset: function() {
         delete this.clientRequest.cb;
         delete this.clientRequest.data;
         delete this.clientRequest.response;
         delete this.clientRequest.timeout;
+        delete this.clientRequest.errorToEmit;
         this.clientRequest.incomingMessage.headers = {};
         this.clientRequest.incomingMessage.statusCode = 200;
         this.clientRequest.eventMap = {};

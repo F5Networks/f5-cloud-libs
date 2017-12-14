@@ -68,5 +68,61 @@ module.exports = {
             '&ck=' + metrics.licenseType +
             '&ds=' + metrics.cloudLibsVersion);
         test.done();
+    },
+
+    testNoCustomerId: function(test) {
+        var metrics = {
+            action: 'myAction',
+            templateName: 'myTemplateName',
+            deploymentId: 'myDeploymentId',
+            templateVersion: 'myTemplateVersion',
+            cloudName: 'myCloudName',
+            region: 'myRegion',
+            bigIpVersion: 'myBigIpVersion',
+            licenseType: 'myLicenseType',
+            cloudLibsVersion: 'myCloudLibsVersion'
+        };
+        metricsCollector.upload(metrics)
+            .then(function() {
+                test.ok(false, 'should have rejected no customerId');
+            })
+            .catch(function(err) {
+                test.notStictEqual(err.message.indexOf('customer id'), -1);
+            })
+            .finally(function() {
+                test.done();
+            });
+    },
+
+    testDataTruncated: function(test) {
+        var metrics = {
+            customerId: 'myCustomerId',
+            region: '012345678901234567890123456789012345678901234567891'
+        };
+        metricsCollector.upload(metrics);
+        test.strictEqual(calledBody,
+            '&v=1' +
+            '&t=event&ec=run' +
+            '&tid=' + 'UA-47575237-11' +
+            '&cid=' + uuid(metrics.customerId) +
+            '&aiid=' + uuid(metrics.customerId) +
+            '&ea=unknown' +
+            '&cm=' + '01234567890123456789012345678901234567890123456789'
+        );
+        test.done();
+    },
+
+    testSetLogger: (function(test) {
+        test.doesNotThrow(function() {
+            metricsCollector.setLogger({});
+        });
+        test.done();
+    }),
+
+    testSetLoggerOptions: function(test) {
+        test.doesNotThrow(function() {
+            metricsCollector.setLoggerOptions({});
+        });
+        test.done();
     }
 };

@@ -234,5 +234,20 @@ module.exports = {
             .finally(function() {
                 test.done();
             });
-    }
+    },
+
+    testError: function(test) {
+        var message = 'http error';
+        httpMock.setError(message);
+        iControl.list('somepath')
+        .then(function() {
+            test.ok(false, 'should have thrown an error');
+        })
+        .catch(function(err) {
+            test.strictEqual(err.message, message);
+        })
+        .finally(function() {
+            test.done();
+        });
+}
 };

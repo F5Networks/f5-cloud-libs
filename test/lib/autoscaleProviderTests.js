@@ -15,6 +15,7 @@
  */
 'use strict';
 
+var q = require('q');
 var util = require('util');
 var AutoscaleProvider = require('../../../f5-cloud-libs').autoscaleProvider;
 
@@ -28,12 +29,33 @@ var options = require('commander');
 options.setMaxListeners(0);
 process.setMaxListeners(0);
 
+var instancesCalled = [];
 var testAutoscaleProvider;
+var bigIqMock;
+var poolCalled;
 
 module.exports = {
     setUp: function(callback) {
         testAutoscaleProvider = new TestAutoscaleProvider();
         callback();
+    },
+
+    tearDown: function(callback) {
+        Object.keys(require.cache).forEach(function(key) {
+            delete require.cache[key];
+        });
+
+        callback();
+    },
+
+    testLogger: function(test) {
+        var logger = {
+            a: 1,
+            b:2
+        };
+        testAutoscaleProvider = new TestAutoscaleProvider({logger: logger});
+        test.deepEqual(testAutoscaleProvider.logger, logger);
+        test.done();
     },
 
     testClOptions: function(test) {
@@ -54,6 +76,13 @@ module.exports = {
                 test.ok(true);
                 test.done();
             });
+    },
+
+    testUnimplementedBigIpReady: function(test) {
+        test.doesNotThrow(function() {
+            testAutoscaleProvider.bigIpReady();
+        });
+        test.done();
     },
 
     testUnimplementedGetDataFromUri: function(test) {
@@ -308,6 +337,83 @@ module.exports = {
 
             test.strictEqual(testAutoscaleProvider.isInstanceExpired(instance), false);
             test.done();
+        }
+    },
+
+    testRevokeLicenses: {
+        setUp: function(callback) {
+            bigIqMock = {
+                init: function() {
+                    return q();
+                },
+                revokeLicense: function(poolName, hostname) {
+                    poolCalled = poolName;
+                    instancesCalled.push(hostname);
+                    return q();
+                }
+            };
+
+            testAutoscaleProvider.bigIq = bigIqMock;
+            instancesCalled = [];
+            poolCalled = undefined;
+
+            callback();
+        },
+
+        testBasic: function(test) {
+            var instances = [
+                {
+                    hostname: 'host1'
+                },
+                {
+                    hostname: 'host2'
+                }
+            ];
+            var licensePool = 'myLicensePool';
+
+            testAutoscaleProvider.clOptions = {
+                licensePool: true,
+                licensePoolName: licensePool
+            };
+
+            test.expect(2);
+            testAutoscaleProvider.revokeLicenses(instances, {})
+                .then(function() {
+                    test.strictEqual(poolCalled, licensePool);
+                    test.strictEqual(instancesCalled.length, instances.length);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoLicensePool: function(test) {
+            var instances = [
+                {
+                    hostname: 'host1'
+                },
+                {
+                    hostname: 'host2'
+                }
+            ];
+
+            testAutoscaleProvider.clOptions = {};
+
+            test.expect(2);
+            testAutoscaleProvider.revokeLicenses(instances, {})
+                .then(function() {
+                    test.strictEqual(poolCalled, undefined);
+                    test.strictEqual(instancesCalled.length, 0);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     }
 };

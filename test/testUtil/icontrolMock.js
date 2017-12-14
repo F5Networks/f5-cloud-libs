@@ -40,8 +40,8 @@ module.exports = {
         return this.respond('replace', path);
     },
 
-    delete: function(path, opts) {
-        this.recordRequest('delete', path, null, opts);
+    delete: function(path, body, opts) {
+        this.recordRequest('delete', path, body, opts);
         return this.respond('delete', path);
     },
 

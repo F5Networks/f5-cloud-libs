@@ -21,6 +21,8 @@ const fsMock = require('fs');
 const realExit = process.exit;
 const realWriteFile = fsMock.writeFile;
 
+const passphrase = 'abc123';
+
 var childProcessMock;
 var cryptoUtilMock;
 var localKeyUtil;
@@ -28,12 +30,12 @@ var localKeyUtil;
 var dirCreated;
 var keyPairGenerated;
 var bigIpFolderCreated;
+var installCmd;
 
 var publicKeyDirctory = 'myPublicKeyDir';
 var publicKeyOutFile = 'myPublicKeyOutFile';
 var privateKeyFolder = 'myPrivateKeyFolder';
 var privateKeyName = 'myPrivateKeyName';
-
 
 module.exports = {
     setUp: function(callback) {
@@ -44,11 +46,16 @@ module.exports = {
         dirCreated = false;
         keyPairGenerated = false;
         bigIpFolderCreated = false;
+        installCmd = undefined;
 
         // Don't let script exit - we need the nodeunit process to run to completion
         process.exit = function() {};
 
         childProcessMock.exec = function(command, cb) {
+            if (command.startsWith('/usr/bin/tmsh install')) {
+                installCmd = command;
+            };
+
             cb(null, null);
         };
         childProcessMock.execFile = function(file, cb) {
@@ -63,7 +70,7 @@ module.exports = {
             return q();
         };
         cryptoUtilMock.generateRandomBytes = function() {
-            return q();
+            return q(passphrase);
         };
 
         fsMock.writeFile = function(file, data, options, cb) {
@@ -91,10 +98,11 @@ module.exports = {
 
     testGenerateAndInstallKeyPair: {
         testPrivateKeyCreated: function(test) {
-            test.expect(1);
+            test.expect(2);
             localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
                 .then(function () {
                     test.ok(keyPairGenerated);
+                    test.ok(installCmd.endsWith('passphrase ' + passphrase));
                 })
                 .catch(function(err) {
                     test.ok(false, err);
@@ -115,8 +123,30 @@ module.exports = {
             };
             test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+                .then(function() {
                     test.ifError(keyPairGenerated);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testPrivateKeyExistsForce: function(test) {
+            childProcessMock.exec = function(command, cb) {
+                if (command.startsWith('ls -1t')) {
+                    cb(null, ':' + privateKeyFolder + ':' + privateKeyName + '.key');
+                }
+                else {
+                    cb(null, 'ok');
+                }
+            };
+            test.expect(1);
+            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName, {force: true})
+                .then(function() {
+                    test.ok(keyPairGenerated);
                 })
                 .catch(function(err) {
                     test.ok(false, err);
@@ -156,6 +186,30 @@ module.exports = {
                 })
                 .catch(function(err) {
                     test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testDirectoryCreateError: function(test) {
+            const message = 'cannot make directory';
+
+            fsMock.access = function(file, cb) {
+                cb(new Error());
+            };
+
+            fsMock.mkdir = function(dir, cb) {
+                cb(new Error(message));
+            };
+
+            test.expect(1);
+            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
+                .then(function () {
+                    test.ok(false, 'should have thrown mkdir error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
                 })
                 .finally(function() {
                     test.done();
@@ -230,6 +284,49 @@ module.exports = {
                 })
                 .catch(function(err) {
                     test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testBigIpNotReady: function(test) {
+            const message = 'mcp not ready';
+            childProcessMock.execFile = function(file, cb) {
+                cb(new Error(message));
+            };
+
+            test.expect(1);
+            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
+                .then(function () {
+                    test.ok(false, 'should have thrown mkdir error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testInstallError: function(test) {
+            const message = 'install failed';
+            childProcessMock.exec = function(command, cb) {
+                if (command.startsWith('/usr/bin/tmsh install')) {
+                    cb(new Error(message));
+                }
+                else {
+                    cb(null, null);
+                }
+            };
+
+            test.expect(1);
+            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
+                .then(function () {
+                    test.ok(false, 'should have thrown install error');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf(message), -1);
                 })
                 .finally(function() {
                     test.done();

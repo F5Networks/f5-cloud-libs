@@ -19,7 +19,6 @@ var fs = require('fs');
 var util = require('../../../f5-cloud-libs').util;
 var childProcess = require('child_process');
 var http = require('http');
-var URL = require('url');
 var q = require('q');
 
 var UTIL_ARGS_TEST_FILE = 'UTIL_ARGS_TEST_FILE';
@@ -47,6 +46,9 @@ var bigIpMock = {};
 // fs mock
 var fsStat;
 var fsExistsSync;
+var fsUnlink;
+var fsUnlinkSync;
+var fsReadFile;
 var fsReadFileSync;
 var fsWriteFileSync;
 var fsMkdirSync;
@@ -55,13 +57,13 @@ var fsCreateWriteStream;
 var startupCommands;
 var startupScripts;
 var writtenCommands;
+var fileNameWritten;
 var dataWritten;
 var createdDir;
-
-// URL mock
-var urlParse;
+var unlinkSyncCalled;
 
 // http mock
+var httpMock;
 var httpGet;
 
 var getSavedArgs = function() {
@@ -69,10 +71,36 @@ var getSavedArgs = function() {
 };
 
 module.exports = {
+    setUp: function(callback) {
+        fsStat = fs.stat;
+        fsExistsSync = fs.existsSync;
+        fsUnlink = fs.unlink;
+        fsUnlinkSync = fs.unlinkSync;
+        fsReadFile = fs.readFile;
+        fsReadFileSync = fs.readFileSync;
+        fsWriteFileSync = fs.writeFileSync;
+        fsReaddirSync = fs.readdirSync;
+        fsMkdirSync = fs.mkdirSync;
+        fsCreateWriteStream = fs.createWriteStream;
+
+        callback();
+    },
+
     tearDown: function(callback) {
         Object.keys(require.cache).forEach(function(key) {
             delete require.cache[key];
         });
+
+        fs.stat = fsStat;
+        fs.existsSync = fsExistsSync;
+        fs.unlink = fsUnlink;
+        fs.unlinkSync = fsUnlinkSync;
+        fs.readFile = fsReadFile;
+        fs.readFileSync = fsReadFileSync;
+        fs.writeFileSync = fsWriteFileSync;
+        fs.readdirSync = fsReaddirSync;
+        fs.mkdirSync = fsMkdirSync;
+        fs.createWriteStream = fsCreateWriteStream;
 
         callback();
     },
@@ -137,8 +165,6 @@ module.exports = {
     },
 
     testDeleteArgs: function(test) {
-        var fsExistsSync = fs.existsSync;
-        var fsUnlinkSync = fs.unlinkSync;
         var id = 'foo';
         var deletedPath;
 
@@ -148,9 +174,208 @@ module.exports = {
         };
         util.deleteArgs(id);
         test.strictEqual(deletedPath, '/tmp/rebootScripts/foo.sh');
-        fs.existsSync = fsExistsSync;
-        fs.unlinkSync = fsUnlinkSync;
         test.done();
+    },
+
+    testWriteDataToFile: {
+        setUp: function(callback) {
+            fs.writeFile = function(file, data, options, cb) {
+                fileNameWritten = file;
+                dataWritten = data;
+                cb(null);
+            };
+
+            callback();
+        },
+
+        testDoesNotExist: function(test) {
+            var fileToWrite = '/tmp/foo/bar';
+            var dataToWrite = {
+                hello: 'world'
+            };
+
+            fs.existsSync = function() {return false;};
+
+            test.expect(2);
+            util.writeDataToFile(dataToWrite, fileToWrite)
+                .then(function() {
+                    test.strictEqual(fileNameWritten, fileToWrite);
+                    test.deepEqual(dataWritten, dataToWrite);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testExists: function(test) {
+            fs.existsSync = function() {return true;};
+            fs.unlinkSync = function() {
+                unlinkSyncCalled = true;
+            };
+            unlinkSyncCalled = false;
+
+            test.expect(1);
+            util.writeDataToFile('foo', 'bar')
+                .then(function() {
+                    test.ok(unlinkSyncCalled);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testError: function(test) {
+            var message = 'foo foo';
+            fs.writeFile = function(file, data, options, cb) {
+                cb(new Error(message));
+            };
+
+            test.expect(1);
+            util.writeDataToFile('foo', 'bar')
+                .then(function() {
+                    test.ok(false, 'should have thrown fs error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testReadDataFromFile: {
+        testBasic: function(test) {
+            var dataToRead = {
+                foo: 'bar'
+            };
+            var fileToRead = '/tmp/hello/world';
+            var fileRead;
+
+            fs.readFile = function(file, cb) {
+                fileRead = file;
+                cb(null, dataToRead);
+            };
+
+            test.expect(2);
+            util.readDataFromFile(fileToRead)
+                .then(function(dataRead) {
+                    test.strictEqual(fileRead, fileToRead);
+                    test.deepEqual(dataRead, dataToRead);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testError: function(test) {
+            var message = 'file error';
+
+            fs.readFile = function(file, cb) {
+                cb(new Error(message));
+            };
+
+            test.expect(1);
+            util.readDataFromFile()
+                .then(function() {
+                    test.ok(false, 'should have thrown file read error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testWriteDataToUrl: {
+        testBasic: function(test) {
+            var fileToWrite = '/tmp/foo';
+            var fileUrl = 'file://' + fileToWrite;
+            var dataToWrite = {
+                foo: 'bar'
+            };
+
+            fs.writeFile = function(file, data, options, cb) {
+                fileNameWritten = file;
+                dataWritten = data;
+                cb(null);
+            };
+
+            test.expect(2);
+            util.writeDataToUrl(dataToWrite, fileUrl)
+                .then(function() {
+                    test.strictEqual(fileNameWritten, fileToWrite);
+                    test.deepEqual(dataWritten, dataToWrite);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testBadUrl: function(test) {
+            var fileUrl = {};
+
+            test.expect(1);
+            util.writeDataToUrl('foo', fileUrl)
+                .then(function() {
+                    test.ok(false, 'should have thrown bad url');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf("Parameter 'url' must be a string"), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNonFileUrl: function(test) {
+            var fileUrl = 'http://www.example.com';
+
+            test.expect(1);
+            util.writeDataToUrl('foo', fileUrl)
+                .then(function() {
+                    test.ok(false, 'should have thrown bad url');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('Only file URLs'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testWriteError: function(test) {
+            var message = 'bad write';
+            fs.writeFile = function(file, data, options, cb) {
+                cb(new Error(message));
+            };
+
+            test.expect(1);
+            util.writeDataToUrl('foo', 'file:///tmp/foo')
+                .then(function() {
+                    test.ok(false, 'should have thrown bad url');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testDownload: {
@@ -173,7 +398,6 @@ module.exports = {
                 }
             };
 
-            fsCreateWriteStream = fs.createWriteStream;
             fs.createWriteStream = function() {
                 return fileMock;
             };
@@ -186,27 +410,86 @@ module.exports = {
                 };
             };
 
-            urlParse = URL.parse;
-            URL.parse = function() {
-                return {
-                    protocol: 'http:'
-                };
-            };
-
             callback();
         },
 
         tearDown: function(callback) {
-            fs.createWriteStream = fsCreateWriteStream;
             http.get = httpGet;
-            URL.parse = urlParse;
             callback();
         },
 
         testBasic: function(test) {
-            util.download()
+            util.download('http://www.example.com')
                 .then(function() {
                     test.ok(dataWritten, 'No data written');
+                    test.done();
+                });
+        },
+
+        testBadProtocol: function(test) {
+            test.expect(1);
+            util.download('file:///tmp')
+                .then(function() {
+                    test.ok(false, 'should have thrown bad protocol');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('Unhandled protocol'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testHttpError: function(test) {
+            const message = 'http get error';
+
+            httpMock = require('../testUtil/httpMock');
+            httpMock.reset();
+
+            require.cache.http = {
+                exports: httpMock
+            };
+
+            httpMock.setError(message);
+
+            test.expect(1);
+            util.download('http://www.example.com/foo')
+                .then(function() {
+                    test.ok(false, 'should have thrown http error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testHttpErrorFileWritten: function(test) {
+            const message = 'http get error';
+
+            fs.existsSync = function() {
+                return true;
+            };
+            fs.unlink = function() {};
+            httpMock = require('../testUtil/httpMock');
+            httpMock.reset();
+
+            require.cache.http = {
+                exports: httpMock
+            };
+
+            httpMock.setError(message);
+
+            test.expect(1);
+            util.download('http://www.example.com/foo')
+                .then(function() {
+                    test.ok(false, 'should have thrown http error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
                     test.done();
                 });
         }
@@ -234,13 +517,24 @@ module.exports = {
         },
 
         testHttp: {
-            testBasic: function(test) {
-                var httpMock = require('../testUtil/httpMock');
-                var password = 'foobar';
+            setUp: function(callback) {
+                httpMock = require('../testUtil/httpMock');
+                httpMock.reset();
 
                 require.cache.http = {
                     exports: httpMock
                 };
+
+                callback();
+            },
+
+            tearDown: function(callback) {
+                delete require.cache.http;
+                callback();
+            },
+
+            testBasic: function(test) {
+                var password = 'foobar';
 
                 httpMock.setResponse(password);
 
@@ -254,20 +548,13 @@ module.exports = {
                         test.ok(false, err);
                     })
                     .finally(function() {
-                        delete require.cache.http;
                         test.done();
                     });
             },
 
             testPathAndHeaders: function(test) {
-                var httpMock = require('../testUtil/httpMock');
-
                 var path = '/foo/bar';
                 var headers = {headerName: 'headerValue'};
-
-                require.cache.http = {
-                    exports: httpMock
-                };
 
                 test.expect(2);
                 util.getDataFromUrl('http://www.example.com' + path, {headers: headers})
@@ -279,18 +566,28 @@ module.exports = {
                         test.ok(false, err);
                     })
                     .finally(function() {
-                        delete require.cache.http;
+                        test.done();
+                    });
+            },
+
+            testQuery: function(test) {
+                var query = '?hello=world&alpha=beta';
+
+                test.expect(1);
+                util.getDataFromUrl('http://www.example.com' + query)
+                    .then(function() {
+                        test.strictEqual(httpMock.lastRequest.path, '/' + query);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err);
+                    })
+                    .finally(function() {
                         test.done();
                     });
             },
 
             testJson: function(test) {
-                var httpMock = require('../testUtil/httpMock');
                 var response = {foo: 'bar', hello: 'world'};
-
-                require.cache.http = {
-                    exports: httpMock
-                };
 
                 httpMock.setResponse(response, {'content-type': 'application/json'});
 
@@ -303,18 +600,12 @@ module.exports = {
                         test.ok(false, err);
                     })
                     .finally(function() {
-                        delete require.cache.http;
                         test.done();
                     });
             },
 
             testBadJson: function(test) {
-                var httpMock = require('../testUtil/httpMock');
                 var response = 'foobar';
-
-                require.cache.http = {
-                    exports: httpMock
-                };
 
                 httpMock.setResponse(response, {'content-type': 'application/json'});
 
@@ -327,18 +618,12 @@ module.exports = {
                         test.ok(true);
                     })
                     .finally(function() {
-                        delete require.cache.http;
                         test.done();
                     });
             },
 
             testBadStatus: function(test) {
-                var httpMock = require('../testUtil/httpMock');
-                var status = 400;
-
-                require.cache.http = {
-                    exports: httpMock
-                };
+                const status = 400;
 
                 httpMock.setResponse('foo', {}, status);
 
@@ -351,7 +636,42 @@ module.exports = {
                         test.notStrictEqual(err.message.indexOf(400), -1);
                     })
                     .finally(function() {
-                        delete require.cache.http;
+                        test.done();
+                    });
+            },
+
+            testHttpError: function(test) {
+                const message = 'http error occurred';
+                httpMock.setError(message);
+
+                test.expect(1);
+                util.getDataFromUrl('http://www.example.com')
+                    .then(function() {
+                        test.ok(false, 'Should have thrown an error');
+                    })
+                    .catch(function(err) {
+                        test.strictEqual(err.message, message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
+            testHttpThrow: function(test) {
+                const message = 'http get threw';
+                httpMock.get = function() {
+                    throw new Error(message);
+                };
+
+                test.expect(1);
+                util.getDataFromUrl('http://www.example.com')
+                    .then(function() {
+                        test.ok(false, 'Should have thrown an error');
+                    })
+                    .catch(function(err) {
+                        test.strictEqual(err.message, message);
+                    })
+                    .finally(function() {
                         test.done();
                     });
             }
@@ -369,7 +689,25 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
-        }
+        },
+
+        testReadFileError: function(test) {
+            const message = 'read file error';
+            fs.readFile = function(file, options, cb) {
+                cb (new Error(message));
+            };
+
+            util.getDataFromUrl('file:///foo/bar')
+                .then(function() {
+                    test.ok(false, 'should have thrown read file error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+    }
     },
 
     testLogAndExit: function(test) {
@@ -477,12 +815,6 @@ module.exports = {
 
     testReboot: {
         setUp: function(callback) {
-            fsExistsSync = fs.existsSync;
-            fsReadFileSync = fs.readFileSync;
-            fsWriteFileSync = fs.writeFileSync;
-            fsReaddirSync = fs.readdirSync;
-            fsMkdirSync = fs.mkdirSync;
-
             startupCommands = 'command 1';
             startupScripts = ['script1', 'script2'];
 
@@ -507,15 +839,6 @@ module.exports = {
                 return q();
             };
 
-            callback();
-        },
-
-        tearDown: function(callback) {
-            fs.existsSync = fsExistsSync;
-            fs.readFileSync = fsReadFileSync;
-            fs.writeFileSync = fsWriteFileSync;
-            fs.readdirSync = fsReaddirSync;
-            fs.mkdirSync = fsMkdirSync;
             callback();
         },
 
@@ -603,16 +926,12 @@ module.exports = {
     testSaveArgs: {
 
         setUp: function(callback) {
-            fsStat = fs.stat;
-            fsMkdirSync = fs.mkdirSync;
             argv = ['node', 'utilTests.js', '--one', '--two', 'abc'];
             callback();
         },
 
         tearDown: function(callback) {
             var filesToDelete;
-            fs.stat = fsStat;
-            fs.mkdirSync = fsMkdirSync;
             try {
                 if (fs.existsSync('/tmp/rebootScripts')) {
                     filesToDelete = fs.readdirSync('/tmp/rebootScripts/');
@@ -682,7 +1001,6 @@ module.exports = {
 
             fs.mkdirSync = function(dirName) {
                 createdDir = dirName;
-                fsMkdirSync(dirName);
             };
 
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
@@ -918,6 +1236,7 @@ module.exports = {
 
     testVersionCompare: function(test) {
         test.strictEqual(util.versionCompare("1.7.1", "1.7.10"), -1);
+        test.strictEqual(util.versionCompare("1.7.10", "1.7.1"), 1);
         test.strictEqual(util.versionCompare("1.7.2", "1.7.10"), -1);
         test.strictEqual(util.versionCompare("1.6.1", "1.7.10"), -1);
         test.strictEqual(util.versionCompare("1.6.20", "1.7.10"), -1);
@@ -938,11 +1257,20 @@ module.exports = {
 
         test.strictEqual(util.versionCompare("1.3-dev1", "1.3-dev1"), 0);
         test.strictEqual(util.versionCompare("1.3-dev1", "1.3-dev2"), -1);
+        test.strictEqual(util.versionCompare("1.3-dev2", "1.3-dev1"), 1);
         test.strictEqual(util.versionCompare("1.3-dev19", "1.3-dev2"), 1);
 
         test.strictEqual(util.versionCompare("12.0.0-hf1", "12.0.0-hf2"), -1);
         test.strictEqual(util.versionCompare("12.0.1-hf1", "12.0.0-hf3"), 1);
         test.strictEqual(util.versionCompare("12.1.0", "12.0.0-hf1"), 1);
+
+        test.strictEqual(util.versionCompare("12.0.0-a1", "12.0.0-b1"), -1);
+        test.strictEqual(util.versionCompare("12.0.1-b1", "12.0.0-a1"), 1);
+
+        test.strictEqual(util.versionCompare("12.0.0-b1", "12.0.0-a1"), 1);
+
+        test.strictEqual(util.versionCompare("12.0.0-1", "12.0.0-a1"), 1);
+        test.strictEqual(util.versionCompare("12.0.0-a1", "12.0.0-1"), -1);
 
         test.done();
     }
