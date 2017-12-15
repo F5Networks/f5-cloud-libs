@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2017 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ var fs = require('fs');
 var ipc = require('../../../f5-cloud-libs').ipc;
 
 const SIGNAL_BASE_PATH = '/tmp/f5-cloud-libs-signals/';
+const existsSync = fs.existsSync;
+const closeSync = fs.closeSync;
+const readdirSync = fs.readdirSync;
 
 var checkSignaled = function(expected, test) {
     test.strictEqual(signaled, expected);
@@ -33,24 +36,21 @@ module.exports = {
     },
 
     tearDown: function(callback) {
-        try {
-            ipc.clearSignals();
-        }
-        catch (err) {
-            console.log(err);
-        }
+        fs.readdirSync = readdirSync;
+        fs.closeSync = closeSync;
+        fs.existsSync = existsSync;
+        ipc.clearSignals();
         callback();
     },
 
     testOnce: {
         testBasic: function(test) {
-            test.expect(2);
-
             ipc.once('foo')
                 .then(function() {
                     signaled++;
                 });
 
+            test.expect(2);
             test.strictEqual(signaled, 0);
             ipc.send('foo');
             ipc.send('foo');
@@ -58,17 +58,16 @@ module.exports = {
         },
 
         testTwice: function(test) {
+            ipc.once('foo')
+                .then(function() {
+                    signaled++;
+                });
+            ipc.once('foo')
+                .then(function() {
+                    signaled++;
+                });
+
             test.expect(2);
-
-            ipc.once('foo')
-                .then(function() {
-                    signaled++;
-                });
-            ipc.once('foo')
-                .then(function() {
-                    signaled++;
-                });
-
             test.strictEqual(signaled, 0);
             ipc.send('foo');
             ipc.send('foo');
@@ -76,20 +75,21 @@ module.exports = {
         },
 
         testError: function(test) {
-            var existsSync = fs.existsSync;
+            const message = 'existsSync error';
             fs.existsSync = function() {
-                throw new Error('foo');
+                throw new Error(message);
             };
 
+            test.expect(1);
             try {
                 ipc.once('foo');
                 test.ok(false, 'once should have thrown');
             }
             catch (err) {
-                test.done();
+                test.strictEqual(err.message, message);
             }
             finally {
-                fs.existsSync = existsSync;
+                test.done();
             }
         }
     },
@@ -102,26 +102,28 @@ module.exports = {
         },
 
         testError: function(test) {
-            var closeSync = fs.closeSync;
+            const message = 'closeSync error';
             fs.closeSync = function() {
-                throw new Error('foo');
+                throw new Error(message);
             };
 
+            test.expect(1);
             try {
                 ipc.send('foo');
                 test.ok(false, 'send should have thrown');
             }
             catch (err) {
-                test.done();
+                test.strictEqual(err.message, message);
             }
             finally {
-                fs.closeSync = closeSync;
+                test.done();
             }
         }
     },
 
     testClearSignals: {
         testBasic: function(test) {
+            test.expect(2);
             ipc.send('foo');
             test.strictEqual(fs.existsSync('/tmp/f5-cloud-libs-signals/foo'), true);
             ipc.clearSignals();
@@ -130,19 +132,21 @@ module.exports = {
         },
 
         testError: function(test) {
-            var readdirSync = fs.readdirSync;
+            const message = 'readdirSync error';
             fs.readdirSync = function() {
-                throw new Error('foo');
+                throw new Error(message);
             };
+
+            test.expect(1);
             try {
                 ipc.clearSignals();
                 test.ok(false, 'clearSignals should have thrown');
             }
             catch (err) {
-                test.done();
+                test.strictEqual(err.message, message);
             }
             finally {
-                fs.readdirSync = readdirSync;
+                test.done();
             }
         }
     },
@@ -157,18 +161,21 @@ module.exports = {
 
         testOnSend: function(test) {
             ipc.send('foo');
+            test.expect(1);
             test.strictEqual(fs.existsSync(SIGNAL_BASE_PATH), true);
             test.done();
         },
 
         testOnOnce: function(test) {
             ipc.once('foo');
+            test.expect(1);
             test.strictEqual(fs.existsSync(SIGNAL_BASE_PATH), true);
             test.done();
         }
     },
 
     testSetLogger: function(test) {
+        test.expect(1);
         test.doesNotThrow(function() {
             ipc.setLogger({});
         });
@@ -176,6 +183,7 @@ module.exports = {
     },
 
     testSetLoggerOptions: function(test) {
+        test.expect(1);
         test.doesNotThrow(function() {
             ipc.setLoggerOptions({});
         });

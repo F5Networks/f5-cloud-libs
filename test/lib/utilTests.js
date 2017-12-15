@@ -335,7 +335,7 @@ module.exports = {
                     test.ok(false, 'should have thrown bad url');
                 })
                 .catch(function(err) {
-                    test.notStrictEqual(err.message.indexOf("Parameter 'url' must be a string"), -1);
+                    test.notStrictEqual(err.message.indexOf("must be a string"), -1);
                 })
                 .finally(function() {
                     test.done();

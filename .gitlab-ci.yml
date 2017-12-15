@@ -13,7 +13,19 @@ cache:
     paths:
         - node_modules/
 
-test:
+test_node4:
+    image: node:4
+    tags:
+        - docker-executor
+    stage: test
+    except:
+        - triggers
+    script:
+        - npm install
+        - npm test
+
+test_node6:
+    image: node:6
     tags:
         - docker-executor
     stage: test
