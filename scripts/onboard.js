@@ -163,17 +163,6 @@
                     }
                 }
 
-                try {
-                    if (Object.keys(metrics).length > 0) {
-                        metrics.action = 'onboard';
-                        metrics.cloudLibsVersion = options.version();
-                        metricsCollector.upload(metrics);
-                    }
-                }
-                catch (err) {
-                    logger.debug('Metrics collection failed:', err);
-                }
-
                 // Start processing...
 
                 // Save args in restart script in case we need to reboot to recover from an error
@@ -408,6 +397,15 @@
                             address = options.ping === true ? 'f5.com' : options.ping;
                             logger.info("Pinging", address);
                             return bigIp.ping(address);
+                        }
+                    })
+                    .then(function(response) {
+                        logger.debug(response);
+                        if (Object.keys(metrics).length > 0) {
+                            logger.info("Sending metrics");
+                            metrics.action = 'onboard';
+                            metrics.cloudLibsVersion = options.version();
+                            return metricsCollector.upload(metrics);
                         }
                     })
                     .then(function(response) {
