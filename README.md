@@ -94,6 +94,7 @@ Does initial configuration and provisioning of a BIG-IP.
       --no-reboot                                                                                                                                                                                                                              Skip reboot even if it is recommended.
       --background                                                                                                                                                                                                                             Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
       --signal <signal>                                                                                                                                                                                                                        Signal to send when done. Default ONBOARD_DONE.
+      --reboot-required-signal <signal>                                                                                                                                                                                                        Signal to send if reboot is required but --no-reboot is set
       --wait-for <signal>                                                                                                                                                                                                                      Wait for the named signal before running.
       --log-level <level>                                                                                                                                                                                                                      Log level (none, error, warn, info, verbose, debug, silly). Default is info.
       -o, --output <file>                                                                                                                                                                                                                      Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log
@@ -141,6 +142,7 @@ Sets up BIG-IPs in a cluster.
       --no-reboot                                      Skip reboot even if it is recommended.
       --background                                     Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
       --signal <signal>                                Signal to send when done. Default ONBOARD_DONE.
+      --reboot-required-signal <signal>                Signal to send if reboot is required but --no-reboot is set
       --wait-for <signal>                              Wait for the named signal before running.
       --log-level <level>                              Log level (none, error, warn, info, verbose, debug, silly). Default is info.
       -o, --output <file>                              Log to file as well as console. This is the default if background process is spawned. Default is /tmp/cluster.log
@@ -189,6 +191,7 @@ Runs autoscale code to elect master and cluster
       --no-reboot                                 Skip reboot even if it is recommended.
       --background                                Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
       --signal <signal>                           Signal to send when done. Default ONBOARD_DONE.
+      --reboot-required-signal <signal>           Signal to send if reboot is required but --no-reboot is set
       --wait-for <signal>                         Wait for the named signal before running.
       --log-level <level>                         Log level (none, error, warn, info, verbose, debug, silly). Default is info.
       -o, --output <file>                         Log to file as well as console. This is the default if background process is spawned. Default is /tmp/autoscale.log

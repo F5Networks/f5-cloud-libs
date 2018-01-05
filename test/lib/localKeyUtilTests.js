@@ -54,7 +54,7 @@ module.exports = {
         childProcessMock.exec = function(command, cb) {
             if (command.startsWith('/usr/bin/tmsh install')) {
                 installCmd = command;
-            };
+            }
 
             cb(null, null);
         };

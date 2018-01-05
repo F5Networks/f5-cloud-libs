@@ -92,6 +92,7 @@ var testOptions = {
 
 var argv;
 var rebootRequested;
+var signalsSent;
 
 // Our tests cause too many event listeners. Turn off the check.
 var options = require('commander');
@@ -102,6 +103,8 @@ process.exit = function() {};
 
 module.exports = {
     setUp: function(callback) {
+        signalsSent = [];
+
         ipc = require('../../lib/ipc');
 
         // Just resolve right away, otherwise these tests never exit
@@ -109,6 +112,10 @@ module.exports = {
             var deferred = q.defer();
             deferred.resolve();
             return deferred;
+        };
+
+        ipc.send = function(signal) {
+            signalsSent.push(signal);
         };
 
         utilMock = require('../../lib/util');
@@ -170,6 +177,16 @@ module.exports = {
         argv.push('--no-reboot');
         onboard.run(argv, testOptions, function() {
             test.ifError(rebootRequested);
+            test.notStrictEqual(signalsSent.indexOf('REBOOT_REQUIRED'), -1);
+            test.done();
+        });
+    },
+
+    testNoRebootSignalSpecified: function(test) {
+        argv.push('--no-reboot', '--reboot-required-signal', 'foofoo');
+        onboard.run(argv, testOptions, function() {
+            test.ifError(rebootRequested);
+            test.notStrictEqual(signalsSent.indexOf('foofoo'), -1);
             test.done();
         });
     },

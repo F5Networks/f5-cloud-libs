@@ -272,9 +272,15 @@
                         logger.error("BIG-IP cluster failed", err);
 
                         if (err instanceof ActiveError) {
-                            logger.warn("BIG-IP active check failed. Rebooting.");
-                            rebooting = true;
-                            return util.reboot(bigIp);
+                            if (options.reboot) {
+                                logger.warn("BIG-IP active check failed. Rebooting.");
+                                rebooting = true;
+                                return util.reboot(bigIp);
+                            }
+                            else {
+                                logger.warn("BIG-IP active check failed. Skipping reboot due to --no-reboot option");
+                                ipc.send(options.rebootRequiredSignal || signals.REBOOT_REQUIRED);
+                            }
                         }
                     })
                     .done(function(response) {
