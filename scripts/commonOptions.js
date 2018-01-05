@@ -40,7 +40,6 @@ module.exports = {
             .option('--no-reboot', 'Skip reboot even if it is recommended.')
             .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
             .option('--signal <signal>', 'Signal to send when done. Default ONBOARD_DONE.')
-            .option('--reboot-required-signal <signal>', 'Signal to send if reboot is required but --no-reboot is set')
             .option('--wait-for <signal>', 'Wait for the named signal before running.')
             .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
             .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + defaultLogFile)

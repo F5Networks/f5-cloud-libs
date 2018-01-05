@@ -182,15 +182,6 @@ module.exports = {
         });
     },
 
-    testNoRebootSignalSpecified: function(test) {
-        argv.push('--no-reboot', '--reboot-required-signal', 'foofoo');
-        onboard.run(argv, testOptions, function() {
-            test.ifError(rebootRequested);
-            test.notStrictEqual(signalsSent.indexOf('foofoo'), -1);
-            test.done();
-        });
-    },
-
     testSslPortArgs: {
         setUp: function(callback) {
             utilMock.deleteArgs = function() {};
