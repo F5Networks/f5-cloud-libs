@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@
                     .option('-f, --file <script>', 'File name of script to run.')
                     .option('-u, --url <url>', 'URL from which to download script to run. This will override --file.')
                     .option('--cl-args <command_line_args>', 'String of arguments to send to the script as command line arguments.')
+                    .option('--shell <full_path_to_shell>', 'Specify the shell to run the command in. Default is to run command as a separate process (not through a shell).')
                     .option('--signal <signal>', 'Signal to send when done. Default SCRIPT_DONE.')
                     .option('--wait-for <signal>', 'Wait for the named signal before running.')
                     .option('--cwd <directory>', 'Current working directory for the script to run in.')
@@ -149,22 +150,27 @@
                     .then(function() {
                         var deferred = q.defer();
                         var args = [];
-                        var cp_options = {};
+                        var cpOptions = {};
                         var cp;
 
                         logger.info(options.file, "starting.");
                         if (options.file) {
                             ipc.send(signals.SCRIPT_RUNNING);
 
-                            if (options.clArgs) {
-                                args = options.clArgs.split(/\s+/);
-                            }
-
                             if (options.cwd) {
-                                cp_options.cwd = options.cwd;
+                                cpOptions.cwd = options.cwd;
                             }
 
-                            cp = child_process.spawn(options.file, args, cp_options);
+                            if (options.shell) {
+                                cpOptions.shell = options.shell;
+                                cp = child_process.spawn(options.file + ' ' + options.clArgs, cpOptions);
+                            }
+                            else {
+                                if (options.clArgs) {
+                                    args = options.clArgs.split(/\s+/);
+                                }
+                                cp = child_process.spawn(options.file, args, cpOptions);
+                            }
 
                             cp.stdout.on('data', function(data) {
                                 logger.info(data.toString().trim());

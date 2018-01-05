@@ -15,7 +15,7 @@ This project consists of two main parts
 
 ## Release notes
 ### Version 3.6.0
-* Add --script option to scripts/runScript.js
+* Add --shell option to scripts/runScript.js
 
 ### Version 3.5.0
 * Autoscale improvements
@@ -257,6 +257,7 @@ Runs an arbitrary script.
       -f, --file <script>            File name of script to run.
       -u, --url <url>                URL from which to download script to run. This will override --file.
       --cl-args <command_line_args>  String of arguments to send to the script as command line arguments.
+      --shell <full_path_to_shell>   Specify the shell to run the command in. Default is to run command as a separate process (not through a shell).
       --signal <signal>              Signal to send when done. Default SCRIPT_DONE.
       --wait-for <signal>            Wait for the named signal before running.
       --cwd <directory>              Current working directory for the script to run in.

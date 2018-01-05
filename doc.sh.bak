@@ -32,7 +32,7 @@ This project consists of two main parts
 
 ## Release notes
 ### Version 3.6.0
-* Add --script option to scripts/runScript.js
+* Add --shell option to scripts/runScript.js
 
 ### Version 3.5.0
 * Autoscale improvements
