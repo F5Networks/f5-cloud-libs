@@ -29,6 +29,7 @@ var util;
 var bigIp;
 
 var taskId = '1234';
+var getLicenseCalled;
 
 module.exports = {
     setUp: function(callback) {
@@ -417,6 +418,8 @@ module.exports = {
                 }
             );
 
+            icontrolMock.when('list', '/tm/shared/licensing/registration', {});
+
             callback();
         },
 
@@ -619,6 +622,60 @@ module.exports = {
                         })
                         .catch(function(err) {
                             test.notStrictEqual(err.message.indexOf('Unimplemented abstract method'), -1);
+                        })
+                        .finally(function() {
+                            test.done();
+                        });
+                }
+            },
+
+            testAlreadyLicensed: {
+                setUp: function(callback) {
+                    var provider = {
+                        init: function() {
+                            return q();
+                        },
+                        getUnmanagedDeviceLicense: function() {
+                            getLicenseCalled = true;
+                        }
+                    };
+
+                    bigIp.onboard.provider = provider;
+                    getLicenseCalled = false;
+
+                    icontrolMock.when(
+                        'list',
+                        '/tm/shared/licensing/registration',
+                        {
+                            registrationKey: 'foo'
+                        }
+                    );
+
+                    callback();
+                },
+
+                testNoOverwrite: function(test) {
+                    bigIp.onboard.licenseViaBigIq()
+                        .then(function() {
+                            test.strictEqual(getLicenseCalled, false);
+                        })
+                        .catch(function(err) {
+                            test.ok(false, err);
+                        })
+                        .finally(function() {
+                            test.done();
+                        });
+                },
+
+                testOverwrite: function(test) {
+                    // We'll just try to license w/ a bogus pool and expect that the provider throws
+                    // the right message - this shows called the licensing function
+                    bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'poolName', {overwrite: true})
+                        .then(function() {
+                            test.ok(false, 'Should have tried to license');
+                        })
+                        .catch(function(err) {
+                            test.notStrictEqual(err.message.indexOf('No license pool found with name: poolName'), -1);
                         })
                         .finally(function() {
                             test.done();
