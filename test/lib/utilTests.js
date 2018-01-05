@@ -838,6 +838,7 @@ module.exports = {
                 bigIpMock.rebootCalled = true;
                 return q();
             };
+            bigIpMock.rebootCalled = false;
 
             callback();
         },
@@ -849,6 +850,18 @@ module.exports = {
                     startupScripts.forEach(function(script) {
                         test.notStrictEqual(writtenCommands.indexOf(script), -1);
                         test.strictEqual(bigIpMock.rebootCalled, true);
+                    });
+                    test.done();
+                });
+        },
+
+        testSignalOnly: function(test) {
+            test.expect(4);
+            util.reboot(bigIpMock, {signalOnly: true})
+                .then(function() {
+                    startupScripts.forEach(function(script) {
+                        test.notStrictEqual(writtenCommands.indexOf(script), -1);
+                        test.strictEqual(bigIpMock.rebootCalled, false);
                     });
                     test.done();
                 });
