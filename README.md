@@ -14,7 +14,10 @@ This project consists of two main parts
     - Called from the scripts
 
 ## Release notes
-### Version 3..50
+### Version 3.6.0
+* Add --script option to scripts/runScript.js
+
+### Version 3.5.0
 * Autoscale improvements
     * More device group options in autoscale.js
     * Use save-on-auto-sync when creating device group
