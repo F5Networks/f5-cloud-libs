@@ -163,7 +163,7 @@
 
                             if (options.shell) {
                                 cpOptions.shell = options.shell;
-                                cp = child_process.spawn(options.file + ' ' + options.clArgs, cpOptions);
+                                cp = child_process.exec(options.file + ' ' + options.clArgs, cpOptions);
                             }
                             else {
                                 if (options.clArgs) {
