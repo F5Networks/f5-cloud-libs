@@ -180,8 +180,9 @@
                                 logger.error(data.toString().trim());
                             });
 
-                            cp.on('exit', function(code) {
-                                logger.info(options.file, 'exited with code', code.toString());
+                            cp.on('exit', function(code, signal) {
+                                var status = code || signal;
+                                logger.info(options.file, 'exited with code', status.toString());
                                 deferred.resolve();
                             });
 
