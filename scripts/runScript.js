@@ -181,8 +181,8 @@
                             });
 
                             cp.on('exit', function(code, signal) {
-                                var status = code || signal;
-                                logger.info(options.file, 'exited with code', status.toString());
+                                var status = signal || code.toString();
+                                logger.info(options.file, 'exited with', (signal ? 'signal' : 'code'), status);
                                 deferred.resolve();
                             });
 
