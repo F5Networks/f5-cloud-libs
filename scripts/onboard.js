@@ -435,8 +435,9 @@
 
                         if (!rebooting) {
                             util.deleteArgs(ARGS_FILE_ID);
-                            ipc.send(options.signal || signals.ONBOARD_DONE);
                         }
+
+                        ipc.send(options.signal || signals.ONBOARD_DONE);
 
                         if (cb) {
                             cb();
