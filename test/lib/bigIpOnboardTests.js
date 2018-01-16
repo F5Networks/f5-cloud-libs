@@ -1131,6 +1131,8 @@ module.exports = {
                         []
                     );
 
+                    BigIq5_2.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+
                     callback();
                 },
 
