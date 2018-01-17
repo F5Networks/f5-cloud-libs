@@ -723,6 +723,20 @@
                 }
             }.bind(this))
             .then(function() {
+                // Make sure we have our own hostname
+                if (!this.instance.hostname) {
+                    return bigIp.list('/tm/sys/global-settings');
+                }
+            }.bind(this))
+            .then(function(globalSettings) {
+                globalSettings = globalSettings || {};
+                if (!this.instance.hostname && globalSettings.hostname) {
+                    this.instance.hostname = globalSettings.hostname;
+                }
+                else {
+                    logger.debug('hostname not found in this.instance or globalSettings');
+                }
+
                 // Make sure device group exists
                 logger.info('Creating device group.');
 
