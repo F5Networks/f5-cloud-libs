@@ -12,6 +12,7 @@ proc script::run {} {
             set hashes(f5.http.v1.2.0rc7.tmpl) 21f413342e9a7a281a0f0e1301e745aa86af21a697d2e6fdc21dd279734936631e92f34bf1c2d2504c201f56ccd75c5c13baa2fe7653213689ec3c9e27dff77d
             set hashes(f5.aws_advanced_ha.v1.3.0rc1.tmpl) 9e55149c010c1d395abdae3c3d2cb83ec13d31ed39424695e88680cf3ed5a013d626b326711d3d40ef2df46b72d414b4cb8e4f445ea0738dcbd25c4c843ac39d
             set hashes(f5.aws_advanced_ha.v1.4.0rc1.tmpl) de068455257412a949f1eadccaee8506347e04fd69bfb645001b76f200127668e4a06be2bbb94e10fefc215cfc3665b07945e6d733cbe1a4fa1b88e881590396
+            set hashes(f5.aws_advanced_ha.v1.4.0rc2.tmpl) 6ab0bffc426df7d31913f9a474b1a07860435e366b07d77b32064acfb2952c1f207beaed77013a15e44d80d74f3253e7cf9fbbe12a90ec7128de6facd097d68f
             set hashes(asm-policy.tar.gz) 2d39ec60d006d05d8a1567a1d8aae722419e8b062ad77d6d9a31652971e5e67bc4043d81671ba2a8b12dd229ea46d205144f75374ed4cae58cefa8f9ab6533e6
             set hashes(deploy_waf.sh) eebaf8593a29fa6e28bb65942d2b795edca0da08b357aa06277b0f4d2f25fe416da6438373f9955bdb231fa1de1a7c8d0ba7c224fa1f09bd852006070d887812
             set hashes(f5.policy_creator.tmpl) 06539e08d115efafe55aa507ecb4e443e83bdb1f5825a9514954ef6ca56d240ed00c7b5d67bd8f67b815ee9dd46451984701d058c89dae2434c89715d375a620
@@ -37,6 +38,6 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature dzf+MJjFLioaN/anP6YtTHN+xB5xhvUdFuZXW+sZSvtzYJBB9/wGT31pntKU7EawMSNjjx8JBpWO9O4cl6UAqFErqQmCo1GPxBxii+dSLn8e2cMFgu8MY3Y6Jivlj5egmsRzuYGmPd5Zz8yvQKoRB4selDbGuZ5XRiGyZELwOahCupdac3tW5JanUErqkUw/CaFiIxGGuxUQPKodEVwPBS5WfAwOvghPwsfzBszPZZkNRmzhXkfl57UWVIf30SYCs3HXuGABa3SSn6cZGVBZRFTcU62eU4/hGQcGv4RrHtNRRjTENKRdvq8yb5hPCKiVudztu69ymFb8Mb8YPnbJLQ==
+    script-signature XuY8fp9vx2bu5qtKZB+QNRE+qJY6lg+MpoOeRCdv5PReRqvh4Frr1faZSYvtXUFLpM0mUrqSa2PLkbA3G8TLi46qsLfXGyjnILuXvtbRyQgs4Xv9Di+lfgnubjQ4FKPThgU+Q/1J4OWrnRNLuEg24Bu0qutpx28dEybV29MJW5N0W/Y8TUbt6+clsGHMVKqGCXZZ7Nb4v+lPnxMI+cnIGAsZPBm05eFgaNKPw9eKVL3wuzBhtiM+4HRINmDd1veQMMN3P0JEeA5O2HAnMvwXLsVzGe3x1/ONi919zK4vdatZktBadDkI325S/WCaVpEhP3D/o3IV8C94+ay8phyTgA==
     signing-key /Common/f5-irule
 }
