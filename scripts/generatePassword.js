@@ -31,7 +31,7 @@ const q = require('q');
             var password;
 
             options
-                .version('3.6.0')
+                .version('3.6.2')
                 .option('--length <password_length>', 'Length of password. Default 32.', 32)
                 .option('--file <path/to/file>', 'Location in which to store the password. Default log to console.')
                 .option('--encrypt', 'Encrypt the password before writing to disk. Default false')

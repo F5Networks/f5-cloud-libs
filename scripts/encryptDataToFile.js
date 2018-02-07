@@ -61,7 +61,7 @@
             try {
                 // Can't use getCommonOptions here because we don't take host, user, password options
                 options
-                    .version('3.6.0')
+                    .version('3.6.2')
                     .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
                     .option('--signal <signal>', 'Signal to send when done. Default ENCRYPTION_DONE.')
                     .option('--wait-for <signal>', 'Wait for the named signal before running.')
