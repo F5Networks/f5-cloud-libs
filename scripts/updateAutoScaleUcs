@@ -241,6 +241,9 @@ def main():
     # Remove the f5-cloud-libs local public keys as they won't match any private keys
     shutil.rmtree(extract_ucs_dir + '/config/cloud/keys', ignore_errors=True)
 
+    # remove the dynad private key
+    os.system("sed -i '/sys dynad key {/ { N ; /\\n[[:space:]]\+key[[:space:]]*\$M\$[^\\n]*/ { N;   /\\n[[:space:]]*}/ { d } } }' " + extract_ucs_dir + "/config/bigip_base.conf")
+
     tar_updated.add(extract_ucs_dir, arcname='.')
 
     tar_original.close()

@@ -831,9 +831,9 @@ module.exports = {
         },
 
         testMcpNeverReady: function(test) {
-            const message = 'mcp not ready';
-            childProcessMock.execFile = function(file, cb) {
-                cb(new Error(message));
+            const message = 'mcp is not ready';
+            bigIp.ready = function() {
+                return q.reject(new Error(message));
             };
 
             test.expect(1);
