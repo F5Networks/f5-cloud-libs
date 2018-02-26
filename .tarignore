@@ -1,9 +1,11 @@
 .DS_Store
 .git*
+.vscode
 .jshintrc
 .travis.yml
 npm-debug.log
 build
+coverage
 dist
 doc
 gitHooks

@@ -4,6 +4,7 @@ stages:
     - test
     - update
     - package
+    - publish
     - notify
 
 variables:
@@ -21,7 +22,8 @@ test_node4:
     except:
         - triggers
     script:
-        - npm install
+        - npm install --registry ${NPM_REGISTRY}
+        - npm run lint
         - npm test
 
 test_node6:
@@ -32,7 +34,8 @@ test_node6:
     except:
         - triggers
     script:
-        - npm install
+        - npm install --registry ${NPM_REGISTRY}
+        - npm run lint
         - npm test
 
 update_hash:
@@ -57,7 +60,7 @@ package:
         - /^release-.*/
         - /^hf-.*/
     script:
-        - npm install
+        - npm install --registry ${NPM_REGISTRY}
         - npm run doc
         - npm run package -- --no-deps
     artifacts:
@@ -65,6 +68,17 @@ package:
         paths:
             - dist/
             - doc/
+
+publish:
+    tags:
+        - docker-executor
+    stage: publish
+    only:
+        - master
+    script:
+        - npm install npm@latest -g --registry ${NPM_REGISTRY}
+        - echo '//registry.npmjs.org/:_authToken="${NPM_TOKEN}"' > ./.npmrc
+        - npm publish --access public --tag experimental
 
  # Do not run when triggered:
  #   - triggers do not modify our hash, they only update the verifyHash file

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,16 @@
  */
 'use strict';
 
-const fs = require('fs');
-const crypto = require('crypto');
-const childProcess = require('child_process');
-
 const now = Date.now();
 const publicKeyFile = '/tmp/public_' + now + '.pem';
 const privateKeyFile = '/tmp/private_' + now + '.pem';
 
-const cryptoUtil = require('../../../f5-cloud-libs').cryptoUtil;
+var fs;
+var childProcess;
+var crypto;
+var cryptoUtil;
 
-const fsReadFile = fs.readFile;
+var fsReadFile;
 
 const testData = {
     foo: 'bar',
@@ -37,16 +36,38 @@ const testData = {
 };
 
 module.exports = {
+    setUp: function(callback) {
+        fs = require('fs');
+        childProcess = require('child_process');
+        crypto = require('crypto');
+        cryptoUtil = require('../../../f5-cloud-libs').cryptoUtil;
+
+        fsReadFile = fs.readFile;
+
+        callback();
+    },
+
     tearDown: function(callback) {
+        Object.keys(require.cache).forEach(function(key) {
+            delete require.cache[key];
+        });
+
         try {
             fs.readFile = fsReadFile;
 
-            fs.unlinkSync(publicKeyFile);
-            fs.unlinkSync(privateKeyFile);
+            if (fs.existsSync(publicKeyFile)) {
+                fs.unlinkSync(publicKeyFile);
+            }
+            if (fs.existsSync(privateKeyFile)) {
+                fs.unlinkSync(privateKeyFile);
+            }
         }
         catch (err) {
+            console.log(err);
         }
-        callback();
+        finally {
+            callback();
+        }
     },
 
     testRoundTrip: {
@@ -65,10 +86,11 @@ module.exports = {
                 })
                 .then(function(decryptedData) {
                     test.deepEqual(JSON.parse(decryptedData), testData);
-                    test.done();
                 })
                 .catch(function(error) {
                     test.ok(false, error);
+                })
+                .finally(function() {
                     test.done();
                 });
         },
@@ -89,10 +111,11 @@ module.exports = {
                 })
                 .then(function(decryptedData) {
                     test.deepEqual(JSON.parse(decryptedData), testData);
-                    test.done();
                 })
                 .catch(function(error) {
                     test.ok(false, error);
+                })
+                .finally(function() {
                     test.done();
                 });
         },
@@ -108,10 +131,11 @@ module.exports = {
                 })
                 .then(function(decryptedData) {
                     test.deepEqual(JSON.parse(decryptedData), testData);
-                    test.done();
                 })
                 .catch(function(error) {
                     test.ok(false, error);
+                })
+                .finally(function() {
                     test.done();
                 });
         }

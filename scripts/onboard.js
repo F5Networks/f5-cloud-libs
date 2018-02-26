@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 'use strict';
 
-(function() {
+'use strict';
 
-    var globalSettings = {
+const q = require('q');
+const BigIp = require('../lib/bigIp');
+const Logger = require('../lib/logger');
+const ActiveError = require('../lib/activeError');
+const ipc = require('../lib/ipc');
+const signals = require('../lib/signals');
+const util = require('../lib/util');
+const metricsCollector = require('../lib/metricsCollector');
+const commonOptions = require('./commonOptions');
+
+(function run() {
+    const globalSettings = {
         guiSetup: 'disabled'
     };
-    var options;
-    var runner;
 
-    module.exports = runner = {
-
+    const runner = {
         /**
          * Runs the onboarding script
          *
@@ -33,38 +40,35 @@
          * @param {Object}   testOpts.bigIp - BigIp object to use for testing
          * @param {Function} cb - Optional cb to call when done
          */
-        run: function(argv, testOpts, cb) {
-            var q = require("q");
-            var BigIp = require('../lib/bigIp');
-            var Logger = require('../lib/logger');
-            var ActiveError = require('../lib/activeError');
-            var ipc = require('../lib/ipc');
-            var signals = require('../lib/signals');
-            var util = require('../lib/util');
-            var metricsCollector = require('../lib/metricsCollector');
-            var dbVars = {};
-            var modules = {};
-            var rootPasswords = {};
-            var updateUsers = [];
-            var loggerOptions = {};
-            var metrics = {};
-            var loggableArgs;
-            var logger;
-            var logFileName;
-            var bigIp;
-            var rebooting;
-            var index;
-            var i;
+        run(argv, testOpts, cb) {
+            const DEFAULT_LOG_FILE = '/tmp/onboard.log';
+            const ARGS_FILE_ID = `onboard_${Date.now()}`;
 
-            var DEFAULT_LOG_FILE = '/tmp/onboard.log';
-            var ARGS_FILE_ID = 'onboard_' + Date.now();
+            const KEYS_TO_MASK = [
+                '-p',
+                '--password',
+                '--set-password',
+                '--set-root-password',
+                '--big-iq-password'
+            ];
+            const REQUIRED_OPTIONS = ['host', 'user'];
 
-            var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password', '--big-iq-password'];
-            var REQUIRED_OPTIONS = ['host', 'user'];
+            const dbVars = {};
+            const modules = {};
+            const rootPasswords = {};
+            const updateUsers = [];
+            const loggerOptions = {};
+            const metrics = {};
+            const optionsForTest = {};
 
+            let loggableArgs;
+            let logger;
+            let logFileName;
+            let bigIp;
+            let rebooting;
+            let index;
 
-            options = require('./commonOptions');
-            testOpts = testOpts || {};
+            Object.assign(optionsForTest, testOpts);
 
             /**
              * Special case of util.pair. Used to parse root password options in the form of
@@ -72,41 +76,128 @@
              * Since passwords can contain any character, a delimiter is difficult to find.
              * Compromise by looking for ',new:' as a delimeter
              */
-            var parseRootPasswords = function(passwordsValue) {
-                var set = passwordsValue.split(",new:");
+            const parseRootPasswords = function (passwordsValue) {
+                const set = passwordsValue.split(',new:');
 
-                if (set.length == 2) {
-                    rootPasswords.old = set[0].split("old:")[1];
+                if (set.length === 2) {
+                    rootPasswords.old = set[0].split('old:')[1];
                     rootPasswords.new = set[1];
                 }
             };
 
             try {
-                options = options.getCommonOptions(DEFAULT_LOG_FILE)
-                    .option('--ntp <ntp_server>', 'Set NTP server. For multiple NTP servers, use multiple --ntp entries.', util.collect, [])
-                    .option('--tz <timezone>', 'Set timezone for NTP setting.')
-                    .option('--dns <DNS server>', 'Set DNS server. For multiple DNS severs, use multiple --dns entries.', util.collect, [])
-                    .option('--ssl-port <ssl_port>', 'Set the SSL port for the management IP', parseInt)
-                    .option('-l, --license <license_key>', 'License BIG-IP with <license_key>.')
-                    .option('-a, --add-on <add_on_key>', 'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.', util.collect, [])
-                    .option('--license-pool', 'License BIG-IP from a BIG-IQ license pool. Supply the following:')
-                    .option('    --big-iq-host <ip_address or FQDN>', '    IP address or FQDN of BIG-IQ')
-                    .option('    --big-iq-user <user>', '    BIG-IQ admin user name')
-                    .option('    --big-iq-password <password>', '    BIG-IQ admin user password.')
-                    .option('    --big-iq-password-uri <password_uri>', '    URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.')
-                    .option('    --license-pool-name <pool_name>', '    Name of BIG-IQ license pool.')
-                    .option('    --big-ip-mgmt-address <big_ip_address>', '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.')
-                    .option('    --big-ip-mgmt-port <big_ip_port>', '    Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port')
-                    .option('-n, --hostname <hostname>', 'Set BIG-IP hostname.')
-                    .option('-g, --global-setting <name:value>', 'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.', util.pair, globalSettings)
-                    .option('-d, --db <name:value>', 'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.', util.pair, dbVars)
-                    .option('--set-root-password <old:old_password,new:new_password>', 'Set the password for the root user from <old_password> to <new_password>.', parseRootPasswords)
-                    .option('--update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>', 'Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create.', util.mapArray, updateUsers)
-                    .option('-m, --module <name:level>', 'Provision module <name> to <level>. For multiple modules, use multiple -m entries.', util.pair, modules)
-                    .option('--ping [address]', 'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com')
-                    .option('--update-sigs', 'Update ASM signatures')
-                    .option('--metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:<aws | azure | gce | etc.>, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]', 'Optional usage metrics to collect. Customer ID should not identify a specific customer.', util.map, metrics)
+                /* eslint-disable max-len */
+                const options = commonOptions.getCommonOptions(DEFAULT_LOG_FILE)
+                    .option(
+                        '--ntp <ntp_server>',
+                        'Set NTP server. For multiple NTP servers, use multiple --ntp entries.',
+                        util.collect,
+                        []
+                    )
+                    .option(
+                        '--tz <timezone>',
+                        'Set timezone for NTP setting.'
+                    )
+                    .option(
+                        '--dns <DNS server>',
+                        'Set DNS server. For multiple DNS severs, use multiple --dns entries.',
+                        util.collect,
+                        []
+                    )
+                    .option(
+                        '--ssl-port <ssl_port>', 'Set the SSL port for the management IP',
+                        parseInt
+                    )
+                    .option(
+                        '-l, --license <license_key>',
+                        'License BIG-IP with <license_key>.'
+                    )
+                    .option(
+                        '-a, --add-on <add_on_key>',
+                        'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.',
+                        util.collect,
+                        []
+                    )
+                    .option(
+                        '--license-pool',
+                        'License BIG-IP from a BIG-IQ license pool. Supply the following:'
+                    )
+                    .option(
+                        '    --big-iq-host <ip_address or FQDN>',
+                        '    IP address or FQDN of BIG-IQ'
+                    )
+                    .option(
+                        '    --big-iq-user <user>',
+                        '    BIG-IQ admin user name'
+                    )
+                    .option(
+                        '    --big-iq-password <password>',
+                        '    BIG-IQ admin user password.'
+                    )
+                    .option(
+                        '    --big-iq-password-uri <password_uri>',
+                        '    URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.'
+                    )
+                    .option(
+                        '    --license-pool-name <pool_name>',
+                        '    Name of BIG-IQ license pool.'
+                    )
+                    .option(
+                        '    --big-ip-mgmt-address <big_ip_address>',
+                        '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.'
+                    )
+                    .option(
+                        '    --big-ip-mgmt-port <big_ip_port>',
+                        '    Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port'
+                    )
+                    .option(
+                        '-n, --hostname <hostname>',
+                        'Set BIG-IP hostname.'
+                    )
+                    .option(
+                        '-g, --global-setting <name:value>',
+                        'Set global setting <name> to <value>. For multiple settings, use multiple -g entries.',
+                        util.pair,
+                        globalSettings
+                    )
+                    .option(
+                        '-d, --db <name:value>',
+                        'Set db variable <name> to <value>. For multiple settings, use multiple -d entries.',
+                        util.pair,
+                        dbVars
+                    )
+                    .option(
+                        '--set-root-password <old:old_password,new:new_password>',
+                        'Set the password for the root user from <old_password> to <new_password>.',
+                        parseRootPasswords
+                    )
+                    .option(
+                        '--update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>',
+                        'Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create.',
+                        util.mapArray, updateUsers
+                    )
+                    .option(
+                        '-m, --module <name:level>',
+                        'Provision module <name> to <level>. For multiple modules, use multiple -m entries.',
+                        util.pair,
+                        modules
+                    )
+                    .option(
+                        '--ping [address]',
+                        'Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com'
+                    )
+                    .option(
+                        '--update-sigs',
+                        'Update ASM signatures'
+                    )
+                    .option(
+                        '--metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:<aws | azure | gce | etc.>, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]',
+                        'Optional usage metrics to collect. Customer ID should not identify a specific customer.',
+                        util.map,
+                        metrics
+                    )
                     .parse(argv);
+                /* eslint-enable max-len */
 
                 loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
@@ -123,41 +214,43 @@
 
                 // Log the input, but don't log passwords
                 loggableArgs = argv.slice();
-                for (i = 0; i < loggableArgs.length; ++i) {
+                for (let i = 0; i < loggableArgs.length; i++) {
                     if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
-                        loggableArgs[i + 1] = "*******";
+                        loggableArgs[i + 1] = '*******';
                     }
                 }
                 index = loggableArgs.indexOf('--update-user');
                 if (index !== -1) {
                     loggableArgs[index + 1] = loggableArgs[index + 1].replace(/password:([^,])+/, '*******');
                 }
-                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
+                logger.info(`${loggableArgs[1]} called with`, loggableArgs.join(' '));
 
-                for (i = 0; i < REQUIRED_OPTIONS.length; ++i) {
+                for (let i = 0; i < REQUIRED_OPTIONS.length; i++) {
                     if (!options[REQUIRED_OPTIONS[i]]) {
-                        logger.error(REQUIRED_OPTIONS[i], "is a required command line option.");
-                        return;
+                        util.logAndExit(
+                            `${REQUIRED_OPTIONS[i]} is a required command line option.`,
+                            'error',
+                            1
+                        );
                     }
                 }
 
                 if (!options.password && !options.passwordUrl) {
-                    logger.error("One of --password or --password-url is required.");
-                    return;
+                    util.logAndExit('One of --password or --password-url is required.', 'error', 1);
                 }
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
                 // allow the BIG-IP services to start
                 if (options.background) {
                     logFileName = options.output || DEFAULT_LOG_FILE;
-                    logger.info("Spawning child process to do the work. Output will be in", logFileName);
+                    logger.info('Spawning child process to do the work. Output will be in', logFileName);
                     util.runInBackgroundAndExit(process, logFileName);
                 }
 
                 // Use hostname if both hostname and global-settings hostname are set
                 if (globalSettings && options.hostname) {
                     if (globalSettings.hostname || globalSettings.hostName) {
-                        logger.info("Using host-name option to override global-settings hostname");
+                        logger.info('Using host-name option to override global-settings hostname');
                         delete globalSettings.hostName;
                         delete globalSettings.hostname;
                     }
@@ -167,25 +260,27 @@
 
                 // Save args in restart script in case we need to reboot to recover from an error
                 util.saveArgs(argv, ARGS_FILE_ID)
-                    .then(function() {
+                    .then(() => {
                         if (options.waitFor) {
-                            logger.info("Waiting for", options.waitFor);
+                            logger.info('Waiting for', options.waitFor);
                             return ipc.once(options.waitFor);
                         }
+
+                        return q();
                     })
-                    .then(function() {
+                    .then(() => {
                         // Whatever we're waiting for is done, so don't wait for
                         // that again in case of a reboot
                         return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
                     })
-                    .then(function() {
-                        logger.info("Onboard starting.");
+                    .then(() => {
+                        logger.info('Onboard starting.');
                         ipc.send(signals.ONBOARD_RUNNING);
 
                         // Create the bigIp client object
-                        bigIp = testOpts.bigIp || new BigIp({loggerOptions: loggerOptions});
+                        bigIp = optionsForTest.bigIp || new BigIp({ loggerOptions });
 
-                        logger.info("Initializing BIG-IP.");
+                        logger.info('Initializing BIG-IP.');
                         return bigIp.init(
                             options.host,
                             options.user,
@@ -197,27 +292,28 @@
                             }
                         );
                     })
-                    .then(function() {
-                        logger.info("Waiting for BIG-IP to be ready.");
+                    .then(() => {
+                        logger.info('Waiting for BIG-IP to be ready.');
                         return bigIp.ready();
                     })
-                    .then(function() {
-                        logger.info("BIG-IP is ready.");
+                    .then(() => {
+                        logger.info('BIG-IP is ready.');
 
                         if (options.sslPort) {
-                            logger.info("Setting SSL port.");
+                            logger.info('Setting SSL port.');
                             return bigIp.onboard.sslPort(options.sslPort);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
-                        var portIndex;
+                    .then((response) => {
+                        let portIndex;
 
                         logger.debug(response);
 
                         // If we just successfully changed the SSL port, save --port
                         // as an argument in case we reboot
                         if (options.sslPort) {
-
                             // If there is already a port argument, remove it
                             if (options.port) {
                                 portIndex = argv.indexOf('--port');
@@ -228,50 +324,57 @@
                             argv.push('--port', options.sslPort);
                             return util.saveArgs(argv, ARGS_FILE_ID);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
 
                         if (Object.keys(rootPasswords).length > 0) {
                             if (!rootPasswords.old || !rootPasswords.new) {
-                                return q.reject("Old or new password missing for root user. Specify with --set-root-password old:old_root_password,new:new_root_password");
+                                return q.reject('Old or new password missing for root user.');
                             }
 
-                            logger.info("Setting rootPassword.");
+                            logger.info('Setting rootPassword.');
                             return bigIp.onboard.password('root', rootPasswords.new, rootPasswords.old);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
-                        var i;
-                        var promises = [];
+                    .then((response) => {
+                        const promises = [];
 
                         logger.debug(response);
 
                         if (updateUsers.length > 0) {
-                            for (i = 0; i < updateUsers.length; ++i) {
-                                logger.info("Updating user", updateUsers[i].user);
-                                promises.push(bigIp.onboard.updateUser(updateUsers[i].user,
-                                                                       updateUsers[i].password || updateUsers[i].passwordUrl,
-                                                                       updateUsers[i].role,
-                                                                       updateUsers[i].shell,
-                                                                       {
-                                                                           passwordIsUrl: typeof updateUsers[i].passwordUrl !== 'undefined'
-                                                                       }));
+                            for (let i = 0; i < updateUsers.length; i++) {
+                                logger.info('Updating user', updateUsers[i].user);
+                                promises.push(bigIp.onboard.updateUser(
+                                    updateUsers[i].user,
+                                    updateUsers[i].password || updateUsers[i].passwordUrl,
+                                    updateUsers[i].role,
+                                    updateUsers[i].shell,
+                                    {
+                                        passwordIsUrl: typeof updateUsers[i].passwordUrl !== 'undefined'
+                                    }
+                                ));
                             }
                             return q.all(promises);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
-                        var ntpBody;
+                    .then((response) => {
+                        let ntpBody;
 
                         logger.debug(response);
 
                         if (options.ntp.length > 0 || options.tz) {
-                            logger.info("Setting up NTP.");
+                            logger.info('Setting up NTP.');
 
                             ntpBody = {};
 
-                            if (options.ntp) {
+                            if (options.ntp && options.ntp.length > 0) {
                                 ntpBody.servers = options.ntp;
                             }
 
@@ -284,12 +387,14 @@
                                 ntpBody
                             );
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
 
                         if (options.dns.length > 0) {
-                            logger.info("Setting up DNS.");
+                            logger.info('Setting up DNS.');
 
                             return bigIp.modify(
                                 '/tm/sys/dns',
@@ -298,139 +403,172 @@
                                 }
                             );
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
 
                         if (options.hostname) {
-                            logger.info("Setting hostname to", options.hostname);
+                            logger.info('Setting hostname to', options.hostname);
                             return bigIp.onboard.hostname(options.hostname);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
 
                         if (globalSettings) {
-                            logger.info("Setting global settings.");
+                            logger.info('Setting global settings.');
                             return bigIp.onboard.globalSettings(globalSettings);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
 
                         if (Object.keys(dbVars).length > 0) {
-                            logger.info("Setting DB vars.");
+                            logger.info('Setting DB vars.');
                             return bigIp.onboard.setDbVars(dbVars);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
 
-                        var registrationKey = options.license;
-                        var addOnKeys = options.addOn;
+                        const registrationKey = options.license;
+                        const addOnKeys = options.addOn;
 
                         if (registrationKey || addOnKeys.length > 0) {
-                            logger.info("Licensing.");
+                            logger.info('Licensing.');
 
                             return bigIp.onboard.license(
                                 {
-                                    registrationKey: registrationKey,
-                                    addOnKeys: addOnKeys,
+                                    registrationKey,
+                                    addOnKeys,
                                     overwrite: true
+                                }
+                            );
+                        } else if (options.licensePool) {
+                            if (
+                                !options.bigIqHost ||
+                                !options.bigIqUser ||
+                                !(options.bigIqPassword || options.bigIqPasswordUri) ||
+                                !options.licensePoolName
+                            ) {
+                                return q.reject(new Error('Missing parameters for BIG-IQ license pool'));
+                            }
+
+                            logger.info('Getting license from BIG-IQ license pool.');
+                            return bigIp.onboard.licenseViaBigIq(
+                                options.bigIqHost,
+                                options.bigIqUser,
+                                options.bigIqPassword || options.bigIqPasswordUri,
+                                options.licensePoolName,
+                                {
+                                    passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined',
+                                    bigIpMgmtAddress: options.bigIpMgmtAddress,
+                                    bigIpMgmtPort: options.bigIpMgmtPort
                                 }
                             );
                         }
 
-                        else {
-                            if (options.licensePool) {
-                                if (!options.bigIqHost || !options.bigIqUser || !(options.bigIqPassword || options.bigIqPasswordUri) || !options.licensePoolName) {
-                                    return q.reject(new Error('When using a BIG-IQ license pool, all of big-iq-host, big-iq-user, big-iq-password[-url], and license-pool-name are required'));
-                                }
-
-                                logger.info("Getting license from BIG-IQ license pool.");
-                                return bigIp.onboard.licenseViaBigIq(
-                                    options.bigIqHost,
-                                    options.bigIqUser,
-                                    options.bigIqPassword || options.bigIqPasswordUri,
-                                    options.licensePoolName,
-                                    {
-                                        passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined',
-                                        bigIpMgmtAddress: options.bigIpMgmtAddress,
-                                        bigIpMgmtPort: options.bigIpMgmtPort
-                                    });
-                            }
-                        }
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
 
                         if (Object.keys(modules).length > 0) {
-                            logger.info("Provisioning modules", modules);
+                            logger.info('Provisioning modules', modules);
                             return bigIp.onboard.provision(modules);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
 
                         if (options.updateSigs) {
-                            logger.info("Updating ASM signatures");
+                            logger.info('Updating ASM signatures');
                             return bigIp.create(
                                 '/tm/asm/tasks/update-signatures',
                                 {}
                             );
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
-                        logger.info("Saving config.");
+                        logger.info('Saving config.');
                         return bigIp.save();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
-                        logger.info("Waiting for BIG-IP to be active.");
+                        logger.info('Waiting for BIG-IP to be active.');
                         return bigIp.active();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
-                        var address;
+                        let address;
                         if (options.ping) {
                             address = options.ping === true ? 'f5.com' : options.ping;
-                            logger.info("Pinging", address);
+                            logger.info('Pinging', address);
                             return bigIp.ping(address);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
                         if (Object.keys(metrics).length > 0) {
-                            logger.info("Sending metrics");
+                            logger.info('Sending metrics');
                             metrics.action = 'onboard';
                             metrics.cloudLibsVersion = options.version();
                             return metricsCollector.upload(metrics);
                         }
+
+                        return q();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         logger.debug(response);
-                        logger.info("BIG-IP onboard complete.");
+                        logger.info('BIG-IP onboard complete.');
                         return bigIp.rebootRequired();
                     })
-                    .then(function(response) {
+                    .then((response) => {
                         if (response === true) {
                             logger.warn('Reboot required.');
                             rebooting = true;
-                            return util.reboot(bigIp, {signalOnly: (options.reboot ? false : true)});
+                            return util.reboot(bigIp, { signalOnly: !options.reboot });
                         }
-                    })
-                    .catch(function(err) {
-                        err = err || new Error();
-                        logger.error("BIG-IP onboard failed:", err.message);
 
-                        if (err instanceof ActiveError) {
-                            logger.warn("BIG-IP active check failed.");
-                            rebooting = true;
-                            return util.reboot(bigIp, {signalOnly: (options.reboot ? false : true)});
-                        }
+                        return q();
                     })
-                    .done(function(response) {
+                    .catch((err) => {
+                        let message;
+
+                        if (!err) {
+                            message = 'unknown reason';
+                        } else {
+                            message = err.message;
+                        }
+
+                        logger.error('BIG-IP onboard failed:', message);
+
+                        if (err) {
+                            if (err instanceof ActiveError || err.name === 'ActiveError') {
+                                logger.warn('BIG-IP active check failed.');
+                                rebooting = true;
+                                return util.reboot(bigIp, { signalOnly: !options.reboot });
+                            }
+                        }
+
+                        return q();
+                    })
+                    .done((response) => {
                         logger.debug(response);
 
                         if (!rebooting) {
@@ -443,40 +581,35 @@
                             cb();
                         }
 
-                        util.logAndExit("Onboard finished.");
+                        util.logAndExit('Onboard finished.');
                     });
 
-                // If we reboot due to some other script, exit - otherwise cloud providers won't know we're done.
-                // If we forced the reboot ourselves, we will exit when that call completes.
+                // If we reboot due to some other script, exit - otherwise cloud
+                // providers won't know we're done. If we forced the reboot ourselves,
+                // we will exit when that call completes.
                 ipc.once('REBOOT')
-                    .then(function() {
+                    .then(() => {
                         if (!rebooting) {
-                            util.logAndExit("REBOOT signaled. Exiting.");
+                            util.logAndExit('REBOOT signaled. Exiting.');
                         }
                     });
-            }
-            catch (err) {
+            } catch (err) {
                 if (logger) {
-                    logger.error("Onbarding error:", err);
+                    logger.error('Onbarding error:', err);
                 }
-                else {
-                    console.log("Onbarding error:", err);
+
+                if (cb) {
+                    cb();
                 }
             }
-        },
-
-        getGlobalSettings: function() {
-            return globalSettings;
-        },
-
-        getOptions: function() {
-            return options;
         }
     };
+
+    module.exports = runner;
 
     // If we're called from the command line, run
     // This allows for test code to call us as a module
     if (!module.parent) {
         runner.run(process.argv);
     }
-})();
+}());

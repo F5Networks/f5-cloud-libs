@@ -13,58 +13,85 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-(function() {
+const options = require('commander');
+const fs = require('fs');
+const q = require('q');
+const childProcess = require('child_process');
+const Logger = require('../lib/logger');
+const ipc = require('../lib/ipc');
+const signals = require('../lib/signals');
+const util = require('../lib/util');
 
-    var options = require('commander');
-    var runner;
-
-    module.exports = runner = {
-
+(function run() {
+    const runner = {
         /**
          * Runs an arbitrary script
          *
          * @param {String[]} argv - The process arguments
-         * @param {Object}   testOpts - Options used during testing
-         * @param {Object}   testOpts.bigIp - BigIp object to use for testing
          * @param {Function} cb - Optional cb to call when done
          */
-        run: function(argv, testOpts, cb) {
-            var fs = require('fs');
-            var q = require('q');
-            var child_process = require('child_process');
-            var Logger = require('../lib/logger');
-            var ipc = require('../lib/ipc');
-            var signals = require('../lib/signals');
-            var util = require('../lib/util');
-            var loggerOptions = {};
-            var loggableArgs;
-            var logger;
-            var logFileName;
-            var clArgIndex;
-            var i;
+        run(argv, cb) {
+            const DEFAULT_LOG_FILE = '/tmp/runScript.log';
+            const ARGS_FILE_ID = `runScript_${Date.now()}`;
+            const KEYS_TO_MASK = ['--cl-args'];
 
-            var DEFAULT_LOG_FILE = '/tmp/runScript.log';
-            var ARGS_FILE_ID = 'runScript_' + Date.now();
-            var KEYS_TO_MASK = ['--cl-args'];
+            const loggerOptions = {};
 
-            testOpts = testOpts || {};
+            let loggableArgs;
+            let logger;
+            let logFileName;
+            let clArgIndex;
 
             try {
+                /* eslint-disable max-len */
                 options
-                    .version('3.6.2')
-                    .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
-                    .option('-f, --file <script>', 'File name of script to run.')
-                    .option('-u, --url <url>', 'URL from which to download script to run. This will override --file.')
-                    .option('--cl-args <command_line_args>', 'String of arguments to send to the script as command line arguments.')
-                    .option('--shell <full_path_to_shell>', 'Specify the shell to run the command in. Default is to run command as a separate process (not through a shell).')
-                    .option('--signal <signal>', 'Signal to send when done. Default SCRIPT_DONE.')
-                    .option('--wait-for <signal>', 'Wait for the named signal before running.')
-                    .option('--cwd <directory>', 'Current working directory for the script to run in.')
-                    .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
-                    .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
+                    .version('4.0.0-alpha.5')
+                    .option(
+                        '--background',
+                        'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.'
+                    )
+                    .option(
+                        '-f, --file <script>',
+                        'File name of script to run.'
+                    )
+                    .option(
+                        '-u, --url <url>',
+                        'URL from which to download script to run. This will override --file.'
+                    )
+                    .option(
+                        '--cl-args <command_line_args>',
+                        'String of arguments to send to the script as command line arguments.'
+                    )
+                    .option(
+                        '--shell <full_path_to_shell>',
+                        'Specify the shell to run the command in. Default is to run command as a separate process (not through a shell).'
+                    )
+                    .option(
+                        '--signal <signal>',
+                        'Signal to send when done. Default SCRIPT_DONE.'
+                    )
+                    .option(
+                        '--wait-for <signal>',
+                        'Wait for the named signal before running.'
+                    )
+                    .option(
+                        '--cwd <directory>',
+                        'Current working directory for the script to run in.'
+                    )
+                    .option(
+                        '--log-level <level>',
+                        'Log level (none, error, warn, info, verbose, debug, silly). Default is info.',
+                        'info'
+                    )
+                    .option(
+                        '-o, --output <file>',
+                        `Log to file as well as console. This is the default if background process is spawned. Default is ${DEFAULT_LOG_FILE}`
+                    )
                     .parse(argv);
+                /* eslint-enable max-len */
 
                 loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
@@ -82,78 +109,82 @@
                 // allow the BIG-IP services to start
                 if (options.background) {
                     logFileName = options.output || DEFAULT_LOG_FILE;
-                    logger.info("Spawning child process to do the work. Output will be in", logFileName);
+                    logger.info('Spawning child process to do the work. Output will be in', logFileName);
                     util.runInBackgroundAndExit(process, logFileName);
                 }
 
                 // Log the input, but don't cl-args since it could contain a password
                 loggableArgs = argv.slice();
-                for (i = 0; i < loggableArgs.length; ++i) {
+                for (let i = 0; i < loggableArgs.length; i++) {
                     if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
-                        loggableArgs[i + 1] = "*******";
+                        loggableArgs[i + 1] = '*******';
                     }
                 }
-                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
+                logger.info(`${loggableArgs[1]} called with`, loggableArgs.join(' '));
+
+                const mungedArgs = argv.slice();
 
                 // With cl-args, we need to restore the single quotes around the args - shells remove them
                 if (options.clArgs) {
-                    logger.debug("Found clArgs - checking for single quotes");
-                    clArgIndex = argv.indexOf('--cl-args') + 1;
-                    logger.debug("clArgIndex:", clArgIndex);
-                    if (argv[clArgIndex][0] !== "'") {
-                        logger.debug("Wrapping clArgs in single quotes");
-                        argv[clArgIndex] = "'" + argv[clArgIndex] + "'";
+                    logger.debug('Found clArgs - checking for single quotes');
+                    clArgIndex = mungedArgs.indexOf('--cl-args') + 1;
+                    logger.debug('clArgIndex:', clArgIndex);
+                    if (mungedArgs[clArgIndex][0] !== "'") {
+                        logger.debug('Wrapping clArgs in single quotes');
+                        mungedArgs[clArgIndex] = `'${mungedArgs[clArgIndex]}'`;
                     }
                 }
 
                 // Save args in restart script in case we need to reboot to recover from an error
-                logger.debug("Saving args for", options.file || options.url);
-                util.saveArgs(argv, ARGS_FILE_ID)
-                    .then(function() {
-                        logger.debug("Args saved for", options.file || options.url);
+                logger.debug('Saving args for', options.file || options.url);
+                util.saveArgs(mungedArgs, ARGS_FILE_ID)
+                    .then(() => {
+                        logger.debug('Args saved for', options.file || options.url);
                         if (options.waitFor) {
-                            logger.info("Waiting for", options.waitFor);
+                            logger.info('Waiting for', options.waitFor);
                             return ipc.once(options.waitFor);
                         }
+                        return q();
                     })
-                    .then(function() {
+                    .then(() => {
                         // Whatever we're waiting for is done, so don't wait for
                         // that again in case of a reboot
                         if (options.waitFor) {
-                            logger.debug("Signal received.");
-                            return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                            logger.debug('Signal received.');
+                            return util.saveArgs(mungedArgs, ARGS_FILE_ID, ['--wait-for']);
                         }
+                        return q();
                     })
-                    .then(function() {
-                        var deferred = q.defer();
+                    .then(() => {
+                        const deferred = q.defer();
 
                         if (options.url) {
-                            logger.debug("Downloading", options.url);
+                            logger.debug('Downloading', options.url);
                             util.download(options.url)
-                                .then(function(fileName) {
+                                .then((fileName) => {
                                     options.file = fileName;
-                                    fs.chmod(fileName, parseInt('0755',8), function() {
+                                    fs.chmod(fileName, 0o755, () => {
                                         deferred.resolve();
                                     });
                                 })
-                                .catch(function(err) {
+                                .catch((err) => {
                                     deferred.reject(err);
                                 })
                                 .done();
-                        }
-                        else {
+                        } else {
                             deferred.resolve();
                         }
 
                         return deferred.promise;
                     })
-                    .then(function() {
-                        var deferred = q.defer();
-                        var args = [];
-                        var cpOptions = {};
-                        var cp;
+                    .then(() => {
+                        const deferred = q.defer();
+                        const cpOptions = {};
 
-                        logger.info(options.file, "starting.");
+                        let args = [];
+                        let cp;
+
+                        logger.info(options.file, 'starting.');
                         if (options.file) {
                             ipc.send(signals.SCRIPT_RUNNING);
 
@@ -163,43 +194,46 @@
 
                             if (options.shell) {
                                 cpOptions.shell = options.shell;
-                                cp = child_process.exec(options.file + ' ' + options.clArgs, cpOptions);
-                            }
-                            else {
+                                cp = childProcess.exec(`${options.file} ${options.clArgs}`, cpOptions);
+                            } else {
                                 if (options.clArgs) {
                                     args = options.clArgs.split(/\s+/);
                                 }
-                                cp = child_process.spawn(options.file, args, cpOptions);
+                                cp = childProcess.spawn(options.file, args, cpOptions);
                             }
 
-                            cp.stdout.on('data', function(data) {
+                            cp.stdout.on('data', (data) => {
                                 logger.info(data.toString().trim());
                             });
 
-                            cp.stderr.on('data', function(data) {
+                            cp.stderr.on('data', (data) => {
                                 logger.error(data.toString().trim());
                             });
 
-                            cp.on('exit', function(code, signal) {
-                                var status = signal || code.toString();
-                                logger.info(options.file, 'exited with', (signal ? 'signal' : 'code'), status);
+                            cp.on('exit', (code, signal) => {
+                                const status = signal || code.toString();
+                                logger.info(
+                                    options.file,
+                                    'exited with',
+                                    (signal ? 'signal' : 'code'),
+                                    status
+                                );
                                 deferred.resolve();
                             });
 
-                            cp.on('error', function(err) {
+                            cp.on('error', (err) => {
                                 logger.error(options.file, 'error', err);
                             });
-                        }
-                        else {
+                        } else {
                             deferred.resolve();
                         }
 
                         return deferred.promise;
                     })
-                    .catch(function(err) {
-                        logger.error("Running custom script failed", err);
+                    .catch((err) => {
+                        logger.error('Running custom script failed', err);
                     })
-                    .done(function(response) {
+                    .done((response) => {
                         logger.debug(response);
 
                         util.deleteArgs(ARGS_FILE_ID);
@@ -209,33 +243,27 @@
                             cb();
                         }
 
-                        util.logAndExit("Custom script finished.");
+                        util.logAndExit('Custom script finished.');
                     });
+            } catch (err) {
+                if (logger) {
+                    logger.error('Custom script error:', err);
                 }
-                catch (err) {
-                    if (logger) {
-                        logger.error("Custom script error:", err);
-                    }
-                    else {
-                        console.log("Custom script error:", err);
-                    }
-                }
+            }
 
             // If we reboot, exit - otherwise cloud providers won't know we're done
             ipc.once('REBOOT')
-                .then(function() {
-                    util.logAndExit("REBOOT signaled. Exiting.");
+                .then(() => {
+                    util.logAndExit('REBOOT signaled. Exiting.');
                 });
-        },
-
-        getOptions: function() {
-            return options;
         }
     };
+
+    module.exports = runner;
 
     // If we're called from the command line, run
     // This allows for test code to call us as a module
     if (!module.parent) {
         runner.run(process.argv);
     }
-})();
+}());

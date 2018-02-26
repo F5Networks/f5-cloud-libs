@@ -16,24 +16,27 @@
 'use strict';
 
 var q = require('q');
-var BigIp = require('../../../f5-cloud-libs').bigIp;
 var util = require('../../../f5-cloud-libs').util;
 var icontrolMock = require('../testUtil/icontrolMock');
 
 var localHostname = 'localhostname';
 var deviceGroup = 'testDeviceGroup';
 
+var BigIp;
 var bigIp;
 
-var callInSerial;
-var deviceInfo;
-var ready;
+var utilCallInSerial;
+var bigIpList;
+var bigIpCreate;
+var bigIpReady;
+var bigIpDeviceInfo;
 
 // Our tests cause too many event listeners. Turn off the check.
 process.setMaxListeners(0);
 
 module.exports = {
     setUp: function(callback) {
+        BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIp = new BigIp();
         bigIp.init('host', 'user', 'passowrd')
             .then(function() {
@@ -45,6 +48,13 @@ module.exports = {
                 icontrolMock.reset();
                 callback();
             });
+    },
+
+    tearDown: function(callback) {
+        Object.keys(require.cache).forEach(function(key) {
+            delete require.cache[key];
+        });
+        callback();
     },
 
     testAddToTrust: {
@@ -293,14 +303,17 @@ module.exports = {
             var type = 'sync-failover';
             var devices =['device1', 'device2'];
 
-            test.expect(8);
+            test.expect(10);
             bigIp.cluster.createDeviceGroup(name, type, devices)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
                     test.strictEqual(icontrolMock.lastCall.body.name, name);
                     test.strictEqual(icontrolMock.lastCall.body.type, type);
-                    test.strictEqual(icontrolMock.lastCall.body.devices, devices);
+                    test.strictEqual(icontrolMock.lastCall.body.devices.length, devices.length);
+                    devices.forEach((device) => {
+                        test.notStrictEqual(icontrolMock.lastCall.body.devices.indexOf(device), -1);
+                    });
                     test.strictEqual(icontrolMock.lastCall.body.autoSync, 'disabled');
                     test.strictEqual(icontrolMock.lastCall.body.fullLoadOnSync, false);
                     test.strictEqual(icontrolMock.lastCall.body.asmSync, 'disabled');
@@ -325,14 +338,17 @@ module.exports = {
                 asmSync: true
             };
 
-            test.expect(10);
+            test.expect(12);
             bigIp.cluster.createDeviceGroup(name, type, devices, options)
                 .then(function() {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
                     test.strictEqual(icontrolMock.lastCall.body.name, name);
                     test.strictEqual(icontrolMock.lastCall.body.type, type);
-                    test.strictEqual(icontrolMock.lastCall.body.devices, devices);
+                    test.strictEqual(icontrolMock.lastCall.body.devices.length, devices.length);
+                    devices.forEach((device) => {
+                        test.notStrictEqual(icontrolMock.lastCall.body.devices.indexOf(device), -1);
+                    });
                     test.strictEqual(icontrolMock.lastCall.body.autoSync, 'enabled');
                     test.strictEqual(icontrolMock.lastCall.body.saveOnAutoSync, true);
                     test.strictEqual(icontrolMock.lastCall.body.fullLoadOnSync, true);
@@ -918,9 +934,11 @@ module.exports = {
                 }
             );
 
-            callInSerial = util.callInSerial;
-            deviceInfo = BigIp.prototype.deviceInfo;
-            ready = BigIp.prototype.ready;
+            utilCallInSerial = util.callInSerial;
+            bigIpList = BigIp.prototype.list;
+            bigIpCreate = BigIp.prototype.create;
+            bigIpReady = BigIp.prototype.ready;
+            bigIpDeviceInfo = BigIp.prototype.deviceInfo;
 
             // In this test, the code under test creates its own remoteBigIp object
             // so we need to do dependency injection a little differently
@@ -945,24 +963,20 @@ module.exports = {
         },
 
         tearDown: function(callback) {
-            BigIp.prototype.deviceInfo = deviceInfo;
-            BigIp.prototype.ready = ready;
-            util.callInSerial = callInSerial;
+            BigIp.prototype.list = bigIpList;
+            BigIp.prototype.create = bigIpCreate;
+            BigIp.prototype.ready = bigIpReady;
+            BigIp.prototype.deviceInfo = bigIpDeviceInfo;
+            util.callInSerial = utilCallInSerial;
             callback();
         },
 
         testMissingParameters: function(test) {
             test.expect(1);
-            bigIp.cluster.joinCluster()
-                .then(function() {
-                    test.ok(false, 'Should have thrown missing parameters');
-                })
-                .catch(function(err) {
-                    test.notStrictEqual(err.message.indexOf('are required'), -1);
-                })
-                .finally(function() {
-                    test.done();
-                });
+            test.throws(function() {
+                bigIp.cluster.joinCluster();
+            });
+            test.done();
         },
 
         testBasic: function(test) {

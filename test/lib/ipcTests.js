@@ -17,8 +17,8 @@
 
 var fs = require('fs');
 var ipc = require('../../../f5-cloud-libs').ipc;
+var util = require('../../../f5-cloud-libs').util;
 
-const SIGNAL_BASE_PATH = '/tmp/f5-cloud-libs-signals/';
 const existsSync = fs.existsSync;
 const closeSync = fs.closeSync;
 const readdirSync = fs.readdirSync;
@@ -40,6 +40,7 @@ module.exports = {
         fs.closeSync = closeSync;
         fs.existsSync = existsSync;
         ipc.clearSignals();
+        util.removeDirectorySync(ipc.signalBasePath);
         callback();
     },
 
@@ -97,7 +98,7 @@ module.exports = {
     testSend: {
         testBasic: function(test) {
             ipc.send('foo');
-            test.strictEqual(fs.existsSync(SIGNAL_BASE_PATH + 'foo'), true);
+            test.strictEqual(fs.existsSync(ipc.signalBasePath + 'foo'), true);
             test.done();
         },
 
@@ -153,8 +154,8 @@ module.exports = {
 
     testDirCreated: {
         setUp: function(callback) {
-            if (fs.existsSync(SIGNAL_BASE_PATH)) {
-                fs.rmdirSync(SIGNAL_BASE_PATH);
+            if (fs.existsSync(ipc.signalBasePath)) {
+                fs.rmdirSync(ipc.signalBasePath);
             }
             callback();
         },
@@ -162,14 +163,14 @@ module.exports = {
         testOnSend: function(test) {
             ipc.send('foo');
             test.expect(1);
-            test.strictEqual(fs.existsSync(SIGNAL_BASE_PATH), true);
+            test.strictEqual(fs.existsSync(ipc.signalBasePath), true);
             test.done();
         },
 
         testOnOnce: function(test) {
             ipc.once('foo');
             test.expect(1);
-            test.strictEqual(fs.existsSync(SIGNAL_BASE_PATH), true);
+            test.strictEqual(fs.existsSync(ipc.signalBasePath), true);
             test.done();
         }
     },

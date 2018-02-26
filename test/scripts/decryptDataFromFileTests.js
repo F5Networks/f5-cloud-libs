@@ -34,7 +34,6 @@ module.exports = {
         decryptData = require('../../scripts/decryptDataFromFile');
 
         localCrytpoUtilMock = require('../../lib/localCryptoUtil');
-
         localCrytpoUtilMock.decryptDataFromFile = function(file) {
             fileSent = file;
             return q(decryptedData);
@@ -73,6 +72,21 @@ module.exports = {
         decryptData.run(argv, function(data) {
             test.strictEqual(fileSent, fileToDecrypt);
             test.strictEqual(data, decryptedData);
+            test.done();
+        });
+    },
+
+    testDecryptionError: function(test) {
+        const errorMessage = 'decryption error';
+        localCrytpoUtilMock.decryptDataFromFile = function() {
+            return q.reject(new Error(errorMessage));
+        };
+
+        argv.push('--data-file', 'fileToDecrypt');
+
+        test.expect(1);
+        decryptData.run(argv, function(err) {
+            test.strictEqual(err.message, errorMessage);
             test.done();
         });
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,101 +13,105 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 'use strict';
+
+'use strict';
+
+/* eslint-disable no-console */
 
 const fs = require('fs');
 const q = require('q');
+const assert = require('assert');
+const options = require('commander');
+const crypto = require('crypto');
+const cryptoUtil = require('../lib/cryptoUtil');
+const localKeyUtil = require('../lib/localKeyUtil');
+const KEYS = require('../lib/sharedConstants').KEYS;
 
-(function() {
-    var runner;
-
-    module.exports = runner = {
-        run: function(argv) {
-            const assert = require('assert');
-            const options = require('commander');
-            const crypto = require('crypto');
-
-            var passwordPromise;
-            var password;
+(function run() {
+    const runner = {
+        run(argv) {
+            let passwordPromise;
 
             options
-                .version('3.6.2')
-                .option('--length <password_length>', 'Length of password. Default 32.', 32)
-                .option('--file <path/to/file>', 'Location in which to store the password. Default log to console.')
-                .option('--encrypt', 'Encrypt the password before writing to disk. Default false')
+                .version('4.0.0-alpha.5')
+                .option(
+                    '--length <password_length>',
+                    'Length of password. Default 32.',
+                    32
+                )
+                .option(
+                    '--file <path/to/file>',
+                    'Location in which to store the password. Default log to console.'
+                )
+                .option(
+                    '--encrypt',
+                    'Encrypt the password before writing to disk. Default false'
+                )
                 .parse(argv);
 
-            assert.equal(isNaN(options.length), false, '--length must be an integer');
+            assert.equal(Number.isNaN(options.length), false, '--length must be an integer');
 
-            password = crypto.randomBytes(parseInt(options.length)).toString('base64').substr(0, options.length);
+            const password =
+                crypto.randomBytes(parseInt(options.length, 10)).toString('base64').substr(0, options.length);
 
             if (options.encrypt) {
                 passwordPromise = encryptPassword(password);
-            }
-            else {
+            } else {
                 passwordPromise = q(password);
             }
 
             passwordPromise
-                .then(function(password) {
+                .then((finalPassword) => {
                     if (options.file) {
-                        writeDataToFile(password, options.file);
-                    }
-                    else {
-                        console.log(password);
+                        writeDataToFile(finalPassword, options.file);
+                    } else {
+                        console.log(finalPassword);
                     }
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     throw (err);
                 });
         }
     };
 
-    var encryptPassword = function(password) {
-        const cryptoUtil = require('../lib/cryptoUtil');
-        const localKeyUtil = require('../lib/localKeyUtil');
-
-        const KEYS = require('../lib/sharedConstants').KEYS;
-
-        return localKeyUtil.generateAndInstallKeyPair(KEYS.LOCAL_PUBLIC_KEY_DIR, KEYS.LOCAL_PUBLIC_KEY_PATH, KEYS.LOCAL_PRIVATE_KEY_FOLDER, KEYS.LOCAL_PRIVATE_KEY)
-            .then(function() {
+    function encryptPassword(password) {
+        return localKeyUtil.generateAndInstallKeyPair(
+            KEYS.LOCAL_PUBLIC_KEY_DIR,
+            KEYS.LOCAL_PUBLIC_KEY_PATH,
+            KEYS.LOCAL_PRIVATE_KEY_FOLDER,
+            KEYS.LOCAL_PRIVATE_KEY
+        )
+            .then(() => {
                 return cryptoUtil.encrypt(KEYS.LOCAL_PUBLIC_KEY_PATH, password);
             })
-            .catch(function(err) {
+            .catch((err) => {
                 return q.reject(err);
             });
-    };
+    }
 
-    var writeDataToFile = function(data, file) {
-        var deferred = q.defer();
+    function writeDataToFile(data, file) {
+        const deferred = q.defer();
 
         if (fs.existsSync(file)) {
             fs.unlinkSync(file);
         }
 
-        fs.writeFile(
-            file,
-            data,
-            {
-                mode: 0o400
-            },
-            function(err) {
-                if (err) {
-                    deferred.reject(err);
-                }
-                else {
-                    deferred.resolve();
-                }
+        fs.writeFile(file, data, { mode: 0o400 }, (err) => {
+            if (err) {
+                deferred.reject(err);
+            } else {
+                deferred.resolve();
             }
-        );
+        });
 
         return deferred.promise;
-    };
+    }
+
+    module.exports = runner;
 
     // If we're called from the command line, run
     // This allows for test code to call us as a module
     if (!module.parent) {
         runner.run(process.argv);
     }
-})();
-
+}());

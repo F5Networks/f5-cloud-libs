@@ -1,0 +1,9 @@
+/.*
+/*.sh
+/jsdoc.conf
+build/
+coverage/
+dist/
+doc/
+gitHooks/
+out/

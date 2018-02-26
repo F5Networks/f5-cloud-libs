@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
+/* eslint-disable global-require */
 module.exports = {
     activeError: require('./lib/activeError'),
     autoscaleProvider: require('./lib/autoscaleProvider'),
@@ -22,10 +24,14 @@ module.exports = {
     bigIpCluster: require('./lib/bigIpCluster'),
     bigIpOnboard: require('./lib/bigIpOnboard'),
     bigIq: require('./lib/bigIq'),
-    bigIq5_0LicenseProvider: require('./lib/bigIq5_0LicenseProvider'),
-    bigIq5_2LicenseProvider: require('./lib/bigIq5_2LicenseProvider'),
-    bigIq5_3LicenseProvider: require('./lib/bigIq5_3LicenseProvider'),
+    bigIq50LicenseProvider: require('./lib/bigIq50LicenseProvider'),
+    bigIq52LicenseProvider: require('./lib/bigIq52LicenseProvider'),
+    bigIq53LicenseProvider: require('./lib/bigIq53LicenseProvider'),
+    cloudProviderFactory: require('./lib/cloudProviderFactory'),
     cryptoUtil: require('./lib/cryptoUtil'),
+    dnsProvider: require('./lib/dnsProvider'),
+    dnsProviderFactory: require('./lib/dnsProviderFactory'),
+    gtmDnsProvider: require('./lib/gtmDnsProvider'),
     localKeyUtil: require('./lib/localKeyUtil'),
     httpUtil: require('./lib/httpUtil'),
     iControl: require('./lib/iControl'),

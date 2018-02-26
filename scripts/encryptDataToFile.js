@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 F5 Networks, Inc.
+ * Copyright 2017-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 'use strict';
 
-(function() {
-    const cryptoUtil = require('../lib/cryptoUtil');
+'use strict';
 
-    var runner;
+const cryptoUtil = require('../lib/cryptoUtil');
+const assert = require('assert');
+const q = require('q');
+const options = require('commander');
+const Logger = require('../lib/logger');
+const ipc = require('../lib/ipc');
+const signals = require('../lib/signals');
+const util = require('../lib/util');
+const localKeyUtil = require('../lib/localKeyUtil');
+const KEYS = require('../lib/sharedConstants').KEYS;
 
-    module.exports = runner = {
-
+(function run() {
+    const runner = {
         /**
          * Runs the encryptDataToFile script
          *
@@ -31,46 +38,58 @@
          *    + Uses tmsh rather than iControl REST so that we do not need to take in a password
          *
          * @param {String[]} argv - The process arguments
-         * @param {Object}   testOpts - Options used during testing
-         * @param {Object}   testOpts.bigIp - BigIp object to use for testing
          * @param {Function} cb - Optional cb to call when done
          */
-        run: function(argv, testOpts, cb) {
-            const assert = require('assert');
-            const q = require('q');
-            const options = require('commander');
-            const Logger = require('../lib/logger');
-            const ipc = require('../lib/ipc');
-            const signals = require('../lib/signals');
-            const util = require('../lib/util');
-            const localKeyUtil = require('../lib/localKeyUtil');
-            const KEYS = require('../lib/sharedConstants').KEYS;
-
-            var loggerOptions = {};
-            var logger;
-            var loggableArgs;
-            var logFileName;
-            var waitPromise;
-            var i;
+        run(argv, cb) {
+            const loggerOptions = {};
+            let logger;
+            let loggableArgs;
+            let logFileName;
+            let waitPromise;
 
             const DEFAULT_LOG_FILE = '/tmp/encryptDataToFile.log';
             const KEYS_TO_MASK = ['--data'];
 
-            testOpts = testOpts || {};
-
             try {
+                /* eslint-disable max-len */
+
                 // Can't use getCommonOptions here because we don't take host, user, password options
                 options
-                    .version('3.6.2')
-                    .option('--background', 'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.')
-                    .option('--signal <signal>', 'Signal to send when done. Default ENCRYPTION_DONE.')
-                    .option('--wait-for <signal>', 'Wait for the named signal before running.')
-                    .option('--log-level <level>', 'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info')
-                    .option('-o, --output <file>', 'Log to file as well as console. This is the default if background process is spawned. Default is ' + DEFAULT_LOG_FILE)
-                    .option('--data <data>', 'Data to encrypt (use this or --data-file)')
-                    .option('--data-file <data_file>', 'Full path to file with data (use this or --data)')
-                    .option('--out-file <file_name>', 'Full path to file in which to write encrypted data')
+                    .version('4.0.0-alpha.5')
+                    .option(
+                        '--background',
+                        'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.'
+                    )
+                    .option(
+                        '--signal <signal>',
+                        'Signal to send when done. Default ENCRYPTION_DONE.'
+                    )
+                    .option(
+                        '--wait-for <signal>',
+                        'Wait for the named signal before running.'
+                    )
+                    .option(
+                        '--log-level <level>',
+                        'Log level (none, error, warn, info, verbose, debug, silly). Default is info.', 'info'
+                    )
+                    .option(
+                        '-o, --output <file>',
+                        `Log to file as well as console. This is the default if background process is spawned. Default is ${DEFAULT_LOG_FILE}`
+                    )
+                    .option(
+                        '--data <data>',
+                        'Data to encrypt (use this or --data-file)'
+                    )
+                    .option(
+                        '--data-file <data_file>',
+                        'Full path to file with data (use this or --data)'
+                    )
+                    .option(
+                        '--out-file <file_name>',
+                        'Full path to file in which to write encrypted data'
+                    )
                     .parse(argv);
+                /* eslint-enable max-len */
 
                 assert.ok(options.data || options.dataFile, 'One of --data or --data-file must be specified');
                 if (options.data && options.dataFile) {
@@ -95,95 +114,83 @@
                 // allow the BIG-IP services to start
                 if (options.background) {
                     logFileName = options.output || DEFAULT_LOG_FILE;
-                    logger.info("Spawning child process to do the work. Output will be in", logFileName);
+                    logger.info('Spawning child process to do the work. Output will be in', logFileName);
                     util.runInBackgroundAndExit(process, logFileName);
                 }
 
                 // Log the input, but don't log passwords
                 loggableArgs = argv.slice();
-                for (i = 0; i < loggableArgs.length; ++i) {
+                for (let i = 0; i < loggableArgs.length; i++) {
                     if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
-                        loggableArgs[i + 1] = "*******";
+                        loggableArgs[i + 1] = '*******';
                     }
                 }
-                logger.info(loggableArgs[1] + " called with", loggableArgs.join(' '));
+                logger.info(`${loggableArgs[1]} called with`, loggableArgs.join(' '));
 
                 if (options.waitFor) {
-                    logger.info("Waiting for", options.waitFor);
+                    logger.info('Waiting for', options.waitFor);
                     waitPromise = ipc.once(options.waitFor);
-                }
-                else {
+                } else {
                     waitPromise = q();
                 }
 
                 waitPromise
-                    .then(function() {
-                        logger.info("Encrypt data to file starting.");
+                    .then(() => {
+                        logger.info('Encrypt data to file starting.');
                         ipc.send(signals.ENCRYPTION_RUNNING);
                     })
-                    .then(function() {
-                        return localKeyUtil.generateAndInstallKeyPair(KEYS.LOCAL_PUBLIC_KEY_DIR, KEYS.LOCAL_PUBLIC_KEY_PATH, KEYS.LOCAL_PRIVATE_KEY_FOLDER, KEYS.LOCAL_PRIVATE_KEY);
+                    .then(() => {
+                        return localKeyUtil.generateAndInstallKeyPair(
+                            KEYS.LOCAL_PUBLIC_KEY_DIR,
+                            KEYS.LOCAL_PUBLIC_KEY_PATH,
+                            KEYS.LOCAL_PRIVATE_KEY_FOLDER,
+                            KEYS.LOCAL_PRIVATE_KEY
+                        );
                     })
-                    .then(function() {
+                    .then(() => {
                         if (options.data) {
                             return q(options.data);
                         }
-                        else {
-                            return util.readDataFromFile(options.dataFile);
-                        }
+                        return util.readDataFromFile(options.dataFile);
                     })
-                    .then(function(data) {
-                        logger.info("Encrypting data.");
+                    .then((data) => {
+                        logger.info('Encrypting data.');
                         return cryptoUtil.encrypt(KEYS.LOCAL_PUBLIC_KEY_PATH, data.toString());
                     })
-                    .then(function(encryptedData) {
-                        logger.info("Writing encrypted data to", options.outFile);
+                    .then((encryptedData) => {
+                        logger.info('Writing encrypted data to', options.outFile);
                         return util.writeDataToFile(encryptedData, options.outFile);
                     })
-                    .catch(function(err) {
-                        logger.error("Encryption failed:", err.message);
+                    .catch((err) => {
+                        logger.error('Encryption failed:', err.message);
                     })
-                    .done(function() {
+                    .done(() => {
                         ipc.send(options.signal || signals.ENCRYPTION_DONE);
 
                         if (cb) {
                             cb();
                         }
 
-                        util.logAndExit("Encryption done.");
+                        util.logAndExit('Encryption done.');
                     });
-
-                // If we reboot, exit - otherwise cloud providers won't know we're done.
-                // But, if we're the one doing the reboot, we'll exit on our own through
-                // the normal path.
-                if (!options.forceReboot) {
-                    ipc.once('REBOOT')
-                        .then(function() {
-                            // Make sure the last log message is flushed before exiting.
-                            util.logAndExit("REBOOT signaled. Exiting.");
-                        });
-                }
-            }
-            catch (err) {
+            } catch (err) {
                 if (logger) {
-                    logger.error("Encryption error:", err);
+                    logger.error('Encryption error:', err);
                     if (cb) {
                         cb(err);
                     }
-                }
-                else {
-                    console.log("Encryption error:", err);
-                    if (cb) {
-                        cb(err);
-                    }
+                } else if (cb) {
+                    cb(err);
                 }
             }
         }
     };
+
+    module.exports = runner;
 
     // If we're called from the command line, run
     // This allows for test code to call us as a module
     if (!module.parent) {
         runner.run(process.argv);
     }
-})();
+}());

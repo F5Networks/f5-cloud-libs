@@ -21,9 +21,9 @@ var q = require('q');
 var icontrolMock = require('../testUtil/icontrolMock');
 var poolUuid = '1';
 var BigIp;
-var BigIq5_0;
-var BigIq5_2;
-var BigIq5_3;
+var BigIq50;
+var BigIq52;
+var BigIq53;
 var util;
 
 var bigIp;
@@ -35,9 +35,9 @@ module.exports = {
     setUp: function(callback) {
         util = require('../../../f5-cloud-libs').util;
         BigIp = require('../../../f5-cloud-libs').bigIp;
-        BigIq5_0 = require('../../../f5-cloud-libs').bigIq5_0LicenseProvider;
-        BigIq5_2 = require('../../../f5-cloud-libs').bigIq5_2LicenseProvider;
-        BigIq5_3 = require('../../../f5-cloud-libs').bigIq5_3LicenseProvider;
+        BigIq50 = require('../../../f5-cloud-libs').bigIq50LicenseProvider;
+        BigIq52 = require('../../../f5-cloud-libs').bigIq52LicenseProvider;
+        BigIq53 = require('../../../f5-cloud-libs').bigIq53LicenseProvider;
 
         bigIp = new BigIp();
         bigIp.init('host', 'user', 'password')
@@ -684,7 +684,7 @@ module.exports = {
             }
         },
 
-        testBigIq5_0: {
+        testBigIq50: {
             setUp: function(callback) {
                 icontrolMock.when(
                     'list',
@@ -876,7 +876,7 @@ module.exports = {
 
             testLicenseFailure: function(test) {
                 var licenseUuid = '123456';
-                BigIq5_0.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+                BigIq50.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
 
                 icontrolMock.when(
                     'create',
@@ -901,7 +901,7 @@ module.exports = {
             }
         },
 
-        testBigIq5_2: {
+        testBigIq52: {
             setUp: function(callback) {
                 icontrolMock.when(
                     'list',
@@ -971,7 +971,7 @@ module.exports = {
                     LICENSE_PATH_5_2 + '?$select=id,name'
                 );
 
-                BigIq5_2.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+                BigIq52.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
 
                 test.expect(1);
                 bigIp.onboard.licenseViaBigIq()
@@ -1131,7 +1131,7 @@ module.exports = {
                         []
                     );
 
-                    BigIq5_2.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+                    BigIq52.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
 
                     callback();
                 },
@@ -1238,7 +1238,7 @@ module.exports = {
             }
         },
 
-        testBigIq5_3: {
+        testBigIq53: {
             setUp: function(callback) {
                 icontrolMock.when(
                     'list',
@@ -1283,7 +1283,7 @@ module.exports = {
             },
 
             testLicenseRaceConditionFails: function(test) {
-                BigIq5_3.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+                BigIq53.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
 
                 icontrolMock.when(
                     'list',
@@ -1307,7 +1307,7 @@ module.exports = {
             },
 
             testLicenseFailure: function(test) {
-                BigIq5_3.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+                BigIq53.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
 
                 icontrolMock.when(
                     'list',
@@ -1331,7 +1331,7 @@ module.exports = {
             },
 
             testUnknownStatus: function(test) {
-                BigIq5_3.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+                BigIq53.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
 
                 icontrolMock.when(
                     'list',
@@ -1552,6 +1552,21 @@ module.exports = {
                 }
             );
             callback();
+        },
+
+        testBasic: function(test) {
+            var portToAdd = 456;
+            bigIp.onboard.sslPort(portToAdd, null, true)
+                .then(function() {
+                    var httpdRequest = icontrolMock.getRequest('modify', '/tm/sys/httpd');
+                    test.strictEqual(httpdRequest.sslPort, portToAdd);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
         testNotInDefaults: function(test) {

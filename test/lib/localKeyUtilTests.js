@@ -18,7 +18,6 @@
 const q = require('q');
 const fsMock = require('fs');
 
-const realExit = process.exit;
 const realWriteFile = fsMock.writeFile;
 
 const passphrase = 'abc123';
@@ -47,9 +46,6 @@ module.exports = {
         keyPairGenerated = false;
         bigIpFolderCreated = false;
         installCmd = undefined;
-
-        // Don't let script exit - we need the nodeunit process to run to completion
-        process.exit = function() {};
 
         childProcessMock.exec = function(command, cb) {
             if (command.startsWith('/usr/bin/tmsh install')) {
@@ -92,7 +88,6 @@ module.exports = {
             delete require.cache[key];
         });
         fsMock.writeFile = realWriteFile;
-        process.exit = realExit;
         callback();
     },
 

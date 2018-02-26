@@ -18,20 +18,21 @@
 const poolName = 'myLicensePool';
 const poolUuid = '1234';
 const licenseUuid = '5678';
-const bigIpHostname ='myBigIqHost';
-const LICENSE_PATH = '/cm/shared/licensing/pools/';
+const bigIpHostname = 'myBigIqHost';
+const LICENSE_PATH = '/cm/device/licensing/pool/regkey/licenses/';
+const regKey = '1234';
+const memberId = '5678';
 
 var BigIqProvider;
 var provider;
 var icontrolMock;
-var revokeCalled;
 
 module.exports = {
     setUp: function(callback) {
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
 
-        BigIqProvider = require('../../../f5-cloud-libs').bigIq5_0LicenseProvider;
+        BigIqProvider = require('../../../f5-cloud-libs').bigIq52LicenseProvider;
         provider = new BigIqProvider();
         provider.bigIp = {
             user: 'user',
@@ -67,47 +68,71 @@ module.exports = {
 
     testRevokeLicense: {
         setUp: function(callback) {
-            revokeCalled = false;
-
             icontrolMock.when(
                 'list',
-                LICENSE_PATH + '?$select=uuid,name',
+                LICENSE_PATH + '?$select=id,name',
                 [
                     {
                         name: 'foo',
-                        uuid: '0001'
+                        id: '0001'
                     },
                     {
                         name: poolName,
-                        uuid: poolUuid
+                        id: poolUuid
                     },
                     {
                         name: 'bar',
-                        uuid: '0002'
+                        id: '0002'
                     }
                 ]
             );
 
             icontrolMock.when(
                 'list',
-                LICENSE_PATH + poolUuid + '/members/',
+                LICENSE_PATH + poolUuid + '/offerings?$select=licenseState',
                 [
                     {
-                        deviceName: 'foo',
-                        uuid: '1000'
+                        licenseState: {
+                            registrationKey: '0001'
+                        }
                     },
                     {
-                        deviceName: bigIpHostname,
-                        uuid: licenseUuid
+                        licenseState: {
+                            registrationKey: regKey
+                        }
                     },
                     {
-                        deviceName: 'bar',
-                        uuid: '2000'
+                        licenseState: {
+                            registrationKey: '0002'
+                        }
                     }
                 ]
             );
 
-            icontrolMock.when('delete', LICENSE_PATH + poolUuid + '/members/' + licenseUuid, {});
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                [
+                    {
+                        deviceName: 'foo',
+                        id: '1000'
+                    },
+                    {
+                        deviceName: bigIpHostname,
+                        id: memberId
+                    },
+                    {
+                        deviceName: 'bar',
+                        id: '2000'
+                    }
+                ]
+            );
+
+            icontrolMock.when(
+                'delete',
+                LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members/' + memberId,
+                {}
+            );
 
             callback();
         },
@@ -116,13 +141,13 @@ module.exports = {
             test.expect(1);
             provider.revoke(icontrolMock, poolName, bigIpHostname)
                 .then(function() {
-                    var request = icontrolMock.getRequest('delete', LICENSE_PATH + poolUuid + '/members/' + licenseUuid);
+                    var request = icontrolMock.getRequest('delete', LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members/' + memberId);
                     test.deepEqual(
                         request,
                         {
                             username: 'user',
                             password: 'password',
-                            uuid: licenseUuid
+                            id: licenseUuid
                         }
                     );
                 })
@@ -134,33 +159,55 @@ module.exports = {
                 });
         },
 
-        testLicenseNotFound: function(test) {
+        testNoLicenseForHost: function(test) {
             icontrolMock.when(
                 'list',
-                LICENSE_PATH + poolUuid + '/members/',
+                LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
                 [
                     {
                         deviceName: 'foo',
-                        uuid: '1000'
+                        id: '1000'
                     },
                     {
                         deviceName: 'bar',
-                        uuid: '2000'
+                        id: '2000'
                     }
                 ]
             );
 
+
             test.expect(1);
             provider.revoke(icontrolMock, poolName, bigIpHostname)
                 .then(function() {
-                    test.ok(false, 'should have thrown no license');
+                    test.ok(false, 'should have thrown no license for host');
                 })
                 .catch(function(err) {
-                    test.notStrictEqual(err.message.indexOf('no license found'), -1);
+                    test.strictEqual(err.message, 'License for host not found.');
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testGetMembersError: function(test) {
+            icontrolMock.fail('list', LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members');
+
+            test.expect(1);
+            provider.revoke(icontrolMock, poolName, bigIpHostname)
+                .then(function() {
+                    test.ok(false, 'should have thrown no license for host');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, 'License for host not found.');
                 })
                 .finally(function() {
                     test.done();
                 });
         }
+    },
+
+    testGetLicenseTimeout: function(test) {
+        test.deepEqual(provider.getLicenseTimeout(), {maxRetries: 40, retryIntervalMs: 5000});
+        test.done();
     }
 };

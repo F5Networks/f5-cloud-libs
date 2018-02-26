@@ -1,5 +1,5 @@
 /**
- * Copyright 2016, 2017 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,118 +13,123 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-'use-strict';
 
-(function() {
+'use strict';
 
-    var childProcess = require('child_process');
-    var waiting = 0;
-    var baseDir;
-    var runner;
-    var logger;
+/* eslint-disable no-console */
 
-    var MAX_TRIES = 3;
+const ipc = require('../../lib/ipc');
+const Logger = require('../../lib/logger');
 
-    var spawnScript = function(module, arrayArgs, stringArgs, tryNum) {
-        var args = arrayArgs ? arrayArgs.slice() : [];
-        var cp;
+const childProcess = require('child_process');
 
-        if (typeof tryNum === 'undefined') {
-            tryNum = 1;
+(function run() {
+    const MAX_TRIES = 3;
+
+    let waiting = 0;
+    let baseDir;
+    let logger;
+
+    const spawnScript = function (module, arrayArgs, stringArgs, tryNum) {
+        const args = arrayArgs ? arrayArgs.slice() : [];
+
+        let currentTry = tryNum;
+
+        if (typeof currentTry === 'undefined') {
+            currentTry = 1;
         }
 
         if (stringArgs) {
-            stringArgs.trim().split(/\s+/).forEach(function(arg) {
+            stringArgs.trim().split(/\s+/).forEach((arg) => {
                 args.push(arg);
             });
         }
 
-        logger.debug("Spawning child process", module, args);
-        cp = childProcess.fork(
+        logger.debug('Spawning child process', module, args);
+        const cp = childProcess.fork(
             module,
             args,
             {
-                cwd: baseDir + '/scripts',
+                cwd: `${baseDir}/scripts`,
                 stdio: 'ignore',
                 detached: true
             }
         );
 
-        waiting++;
+        waiting += 1;
 
-        cp.on('error', function(error) {
-            logger.error(cp.pid, "got error:", error);
+        cp.on('error', (error) => {
+            logger.error(cp.pid, 'got error:', error);
         });
 
-        cp.on('exit', function(code, signal) {
-            logger.verbose(module, "exitted with code:", code === null ? 'null' : code, "/ signal:", signal === null ? 'null' : signal);
+        cp.on('exit', (code, signal) => {
+            logger.verbose(
+                module,
+                'exitted with code:',
+                code === null ? 'null' : code, '/ signal:',
+                signal === null ? 'null' : signal
+            );
 
             // Occasionally in Azure, a script just exits early with a bad exit code
             // for no apparent reason
-            if (code !== null && code !== 0 && tryNum < MAX_TRIES) {
-                logger.info("Bad exit code for", module, "restrying.");
-                spawnScript(module, arrayArgs, stringArgs, tryNum + 1);
+            if (code !== null && code !== 0 && currentTry < MAX_TRIES) {
+                logger.info('Bad exit code for', module, 'restrying.');
+                spawnScript(module, arrayArgs, stringArgs, currentTry + 1);
             }
 
-            waiting--;
+            waiting -= 1;
 
             if (!waiting) {
                 // Make sure the last log message is flushed before exiting.
-                logger.info("All children have exitted. Exiting.", function() {
+                logger.info('All children have exitted. Exiting.', () => {
                     process.exit();
                 });
             }
         });
     };
 
-    module.exports = runner = {
-
+    const runner = {
         /**
          * Runs an arbitrary script
          *
          * @param {String[]} script - Arguments to pass to runScript
          */
-        run: function(argv) {
+        run(argv) {
             try {
-                var loggerOptions = {};
-                var loggableArgs = [];
-                var loggableArgsSplit;
-                var ipc;
-                var Logger;
-                var logLevel;
-                var argIndex;
-                var args;
-                var clArgIndex;
-                var clArgStart;
-                var clArgEnd;
-                var scriptArgs;
-                var shellOutput;
-                var i;
-                var j;
+                const KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
 
-                var KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
+                const loggerOptions = {};
+                const loggableArgs = [];
+
+                let loggableArgsSplit;
+                let logLevel;
+                let argIndex;
+                let args;
+                let clArgIndex;
+                let clArgStart;
+                let clArgEnd;
+                let scriptArgs;
 
                 // Log the input, but don't log passwords...
                 // ... copy args expanding those with spaces
-                for (i = 0; i < argv.length; i++) {
+                for (let i = 0; i < argv.length; i++) {
                     if (argv[i].indexOf(' ') === -1) {
                         loggableArgs.push(argv[i]);
-                    }
-                    else {
+                    } else {
                         loggableArgsSplit = argv[i].split(/\s+/);
-                        for (j = 0; j < loggableArgsSplit.length; ++j) {
+                        for (let j = 0; j < loggableArgsSplit.length; ++j) {
                             loggableArgs.push(loggableArgsSplit[j]);
                         }
                     }
                 }
 
                 // ... mask the passwords
-                for (i = 0; i < loggableArgs.length; ++i) {
+                for (let i = 0; i < loggableArgs.length; ++i) {
                     if (KEYS_TO_MASK.indexOf(loggableArgs[i]) !== -1) {
-                        loggableArgs[i + 1] = "*******";
+                        loggableArgs[i + 1] = '*******';
                     }
                 }
-                console.log(loggableArgs[1] + " called with", loggableArgs.join(' '));
+                console.log(`${loggableArgs[1]} called with`, loggableArgs.join(' '));
 
                 // We're parsing command line options manually because the commander module used
                 // in other cloud libs scripts can't grab the cl-args as a single string in the
@@ -132,36 +137,36 @@
 
                 argIndex = argv.indexOf('--help');
                 if (argIndex !== -1) {
+                    /* eslint-disable max-len */
                     console.log();
-                    console.log("  Usage: runScripts [options]");
+                    console.log('  Usage: runScripts [options]');
                     console.log();
-                    console.log("  Options:");
+                    console.log('  Options:');
                     console.log();
-                    console.log("    --help\t\t\tOutputusage information");
-                    console.log("    --base-dir  <dir>\t\tBase directory of f5-cloud-libs (eg. /config/cloud/node_modules/f5-cloud-libs)");
-                    console.log("    --onboard   <args>\t\tRun the onboard.js script with args.");
-                    console.log("    --cluster   <args>\t\tRun the cluster.js script with args.");
-                    console.log("    --network   <args>\t\tRun the network.js script with args.");
-                    console.log("    --autoscale <args>\t\tRun the autoscale.js script with args.");
-                    console.log("    --script    <args>\t\tRun the runScript.js script with args. To run multiple scripts, use multiple --script entrires.");
+                    console.log('    --help\t\t\tOutputusage information');
+                    console.log('    --base-dir  <dir>\t\tBase directory of f5-cloud-libs (eg. /config/cloud/node_modules/f5-cloud-libs)');
+                    console.log('    --onboard   <args>\t\tRun the onboard.js script with args.');
+                    console.log('    --cluster   <args>\t\tRun the cluster.js script with args.');
+                    console.log('    --network   <args>\t\tRun the network.js script with args.');
+                    console.log('    --autoscale <args>\t\tRun the autoscale.js script with args.');
+                    console.log('    --script    <args>\t\tRun the runScript.js script with args. To run multiple scripts, use multiple --script entrires.');
                     process.exit();
+                    /* eslint-enable max-len */
                 }
 
                 // In Azure, mysql takes extra time to start
                 console.log('Resetting mysql start delay');
-                shellOutput = childProcess.execSync("sed -i 's/sleep\ 5/sleep\ 10/' /etc/init.d/mysql");
+                const shellOutput = childProcess.execSync("sed -i 's/sleep 5/sleep 10/' /etc/init.d/mysql");
                 console.log(shellOutput.toString());
 
-                ipc = require('../../lib/ipc');
-                Logger = require('../../lib/logger');
                 loggerOptions.console = true;
                 loggerOptions.logLevel = 'info';
                 loggerOptions.fileName = '/var/log/runScripts.log';
 
                 argIndex = argv.indexOf('--log-level');
-                if (argIndex != -1) {
+                if (argIndex !== -1) {
                     logLevel = argv[argIndex + 1];
-                    console.log("Setting log level to", logLevel);
+                    console.log('Setting log level to', logLevel);
                     loggerOptions.logLevel = logLevel;
                 }
 
@@ -169,49 +174,49 @@
 
                 argIndex = argv.indexOf('--base-dir');
                 if (argIndex === -1) {
-                    logger.error("--base-dir is required");
+                    logger.error('--base-dir is required');
                     process.exit(1);
                 }
                 baseDir = argv[argIndex + 1];
 
-                logger.info("Running scripts.");
+                logger.info('Running scripts.');
 
                 argIndex = argv.indexOf('--onboard');
                 while (argIndex !== -1) {
-                    logger.debug("onboard arg index", argIndex);
+                    logger.debug('onboard arg index', argIndex);
                     scriptArgs = argv[argIndex + 1];
-                    spawnScript("onboard.js", undefined, scriptArgs);
+                    spawnScript('onboard.js', undefined, scriptArgs);
                     argIndex = argv.indexOf('--onboard', argIndex + 1);
                 }
 
                 argIndex = argv.indexOf('--cluster');
                 while (argIndex !== -1) {
-                    logger.debug("cluster arg index", argIndex);
+                    logger.debug('cluster arg index', argIndex);
                     scriptArgs = argv[argIndex + 1];
-                    spawnScript("cluster.js", undefined, scriptArgs);
+                    spawnScript('cluster.js', undefined, scriptArgs);
                     argIndex = argv.indexOf('--cluster', argIndex + 1);
                 }
 
                 argIndex = argv.indexOf('--network');
                 while (argIndex !== -1) {
-                    logger.debug("network arg index", argIndex);
+                    logger.debug('network arg index', argIndex);
                     scriptArgs = argv[argIndex + 1];
-                    spawnScript("network.js", undefined, scriptArgs);
+                    spawnScript('network.js', undefined, scriptArgs);
                     argIndex = argv.indexOf('--network', argIndex + 1);
                 }
 
                 argIndex = argv.indexOf('--autoscale');
                 while (argIndex !== -1) {
-                    logger.debug("autoscale arg index", argIndex);
+                    logger.debug('autoscale arg index', argIndex);
                     scriptArgs = argv[argIndex + 1];
-                    spawnScript("autoscale.js", undefined, scriptArgs);
+                    spawnScript('autoscale.js', undefined, scriptArgs);
                     argIndex = argv.indexOf('--autoscale', argIndex + 1);
                 }
 
                 argIndex = argv.indexOf('--script');
                 /* jshint loopfunc: true */
                 while (argIndex !== -1) {
-                    logger.debug("script arg index", argIndex);
+                    logger.debug('script arg index', argIndex);
 
                     args = [];
                     scriptArgs = argv[argIndex + 1];
@@ -226,24 +231,17 @@
 
                         // Grab everything up to --cl-args
                         if (clArgIndex > 0) {
-                            scriptArgs.substring(0, clArgIndex).trim().split(/\s+/).forEach(function(arg) {
-                                args.push(arg);
-                            });
+                            addArgs(scriptArgs.substring(0, clArgIndex).trim().split(/\s+/), args);
                         }
 
                         // Grab everything after the --cl-args argument
                         if (clArgEnd < scriptArgs.length - 1) {
-                            scriptArgs.substring(clArgEnd + 1).trim().split(/\s+/).forEach(function(arg) {
-                                args.push(arg);
-                            });
+                            addArgs(scriptArgs.substring(clArgEnd + 1).trim().split(/\s+/), args);
                         }
+                    } else {
+                        addArgs(scriptArgs.split(/\s+/), args);
                     }
-                    else {
-                        scriptArgs.split(/\s+/).forEach(function(arg) {
-                            args.push(arg);
-                        });
-                    }
-                    spawnScript("runScript.js", args);
+                    spawnScript('runScript.js', args);
 
                     argIndex = argv.indexOf('--script', argIndex + 1);
                 }
@@ -251,27 +249,33 @@
 
                 // If we reboot, exit - otherwise Azure doesn't know the extensions script is done
                 ipc.once('REBOOT')
-                    .then(function() {
+                    .then(() => {
                         // Make sure the last log message is flushed before exiting.
-                        logger.info("REBOOT signaled. Exiting.", function() {
+                        logger.info('REBOOT signaled. Exiting.', () => {
                             process.exit();
                         });
                     });
-
-            }
-            catch (err) {
-                console.log("Error running scripts: " + err);
+            } catch (err) {
+                console.log(`Error running scripts: ${err}`);
             }
 
             if (logger) {
-                logger.debug("Done spawning scripts.");
+                logger.debug('Done spawning scripts.');
             }
         }
     };
+
+    module.exports = runner;
+
+    function addArgs(argsToAdd, argsToAddTo) {
+        argsToAdd.forEach((arg) => {
+            argsToAddTo.push(arg);
+        });
+    }
 
     // If we're called from the command line, run
     // This allows for test code to call us as a module
     if (!module.parent) {
         runner.run(process.argv);
     }
-})();
+}());

@@ -17,8 +17,6 @@
 
 const q = require('q');
 
-var testOpts = {};
-
 var fsMock;
 var localKeyUtilMock;
 var ipcMock;
@@ -26,10 +24,11 @@ var cryptoUtilMock;
 var utilMock;
 var argv;
 var encryptData;
+var realWriteFile;
+var realReadFile;
 
+var functionsCalled;
 var generateAndInstallKeyPairCalled;
-
-var realExit = process.exit;
 
 module.exports = {
     setUp: function(callback) {
@@ -38,9 +37,6 @@ module.exports = {
         localKeyUtilMock = require('../../lib/localKeyUtil');
         ipcMock = require('../../lib/ipc');
         cryptoUtilMock = require('../../lib/cryptoUtil');
-
-        // Don't let script exit - we need the nodeunit process to run to completion
-        process.exit = function() {};
 
         utilMock.logAndExit = function() {};
 
@@ -56,6 +52,8 @@ module.exports = {
             return q();
         };
 
+        realReadFile = fsMock.readFile;
+        realWriteFile = fsMock.writeFile;
         fsMock.writeFile = function(file, data, options, cb) {
             cb();
         };
@@ -64,9 +62,12 @@ module.exports = {
 
         // Just resolve right away, otherwise these tests never exit
         ipcMock.once = function() {
-            var deferred = q.defer();
-            deferred.resolve();
-            return deferred.promise;
+            functionsCalled.ipc.once = arguments;
+            return q();
+        };
+
+        functionsCalled = {
+            ipc: {}
         };
 
         encryptData = require('../../scripts/encryptDataToFile');
@@ -76,11 +77,39 @@ module.exports = {
     },
 
     tearDown: function(callback) {
+        utilMock.removeDirectorySync(ipcMock.signalBasePath);
+        fsMock.readFile = realReadFile;
+        fsMock.writeFile = realWriteFile;
+
         Object.keys(require.cache).forEach(function(key) {
             delete require.cache[key];
         });
-        process.exit = realExit;
         callback();
+    },
+
+    testWaitFor: function(test) {
+        argv.push('--wait-for', 'foo', '--data', 'dataToEncrypt', '--out-file', 'foo');
+
+        test.expect(1);
+        encryptData.run(argv, function() {
+            test.strictEqual(functionsCalled.ipc.once[0], 'foo');
+            test.done();
+        });
+    },
+
+    testBackground: function(test) {
+        var runInBackgroundCalled = false;
+        utilMock.runInBackgroundAndExit = function() {
+            runInBackgroundCalled = true;
+        };
+
+        argv.push('--background', '--data', 'dataToEncrypt', '--out-file', 'foo');
+
+        test.expect(1);
+        encryptData.run(argv, function() {
+            test.ok(runInBackgroundCalled);
+            test.done();
+        });
     },
 
     testNoDataOrDataFile: function(test) {
@@ -88,7 +117,7 @@ module.exports = {
         console.log = function() {};
         test.expect(1);
         argv.push('--out-file', 'foo');
-        encryptData.run(argv, testOpts, function(err) {
+        encryptData.run(argv, function(err) {
             test.strictEqual(err.name, 'AssertionError');
             console.log = log;
             test.done();
@@ -100,7 +129,7 @@ module.exports = {
         console.log = function() {};
         test.expect(1);
         argv.push('--data', 'foo');
-        encryptData.run(argv, testOpts, function(err) {
+        encryptData.run(argv, function(err) {
             test.strictEqual(err.name, 'AssertionError');
             console.log = log;
             test.done();
@@ -112,7 +141,7 @@ module.exports = {
         console.log = function() {};
         test.expect(1);
         argv.push('--data-file', 'foo');
-        encryptData.run(argv, testOpts, function(err) {
+        encryptData.run(argv, function(err) {
             test.strictEqual(err.name, 'AssertionError');
             console.log = log;
             test.done();
@@ -124,7 +153,7 @@ module.exports = {
         console.log = function() {};
         test.expect(1);
         argv.push('--data', 'foo', '--data-file', 'bar', '--out-file', 'hello');
-        encryptData.run(argv, testOpts, function(err) {
+        encryptData.run(argv, function(err) {
             test.strictEqual(err.name, 'AssertionError');
             console.log = log;
             test.done();
@@ -135,7 +164,7 @@ module.exports = {
         argv.push('--data', 'foo', '--out-file', 'foo');
 
         test.expect(1);
-        encryptData.run(argv, testOpts, function() {
+        encryptData.run(argv, function() {
             test.ok(generateAndInstallKeyPairCalled);
             test.done();
         });
@@ -153,7 +182,7 @@ module.exports = {
         };
 
         test.expect(1);
-        encryptData.run(argv, testOpts, function() {
+        encryptData.run(argv, function() {
             test.strictEqual(dataSent, dataToEncrypt);
             test.done();
         });
@@ -175,7 +204,7 @@ module.exports = {
         };
 
         test.expect(1);
-        encryptData.run(argv, testOpts, function() {
+        encryptData.run(argv, function() {
             test.strictEqual(dataSent, dataToEncrypt);
             test.done();
         });
@@ -193,7 +222,7 @@ module.exports = {
         };
 
         test.expect(1);
-        encryptData.run(argv, testOpts, function() {
+        encryptData.run(argv, function() {
             test.strictEqual(fileWrittenTo, fileToWriteTo);
             test.done();
         });

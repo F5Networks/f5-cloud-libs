@@ -241,13 +241,6 @@ module.exports = {
         test.done();
     },
 
-    testUnimplementedMasterExpired: function(test) {
-        test.doesNotThrow(function() {
-            testAutoscaleProvider.masterExpired();
-        });
-        test.done();
-    },
-
     testUnimplementedMasterInvalidated: function(test) {
         test.doesNotThrow(function() {
             testAutoscaleProvider.masterInvalidated();

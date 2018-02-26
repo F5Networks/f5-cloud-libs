@@ -60,7 +60,7 @@ module.exports = {
             setTimeout(function() {
                 loggedMessage = fs.readFileSync(TEMP_LOGFILE).toString();
                 test.notStrictEqual(loggedMessage.indexOf('password='), -1);
-                test.notStrictEqual(loggedMessage.indexOf('Password'), -1);
+                test.notStrictEqual(loggedMessage.indexOf('"Password":'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
                 test.strictEqual(loggedMessage.indexOf('5678'), -1);
                 test.done();
@@ -76,9 +76,26 @@ module.exports = {
             setTimeout(function() {
                 loggedMessage = fs.readFileSync(TEMP_LOGFILE).toString();
                 test.notStrictEqual(loggedMessage.indexOf('passphrase='), -1);
-                test.notStrictEqual(loggedMessage.indexOf('passphrase'), -1);
+                test.notStrictEqual(loggedMessage.indexOf('"passphrase":'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
                 test.strictEqual(loggedMessage.indexOf('5678'), -1);
+                test.done();
+            }, 10);
+        },
+
+        testWholeWordMask:function(test) {
+            var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
+            var loggedMessage;
+
+            // these should be logged in full
+            logger.warn('passwordUrl=file:///tmp/foo', {passwordUrl: 'file:///tmp/bar'});
+
+            setTimeout(function() {
+                loggedMessage = fs.readFileSync(TEMP_LOGFILE).toString();
+                test.notStrictEqual(loggedMessage.indexOf('passwordUrl='), -1);
+                test.notStrictEqual(loggedMessage.indexOf('"passwordUrl":'), -1);
+                test.notStrictEqual(loggedMessage.indexOf('file:///tmp/foo'), -1);
+                test.notStrictEqual(loggedMessage.indexOf('file:///tmp/bar'), -1);
                 test.done();
             }, 10);
         },

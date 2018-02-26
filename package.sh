@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ `uname` == 'Darwin' ]; then
     SED_ARGS="-E -i .bak"
-    EXTRA_TAR_ARGS="--exclude=dist --exclude=build --exclude=test --exclude=.git*"
+    EXTRA_TAR_ARGS="--exclude=dist --exclude=build --exclude=test --exclude=.git* --exclude=.vscode --exclude=coverage"
 else
     SED_ARGS="-r -i"
     EXTRA_TAR_ARGS="--owner=root --group=root --exclude-from=.tarignore --exclude=.tarignore"
@@ -24,7 +24,7 @@ chmod -R 744 scripts/*
 chmod -R 644 scripts/*.js
 chmod -R 644 lib/*
 
-tar -C .. $EXTRA_TAR_ARGS -cvf dist/f5-cloud-libs.tar f5-cloud-libs
+tar -C .. $EXTRA_TAR_ARGS -cf dist/f5-cloud-libs.tar f5-cloud-libs
 
 # Suppress gzips timetamp in the tarball - otherwise the digest hash changes on each
 # commit even if the contents do not change. This causes an infinite loop in the build scripts
