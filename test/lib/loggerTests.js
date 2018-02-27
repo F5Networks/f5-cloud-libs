@@ -17,8 +17,7 @@
 
 var Logger = require('../../../f5-cloud-libs').logger;
 var fs = require('fs');
-
-const TEMP_LOGFILE = '/tmp/f5-cloud-libs-loggerTest.log';
+var q = require('q');
 
 module.exports = {
     testConsole: function(test) {
@@ -45,39 +44,21 @@ module.exports = {
         test.done();
     },
 
-    testLogMessages: {
-        tearDown: function(callback) {
+    testPasswordMask: function(test) {
+        const TEMP_LOGFILE = '/tmp/f5-cloud-libs-loggerTest.log';
+        var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
+        var loggedMessage;
+
+        logger.warn('password=1234', {Password: '5678'});
+
+        setTimeout(function() {
+            loggedMessage = fs.readFileSync(TEMP_LOGFILE);
+            test.notStrictEqual(loggedMessage.indexOf('password='), -1);
+            test.notStrictEqual(loggedMessage.indexOf('Password'), -1);
+            test.strictEqual(loggedMessage.indexOf('1234'), -1);
+            test.strictEqual(loggedMessage.indexOf('5678'), -1);
             fs.unlinkSync(TEMP_LOGFILE);
-            callback();
-        },
-
-        testPasswordMask: function(test) {
-            var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
-            var loggedMessage;
-
-            logger.warn('password=1234', {Password: '5678'});
-
-            setTimeout(function() {
-                loggedMessage = fs.readFileSync(TEMP_LOGFILE);
-                test.notStrictEqual(loggedMessage.indexOf('password='), -1);
-                test.notStrictEqual(loggedMessage.indexOf('Password'), -1);
-                test.strictEqual(loggedMessage.indexOf('1234'), -1);
-                test.strictEqual(loggedMessage.indexOf('5678'), -1);
-                test.done();
-            }, 10);
-        },
-
-        testLabel: function(test) {
-            var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE, logLevel: 'debug', module: module});
-            var loggedMessage;
-
-            logger.debug('hello, world');
-
-            setTimeout(function() {
-                loggedMessage = fs.readFileSync(TEMP_LOGFILE);
-                test.notStrictEqual(loggedMessage.indexOf('[lib/loggerTests.js]'), -1);
-                test.done();
-            }, 10);
-        }
+            test.done();
+        }, 10);
     }
 };
