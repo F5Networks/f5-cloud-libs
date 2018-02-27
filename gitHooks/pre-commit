@@ -2,17 +2,28 @@
 #
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 
-if ! npm test; then
+echo "Running lint"
+if ! npm run lint; then
+    echo
+    echo "Rejecting commit: Linting failed."
+    echo
+    exit 1
+fi
+
+echo "Running unit tests"
+if ! npm run test -- --reporter minimal; then
     echo
     echo "Rejecting commit: Unit tests failed."
     echo
     exit 1
 fi
 
+echo "Generating docs"
 npm run doc
-git add README.md
+git add USAGE.md
 
-if [[ "$BRANCH" != master && "$BRANCH" != release-* && "$BRANCH" != hf-* ]]; then
-    npm run package
-    git add dist
-fi
+#if [[ "$BRANCH" != master && "$BRANCH" != release-* && "$BRANCH" != hf-* ]]; then
+#    echo "Packaging"
+#    npm run package
+#    git add dist
+#fi
