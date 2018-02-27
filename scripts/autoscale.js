@@ -75,7 +75,6 @@
 
             loggerOptions.console = options.console;
             loggerOptions.logLevel = options.logLevel;
-            loggerOptions.module = module;
 
             if (options.output) {
                 loggerOptions.fileName = options.output;
@@ -110,7 +109,7 @@
             provider = testOpts.provider;
             if (!provider) {
                 Provider = require('f5-cloud-libs-' + options.cloud).provider;
-                provider = new Provider({clOptions: options, loggerOptions: loggerOptions});
+                provider = new Provider({clOptions: options, logger: logger});
             }
 
             // Save args in restart script in case we need to reboot to recover from an error

@@ -105,15 +105,13 @@
 
                 loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
-                loggerOptions.module = module;
 
                 if (options.output) {
                     loggerOptions.fileName = options.output;
                 }
 
                 logger = Logger.getLogger(loggerOptions);
-                ipc.setLoggerOptions(loggerOptions);
-                util.setLoggerOptions(loggerOptions);
+                util.logger = logger;
 
                 // Log the input, but don't log passwords
                 loggableArgs = argv.slice();
@@ -177,7 +175,7 @@
                         ipc.send(signals.ONBOARD_RUNNING);
 
                         // Create the bigIp client object
-                        bigIp = testOpts.bigIp || new BigIp({loggerOptions: loggerOptions});
+                        bigIp = testOpts.bigIp || new BigIp({logger: logger});
 
                         logger.info("Initializing BIG-IP.");
                         return bigIp.init(

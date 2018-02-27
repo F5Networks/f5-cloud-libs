@@ -67,15 +67,12 @@
 
                 loggerOptions.console = options.console;
                 loggerOptions.logLevel = options.logLevel;
-                loggerOptions.module = module;
 
                 if (options.output) {
                     loggerOptions.fileName = options.output;
                 }
 
                 logger = Logger.getLogger(loggerOptions);
-                ipc.setLoggerOptions(loggerOptions);
-                util.setLoggerOptions(loggerOptions);
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
                 // allow the BIG-IP services to start
