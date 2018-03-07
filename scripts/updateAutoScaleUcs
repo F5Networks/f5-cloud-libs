@@ -228,8 +228,8 @@ def main():
         if original_hostname and dest_hostname:
             replace(filename, original_hostname, dest_hostname)
 
-    # Remove the f5-cloud-libs directory so we don't overwrite it with old data
-    path_to_exclude = "/config/cloud/" + cloud_provider + "/node_modules"
+    # Remove the cloud directory created by the template so we don't overwrite new code with old
+    path_to_exclude = "/config/cloud/" + cloud_provider
     shutil.rmtree(extract_ucs_dir + path_to_exclude, ignore_errors=True)
 
     # Remove the cloud-libs private key info as you can't load a ucs w/ a passphrase

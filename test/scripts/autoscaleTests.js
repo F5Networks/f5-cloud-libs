@@ -19,6 +19,7 @@ var deviceGroup = 'testDeviceGroup';
 var util = require('util');
 var q = require('q');
 var AutoscaleProvider = require('../../lib/autoscaleProvider');
+var AutoscaleInstance = require('../../lib/autoscaleInstance');
 var autoscale;
 var fsMock;
 var BigIp;
@@ -47,11 +48,17 @@ var existsSync;
 var unlinkSync;
 var writeFile;
 var createWriteStream;
+var readdir;
+var stat;
+var rename;
 
 var execFile;
 
 var unlinkedFiles;
+var renamedFiles;
 var missingFilePrefix;
+
+var ucsBackupName;
 
 // Our tests cause too many event listeners. Turn off the check.
 var options = require('commander');
@@ -128,26 +135,29 @@ ProviderMock.prototype.putMasterCredentials = function() {
     return q();
 };
 
+ProviderMock.prototype.storeUcs = function() {
+    this.functionCalls.storeUcs = arguments;
+    return q();
+};
+
 module.exports = {
     setUp: function(callback) {
         argv = ['node', 'autoscale', '--password', 'foobar', '--device-group', deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
 
         instanceId = "two";
+        const instance1 = new AutoscaleInstance()
+            .setHostname('host1')
+            .setPrivateIp('1.2.3.4')
+            .setMgmtIp('1.2.3.4');
+        const instance2 = new AutoscaleInstance()
+            .setIsMaster()
+            .setHostname('host2')
+            .setPrivateIp('5.6.7.8')
+            .setMgmtIp('5.6.7.8');
+
         instances = {
-            "one": {
-                isMaster: false,
-                hostname: 'host1',
-                privateIp: '1.2.3.4',
-                mgmtIp: '1.2.3.4',
-                providerVisible: true
-            },
-            "two": {
-                isMaster: true,
-                hostname: 'host2',
-                privateIp: '5.6.7.8',
-                mgmtIp: '5.6.7.8',
-                providerVisible: true
-            }
+            "one": instance1,
+            "two": instance2
         };
 
         fsMock = require('fs');
@@ -177,13 +187,24 @@ module.exports = {
         unlinkSync = fsMock.unlinkSync;
         writeFile = fsMock.writeFile;
         createWriteStream = fsMock.createWriteStream;
+        readdir = fsMock.readdir;
+        stat = fsMock.stat;
+        rename = fsMock.rename;
 
         execFile = childProcessMock.execFile;
 
+        unlinkedFiles = [];
+        renamedFiles = [];
+        fsMock.unlinkSync = function(file) {
+            unlinkedFiles.push(file);
+        };
+        fsMock.rename = function(file, cb) {
+            renamedFiles.push(file);
+            cb();
+        }
         fsMock.writeFile = function(path, data, cb) {
             cb();
         };
-        fsMock.unlinkSync = function() {};
 
         providerMock = new ProviderMock();
 
@@ -299,6 +320,9 @@ module.exports = {
         fsMock.unlinkSync = unlinkSync;
         fsMock.writeFile = writeFile;
         fsMock.createWriteStream = createWriteStream;
+        fsMock.readdir = readdir;
+        fsMock.stat = stat;
+        fsMock.rename = rename;
 
         childProcessMock.execFile = execFile;
 
@@ -784,6 +808,11 @@ module.exports = {
     updateTests: {
         setUp: function(callback) {
             argv.push('--cluster-action', 'update');
+            bigIpMock.cluster.getCmSyncStatus = function() {
+                return q({
+                    disconnected: []
+                });
+            };
             callback();
         },
 
@@ -816,10 +845,6 @@ module.exports = {
         testIsNotMaster: {
             setUp: function(callback) {
                 instanceId = "one";
-                unlinkedFiles = [];
-                fsMock.unlinkSync = function(file) {
-                    unlinkedFiles.push(file);
-                };
                 callback();
             },
 
@@ -944,6 +969,62 @@ module.exports = {
         testBasic: function(test) {
             autoscale.run(argv, testOptions, function() {
                 test.strictEqual(bigIpMock.functionCalls.configSyncIp[0], instances[instanceId].privateIp);
+                test.done();
+            });
+        }
+    },
+
+    backupUcsTests: {
+        setUp: function(callback) {
+            argv.push('--cluster-action', 'backup-ucs');
+
+            ucsBackupName = undefined;
+            bigIpMock.deviceInfo = function() {
+                return q({ version: '13.1.0' });
+            };
+            bigIpMock.saveUcs = function(ucsName) {
+                ucsBackupName = ucsName;
+                return q();
+            };
+            fsMock.readdir = function(directory, cb) {
+                cb(null, ['file1.ucs', 'ucsAutosave_1234.ucs']);
+            };
+            callback();
+        },
+
+        testBasic: function(test) {
+            autoscale.run(argv, testOptions, function() {
+                test.ok(ucsBackupName.startsWith('ucsAutosave_'));
+                test.done();
+            });
+        },
+
+        testOldFilesDeleted: function(test) {
+            test.expect(2);
+            autoscale.run(argv, testOptions, function() {
+                test.strictEqual(unlinkedFiles.length, 1);
+                test.strictEqual(unlinkedFiles[0], '/var/local/ucs/ucsAutosave_1234.ucs');
+                test.done();
+            });
+        },
+
+        testAjvCleanup: function(test) {
+            bigIpMock.deviceInfo = function() {
+                return q({ version: '13.0.0' });
+            };
+            fsMock.stat = function(file, cb) {
+                if (file.endsWith('/ajv/lib/$data.js')) {
+                    cb(new Error());
+                }
+                else {
+                    cb(null);
+                }
+            };
+
+            test.expect(2);
+            autoscale.run(argv, testOptions, function() {
+                test.strictEqual(renamedFiles.length, 1);
+                test.ok(renamedFiles[0].endsWith('ajv/lib/refs/$data.json'));
                 test.done();
             });
         }

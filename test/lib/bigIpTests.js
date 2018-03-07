@@ -36,7 +36,8 @@ var realReady;
 
 var removedFile;
 
-const TASK_PATH = '/tm/task/sys/ucs';
+const UCS_TASK_PATH = '/tm/task/sys/ucs';
+const DUMMY_TASK_PATH = '/foo/task/bar';
 
 module.exports = {
     setUp: function(callback) {
@@ -727,8 +728,8 @@ module.exports = {
 
     testLoadUcs: {
         setUp: function(callback) {
-            icontrolMock.when('create', TASK_PATH, {_taskId: '1234'});
-            icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'COMPLETED'});
+            icontrolMock.when('create', UCS_TASK_PATH, {_taskId: '1234'});
+            icontrolMock.when('list', UCS_TASK_PATH + '/1234/result', {_taskState: 'COMPLETED'});
 
             setTimeout = function(cb) {
                 cb();
@@ -745,11 +746,10 @@ module.exports = {
         },
 
         testBasic: function(test) {
-
             test.expect(1);
             bigIp.loadUcs('/tmp/foo')
                 .then(function() {
-                    test.deepEqual(icontrolMock.getRequest('replace', TASK_PATH + '/1234'), {_taskState: 'VALIDATING'});
+                    test.deepEqual(icontrolMock.getRequest('replace', UCS_TASK_PATH + '/1234'), {_taskState: 'VALIDATING'});
                 })
                 .catch(function(err) {
                     test.ok(false, err);
@@ -763,7 +763,7 @@ module.exports = {
             test.expect(1);
             bigIp.loadUcs('/tmp/foo', {foo: 'bar', hello: 'world'})
                 .then(function() {
-                    var command = icontrolMock.getRequest('create', TASK_PATH);
+                    var command = icontrolMock.getRequest('create', UCS_TASK_PATH);
                     test.deepEqual(command.options, [{foo: 'bar'}, {hello: 'world'}]);
                 })
                 .catch(function(err) {
@@ -812,11 +812,27 @@ module.exports = {
                 .finally(function() {
                     childProcessMock.execFile = realExecFile;
                     test.done();
+                });``
+        },
+
+        testFailed: function(test) {
+            icontrolMock.when('list', UCS_TASK_PATH + '/1234/result', {_taskState: 'FAILED'});
+            test.expect(1);
+            bigIp.loadUcs('foo')
+                .then(function() {
+                    test.ok(false, 'Should not have completed');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
                 });
         },
 
         testNeverComplete: function(test) {
-            icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'PENDING'});
+            icontrolMock.when('list', UCS_TASK_PATH + '/1234/result', {_taskState: 'PENDING'});
+            utilMock.DEFAULT_RETRY = {maxRetries: 0, retryIntervalMs: 0};
             test.expect(1);
             bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
                 .then(function() {
@@ -849,23 +865,8 @@ module.exports = {
                 });
         },
 
-        testFailed: function(test) {
-            icontrolMock.when('list', TASK_PATH + '/1234/result', {_taskState: 'FAILED'});
-            test.expect(1);
-            bigIp.loadUcs('/tmp/foo')
-                .then(function() {
-                    test.ok(false, 'Should not have completed');
-                })
-                .catch(function() {
-                    test.ok(true);
-                })
-                .finally(function() {
-                    test.done();
-                });
-        },
-
         testRestjavadRestart: function(test) {
-            icontrolMock.fail('list', TASK_PATH + '/1234/result');
+            icontrolMock.fail('list', UCS_TASK_PATH + '/1234/result');
             test.expect(1);
             bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
                 .then(function() {
@@ -1320,6 +1321,50 @@ module.exports = {
             }
     },
 
+    testRunTask: {
+        setUp: function(callback) {
+            icontrolMock.when('create', DUMMY_TASK_PATH, {_taskId: '1234'});
+            icontrolMock.when('list', DUMMY_TASK_PATH + '/1234/result', {_taskState: 'COMPLETED'});
+
+            setTimeout = function(cb) {
+                cb();
+            };
+
+            callback();
+        },
+
+        testBasic: function(test) {
+            const commandBody = {foo: 'bar', hello: 'world'}
+            test.expect(2);
+            bigIp.runTask(DUMMY_TASK_PATH, commandBody)
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
+                    test.deepEqual(icontrolMock.getRequest('replace', DUMMY_TASK_PATH + '/1234'), {_taskState: 'VALIDATING'});
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testFailed: function(test) {
+            icontrolMock.when('list', DUMMY_TASK_PATH + '/1234/result', {_taskState: 'FAILED'});
+            test.expect(1);
+            bigIp.runTask(DUMMY_TASK_PATH)
+                .then(function() {
+                    test.ok(false, 'Should not have completed');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
     testSave: {
         testNoFile: function(test) {
             icontrolMock.when('create', '/tm/sys/config', {});
@@ -1357,8 +1402,49 @@ module.exports = {
         }
     },
 
-    testTransaction: {
+    testSaveUcs: {
+        setUp: function(callback) {
+            icontrolMock.when('create', UCS_TASK_PATH, {_taskId: '1234'});
+            icontrolMock.when('list', UCS_TASK_PATH + '/1234/result', {_taskState: 'COMPLETED'});
 
+            setTimeout = function(cb) {
+                cb();
+            };
+
+            callback();
+        },
+
+        testBasic: function(test) {
+            test.expect(1);
+            bigIp.saveUcs('foo')
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest('replace', UCS_TASK_PATH + '/1234'), {_taskState: 'VALIDATING'});
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testFailed: function(test) {
+            icontrolMock.when('list', UCS_TASK_PATH + '/1234/result', {_taskState: 'FAILED'});
+            test.expect(1);
+            bigIp.saveUcs('foo')
+                .then(function() {
+                    test.ok(false, 'Should not have completed');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testTransaction: {
         testBasic: function(test) {
             var commands = [
                 {

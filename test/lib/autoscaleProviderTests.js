@@ -255,6 +255,13 @@ module.exports = {
         test.done();
     },
 
+    testUnimplementedStoreUcs: function(test) {
+        test.doesNotThrow(function() {
+            testAutoscaleProvider.storeUcs();
+        });
+        test.done();
+    },
+
     testUnimplementedPutInstance: function(test) {
         test.doesNotThrow(function() {
             testAutoscaleProvider.putInstance();

@@ -120,7 +120,7 @@ Runs autoscale code to elect master and cluster
       --no-console                                       Do not log to console. Default false (log to console).
       --cloud <cloud_provider>                           Cloud provider (aws | azure | etc.)
       --provider-options <cloud_options>                 Options specific to cloud_provider. Ex: param1:value1,param2:value2 (default: [object Object])
-      -c, --cluster-action <type>                        join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)
+      -c, --cluster-action <type>                        join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us) | backup-ucs (save a ucs to cloud storage)
       --device-group <device_group>                      Device group name.
           --full-load-on-sync                                Enable full load on sync. Default false.
           --asm-sync                                         Enable ASM sync. Default false. Default false.
@@ -142,6 +142,7 @@ Runs autoscale code to elect master and cluster
           --dns-ip-type <address_type>                       Type of ip address to use (public | private).
           --dns-app-port <port>                              Port on which application is listening on for health check
           --dns-provider-options <dns_provider_options>      Options specific to dns_provider. Ex: param1:value1,param2:value2 (default: [object Object])
+      --max-ucs-files <max_ucs_files_to_save>            When running cluster action backup-ucs, maximum number of backup files to keep. (default: 7)
       -h, --help                                         output usage information
 ## network.js
 

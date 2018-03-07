@@ -19,6 +19,7 @@
 /* eslint-disable global-require */
 module.exports = {
     activeError: require('./lib/activeError'),
+    autoscaleInstance: require('./lib/autoscaleInstance'),
     autoscaleProvider: require('./lib/autoscaleProvider'),
     bigIp: require('./lib/bigIp'),
     bigIpCluster: require('./lib/bigIpCluster'),

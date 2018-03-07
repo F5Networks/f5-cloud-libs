@@ -24,6 +24,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
 const childProcess = require('child_process');
 
 const BigIp = require('../lib/bigIp');
+const AutoscaleInstance = require('../lib/autoscaleInstance');
 const Logger = require('../lib/logger');
 const cloudProviderFactory = require('../lib/cloudProviderFactory');
 const dnsProviderFactory = require('../lib/dnsProviderFactory');
@@ -35,13 +36,14 @@ const commonOptions = require('./commonOptions');
     const MIN_MS_BETWEEN_JOIN_REQUESTS = 5 * 60000; // 5 minutes
     const MASTER_FILE_PATH = '/config/cloud/master';
 
-    const INSTANCE_STATUS_BECOMING_MASTER = 'BECOMING_MASTER';
-    const INSTANCE_STATUS_OK = 'OK';
-
     const PASSPHRASE_LENGTH = 18;
 
     const AUTOSCALE_PRIVATE_KEY = 'cloudLibsAutoscalePrivate';
     const AUTOSCALE_PRIVATE_KEY_FOLDER = 'CloudLibsAutoscale';
+
+    const UCS_BACKUP_PREFIX = 'ucsAutosave_';
+    const UCS_BACKUP_DEFAULT_MAX_FILES = 7;
+    const UCS_BACKUP_DIRECTORY = '/var/local/ucs';
 
     let logger;
 
@@ -98,7 +100,7 @@ const commonOptions = require('./commonOptions');
                     )
                     .option(
                         '-c, --cluster-action <type>',
-                        'join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us)'
+                        'join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us) | backup-ucs (save a ucs to cloud storage)'
                     )
                     .option(
                         '--device-group <device_group>',
@@ -185,6 +187,11 @@ const commonOptions = require('./commonOptions');
                         '    Options specific to dns_provider. Ex: param1:value1,param2:value2',
                         util.map,
                         dnsProviderOptions
+                    )
+                    .option(
+                        '--max-ucs-files <max_ucs_files_to_save>',
+                        'When running cluster action backup-ucs, maximum number of backup files to keep.',
+                        UCS_BACKUP_DEFAULT_MAX_FILES
                     )
                     .parse(argv);
                 /* eslint-enable max-len */
@@ -297,10 +304,10 @@ const commonOptions = require('./commonOptions');
                             util.logAndExit('Our instance ID is not in instance list. Exiting', 'error', 1);
                         }
 
-                        this.instance.status = this.instance.status || INSTANCE_STATUS_OK;
+                        this.instance.status = this.instance.status || AutoscaleInstance.INSTANCE_STATUS_OK;
                         logger.silly('Instance status:', this.instance.status);
 
-                        if (this.instance.status === INSTANCE_STATUS_BECOMING_MASTER) {
+                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER) {
                             util.logAndExit('Currently becoming master. Exiting.', 'info');
                         }
 
@@ -453,7 +460,7 @@ const commonOptions = require('./commonOptions');
                     })
                     .then(() => {
                         if (this.instance.isMaster && newMaster) {
-                            this.instance.status = INSTANCE_STATUS_BECOMING_MASTER;
+                            this.instance.status = AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER;
                             return asProvider.putInstance(this.instanceId, this.instance);
                         }
                         return q();
@@ -465,8 +472,11 @@ const commonOptions = require('./commonOptions');
                         return q();
                     })
                     .then((response) => {
-                        if (this.instance.status === INSTANCE_STATUS_BECOMING_MASTER && response === true) {
-                            this.instance.status = INSTANCE_STATUS_OK;
+                        if (
+                            this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER &&
+                            response === true
+                        ) {
+                            this.instance.status = AutoscaleInstance.INSTANCE_STATUS_OK;
                             logger.silly('Became master');
                             return asProvider.putInstance(this.instanceId, this.instance);
                         } else if (response === false) {
@@ -475,16 +485,17 @@ const commonOptions = require('./commonOptions');
                         return q();
                     })
                     .then(() => {
-                        if (masterIid && this.instance.status === INSTANCE_STATUS_OK) {
+                        if (masterIid && this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
                             return asProvider.masterElected(masterIid);
                         }
                         return q();
                     })
                     .then(() => {
                         let message;
-                        if (this.instance.status === INSTANCE_STATUS_OK) {
+                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
                             switch (options.clusterAction) {
                             case 'join':
+                                logger.info('Cluster action join');
                                 return handleJoin.call(
                                     this,
                                     asProvider,
@@ -494,6 +505,7 @@ const commonOptions = require('./commonOptions');
                                     options
                                 );
                             case 'update':
+                                logger.info('Cluster action update');
                                 return handleUpdate.call(
                                     this,
                                     asProvider,
@@ -503,8 +515,11 @@ const commonOptions = require('./commonOptions');
                                     options
                                 );
                             case 'unblock-sync':
-                                logger.info('Cluster action UNBLOCK-SYNC');
+                                logger.info('Cluster action unblock-sync');
                                 return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                            case 'backup-ucs':
+                                logger.info('Cluster action backup-ucs');
+                                return handleBackupUcs.call(this, asProvider, bigIp, options);
                             default:
                                 message = `Unknown cluster action ${options.clusterAction}`;
                                 logger.warn(message);
@@ -516,8 +531,9 @@ const commonOptions = require('./commonOptions');
                         }
                     })
                     .then(() => {
-                        if (this.instance.status === INSTANCE_STATUS_OK) {
-                            if (asProvider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
+                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
+                            if (asProvider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)
+                                && (options.clusterAction === 'join' || options.clusterAction === 'update')) {
                                 logger.info('Checking for messages');
                                 return handleMessages.call(this, asProvider, bigIp, options);
                             }
@@ -527,7 +543,8 @@ const commonOptions = require('./commonOptions');
                         return q();
                     })
                     .then(() => {
-                        if (options.dns) {
+                        if (options.dns
+                            && (options.clusterAction === 'join' || options.clusterAction === 'update')) {
                             logger.info('Updating DNS');
 
                             const instancesForDns = [];
@@ -890,6 +907,44 @@ const commonOptions = require('./commonOptions');
             });
 
         return deferred.promise;
+    }
+
+    function handleBackupUcs(provider, bigIp, options) {
+        if (!this.instance.isMaster
+            || this.instance.status !== AutoscaleInstance.INSTANCE_STATUS_OK) {
+            logger.debug('not master or not ready, skipping ucs backup');
+            return q();
+        }
+
+        const now = new Date().getTime();
+        const ucsName = `${UCS_BACKUP_PREFIX}${now}`;
+
+        logger.info('Backing up UCS');
+        // ajv, which is installed as a dependency of the Azure node SDK has a couple files that start
+        // with '$'. prior to 13.1, Meanwhile, mcpd has a bug which fails to save a ucs if it runs
+        // into a file that starts with a '$'. So, let's just move the file. It's a bit ugly, but
+        // there's not really a better place to do this since it's a one-off bug. All of
+        // f5-cloud-libs is removed before ucs is loaded, so we don't need to do anything on that end.
+
+        this.instance.lastBackup = now;
+        return cleanupAjv(bigIp)
+            .then(() => {
+                return bigIp.saveUcs(ucsName);
+            })
+            .then(() => {
+                return provider.storeUcs(
+                    `${UCS_BACKUP_DIRECTORY}/${ucsName}.ucs`,
+                    options.maxUcsFiles,
+                    UCS_BACKUP_PREFIX
+                );
+            })
+            .then(() => {
+                return removeOldUcsFiles(`${ucsName}.ucs`);
+            })
+            .catch((err) => {
+                logger.info('Error backing up ucs', err);
+                return q.reject(err);
+            });
     }
 
     /**
@@ -1300,8 +1355,7 @@ const commonOptions = require('./commonOptions');
         const timeStamp = Date.now();
         const originalPath = `/config/ucsOriginal_${timeStamp}.ucs`;
         const updatedPath = `/config/ucsUpdated_${timeStamp}.ucs`;
-        const updateScript =
-            `/config/cloud/${cloudProvider}/node_modules/f5-cloud-libs/scripts/updateAutoScaleUcs`;
+        const updateScript = `${__dirname}/updateAutoScaleUcs`;
 
         const deferred = q.defer();
         let originalFile;
@@ -1491,6 +1545,71 @@ const commonOptions = require('./commonOptions');
                     }
                 );
             });
+    }
+
+    function cleanupAjv(bigIp) {
+        return bigIp.deviceInfo()
+            .then((deviceInfo) => {
+                if (util.versionCompare(deviceInfo.version, '13.1.0') < 0) {
+                    const filesToRemove = [
+                        `${__dirname}/../node_modules/ajv/lib/$data.js`,
+                        `${__dirname}/../node_modules/ajv/lib/refs/$data.json`
+                    ];
+
+                    const deferred = q.defer();
+                    let filesHandled = 0;
+
+                    filesToRemove.forEach((fileToRemove) => {
+                        fs.stat(fileToRemove, (statError) => {
+                            if (statError) {
+                                filesHandled += 1;
+                                if (filesHandled === filesToRemove.length) {
+                                    deferred.resolve();
+                                }
+                            } else {
+                                fs.rename(fileToRemove, fileToRemove.replace('$', 'dollar_'), (renameErr) => {
+                                    if (renameErr) {
+                                        logger.info('cleanupAjv unable to remove', fileToRemove);
+                                    }
+
+                                    filesHandled += 1;
+                                    if (filesHandled === filesToRemove.length) {
+                                        deferred.resolve();
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+                    return deferred.promise;
+                }
+                return q();
+            })
+            .catch((err) => {
+                logger.info('Unable to cleanup AJV', err);
+                return q.reject(err);
+            });
+    }
+
+    function removeOldUcsFiles(latestFile) {
+        const deferred = q.defer();
+
+        logger.silly('removing old ucs files');
+        fs.readdir(UCS_BACKUP_DIRECTORY, (err, files) => {
+            if (err) {
+                logger.info(`Error reading ${UCS_BACKUP_DIRECTORY}`, err);
+                deferred.reject(err);
+            } else {
+                files.forEach((file) => {
+                    if (file.startsWith(UCS_BACKUP_PREFIX) && file !== latestFile) {
+                        fs.unlinkSync(`${UCS_BACKUP_DIRECTORY}/${file}`);
+                    }
+                });
+                deferred.resolve();
+            }
+        });
+
+        return deferred.promise;
     }
 
     module.exports = runner;
