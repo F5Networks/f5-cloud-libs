@@ -61,7 +61,7 @@ const util = require('../lib/util');
 
                 // Can't use getCommonOptions here because of the special reboot handling
                 options
-                    .version('4.0.0-alpha.5')
+                    .version('4.0.0-alpha.6')
                     .option(
                         '--host <ip_address>',
                         'BIG-IP management IP to which to send commands.'

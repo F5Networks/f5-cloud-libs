@@ -33,7 +33,7 @@ module.exports = {
 
         /* eslint-disable max-len */
         return options
-            .version('4.0.0-alpha.5')
+            .version('4.0.0-alpha.6')
             .option(
                 '--host <ip_address>',
                 'BIG-IP management IP to which to send commands.'
