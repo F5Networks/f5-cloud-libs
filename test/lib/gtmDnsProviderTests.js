@@ -18,52 +18,76 @@
 const q = require('q');
 const GtmDnsProvider = require('../../../f5-cloud-libs').gtmDnsProvider;
 
-const bigIpMock = {
-    init: function() {
-        functionCalls.bigIp.init = arguments;
-        return q();
-    },
-    ready: function() {
-        return q();
-    },
-    gtm: {
-        updateServer: function() {
-            functionCalls.bigIp.gtm.updateServer = arguments;
-        },
-        updatePool: function() {
-            functionCalls.bigIp.gtm.updatePool = arguments;
-        },
-        setPartition: function() {
-            functionCalls.bigIp.gtm.setPartition = arguments;
-        }
-    }
-};
+let BigIp;
+let bigIpMock;
+let icontrolMock;
 
-var gtmDnsProvider;
-var functionCalls;
+let gtmDnsProvider;
+let functionCalls;
+
+let instances;
+let providerOptions;
 
 module.exports = {
     setUp: function(callback) {
+        BigIp = require('../../lib/bigIp');
+        icontrolMock = require('../testUtil/icontrolMock');
+
+        bigIpMock = new BigIp();
+        bigIpMock.init = function() {
+            functionCalls.bigIp.init = arguments;
+            return q();
+        }
+        bigIpMock.isInitialized = true;
+
+        bigIpMock.ready = function() {
+            return q();
+        }
+
         functionCalls = {
             bigIp: {
                 gtm: {}
             }
         };
 
+        bigIpMock.icontrol = icontrolMock;
+
+        icontrolMock.reset();
+
+        bigIpMock.ready = function() {
+            return q();
+        };
+
+        bigIpMock.gtm = {
+            updateServer: function() {
+                functionCalls.bigIp.gtm.updateServer = arguments;
+            },
+            updatePool: function() {
+                functionCalls.bigIp.gtm.updatePool = arguments;
+            },
+            setPartition: function() {
+                functionCalls.bigIp.gtm.setPartition = arguments;
+            }
+        }
+
         gtmDnsProvider = new GtmDnsProvider();
         gtmDnsProvider.bigIp = bigIpMock;
+
         callback();
     },
 
     testBigipInit: function(test) {
-        var providerOptions = {
+        providerOptions = {
             host: 'myHost',
             user: 'myUser',
             password: 'myPassword',
             serverName: 'myServer',
             poolName: 'myPool',
             port: '1234',
-            passwordEncrypted: true
+            passwordEncrypted: true,
+            datacenter: 'foo',
+            serverName: 'foo',
+            poolName: 'foo'
         };
 
         test.expect(4);
@@ -89,40 +113,209 @@ module.exports = {
             });
     },
 
-    testUpdateServerAndPool: function(test) {
-        var instances = {
-            1: 'one',
-            2: 'two'
-        };
+    testUpdateServerAndPool: {
+        setUp: function(callback) {
+            instances = {
+                1: 'one',
+                2: 'two'
+            };
 
-        var providerOptions = {
-            host: 'myHost',
-            user: 'myUser',
-            password: 'myPassword',
-            serverName: 'myServer',
-            poolName: 'myPool',
-            port: '1234',
-            passwordEncrypted: true
-        };
+            providerOptions = {
+                host: 'myHost',
+                user: 'myUser',
+                password: 'myPassword',
+                serverName: 'myServer',
+                poolName: 'myPool',
+                port: '1234',
+                passwordEncrypted: true,
+                datacenter: 'myDatacenter'
+            };
 
-        test.expect(5);
-        gtmDnsProvider.init(providerOptions)
-            .then(function() {
-                return gtmDnsProvider.update(instances);
-            })
-            .then(function() {
-                test.strictEqual(functionCalls.bigIp.gtm.updateServer[0], 'myServer');
-                test.deepEqual(functionCalls.bigIp.gtm.updateServer[1], instances);
-                test.strictEqual(functionCalls.bigIp.gtm.updatePool[0], 'myPool');
-                test.strictEqual(functionCalls.bigIp.gtm.updatePool[1], 'myServer');
-                test.strictEqual(functionCalls.bigIp.gtm.updatePool[2], instances);
-            })
-            .catch(function(err) {
-                test.ok(false, err);
-            })
-            .finally(function() {
-                test.done();
-            });
+            callback();
+        },
+
+        testBasic: function(test) {
+            test.expect(5);
+            gtmDnsProvider.init(providerOptions)
+                .then(function() {
+                    return gtmDnsProvider.update(instances);
+                })
+                .then(function() {
+                    test.strictEqual(functionCalls.bigIp.gtm.updateServer[0], 'myServer');
+                    test.deepEqual(functionCalls.bigIp.gtm.updateServer[1], instances);
+                    test.strictEqual(functionCalls.bigIp.gtm.updatePool[0], 'myPool');
+                    test.strictEqual(functionCalls.bigIp.gtm.updatePool[1], 'myServer');
+                    test.strictEqual(functionCalls.bigIp.gtm.updatePool[2], instances);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testDatacenterCreated: function (test) {
+            icontrolMock.when('list', '/tm/gtm/datacenter', []);
+
+            test.expect(1);
+            gtmDnsProvider.init(providerOptions)
+                .then(function() {
+                    return gtmDnsProvider.update(instances);
+                })
+                .then(function() {
+                    test.deepEqual(
+                        icontrolMock.getRequest('create', '/tm/gtm/datacenter'),
+                        {
+                            name: 'myDatacenter'
+                        }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testDatacenterNotCreated: function (test) {
+            icontrolMock.when(
+                'list',
+                '/tm/gtm/datacenter',
+                [
+                    {
+                        name: 'myDatacenter'
+                    }
+                ]);
+
+            test.expect(1);
+            gtmDnsProvider.init(providerOptions)
+                .then(function() {
+                    return gtmDnsProvider.update(instances);
+                })
+                .then(function() {
+                    test.strictEqual(
+                        icontrolMock.getRequest('create', '/tm/gtm/datacenter'),
+                        undefined
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testServerCreated: function (test) {
+            icontrolMock.when('list', '/tm/gtm/server', []);
+
+            test.expect(1);
+            gtmDnsProvider.init(providerOptions)
+                .then(function() {
+                    return gtmDnsProvider.update(instances);
+                })
+                .then(function() {
+                    test.deepEqual(
+                        icontrolMock.getRequest('create', '/tm/gtm/server'),
+                        {
+                            name: 'myServer',
+                            datacenter: 'myDatacenter',
+                            product: 'generic-host',
+                            addresses: [ '192.0.2.1' ]
+                        }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testServerNotCreated: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/gtm/server',
+                [
+                    {
+                        name: 'myServer'
+                    }
+                ]);
+
+            test.expect(1);
+            gtmDnsProvider.init(providerOptions)
+                .then(function() {
+                    return gtmDnsProvider.update(instances);
+                })
+                .then(function() {
+                    test.strictEqual(
+                        icontrolMock.getRequest('create', '/tm/gtm/server'),
+                        undefined
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testPoolCreated: function(test) {
+            icontrolMock.when('list', '/tm/gtm/pool/a', []);
+
+            test.expect(1);
+            gtmDnsProvider.init(providerOptions)
+                .then(function() {
+                    return gtmDnsProvider.update(instances);
+                })
+                .then(function() {
+                    test.deepEqual(
+                        icontrolMock.getRequest('create', '/tm/gtm/pool/a'),
+                        {
+                            name: 'myPool'
+                        }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testPoolNotCreated: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/gtm/pool/a',
+                [
+                    {
+                        name: 'myPool'
+                    }
+                ]);
+
+            test.expect(1);
+            gtmDnsProvider.init(providerOptions)
+                .then(function() {
+                    return gtmDnsProvider.update(instances);
+                })
+                .then(function() {
+                    test.strictEqual(
+                        icontrolMock.getRequest('create', '/tm/gtm/pool/a'),
+                        undefined
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testOptions: function(test) {
@@ -131,7 +324,7 @@ module.exports = {
             2: 'two'
         };
 
-        var providerOptions = {
+        providerOptions = {
             host: 'myHost',
             user: 'myUser',
             password: 'myPassword',
