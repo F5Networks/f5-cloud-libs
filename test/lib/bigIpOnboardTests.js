@@ -1282,6 +1282,34 @@ module.exports = {
                     });
             },
 
+            testOptions: function(test) {
+                test.expect(3);
+
+                bigIp.onboard.licenseViaBigIq(
+                    'host',
+                    'user',
+                    'password',
+                    'pool1',
+                    {
+                        skuKeyword1: 'sku1',
+                        skuKeyword2: 'sku2',
+                        unitOfMeasure: 'daily'
+                    }
+                )
+                    .then(function() {
+                        var licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH_5_3);
+                        test.strictEqual(licenseRequest.skuKeyword1, 'sku1');
+                        test.strictEqual(licenseRequest.skuKeyword2, 'sku2');
+                        test.strictEqual(licenseRequest.unitOfMeasure, 'daily');
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err.message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
             testLicenseRaceConditionFails: function(test) {
                 BigIq53.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
 

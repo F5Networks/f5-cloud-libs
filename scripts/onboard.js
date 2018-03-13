@@ -143,6 +143,18 @@ const commonOptions = require('./commonOptions');
                         '    Name of BIG-IQ license pool.'
                     )
                     .option(
+                        '    --sku-keyword-1 <sku_keyword_1>',
+                        '    skuKeyword1 parameter for CLPv2 licensing. Default none.'
+                    )
+                    .option(
+                        '    --sku-keyword-2 <sku_keyword_2>',
+                        '    skuKeyword2 parameter for CLPv2 licensing. Default none.'
+                    )
+                    .option(
+                        '    --unit-of-measure <unit_of_measure>',
+                        '    unitOfMeasure parameter for CLPv2 licensing. Default none.'
+                    )
+                    .option(
                         '    --big-ip-mgmt-address <big_ip_address>',
                         '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.'
                     )
@@ -471,7 +483,10 @@ const commonOptions = require('./commonOptions');
                                 {
                                     passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined',
                                     bigIpMgmtAddress: options.bigIpMgmtAddress,
-                                    bigIpMgmtPort: options.bigIpMgmtPort
+                                    bigIpMgmtPort: options.bigIpMgmtPort,
+                                    skuKeyword1: options.skuKeyword1,
+                                    skuKeyword2: options.skuKeyword2,
+                                    unitOfMeasure: options.unitOfMeasure
                                 }
                             );
                         }

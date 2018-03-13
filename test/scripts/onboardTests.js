@@ -490,6 +490,9 @@ module.exports = {
                 const licensePool = 'myLicensePool';
                 const bigIpMgmtAddress = 'myMgmtAddress';
                 const bigIpMgmtPort = '1234';
+                const skuKeyword1 = 'mySku1';
+                const skuKeyword2 = 'mySku2';
+                const unitOfMeasure = 'myUnitOfMeasure';
 
                 argv.push(
                     '--license-pool',
@@ -498,7 +501,10 @@ module.exports = {
                     '--big-iq-password', bigIqPassword,
                     '--license-pool-name', licensePool,
                     '--big-ip-mgmt-address', bigIpMgmtAddress,
-                    '--big-ip-mgmt-port', bigIpMgmtPort
+                    '--big-ip-mgmt-port', bigIpMgmtPort,
+                    '--sku-keyword-1', skuKeyword1,
+                    '--sku-keyword-2', skuKeyword2,
+                    '--unit-of-measure', unitOfMeasure
                 );
 
                 test.expect(5);
@@ -512,7 +518,10 @@ module.exports = {
                         {
                             passwordIsUri: false,
                             bigIpMgmtAddress: bigIpMgmtAddress,
-                            bigIpMgmtPort: bigIpMgmtPort
+                            bigIpMgmtPort: bigIpMgmtPort,
+                            skuKeyword1: skuKeyword1,
+                            skuKeyword2: skuKeyword2,
+                            unitOfMeasure: unitOfMeasure
                         }
                     );
                     test.done();
