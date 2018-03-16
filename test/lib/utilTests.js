@@ -1323,7 +1323,30 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
-            }
+        },
+
+        testBadRequest: function(test) {
+            var func = function() {
+                return q.reject(
+                    {
+                        code: 400,
+                        message: 'foo'
+                    }
+                )
+            };
+
+            test.expect(1);
+            util.tryUntil(this, {maxRetries: 90, retryIntervalMs: 10}, func)
+                .then(function() {
+                    test.ok(false, 'func should never have resolved');
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testVersionCompare: function(test) {

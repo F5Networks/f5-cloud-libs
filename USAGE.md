@@ -169,6 +169,7 @@ Sets up default gateway, VLANs and self IPs
       --wait-for <signal>                                                                               Wait for the named signal before running.
       --log-level <level>                                                                               Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
       -o, --output <file>                                                                               Log to file as well as console. This is the default if background process is spawned. Default is /tmp/network.log
+      --no-console                                                                                      Do not log to console. Default false (log to console).
       --single-nic                                                                                      Set db variables for single NIC configuration.
       --multi-nic                                                                                       Set db variables for multi NIC configuration.
       --default-gw <gateway_address>                                                                    Set default gateway to gateway_address.
@@ -198,4 +199,5 @@ Runs an arbitrary script.
       --cwd <directory>              Current working directory for the script to run in.
       --log-level <level>            Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
       -o, --output <file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log
+      --no-console                   Do not log to console. Default false (log to console).
       -h, --help                     output usage information

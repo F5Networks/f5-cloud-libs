@@ -195,13 +195,61 @@ module.exports = {
                 ]
             );
 
+            icontrolMock.when(
+                'list',
+                '/tm/sys/global-settings',
+                {
+                    hostname: oldHostname
+                }
+            );
+
             bigIp.onboard.hostname(newHostname)
                 .then(function(response) {
-                    test.notStrictEqual(response.indexOf('matches'), -1);
+                    test.strictEqual(icontrolMock.getRequest('create', '/tm/cm/device'), undefined);
                     test.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/global-settings'), undefined);
                 })
                 .catch(function(err) {
                     test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testBadHostname: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device',
+                [
+                    {
+                        name: 'good hostname'
+                    }
+                ]
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/global-settings',
+                {
+                    hostname: 'good hostname'
+                }
+            );
+
+            icontrolMock.fail(
+                'modify',
+                '/tm/sys/global-settings',
+                {
+                    code: 400,
+                    message: 'bad hostname'
+                }
+            );
+
+            bigIp.onboard.hostname('foo')
+                .then(function(response) {
+                    test.ok(false, 'should have thrown bad hostname');
+                })
+                .catch(function(err) {
+                    test.ok(true);
                 })
                 .finally(function() {
                     test.done();

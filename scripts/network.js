@@ -61,7 +61,7 @@ const util = require('../lib/util');
 
                 // Can't use getCommonOptions here because of the special reboot handling
                 options
-                    .version('4.0.0-alpha.6')
+                    .version('4.0.0-beta.1')
                     .option(
                         '--host <ip_address>',
                         'BIG-IP management IP to which to send commands.'
@@ -110,6 +110,10 @@ const util = require('../lib/util');
                     .option(
                         '-o, --output <file>',
                         `Log to file as well as console. This is the default if background process is spawned. Default is ${DEFAULT_LOG_FILE}`
+                    )
+                    .option(
+                        '--no-console',
+                        'Do not log to console. Default false (log to console).'
                     )
                     .option(
                         '--single-nic',
@@ -343,56 +347,54 @@ const util = require('../lib/util');
                         let selfIpBody;
                         let portLockdown;
 
-                        if (selfIps.length > 0) {
-                            selfIps.forEach((selfIp) => {
-                                if (!selfIp.name || !selfIp.address || !selfIp.vlan) {
-                                    const message = 'Bad self-ip params. name, address, vlan are required';
-                                    q.reject(new Error(message));
-                                } else {
-                                    let address = selfIp.address;
+                        for (let i = 0; i < selfIps.length; i++) {
+                            const selfIp = selfIps[i];
 
-                                    if (address.indexOf('/') === -1) {
-                                        address += DEFAULT_CIDR;
-                                    }
+                            if (!selfIp.name || !selfIp.address || !selfIp.vlan) {
+                                const message = 'Bad self-ip params. name, address, vlan are required';
+                                return q.reject(new Error(message));
+                            }
 
-                                    // general terms (default, all, none) have to be single words
-                                    // per port terms go in an array
-                                    portLockdown = 'default';
-                                    if (selfIp.allow) {
-                                        portLockdown = selfIp.allow.split(/\s+/);
-                                        if (
-                                            portLockdown.length === 1 &&
-                                            portLockdown[0].indexOf(':') === -1
-                                        ) {
-                                            portLockdown = portLockdown[0];
-                                        }
-                                    }
+                            let address = selfIp.address;
 
-                                    selfIpBody = {
-                                        address,
-                                        name: selfIp.name,
-                                        vlan: `/Common/${selfIp.vlan}`,
-                                        allowService: portLockdown
-                                    };
+                            if (address.indexOf('/') === -1) {
+                                address += DEFAULT_CIDR;
+                            }
 
-                                    promises.push(
-                                        {
-                                            promise: bigIp.create,
-                                            arguments: [
-                                                '/tm/net/self',
-                                                selfIpBody
-                                            ],
-                                            // eslint-disable-next-line max-len
-                                            message: `Creating self IP ${selfIp.name} with address ${address} on vlan ${selfIp.vlan} allowing ${(selfIp.allow ? selfIp.allow : 'default')}`
-                                        }
-                                    );
+                            // general terms (default, all, none) have to be single words
+                            // per port terms go in an array
+                            portLockdown = 'default';
+                            if (selfIp.allow) {
+                                portLockdown = selfIp.allow.split(/\s+/);
+                                if (
+                                    portLockdown.length === 1 &&
+                                    portLockdown[0].indexOf(':') === -1
+                                ) {
+                                    portLockdown = portLockdown[0];
                                 }
-                            });
+                            }
 
-                            return util.callInSerial(bigIp, promises);
+                            selfIpBody = {
+                                address,
+                                name: selfIp.name,
+                                vlan: `/Common/${selfIp.vlan}`,
+                                allowService: portLockdown
+                            };
+
+                            promises.push(
+                                {
+                                    promise: bigIp.create,
+                                    arguments: [
+                                        '/tm/net/self',
+                                        selfIpBody
+                                    ],
+                                    // eslint-disable-next-line max-len
+                                    message: `Creating self IP ${selfIp.name} with address ${address} on vlan ${selfIp.vlan} allowing ${(selfIp.allow ? selfIp.allow : 'default')}`
+                                }
+                            );
                         }
 
-                        return q();
+                        return promises.length > 0 ? util.callInSerial(bigIp, promises) : q();
                     })
                     .then((response) => {
                         logger.debug(response);
@@ -444,40 +446,37 @@ const util = require('../lib/util');
                         const promises = [];
                         let routeBody;
 
-                        if (routes.length > 0) {
-                            routes.forEach((route) => {
-                                if (!route.name || !route.gw || !route.network) {
-                                    const message = 'Bad route params. Name, gateway, network required';
-                                    q.reject(new Error(message));
-                                } else {
-                                    let network = route.network;
-                                    if (network.indexOf('/') === -1) {
-                                        network += DEFAULT_CIDR;
-                                    }
+                        for (let i = 0; i < routes.length; i++) {
+                            const route = routes[i];
+                            if (!route.name || !route.gw || !route.network) {
+                                const message = 'Bad route params. Name, gateway, network required';
+                                return q.reject(new Error(message));
+                            }
 
-                                    routeBody = {
-                                        network,
-                                        name: route.name,
-                                        gw: route.gw
-                                    };
+                            let network = route.network;
+                            if (network.indexOf('/') === -1) {
+                                network += DEFAULT_CIDR;
+                            }
 
-                                    promises.push(
-                                        {
-                                            promise: bigIp.create,
-                                            arguments: [
-                                                '/tm/net/route',
-                                                routeBody
-                                            ],
-                                            message: `Creating route ${route.name} with gateway ${route.gw}`
-                                        }
-                                    );
+                            routeBody = {
+                                network,
+                                name: route.name,
+                                gw: route.gw
+                            };
+
+                            promises.push(
+                                {
+                                    promise: bigIp.create,
+                                    arguments: [
+                                        '/tm/net/route',
+                                        routeBody
+                                    ],
+                                    message: `Creating route ${route.name} with gateway ${route.gw}`
                                 }
-                            });
-
-                            return util.callInSerial(bigIp, promises);
+                            );
                         }
 
-                        return q();
+                        return promises.length > 0 ? util.callInSerial(bigIp, promises) : q();
                     })
                     .then((response) => {
                         logger.debug(response);
@@ -510,7 +509,16 @@ const util = require('../lib/util');
                         return q();
                     })
                     .catch((err) => {
-                        logger.error('BIG-IP network setup failed', err.message);
+                        let message;
+
+                        if (!err) {
+                            message = 'unknown reason';
+                        } else {
+                            message = err.message;
+                        }
+
+                        util.logAndExit(`Network setup failed: ${message}`, 'error', 1);
+                        return q();
                     })
                     .done((response) => {
                         logger.debug(response);

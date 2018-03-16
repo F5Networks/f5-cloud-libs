@@ -365,13 +365,23 @@ const commonOptions = require('./commonOptions');
                         return bigIp.active();
                     })
                     .catch((err) => {
-                        logger.error('BIG-IP cluster failed', err);
+                        let message;
 
-                        if (err instanceof ActiveError) {
-                            logger.warn('BIG-IP active check failed.');
-                            rebooting = true;
-                            return util.reboot(bigIp, { signalOnly: !(options.reboot) });
+                        if (!err) {
+                            message = 'unknown reason';
+                        } else {
+                            message = err.message;
                         }
+
+                        if (err) {
+                            if (err instanceof ActiveError || err.name === 'ActiveError') {
+                                logger.warn('BIG-IP active check failed.');
+                                rebooting = true;
+                                return util.reboot(bigIp, { signalOnly: !(options.reboot) });
+                            }
+                        }
+
+                        util.logAndExit(`Cluster failed: ${message}`, 'error', 1);
                         return q();
                     })
                     .done((response) => {

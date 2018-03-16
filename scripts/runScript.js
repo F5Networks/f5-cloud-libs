@@ -48,7 +48,7 @@ const util = require('../lib/util');
             try {
                 /* eslint-disable max-len */
                 options
-                    .version('4.0.0-alpha.6')
+                    .version('4.0.0-beta.1')
                     .option(
                         '--background',
                         'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.'
@@ -89,6 +89,10 @@ const util = require('../lib/util');
                     .option(
                         '-o, --output <file>',
                         `Log to file as well as console. This is the default if background process is spawned. Default is ${DEFAULT_LOG_FILE}`
+                    )
+                    .option(
+                        '--no-console',
+                        'Do not log to console. Default false (log to console).'
                     )
                     .parse(argv);
                 /* eslint-enable max-len */

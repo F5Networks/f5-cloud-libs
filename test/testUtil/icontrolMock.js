@@ -46,17 +46,24 @@ module.exports = {
     },
 
     requestMap: {},
-
     responseMap: {},
-
+    errorMap: {},
     lastCall: {},
 
     when: function(method, path, response) {
         this.responseMap[method + '_' + path] = response;
     },
 
-    fail: function(method, path) {
+    /**
+     * Tells mock to fail the given request
+     *
+     * @param {String} method - Method for request ('list' | 'create' | 'modify', etc)
+     * @param {String} path   - Path for request
+     * @param {Object} [err]  - Specific error for request. Default generic error.
+     */
+    fail: function(method, path, err) {
         this.responseMap[method + '_' + path] = FAIL_REQUEST;
+        this.errorMap[method + '_' + path] = err;
     },
 
     reset: function() {
@@ -97,10 +104,13 @@ module.exports = {
         var response = this.responseMap[method + '_' + path];
 
         if (response === FAIL_REQUEST) {
+            const error = this.errorMap[method + '_' + path]
+            if (error) {
+                return q.reject (error);
+            }
             return q.reject(new Error('We were told to fail this.'));
         }
-        else {
-            return q(response || this.defaultResponse);
-        }
+
+        return q(response || this.defaultResponse);
     }
 };

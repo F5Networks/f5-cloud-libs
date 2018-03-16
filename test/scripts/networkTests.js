@@ -38,10 +38,10 @@ module.exports = {
 
         ipcMock = require('../../lib/ipc');
 
-        // Just resolve right away, otherwise these tests never exit
         ipcMock.once = function() {
+            var deferred = q.defer();
             functionsCalled.ipc.once = arguments;
-            return q();
+            return deferred.promise;
         };
 
         functionsCalled = {
@@ -51,9 +51,6 @@ module.exports = {
         utilMock = require('../../../f5-cloud-libs').util;
         utilMock.logAndExit = function(message, level, code) {
             exitCode = code;
-            if (exitCode) {
-                 throw new Error('exit with code ' + exitCode);
-            }
         };
         exitCode = undefined;
 
@@ -124,6 +121,11 @@ module.exports = {
 
     testWaitFor: function(test) {
         argv.push('--wait-for', 'foo');
+
+        ipcMock.once = function() {
+            functionsCalled.ipc.once = arguments;
+            return q();
+        };
 
         test.expect(1);
         network.run(argv, testOptions, function() {
@@ -204,6 +206,25 @@ module.exports = {
                 );
                 test.done();
             });
+        },
+
+        testBadGateway: function(test) {
+            argv.push('--default-gw', 'aaa.com');
+            icontrolMock.fail(
+                'create',
+                '/tm/net/route',
+                {
+                    code: 400,
+                    message: 'foo'
+                }
+            );
+
+            test.expect(1);
+            network.run(argv, testOptions, function() {
+                var request = icontrolMock.getRequest('create', '/tm/net/route');
+                test.strictEqual(exitCode, 1);
+                test.done();
+            });
         }
     },
 
@@ -238,6 +259,24 @@ module.exports = {
                         network: '10.0.0.0/32'
                     }
                 );
+                test.done();
+            });
+        },
+
+        testBadRoute: function(test) {
+            argv.push('--route', 'name:routename,gw:1.2.3.4,network:networkname');
+            icontrolMock.fail(
+                'create',
+                '/tm/net/route',
+                {
+                    code: 400,
+                    message: 'foo'
+                }
+            )
+            test.expect(1);
+            network.run(argv, testOptions, function() {
+                var request = icontrolMock.getRequest('create', '/tm/net/route');
+                test.strictEqual(exitCode, 1);
                 test.done();
             });
         }
@@ -284,6 +323,25 @@ module.exports = {
                         mtu: '600'
                     }
                 );
+                test.done();
+            });
+        },
+
+        testBadNicName: function(test) {
+            argv.push('--vlan', 'name:vlanname,nic:nicname');
+            test.expect(1);
+            icontrolMock.fail(
+                'create',
+                '/tm/net/vlan',
+                {
+                    code: 400,
+                    message: 'foo'
+                }
+            )
+
+            network.run(argv, testOptions, function() {
+                var request = icontrolMock.getRequest('create', '/tm/net/vlan');
+                test.strictEqual(exitCode, 1);
                 test.done();
             });
         },
@@ -397,6 +455,16 @@ module.exports = {
                         test.done();
                     });
                 }
+            },
+
+            testMissingVlan: function(test) {
+                argv.push('--self-ip', 'name:foo, address:1.2.3.4');
+
+                test.expect(1);
+                network.run(argv, testOptions, function() {
+                    test.strictEqual(exitCode, 1);
+                    test.done();
+                });
             }
         }
     },

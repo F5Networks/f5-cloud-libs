@@ -812,7 +812,7 @@ module.exports = {
                 .finally(function() {
                     childProcessMock.execFile = realExecFile;
                     test.done();
-                });``
+                });
         },
 
         testFailed: function(test) {

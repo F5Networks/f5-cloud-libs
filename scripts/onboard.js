@@ -571,8 +571,6 @@ const commonOptions = require('./commonOptions');
                             message = err.message;
                         }
 
-                        logger.error('BIG-IP onboard failed:', message);
-
                         if (err) {
                             if (err instanceof ActiveError || err.name === 'ActiveError') {
                                 logger.warn('BIG-IP active check failed.');
@@ -581,6 +579,7 @@ const commonOptions = require('./commonOptions');
                             }
                         }
 
+                        util.logAndExit(`Onboard failed: ${message}`, 'error', 1);
                         return q();
                     })
                     .done((response) => {

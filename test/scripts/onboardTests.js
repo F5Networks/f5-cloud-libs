@@ -30,117 +30,9 @@ var ipcMock;
 var utilMock;
 var exitCode;
 
-const bigIpMock = {
-    init: function() {
-        functionsCalled.bigIp.init = arguments;
-        return q();
-    },
+let bigIpMock;
 
-    list: function() {
-        functionsCalled.bigIp.list = arguments;
-        return q();
-    },
-
-    modify: function() {
-        functionsCalled.bigIp.modify = arguments;
-        return q();
-    },
-
-    create: function() {
-        functionsCalled.bigIp.create = arguments;
-        return q();
-    },
-
-    delete: function() {
-        functionsCalled.bigIp.delete = arguments;
-        return q();
-    },
-
-    ready: function() {
-        functionsCalled.bigIp.ready = arguments;
-        return q();
-    },
-
-    save: function() {
-        functionsCalled.bigIp.save = arguments;
-        return q();
-    },
-
-    active: function() {
-        functionsCalled.bigIp.active = arguments;
-        return q();
-    },
-
-    ping: function() {
-        functionsCalled.bigIp.ping = arguments;
-        return q();
-    },
-
-    rebootRequired: function() {
-        functionsCalled.bigIp.rebootRequired = arguments;
-        return q(true);
-    },
-
-    reboot: function() {
-        functionsCalled.bigIp.reboot = arguments;
-        rebootRequested = true;
-        return q();
-    },
-
-    onboard: {
-        globalSettings: function() {
-            functionsCalled.bigIp.onboard.globalSettings = arguments;
-            return q();
-        },
-
-        license: function() {
-            functionsCalled.bigIp.onboard.license = arguments;
-            return q();
-        },
-
-        licenseViaBigIq: function() {
-            functionsCalled.bigIp.onboard.licenseViaBigIq = arguments;
-            return q();
-        },
-
-        password: function() {
-            functionsCalled.bigIp.onboard.password = arguments;
-            return q();
-        },
-
-        provision: function() {
-            functionsCalled.bigIp.onboard.provision = arguments;
-            return q();
-        },
-
-        setDbVars: function() {
-            functionsCalled.bigIp.onboard.setDbVars = arguments;
-            return q();
-        },
-
-        updateUser: function(user, password, role, shell) {
-            functionsCalled.bigIp.onboard.updateUser = arguments;
-            this.updatedUsers = this.updatedUsers || [];
-            this.updatedUsers.push({
-                user: user,
-                password: password,
-                role: role,
-                shell: shell
-            });
-
-            return q();
-        },
-
-        sslPort: function() {
-            functionsCalled.bigIp.onboard.sslPort = arguments;
-            return q();
-        }
-    }
-};
-
-var testOptions = {
-    bigIp: bigIpMock
-};
+var testOptions = {}
 
 var argv;
 var rebootRequested;
@@ -152,14 +44,124 @@ options.setMaxListeners(0);
 
 module.exports = {
     setUp: function(callback) {
+        bigIpMock = {
+            init: function() {
+                functionsCalled.bigIp.init = arguments;
+                return q();
+            },
+
+            list: function() {
+                functionsCalled.bigIp.list = arguments;
+                return q();
+            },
+
+            modify: function() {
+                functionsCalled.bigIp.modify = arguments;
+                return q();
+            },
+
+            create: function() {
+                functionsCalled.bigIp.create = arguments;
+                return q();
+            },
+
+            delete: function() {
+                functionsCalled.bigIp.delete = arguments;
+                return q();
+            },
+
+            ready: function() {
+                functionsCalled.bigIp.ready = arguments;
+                return q();
+            },
+
+            save: function() {
+                functionsCalled.bigIp.save = arguments;
+                return q();
+            },
+
+            active: function() {
+                functionsCalled.bigIp.active = arguments;
+                return q();
+            },
+
+            ping: function() {
+                functionsCalled.bigIp.ping = arguments;
+                return q();
+            },
+
+            rebootRequired: function() {
+                functionsCalled.bigIp.rebootRequired = arguments;
+                return q(false);
+            },
+
+            reboot: function() {
+                functionsCalled.bigIp.reboot = arguments;
+                rebootRequested = true;
+                return q();
+            },
+
+            onboard: {
+                globalSettings: function() {
+                    functionsCalled.bigIp.onboard.globalSettings = arguments;
+                    return q();
+                },
+
+                license: function() {
+                    functionsCalled.bigIp.onboard.license = arguments;
+                    return q();
+                },
+
+                licenseViaBigIq: function() {
+                    functionsCalled.bigIp.onboard.licenseViaBigIq = arguments;
+                    return q();
+                },
+
+                password: function() {
+                    functionsCalled.bigIp.onboard.password = arguments;
+                    return q();
+                },
+
+                provision: function() {
+                    functionsCalled.bigIp.onboard.provision = arguments;
+                    return q();
+                },
+
+                setDbVars: function() {
+                    functionsCalled.bigIp.onboard.setDbVars = arguments;
+                    return q();
+                },
+
+                updateUser: function(user, password, role, shell) {
+                    functionsCalled.bigIp.onboard.updateUser = arguments;
+                    this.updatedUsers = this.updatedUsers || [];
+                    this.updatedUsers.push({
+                        user: user,
+                        password: password,
+                        role: role,
+                        shell: shell
+                    });
+
+                    return q();
+                },
+
+                sslPort: function() {
+                    functionsCalled.bigIp.onboard.sslPort = arguments;
+                    return q();
+                }
+            }
+        };
+
+        testOptions.bigIp = bigIpMock;
+
         signalsSent = [];
 
         ipcMock = require('../../lib/ipc');
 
-        // Just resolve right away, otherwise these tests never exit
         ipcMock.once = function() {
+            var deferred = q.defer();
             functionsCalled.ipc.once = arguments;
-            return q();
+            return deferred.promise;
         };
 
         ipcMock.send = function(signal) {
@@ -182,9 +184,6 @@ module.exports = {
 
         utilMock.logAndExit = function(message, level, code) {
             exitCode = code;
-            if (exitCode) {
-                 throw new Error('exit with code ' + exitCode);
-            }
         };
         exitCode = undefined;
 
@@ -240,6 +239,11 @@ module.exports = {
     testWaitFor: function(test) {
         argv.push('--wait-for', 'foo');
 
+        ipcMock.once = function() {
+            functionsCalled.ipc.once = arguments;
+            return q();
+        };
+
         test.expect(1);
         onboard.run(argv, testOptions, function() {
             test.strictEqual(functionsCalled.ipc.once[0], 'foo');
@@ -279,6 +283,11 @@ module.exports = {
     },
 
     testReboot: function(test) {
+        bigIpMock.rebootRequired = function() {
+            functionsCalled.bigIp.rebootRequired = arguments;
+            return q(true);
+        };
+
         test.expect(1);
         onboard.run(argv, testOptions, function() {
             test.ok(rebootRequested);
@@ -288,6 +297,11 @@ module.exports = {
 
     testNoReboot: function(test) {
         argv.push('--no-reboot');
+
+        bigIpMock.rebootRequired = function() {
+            functionsCalled.bigIp.rebootRequired = arguments;
+            return q(true);
+        };
 
         test.expect(2);
         onboard.run(argv, testOptions, function() {
