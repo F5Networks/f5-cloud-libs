@@ -39,6 +39,13 @@ var removedFile;
 const UCS_TASK_PATH = '/tm/task/sys/ucs';
 const DUMMY_TASK_PATH = '/foo/task/bar';
 
+const privateKeyFolder = 'aFolder';
+const privateKeyName = 'aKey';
+const privateKeyMetadata = {
+    foo: 'bar',
+    hello: 'world'
+};
+
 module.exports = {
     setUp: function(callback) {
         utilMock = require('../../../f5-cloud-libs').util;
@@ -546,6 +553,15 @@ module.exports = {
                     }
                 ]
             );
+
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    version: '13.1.0'
+                }
+            );
+
             callback();
         },
 
@@ -631,30 +647,60 @@ module.exports = {
         }
     },
 
-    testGetPrivateKeyMetadata: function(test) {
-        const folder = 'aFolder';
-        const name = 'aKey';
-        const metadata = {
-            foo: 'bar',
-            hello: 'world'
-        };
+    testGetPrivateKeyMetadata: {
+        test13_0: function(test) {
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    version: '13.1.0'
+                }
+            );
 
-        icontrolMock.when(
-            'list',
-            '/tm/sys/file/ssl-key/~' + folder + '~' + name + '.key',
-            metadata
-        );
+            icontrolMock.when(
+                'list',
+                '/tm/sys/file/ssl-key/~' + privateKeyFolder + '~' + privateKeyName + '.key',
+                privateKeyMetadata
+            );
 
-        bigIp.getPrivateKeyMetadata(folder, name)
-            .then(function(response) {
-                test.deepEqual(response, metadata);
-            })
-            .catch(function(err) {
-                test.ok(false, err);
-            })
-            .finally(function() {
-                test.done();
-            });
+            bigIp.getPrivateKeyMetadata(privateKeyFolder, privateKeyName)
+                .then(function(response) {
+                    test.deepEqual(response, privateKeyMetadata);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        test14_0: function(test) {
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    version: '14.0.0'
+                }
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/file/ssl-key/~' + privateKeyFolder + '~' + privateKeyName,
+                privateKeyMetadata
+            );
+
+            bigIp.getPrivateKeyMetadata(privateKeyFolder, privateKeyName)
+                .then(function(response) {
+                    test.deepEqual(response, privateKeyMetadata);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
     },
 
     testGetPassword: function(test) {
