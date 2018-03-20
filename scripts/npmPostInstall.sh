@@ -9,7 +9,7 @@ if [[ -x /usr/bin/tmsh && -e /config/bigip.conf ]]; then
             exit 1
         fi
 
-        if ! /usr/bin/tmsh list cli alias shared license; then
+        if ! /usr/bin/tmsh list cli alias shared license &> /dev/null; then
             echo Creating license alias.
             /usr/bin/tmsh create cli alias shared license { command "run cli script license path $(pwd)" }
         fi
