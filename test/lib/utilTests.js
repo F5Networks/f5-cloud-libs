@@ -1326,6 +1326,30 @@ module.exports = {
         },
 
         testBadRequest: function(test) {
+            const errorMessage = 'foo';
+            var func = function() {
+                return q.reject(
+                    {
+                        code: 400,
+                        message: errorMessage
+                    }
+                )
+            };
+
+            test.expect(1);
+            util.tryUntil(this, {maxRetries: 90, retryIntervalMs: 10}, func)
+                .then(function() {
+                    test.ok(false, 'func should never have resolved');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, errorMessage);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testContinueOnError: function(test) {
             var func = function() {
                 return q.reject(
                     {
@@ -1336,12 +1360,12 @@ module.exports = {
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: 90, retryIntervalMs: 10}, func)
+            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10, continueOnError: true}, func)
                 .then(function() {
                     test.ok(false, 'func should never have resolved');
                 })
-                .catch(function() {
-                    test.ok(true);
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('max tries'), -1);
                 })
                 .finally(function() {
                     test.done();

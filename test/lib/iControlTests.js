@@ -71,13 +71,14 @@ module.exports = {
     },
 
     testBadStatusCode: function(test) {
-        httpMock.setResponse({foo: 'bar'}, {'Content-Type': 'application/json'}, 300);
+        const errorCode = 300;
+        httpMock.setResponse({foo: 'bar'}, {'Content-Type': 'application/json'}, errorCode);
         iControl.list('somepath')
             .then(function() {
                 test.ok(false, 'should have thrown bad status code');
             })
-            .catch(function() {
-                test.ok(true);
+            .catch(function(err) {
+                test.strictEqual(err.code, errorCode);
             })
             .finally(function() {
                 test.done();

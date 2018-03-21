@@ -402,7 +402,7 @@ module.exports = {
                     test.ok(false, 'Should have failed with license failure');
                 })
                 .catch(function(err) {
-                    test.strictEqual(err.message, failureMessage);
+                    test.notStrictEqual(err.message.indexOf(failureMessage), -1);
                 })
                 .finally(function() {
                     test.done();
