@@ -66,6 +66,7 @@ const commonOptions = require('./commonOptions');
             let logFileName;
             let bigIp;
             let rebooting;
+            let exiting;
             let index;
 
             Object.assign(optionsForTest, testOpts);
@@ -580,22 +581,26 @@ const commonOptions = require('./commonOptions');
                         }
 
                         util.logAndExit(`Onboard failed: ${message}`, 'error', 1);
+                        exiting = true;
                         return q();
                     })
                     .done((response) => {
                         logger.debug(response);
 
-                        if (!rebooting) {
-                            util.deleteArgs(ARGS_FILE_ID);
-                        }
-
-                        ipc.send(options.signal || signals.ONBOARD_DONE);
-
                         if (cb) {
                             cb();
                         }
 
-                        util.logAndExit('Onboard finished.');
+                        if (!rebooting) {
+                            util.deleteArgs(ARGS_FILE_ID);
+                            ipc.send(options.signal || signals.ONBOARD_DONE);
+                            if (!exiting) {
+                                util.logAndExit('Onboard finished.');
+                            }
+                        } else if (!options.reboot) {
+                            // If we are rebooting, but we were called with --no-reboot, send signal
+                            ipc.send(options.signal || signals.ONBOARD_DONE);
+                        }
                     });
 
                 // If we reboot due to some other script, exit - otherwise cloud

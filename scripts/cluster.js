@@ -52,6 +52,7 @@ const commonOptions = require('./commonOptions');
             let logFileName;
             let bigIp;
             let rebooting;
+            let exiting;
 
             Object.assign(optionsForTest, testOpts);
 
@@ -382,6 +383,7 @@ const commonOptions = require('./commonOptions');
                         }
 
                         util.logAndExit(`Cluster failed: ${message}`, 'error', 1);
+                        exiting = true;
                         return q();
                     })
                     .done((response) => {
@@ -390,13 +392,17 @@ const commonOptions = require('./commonOptions');
                         if (!rebooting) {
                             util.deleteArgs(ARGS_FILE_ID);
                             ipc.send(options.signal || signals.CLUSTER_DONE);
+                            if (!exiting) {
+                                util.logAndExit('Cluster finished.');
+                            }
+                        } else if (!options.reboot) {
+                            // If we are rebooting, but we were called with --no-reboot, send signal
+                            ipc.send(options.signal || signals.CLUSTER_DONE);
                         }
 
                         if (cb) {
                             cb();
                         }
-
-                        util.logAndExit('Cluster finished.');
                     });
 
                 // If we reboot due to some other script, exit - otherwise cloud providers
