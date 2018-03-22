@@ -1,5 +1,17 @@
 # Release notes
 
+## Version 4.0.0
+**This version is not backwards compatible. The install location of `f5-cloud-libs`
+and `f5-cloud-libs-<cloud>` has changed to support installation from npm**
+
+* Scripts now exit with status code 1 on failure
+* Support autoscaling with BYOL and utility billing instances in one cluster
+* Support autoscaling with DNS updates
+* Support for automatic backups in autoscaling solutions
+* Update scripts and lib code to the [Airbnb JavaScript style guide](https://github.com/airbnb/javascript)
+* Provide independent licensing script callable from tmsh
+* Add options for CLPv2 when licensing via BIG-IQ
+
 ## Version 3.6.0
 * Add --shell option to scripts/runScript.js
 
@@ -49,12 +61,12 @@ See node scripts/network.js --help for details**
 
 ## Version 2.1.0
 * Allows for autoscaling and clustering without providing a password in the template
-* Adds hash verification for all downloaded files
-* Fixes race condition when running multiple f5-cloud-libs scripts at once
+* Add hash verification for all downloaded files
+* Fix race condition when running multiple f5-cloud-libs scripts at once
 
 ## Version 2.0.0
 * onboard.js option of --set-password is no longer available, use --update-user instead.
 * All scripts that take --password now also support --password-url. Only 'file' URLs are supported for now.
-* Added option to suppress console output (--no-console).
-* Added support for verifying hash of downloaded f5-cloud-libs tarball.
-* Added some parsing of sync messages to get sync to work more often.
+* Add option to suppress console output (--no-console).
+* Add support for verifying hash of downloaded f5-cloud-libs tarball.
+* Add some parsing of sync messages to get sync to work more often.
