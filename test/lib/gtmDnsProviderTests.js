@@ -235,6 +235,50 @@ module.exports = {
                 });
         },
 
+        testServerCreatedAddressInUse: function(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/gtm/server',
+                [
+                    {
+                        name: 'myOtherServer',
+                        addresses: [
+                            {name: '192.0.2.1'},
+                            {name: '192.0.2.2'}
+                        ]
+                    },
+                    {
+                        name: 'myThirdServer',
+                        addresses: [
+                            {name: '192.0.2.3'}
+                        ]
+                    }
+                ]);
+
+            test.expect(1);
+            gtmDnsProvider.init(providerOptions)
+                .then(function() {
+                    return gtmDnsProvider.update(instances);
+                })
+                .then(function() {
+                    test.deepEqual(
+                        icontrolMock.getRequest('create', '/tm/gtm/server'),
+                        {
+                            name: 'myServer',
+                            datacenter: 'myDatacenter',
+                            product: 'generic-host',
+                            addresses: [ '192.0.2.4' ]
+                        }
+                    );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
         testServerNotCreated: function(test) {
             icontrolMock.when(
                 'list',
