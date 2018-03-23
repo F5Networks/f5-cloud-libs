@@ -1042,11 +1042,11 @@ const commonOptions = require('./commonOptions');
         logger.info('Joining cluster.');
 
         if (provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
-            logger.debug('Resetting current device trust');
             this.instance.lastJoinRequest = now;
             return provider.putInstance(this.instanceId, this.instance)
                 .then((response) => {
                     logger.debug(response);
+                    logger.debug('Resetting current device trust');
                     return bigIp.cluster.resetTrust();
                 })
                 .then((response) => {
@@ -1111,10 +1111,16 @@ const commonOptions = require('./commonOptions');
                 });
         }
 
+        // not using messaging, just send the request via iControl REST
         const masterInstance = this.instances[masterIid];
 
-        logger.debug('Resetting current device trust');
-        return bigIp.cluster.resetTrust()
+        this.instance.lastJoinRequest = now;
+        return provider.putInstance(this.instanceId, this.instance)
+            .then((response) => {
+                logger.debug(response);
+                logger.debug('Resetting current device trust');
+                return bigIp.cluster.resetTrust();
+            })
             .then((response) => {
                 logger.debug(response);
 
