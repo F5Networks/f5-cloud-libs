@@ -501,7 +501,6 @@ const commonOptions = require('./commonOptions');
                                     asProvider,
                                     bigIp,
                                     masterIid,
-                                    masterBad,
                                     options
                                 );
                             case 'update':
@@ -511,7 +510,7 @@ const commonOptions = require('./commonOptions');
                                     asProvider,
                                     bigIp,
                                     masterIid,
-                                    masterBad,
+                                    masterBad || newMaster,
                                     options
                                 );
                             case 'unblock-sync':
@@ -603,7 +602,7 @@ const commonOptions = require('./commonOptions');
      *
      * Called with this bound to the caller
      */
-    function handleJoin(provider, bigIp, masterIid, masterBad, options) {
+    function handleJoin(provider, bigIp, masterIid, options) {
         const deferred = q.defer();
 
         logger.info('Cluster action JOIN');
@@ -679,10 +678,10 @@ const commonOptions = require('./commonOptions');
      *
      * Called with this bound to the caller
      */
-    function handleUpdate(provider, bigIp, masterIid, masterBad, options) {
+    function handleUpdate(provider, bigIp, masterIid, masterBadOrNew, options) {
         logger.info('Cluster action UPDATE');
 
-        if (this.instance.isMaster && !masterBad) {
+        if (this.instance.isMaster && !masterBadOrNew) {
             return checkForDisconnectedDevices.call(this, bigIp);
         } else if (!this.instance.isMaster) {
             // We're not the master, make sure the master file is not on our disk
@@ -691,7 +690,7 @@ const commonOptions = require('./commonOptions');
             }
 
             // If there is a new master, join the cluster
-            if (masterBad && masterIid) {
+            if (masterBadOrNew && masterIid) {
                 return joinCluster.call(this, provider, bigIp, masterIid, options);
             } else if (masterIid) {
                 // Double check that we are clustered

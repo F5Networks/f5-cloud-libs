@@ -813,6 +813,26 @@ module.exports = {
                     disconnected: []
                 });
             };
+
+            const instance1 = new AutoscaleInstance()
+                .setHostname('host1')
+                .setPrivateIp('1.2.3.4')
+                .setMgmtIp('1.2.3.4');
+            const instance2 = new AutoscaleInstance()
+                .setIsMaster()
+                .setHostname('host2')
+                .setPrivateIp('5.6.7.8')
+                .setMgmtIp('5.6.7.8');
+
+            instance2.masterStatus = {
+                instanceId: "two"
+            };
+
+            instances = {
+                "one": instance1,
+                "two": instance2
+            };
+
             callback();
         },
 
