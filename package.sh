@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ `uname` == 'Darwin' ]; then
     SED_ARGS="-E -i .bak"
-    EXTRA_TAR_ARGS="--exclude=dist --exclude=build --exclude=test --exclude=.git* --exclude=.vscode --exclude=coverage"
+    EXTRA_TAR_ARGS="--exclude=${PWD##*/}/dist --exclude=${PWD##*/}/build --exclude=${PWD##*/}/test --exclude=.git* --exclude=.vscode --exclude=${PWD##*/}/coverage"
 else
     SED_ARGS="-r -i"
     EXTRA_TAR_ARGS="--owner=root --group=root --exclude-from=.tarignore --exclude=.tarignore"
