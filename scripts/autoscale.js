@@ -566,7 +566,11 @@ const commonOptions = require('./commonOptions');
                         return q();
                     })
                     .catch((err) => {
-                        logger.error(err);
+                        if (err && err.code && err.message) {
+                            logger.error('autoscaling error code:', err.code, 'message:', err.message);
+                        } else {
+                            logger.error('autoscaling error:', err);
+                        }
                         return err;
                     })
                     .done((err) => {
