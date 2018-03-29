@@ -1370,6 +1370,75 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
+
+        testContinueOnErrorMessageIsMessage: function(test) {
+            var func = function() {
+                return q.reject(
+                    {
+                        code: 400,
+                        message: 'is foo'
+                    }
+                )
+            };
+
+            test.expect(1);
+            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: 'foo'}, func)
+                .then(function() {
+                    test.ok(false, 'func should never have resolved');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('max tries'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testContinueOnErrorMessageIsMessageRegex: function(test) {
+            var func = function() {
+                return q.reject(
+                    {
+                        code: 400,
+                        message: 'is foo'
+                    }
+                )
+            };
+
+            test.expect(1);
+            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: /foo/}, func)
+                .then(function() {
+                    test.ok(false, 'func should never have resolved');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('max tries'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testContinueOnErrorMessageIsNotMessage: function(test) {
+            var func = function() {
+                return q.reject(
+                    {
+                        code: 400,
+                        message: 'is foo'
+                    }
+                )
+            };
+
+            test.expect(1);
+            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: 'bar'}, func)
+                .then(function() {
+                    test.ok(false, 'func should never have resolved');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message.indexOf('max tries'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     },
 
