@@ -1397,7 +1397,9 @@ const commonOptions = require('./commonOptions');
                 '--updated-ucs',
                 updatedPath,
                 '--cloud-provider',
-                cloudProvider
+                cloudProvider,
+                '--extract-directory',
+                '/config/cloud/ucsRestore'
             ];
             const loadUcsOptions = {
                 initLocalKeys: true
