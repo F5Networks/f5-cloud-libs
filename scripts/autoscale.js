@@ -569,7 +569,7 @@ const commonOptions = require('./commonOptions');
                         if (err && err.code && err.message) {
                             logger.error('autoscaling error code:', err.code, 'message:', err.message);
                         } else {
-                            logger.error('autoscaling error:', err);
+                            logger.error('autoscaling error:', err && err.message ? err.message : err);
                         }
                         return err;
                     })
