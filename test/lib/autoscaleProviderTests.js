@@ -414,6 +414,39 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
+        },
+
+        testRevokeFail: function(test) {
+            var instances = [
+                {
+                    hostname: 'host1'
+                },
+                {
+                    hostname: 'host2'
+                }
+            ];
+            var licensePool = 'myLicensePool';
+
+            testAutoscaleProvider.clOptions = {
+                licensePool: true,
+                licensePoolName: licensePool
+            };
+
+            bigIqMock.revokeLicense = function(poolName, hostname) {
+                return q.reject(new Error('foo'));
+            }
+
+            test.expect(1);
+            testAutoscaleProvider.revokeLicenses(instances, {})
+                .then(function() {
+                    test.ok(true);
+                })
+                .catch(function(err) {
+                    test.ok(false, 'Revoke should not throw');
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     }
 };
