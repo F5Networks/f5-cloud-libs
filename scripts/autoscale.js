@@ -64,7 +64,7 @@ const commonOptions = require('./commonOptions');
         run(argv, testOpts, cb) {
             const DEFAULT_LOG_FILE = '/tmp/autoscale.log';
             const ARGS_FILE_ID = `autoscale_${Date.now()}`;
-            const KEYS_TO_MASK = ['-p', '--password'];
+            const KEYS_TO_MASK = ['-p', '--password', '--big-iq-password'];
 
             const loggerOptions = {};
             const providerOptions = {};
