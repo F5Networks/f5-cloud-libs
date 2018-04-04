@@ -78,7 +78,7 @@ publish:
     script:
         - npm install npm@latest -g --registry ${NPM_REGISTRY}
         - echo '//registry.npmjs.org/:_authToken="${NPM_TOKEN}"' > ./.npmrc
-        - npm publish --access public --tag experimental
+        - npm publish --access public
 
  # Do not run when triggered:
  #   - triggers do not modify our hash, they only update the verifyHash file
