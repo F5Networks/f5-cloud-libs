@@ -14,6 +14,7 @@ writeHelp () {
     done
 }
 
+# onboard
 cat > $USAGE_FILE << EOL
 # Usage
 
@@ -24,6 +25,7 @@ EOL
 
 writeHelp scripts/onboard.js
 
+# cluster
 cat >> $USAGE_FILE << EOL
 ## cluster.js
 
@@ -32,6 +34,7 @@ EOL
 
 writeHelp scripts/cluster.js
 
+# autoscale
 cat >> $USAGE_FILE << EOL
 ## autoscale.js
 
@@ -40,6 +43,7 @@ EOL
 
 writeHelp scripts/autoscale.js
 
+# network
 cat >> $USAGE_FILE << EOL
 ## network.js
 
@@ -48,6 +52,7 @@ EOL
 
 writeHelp scripts/network.js
 
+#runScript
 cat >> $USAGE_FILE << EOL
 ## runScript.js
 
@@ -55,3 +60,18 @@ Runs an arbitrary script.
 EOL
 
 writeHelp scripts/runScript.js
+
+# standalone licensing
+cat >> $USAGE_FILE << EOL
+## Standalone licensing
+
+### Install
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# run util bash -c "mkdir -p /config/licensing; cd /config/licensing; npm --loglevel=error install @f5devcentral/f5-cloud-libs"
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# save /sys config
+
+### License from BIG-IQ
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# license password <big_ip_admin_password> big-iq-host <big_iq_ip_address> big-iq-user <big_iq_admin_user> big-iq-password <big_iq_admin_password> license-pool-name <license_pool>
+
+### Other licensing options
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# license help
+EOL

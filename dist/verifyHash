@@ -3,7 +3,7 @@ proc script::run {} {
         if {[catch {
             set hashes(f5-cloud-libs.tar.gz) 5a932f5c37f32b010aa253161cd66d1541cb37b315889e887fcf5286c25445a6c6a19951bc1c031a4021543637559929032f8c2294da958fadbe683f5d2aec01
             set hashes(f5-cloud-libs-aws.tar.gz) 4c00091adf268f591ee7970efb40c61d73b9646a036599061d504d2163f60f2f8453c78ee6d2ddf1419d23594663b033828d1a6944f5b3a4f362b749873128bf
-            set hashes(f5-cloud-libs-azure.tar.gz) 252db0e6a285fd8bbce76d31e8bb239ceef2f5d190999a3702164e7b216a4e4ed014c280974a77a700c5a2a64733e283e6fc3fd4e7aca4588229b341cb59fe64
+            set hashes(f5-cloud-libs-azure.tar.gz) f8c2d93659beb796201ab27394888dde635845ee7bb466c01e2ba1dea880cf28fdf8b4c1845b47e389a3337a900d84ca576aef10cda8a99fd49c96c0a0b95d7b
             set hashes(f5-cloud-libs-gce.tar.gz) 7d5a44dbdac712e8e378c827f1dbabad40c2f9de38577881404c95cc5aaf64f3b22acaad41c8274d35fabf54321d66c20cbe95b35e1043e4a185a50f965daf09
             set hashes(f5-cloud-libs-openstack.tar.gz) db8eeccc429c91a53bb69c07be6a55a1b7a47d0a1548b19a32fe3fe948c18597363a9ae7a536548f72dd2a129a736cc4ac32bf324fdeb75390329dca122605f0
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
@@ -39,6 +39,5 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature LakN4ucyX5nphRrzxpwdo2+yMKQx2w2t2+uWKWZPz/uYaku7qkuyahmbhayxzFHcL1VBAf7s1gHjsrEq35O3w7u17iesyivxiwJUJaFSzalkbifEgmtkOuZI2CnVv5iSQwmgY+J/QDB0qHWXBTQDLLS5clc5AnAH+oUHQl5VTvS+zLVLyIWO4mssLcQ/E2V6upyN2JlSe6tiky7kDJNbp1suaEGpkezC3qZFbANRO9+5WbCCS8EF+u2ZlaDkqMnTFf3wtt3u/pWut93WIj6dsgGu/SYmpfbEuippKJoaZiZA0o0bPzpGbLwT9erTCA+a114RLADOFjjHR8OJqSzQOA==
     signing-key /Common/f5-irule
 }

@@ -201,3 +201,14 @@ Runs an arbitrary script.
       -o, --output <file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log
       --no-console                   Do not log to console. Default false (log to console).
       -h, --help                     output usage information
+## Standalone licensing
+
+### Install
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# run util bash -c "mkdir -p /config/licensing; cd /config/licensing; npm --loglevel=error install @f5devcentral/f5-cloud-libs"
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# save /sys config
+
+### License from BIG-IQ
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# license password <big_ip_admin_password> big-iq-host <big_iq_ip_address> big-iq-user <big_iq_admin_user> big-iq-password <big_iq_admin_password> license-pool-name <license_pool>
+
+### Other licensing options
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# license help
