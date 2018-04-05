@@ -55,7 +55,7 @@ const KEYS = require('../lib/sharedConstants').KEYS;
 
                 // Can't use getCommonOptions here because we don't take host, user, password options
                 options
-                    .version('4.0.1')
+                    .version('4.0.2')
                     .option(
                         '--background',
                         'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.'
