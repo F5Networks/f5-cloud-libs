@@ -64,6 +64,25 @@ function get_private_key_path() {
     done
 }
 
+# usage: format_args unit-of-measure:yearly,sku-keyword-1:1G,sku-keyword-2:BT
+# returns: --unit-of-measure yearly --sku-keyword-1 1G --sku-keyword-2 BT
+function format_args() {
+    INPUT="$1"
+	CMD=""
+
+    for i in ${INPUT//,/ }; do
+		parsed=(${i//:/ })
+		# if empty or optional, exit
+		if [ -z ${parsed[1]} ] || [[ ${parsed[1]^^} == "OPTIONAL" ]]; then
+			return
+		else
+			CMD+="--${parsed[0]} ${parsed[1]} "
+		fi
+    done
+    # return formatted argument
+	echo $CMD
+}
+
 function wait_for_bigip() {
     echo "** BigIP waiting ..."
     bigstart_wait mcpd ready
