@@ -398,6 +398,11 @@ const commonOptions = require('./commonOptions');
                         } else if (!options.reboot) {
                             // If we are rebooting, but we were called with --no-reboot, send signal
                             ipc.send(options.signal || signals.CLUSTER_DONE);
+                            if (!exiting) {
+                                util.logAndExit('Cluster finished. Reboot required but not rebooting.');
+                            }
+                        } else {
+                            util.logAndExit('Cluster finished. Reboot required.');
                         }
 
                         if (cb) {

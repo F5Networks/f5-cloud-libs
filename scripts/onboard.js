@@ -600,6 +600,11 @@ const commonOptions = require('./commonOptions');
                         } else if (!options.reboot) {
                             // If we are rebooting, but we were called with --no-reboot, send signal
                             ipc.send(options.signal || signals.ONBOARD_DONE);
+                            if (!exiting) {
+                                util.logAndExit('Onboard finished. Reboot required but not rebooting.');
+                            }
+                        } else {
+                            util.logAndExit('Onboard finished. Reboot required.');
                         }
                     });
 
