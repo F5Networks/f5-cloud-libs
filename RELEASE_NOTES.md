@@ -1,5 +1,9 @@
 # Release notes
 
+## Version 4.1.0
+* Support for revoke of CLPv2 license for autoscaling solutions that license from BIG-IQ 5.3+
+* More reliable provisioning of ASM and AFM
+
 ## Version 4.0.0
 **This version is not backwards compatible. The install location of `f5-cloud-libs`
 and `f5-cloud-libs-<cloud>` has changed to support installation from npm**
