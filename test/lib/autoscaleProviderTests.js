@@ -439,10 +439,10 @@ module.exports = {
             test.expect(1);
             testAutoscaleProvider.revokeLicenses(instances, {})
                 .then(function() {
-                    test.ok(true);
+                    test.ok(false, 'Revoke should have thrown');
                 })
                 .catch(function(err) {
-                    test.ok(false, 'Revoke should not throw');
+                    test.ok(true);
                 })
                 .finally(function() {
                     test.done();

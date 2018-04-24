@@ -139,7 +139,7 @@ module.exports = {
 
         testBasic: function(test) {
             test.expect(1);
-            provider.revoke(icontrolMock, poolName, bigIpHostname)
+            provider.revoke(icontrolMock, poolName, {hostname: bigIpHostname})
                 .then(function() {
                     var request = icontrolMock.getRequest('delete', LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members/' + memberId);
                     test.deepEqual(
@@ -177,7 +177,7 @@ module.exports = {
 
 
             test.expect(1);
-            provider.revoke(icontrolMock, poolName, bigIpHostname)
+            provider.revoke(icontrolMock, poolName, {hostname: bigIpHostname})
                 .then(function() {
                     test.ok(false, 'should have thrown no license for host');
                 })
@@ -193,7 +193,7 @@ module.exports = {
             icontrolMock.fail('list', LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members');
 
             test.expect(1);
-            provider.revoke(icontrolMock, poolName, bigIpHostname)
+            provider.revoke(icontrolMock, poolName, {hostname: bigIpHostname})
                 .then(function() {
                     test.ok(false, 'should have thrown no license for host');
                 })

@@ -339,6 +339,7 @@ const commonOptions = require('./commonOptions');
                         return bigIp.deviceInfo();
                     })
                     .then((response) => {
+                        this.instance.machineId = response.machineId; // we need the machineId for revoke
                         this.instance.version = response.version;
                         markVersions(this.instances);
                         return asProvider.putInstance(this.instanceId, this.instance);
