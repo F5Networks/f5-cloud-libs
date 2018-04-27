@@ -255,7 +255,7 @@ module.exports = {
         },
 
         test5_0: function(test) {
-            var licenseProvider = require('../../../f5-cloud-libs').bigIq50LicenseProvider;
+            var licenseProvider = require('../../lib/bigIq50LicenseProvider');
 
             licenseProvider.revoke = function() {
                 return q();
@@ -288,7 +288,7 @@ module.exports = {
         },
 
         test5_2: function(test) {
-            var licenseProvider = require('../../../f5-cloud-libs').bigIq52LicenseProvider;
+            var licenseProvider = require('../../lib/bigIq52LicenseProvider');
 
             licenseProvider.revoke = function() {
                 return q();
@@ -321,7 +321,7 @@ module.exports = {
         },
 
         test5_3: function(test) {
-            var licenseProvider = require('../../../f5-cloud-libs').bigIq53LicenseProvider;
+            var licenseProvider = require('../../lib/bigIq53LicenseProvider');
 
             licenseProvider.revoke = function() {
                 return q();

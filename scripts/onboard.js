@@ -124,6 +124,10 @@ const commonOptions = require('./commonOptions');
                         'License BIG-IP from a BIG-IQ license pool. Supply the following:'
                     )
                     .option(
+                        '--cloud <provider>',
+                        'Cloud provider (aws | azure | etc.). This is only required if licensing via BIG-IQ 5.4+ is being used.'
+                    )
+                    .option(
                         '    --big-iq-host <ip_address or FQDN>',
                         '    IP address or FQDN of BIG-IQ'
                     )
@@ -481,6 +485,7 @@ const commonOptions = require('./commonOptions');
                                 options.bigIqUser,
                                 options.bigIqPassword || options.bigIqPasswordUri,
                                 options.licensePoolName,
+                                options.cloud,
                                 {
                                     passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined',
                                     bigIpMgmtAddress: options.bigIpMgmtAddress,

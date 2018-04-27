@@ -32,7 +32,7 @@ module.exports = {
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
 
-        BigIqProvider = require('../../../f5-cloud-libs').bigIq52LicenseProvider;
+        BigIqProvider = require('../../lib/bigIq52LicenseProvider');
         provider = new BigIqProvider();
         provider.bigIp = {
             user: 'user',

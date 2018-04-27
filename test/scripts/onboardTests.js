@@ -456,7 +456,7 @@ module.exports = {
         });
     },
 
-    testLicnse: {
+    testLicense: {
         testRegKey: function(test) {
             const regKey = '123345';
 
@@ -507,6 +507,7 @@ module.exports = {
                 const skuKeyword1 = 'mySku1';
                 const skuKeyword2 = 'mySku2';
                 const unitOfMeasure = 'myUnitOfMeasure';
+                const cloud = 'myCloud';
 
                 argv.push(
                     '--license-pool',
@@ -518,17 +519,19 @@ module.exports = {
                     '--big-ip-mgmt-port', bigIpMgmtPort,
                     '--sku-keyword-1', skuKeyword1,
                     '--sku-keyword-2', skuKeyword2,
-                    '--unit-of-measure', unitOfMeasure
+                    '--unit-of-measure', unitOfMeasure,
+                    '--cloud', cloud
                 );
 
-                test.expect(5);
+                test.expect(6);
                 onboard.run(argv, testOptions, function() {
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[0], bigIqHost);
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[1], bigIqUser);
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], bigIqPassword);
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[3], licensePool);
+                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[4], cloud);
                     test.deepEqual(
-                        functionsCalled.bigIp.onboard.licenseViaBigIq[4],
+                        functionsCalled.bigIp.onboard.licenseViaBigIq[5],
                         {
                             passwordIsUri: false,
                             bigIpMgmtAddress: bigIpMgmtAddress,

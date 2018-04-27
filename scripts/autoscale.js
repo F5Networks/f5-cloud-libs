@@ -339,7 +339,8 @@ const commonOptions = require('./commonOptions');
                         return bigIp.deviceInfo();
                     })
                     .then((response) => {
-                        this.instance.machineId = response.machineId; // we need the machineId for revoke
+                        this.instance.machineId = response.machineId; // we need this for revoke on BIG-IQ 5.3
+                        this.instance.macAddress = response.hostMac; // we need this for revoke on BIG-IQ 5.4
                         this.instance.version = response.version;
                         markVersions(this.instances);
                         return asProvider.putInstance(this.instanceId, this.instance);
