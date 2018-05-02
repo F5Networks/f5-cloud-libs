@@ -41,6 +41,7 @@ Does initial configuration and provisioning of a BIG-IP.
           --unit-of-measure <unit_of_measure>                                                                                                                                                                                                      unitOfMeasure parameter for CLPv2 licensing. Default none.
           --big-ip-mgmt-address <big_ip_address>                                                                                                                                                                                                   IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.
           --big-ip-mgmt-port <big_ip_port>                                                                                                                                                                                                         Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port
+          --revoke                                                                                                                                                                                                                                 Request BIG-IQ to revoke this units license rather than granting one.
       -n, --hostname <hostname>                                                                                                                                                                                                                Set BIG-IP hostname.
       -g, --global-setting <name:value>                                                                                                                                                                                                        Set global setting <name> to <value>. For multiple settings, use multiple -g entries. (default: [object Object])
       -d, --db <name:value>                                                                                                                                                                                                                    Set db variable <name> to <value>. For multiple settings, use multiple -d entries. (default: [object Object])
@@ -208,7 +209,10 @@ Runs an arbitrary script.
     admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# run util bash -c "mkdir -p /config/licensing; cd /config/licensing; npm --loglevel=error install @f5devcentral/f5-cloud-libs"
 
 ### License from BIG-IQ
-    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# license password <big_ip_admin_password> big-iq-host <big_iq_ip_address> big-iq-user <big_iq_admin_user> big-iq-password <big_iq_admin_password> license-pool-name <license_pool>
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# license path <install_path> password <big_ip_admin_password> big-iq-host <big_iq_ip_address> big-iq-user <big_iq_admin_user> big-iq-password <big_iq_admin_password> license-pool-name <license_pool>
+
+### Issue revoke request to BIG-IQ
+    admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# license path <install_path> password <big_ip_admin_password> big-iq-host <big_iq_ip_address> big-iq-user <big_iq_admin_user> big-iq-password <big_iq_admin_password> license-pool-name <license_pool> revoke
 
 ### Other licensing options
     admin@(bigip1)(cfg-sync Standalone)(NO LICENSE)(/Common)(tmos)# license help

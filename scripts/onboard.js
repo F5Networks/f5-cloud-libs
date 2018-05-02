@@ -168,6 +168,10 @@ const commonOptions = require('./commonOptions');
                         '    Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port'
                     )
                     .option(
+                        '    --revoke',
+                        '    Request BIG-IQ to revoke this units license rather than granting one.'
+                    )
+                    .option(
                         '-n, --hostname <hostname>',
                         'Set BIG-IP hostname.'
                     )
@@ -477,6 +481,21 @@ const commonOptions = require('./commonOptions');
                                 !options.licensePoolName
                             ) {
                                 return q.reject(new Error('Missing parameters for BIG-IQ license pool'));
+                            }
+
+                            if (options.revoke) {
+                                logger.info('Requesting BIG-IQ to revoke licnse.');
+                                return bigIp.onboard.revokeLicenseViaBigIq(
+                                    options.bigIqHost,
+                                    options.bigIqUser,
+                                    options.bigIqPassword || options.bigIqPasswordUri,
+                                    options.licensePoolName,
+                                    {
+                                        passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined',
+                                        bigIpMgmtAddress: options.bigIpMgmtAddress,
+                                        bigIpMgmtPort: options.bigIpMgmtPort
+                                    }
+                                );
                             }
 
                             logger.info('Getting license from BIG-IQ license pool.');

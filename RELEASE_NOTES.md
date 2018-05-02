@@ -4,6 +4,7 @@
 * Support for revoke of CLPv2 license for autoscaling solutions that license from BIG-IQ 5.3+
 * Support for licensing an unreachable device from BIG-IQ 5.4+
     * --cloud parameter is required when calling onboard.js when licensing via BIG-IQ 5.4+
+* Support revoke for standalone licensing script
 * More reliable provisioning of ASM and AFM
 
 ## Version 4.0.0

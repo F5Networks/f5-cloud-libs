@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 F5 Networks, Inc.
+ * Copyright 2017-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ const licenseUuid = '5678';
 const bigIpHostname = 'myBigIqHost';
 const LICENSE_PATH = '/cm/shared/licensing/pools/';
 
+var util;
 var BigIqProvider;
 var provider;
 var icontrolMock;
@@ -28,6 +29,7 @@ var revokeCalled;
 
 module.exports = {
     setUp: function(callback) {
+        util = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
 
@@ -62,6 +64,152 @@ module.exports = {
                 new BigIqProvider({loggerOptions: loggerOptions});
             });
             test.done();
+        }
+    },
+
+    testGetUnmanagedDeviceLicense: {
+        setUp: function(callback) {
+            icontrolMock.when(
+                'list',
+                '/cm/shared/licensing/pools/?$select=uuid,name',
+                [
+                    {
+                        name: 'pool1',
+                        uuid: '1'
+                    },
+                    {
+                        name: 'pool2',
+                        uuid: '2'
+                    }
+                ]
+            );
+            callback();
+        },
+
+        testEmptyPools: function(test) {
+            icontrolMock.when(
+                'list',
+                '/cm/shared/licensing/pools/?$select=uuid,name',
+                []
+            );
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
+                .then(function() {
+                    test.ok(false, "Should have thrown empty pools.");
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('No license pool'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testBadPoolResponse: function(test) {
+            icontrolMock.when(
+                'list',
+                '/cm/shared/licensing/pools/?$select=uuid,name',
+                {}
+            );
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
+                .then(function() {
+                    test.ok(false, "Should have thrown no pools.");
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('Error getting license pools'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testLicensedImmediately: function(test) {
+            icontrolMock.when(
+                'create',
+                '/cm/shared/licensing/pools/1/members',
+                {
+                    state: 'LICENSED'
+                }
+            );
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+                .then(function() {
+                    test.deepEqual(icontrolMock.getRequest(
+                        'create',
+                        '/cm/shared/licensing/pools/1/members'),
+                        {
+                            deviceAddress: 'bigIpMgmtAddress:443',
+                            username: 'user',
+                            password: 'password'
+                        });
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testLicensedLater: function(test) {
+            var licenseUuid = '123456';
+
+            icontrolMock.when(
+                'create',
+                '/cm/shared/licensing/pools/1/members',
+                {
+                    state: 'FOOBAR',
+                    uuid: licenseUuid
+                }
+            );
+            icontrolMock.when(
+                'list',
+                '/cm/shared/licensing/pools/1/members/123456',
+                {
+                    state: 'LICENSED'
+                }
+            );
+
+            test.expect(2);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress')
+                .then(function() {
+                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    test.strictEqual(icontrolMock.lastCall.path, '/cm/shared/licensing/pools/1/members/' + licenseUuid);
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testLicenseFailure: function(test) {
+            var licenseUuid = '123456';
+            provider.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+
+            icontrolMock.when(
+                'create',
+                '/cm/shared/licensing/pools/1/members',
+                {
+                    state: 'FOOBAR',
+                    uuid: licenseUuid
+                }
+            );
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress')
+                .then(function() {
+                    test.ok(false, 'should have thrown license failure');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     },
 

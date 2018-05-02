@@ -21,6 +21,7 @@ var q = require('q');
 var icontrolMock = require('../testUtil/icontrolMock');
 var poolUuid = '1';
 var BigIp;
+var BigIq;
 var BigIq50;
 var BigIq52;
 var BigIq53;
@@ -28,17 +29,24 @@ var BigIq54;
 var util;
 
 var bigIp;
+var bigIpMgmtAddressSent;
+var bigIpMgmtPortSent;
+var optionsSent;
+var initCalled;
+
+var poolNameSent;
+var instanceSent;
 
 var macAddress = '5678';
 var taskId = '1234';
 var licenseText = 'here is my license';
 var cloud = 'aws';
-var getLicenseCalled;
 
 module.exports = {
     setUp: function(callback) {
         util = require('../../../f5-cloud-libs').util;
         BigIp = require('../../../f5-cloud-libs').bigIp;
+        BigIq = require('../../../f5-cloud-libs').bigIq;
         BigIq50 = require('../../lib/bigIq50LicenseProvider');
         BigIq52 = require('../../lib/bigIq52LicenseProvider');
         BigIq53 = require('../../lib/bigIq53LicenseProvider');
@@ -460,7 +468,6 @@ module.exports = {
 
     testLicenseViaBigIq: {
         setUp: function(callback) {
-            bigIp.onboard.bigIqControl = icontrolMock;
             icontrolMock.when(
                 'create',
                 '/shared/authn/login',
@@ -471,23 +478,27 @@ module.exports = {
                 }
             );
 
+            BigIq.prototype.init = function() {
+                return q();
+            };
+            BigIq.prototype.icontrol = icontrolMock;
+            BigIq.prototype.bigIp = bigIp;
+
+            Object.defineProperty(BigIq, 'icontrol', {
+                get: function icontrol() {
+                    return icontrolMock;
+                }
+            });
+
             icontrolMock.when('list', '/tm/shared/licensing/registration', {});
 
             callback();
         },
 
         testVersionTooOld: function(test) {
-            icontrolMock.when(
-                'list',
-                '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                [
-                    {
-                        version: '4.9.9'
-                    }
-                ]
-            );
-
+            BigIq.prototype.version = '4.9.0';
             test.expect(1);
+
             bigIp.onboard.licenseViaBigIq()
                 .then(function () {
                     test.ok(false, 'Should have thrown version too old');
@@ -502,15 +513,13 @@ module.exports = {
 
         testCommon: {
             setUp: function(callback) {
-                icontrolMock.when(
-                    'list',
-                    '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                    [
-                        {
-                            version: '5.0.0'
-                        }
-                    ]
-                );
+                BigIq.prototype.version = '5.0.0';
+                BigIq.prototype.licenseBigIp = function(poolName, bigIpMgmtAddress, bigIpMgmtPort, options) {
+                    bigIpMgmtAddressSent = bigIpMgmtAddress;
+                    bigIpMgmtPortSent = bigIpMgmtPort;
+                    optionsSent = options;
+                };
+
                 icontrolMock.when(
                     'list',
                     '/cm/shared/licensing/pools/?$select=uuid,name',
@@ -530,29 +539,15 @@ module.exports = {
 
             testGetsMgmtAddressFromDeviceInfo: function(test) {
                 icontrolMock.when(
-                    'create',
-                    '/cm/shared/licensing/pools/1/members',
-                    {
-                        state: 'LICENSED'
-                    }
-                );
-                icontrolMock.when(
                     'list',
                     '/shared/identified-devices/config/device-info',
                     {
-                        managementAddress: 'bigIpMgmtAddress'
+                        managementAddress: 'bigIpMgmtAddressDeviceInfo'
                     }
                 );
                 bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
                     .then(function() {
-                        test.deepEqual(icontrolMock.getRequest(
-                            'create',
-                            '/cm/shared/licensing/pools/1/members'),
-                            {
-                                deviceAddress: 'bigIpMgmtAddress:443',
-                                username: 'user',
-                                password: 'password'
-                            });
+                        test.strictEqual(bigIpMgmtAddressSent, 'bigIpMgmtAddressDeviceInfo');
                     })
                     .catch(function(err) {
                         test.ok(false, err.message);
@@ -563,24 +558,9 @@ module.exports = {
             },
 
             testGetsMgmtAddressFromOptions: function(test) {
-                icontrolMock.when(
-                    'create',
-                    '/cm/shared/licensing/pools/1/members',
-                    {
-                        state: 'LICENSED'
-                    }
-                );
-                bigIp.port = 8443;
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', null, {bigIpMgmtAddress: 'bigIpMgmtAddress'})
+                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', null, {bigIpMgmtAddress: 'bigIpMgmtAddressOptions'})
                     .then(function() {
-                        test.deepEqual(icontrolMock.getRequest(
-                            'create',
-                            '/cm/shared/licensing/pools/1/members'),
-                            {
-                                deviceAddress: 'bigIpMgmtAddress:8443',
-                                username: 'user',
-                                password: 'password'
-                            });
+                        test.strictEqual(bigIpMgmtAddressSent, 'bigIpMgmtAddressOptions');
                     })
                     .catch(function(err) {
                         test.ok(false, err.message);
@@ -593,24 +573,9 @@ module.exports = {
             testGetsPortFromOptions: function(test) {
                 var specifiedPort = '8787';
 
-                icontrolMock.when(
-                    'create',
-                    '/cm/shared/licensing/pools/1/members',
-                    {
-                        state: 'LICENSED'
-                    }
-                );
-
                 bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', null, {bigIpMgmtAddress: 'bigIpMgmtAddress', bigIpMgmtPort: specifiedPort})
                     .then(function() {
-                        test.deepEqual(icontrolMock.getRequest(
-                            'create',
-                            '/cm/shared/licensing/pools/1/members'),
-                            {
-                                deviceAddress: 'bigIpMgmtAddress:' + specifiedPort,
-                                username: 'user',
-                                password: 'password'
-                            });
+                        test.strictEqual(bigIpMgmtPortSent, '8787');
                     })
                     .catch(function(err) {
                         test.ok(false, err.message);
@@ -620,81 +585,13 @@ module.exports = {
                     });
             },
 
-            testPasswordIsUri: {
-                testBasic: function(test) {
-                    var testArn = 'arn:aws:s3:::myBucket/myKey';
-                    var arnCalled;
-                    var provider = {
-                        init: function() {
-                            return q();
-                        },
-                        getDataFromUri: function(arn) {
-                            arnCalled = arn;
-                            return q();
-                        }
-                    };
-                    bigIp.onboard.provider = provider;
-
-                    icontrolMock.when(
-                        'create',
-                        '/cm/shared/licensing/pools/1/members',
-                        {
-                            state: 'LICENSED'
-                        }
-                    );
-
-                    test.expect(1);
-                    bigIp.onboard.licenseViaBigIq('host', 'user', testArn, 'pool1', null, {passwordIsUri: true, bigIpMgmtAddress: 'bigIpMgmtAddress'})
-                        .then(function() {
-                            test.strictEqual(arnCalled, testArn);
-                        })
-                        .catch(function(err) {
-                            test.ok(false, err.message);
-                        })
-                        .finally(function() {
-                            test.done();
-                        });
-                },
-
-                testUnimplementedGetDataFromUri: function(test) {
-                    var provider = {
-                        init: function() {
-                            return q();
-                        },
-                        getDataFromUri: function() {
-                            throw new Error("Unimplemented abstract method getDataFromUri");
-                        }
-                    };
-
-                    test.expect(1);
-
-                    bigIp.onboard.provider = provider;
-                    bigIp.onboard.licenseViaBigIq('host', 'user', 'arn:aws:s3:::myBucket/myKey', 'pool1', null, {passwordIsUri: true, bigIpMgmtAddress: 'bigIpMgmtAddress'})
-                        .then(function() {
-                            test.ok(false, 'Should have thrown unimplemented abstract method');
-                        })
-                        .catch(function(err) {
-                            test.notStrictEqual(err.message.indexOf('Unimplemented abstract method'), -1);
-                        })
-                        .finally(function() {
-                            test.done();
-                        });
-                }
-            },
-
             testAlreadyLicensed: {
                 setUp: function(callback) {
-                    var provider = {
-                        init: function() {
-                            return q();
-                        },
-                        getUnmanagedDeviceLicense: function() {
-                            getLicenseCalled = true;
-                        }
+                    initCalled = false;
+                    BigIq.prototype.init = function() {
+                        initCalled = true;
+                        return q();
                     };
-
-                    bigIp.onboard.provider = provider;
-                    getLicenseCalled = false;
 
                     icontrolMock.when(
                         'list',
@@ -708,9 +605,9 @@ module.exports = {
                 },
 
                 testNoOverwrite: function(test) {
-                    bigIp.onboard.licenseViaBigIq()
+                    bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'poolName')
                         .then(function() {
-                            test.strictEqual(getLicenseCalled, false);
+                            test.strictEqual(initCalled, false);
                         })
                         .catch(function(err) {
                             test.ok(false, err);
@@ -721,796 +618,81 @@ module.exports = {
                 },
 
                 testOverwrite: function(test) {
-                    // We'll just try to license w/ a bogus pool and expect that the provider throws
-                    // the right message - this shows called the licensing function
                     bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'poolName', null, {overwrite: true})
                         .then(function() {
-                            test.ok(false, 'Should have tried to license');
+                            test.strictEqual(initCalled, true);
                         })
                         .catch(function(err) {
-                            test.notStrictEqual(err.message.indexOf('No license pool found with name: poolName'), -1);
+                            test.ok(false, err);
                         })
                         .finally(function() {
                             test.done();
                         });
                 }
             }
+        }
+    },
+
+    testRevokeLicenseViaBigIq: {
+        setUp: function(callback) {
+            BigIq.prototype.init = function() {
+                return q();
+            };
+            BigIq.prototype.revokeLicense = function(poolName, instance) {
+                poolNameSent = poolName;
+                instanceSent = instance;
+                return q();
+            };
+            callback();
         },
 
-        testBigIq50: {
-            setUp: function(callback) {
-                icontrolMock.when(
-                    'list',
-                    '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                    [
-                        {
-                            version: '5.0.0'
-                        }
-                    ]
-                );
-                icontrolMock.when(
-                    'list',
-                    '/cm/shared/licensing/pools/?$select=uuid,name',
-                    [
-                        {
-                            name: 'pool1',
-                            uuid: '1'
-                        },
-                        {
-                            name: 'pool2',
-                            uuid: '2'
-                        }
-                    ]
-                );
-                callback();
-            },
+        testBasic: function(test) {
+            const hostname = 'myHostname';
+            const machineId = 'myMachineId';
+            const hostMac = 'myMacAddress';
+            const poolName = 'myPoolName';
 
-            testEmptyPools: function(test) {
-                icontrolMock.when(
-                    'list',
-                    '/cm/shared/licensing/pools/?$select=uuid,name',
-                    []
-                );
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq()
-                    .then(function() {
-                        test.ok(false, "Should have thrown empty pools.");
-                    })
-                    .catch(function() {
-                        test.ok(true);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testNoPools: function(test) {
-                icontrolMock.when(
-                    'list',
-                    '/cm/shared/licensing/pools/?$select=uuid,name',
-                    {}
-                );
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq()
-                    .then(function() {
-                        test.ok(false, "Should have thrown no pools.");
-                    })
-                    .catch(function() {
-                        test.ok(true);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testPasswordIsUri: {
-                testBasic: function(test) {
-                    var testArn = 'arn:aws:s3:::myBucket/myKey';
-                    var arnCalled;
-                    var provider = {
-                        init: function() {
-                            return q();
-                        },
-                        getDataFromUri: function(arn) {
-                            arnCalled = arn;
-                            return q();
-                        }
-                    };
-                    bigIp.onboard.provider = provider;
-
-                    icontrolMock.when(
-                        'create',
-                        '/cm/shared/licensing/pools/1/members',
-                        {
-                            state: 'LICENSED'
-                        }
-                    );
-
-                    test.expect(1);
-                    bigIp.onboard.licenseViaBigIq('host', 'user', testArn, 'pool1', null, {passwordIsUri: true, bigIpMgmtAddress: 'bigIpMgmtAddress'})
-                        .then(function() {
-                            test.strictEqual(arnCalled, testArn);
-                        })
-                        .catch(function(err) {
-                            test.ok(false, err.message);
-                        })
-                        .finally(function() {
-                            test.done();
-                        });
-                },
-
-                testUnimplementedGetDataFromUri: function(test) {
-                    var provider = {
-                        init: function() {
-                            return q();
-                        },
-                        getDataFromUri: function() {
-                            throw new Error("Unimplemented abstract method getDataFromUri");
-                        }
-                    };
-
-                    test.expect(1);
-
-                    bigIp.onboard.provider = provider;
-                    bigIp.onboard.licenseViaBigIq('host', 'user', 'arn:aws:s3:::myBucket/myKey', 'pool1', null, {passwordIsUri: true, bigIpMgmtAddress: 'bigIpMgmtAddress'})
-                        .then(function() {
-                            test.ok(false, 'Should have thrown unimplemented abstract method');
-                        })
-                        .catch(function(err) {
-                            test.notStrictEqual(err.message.indexOf('Unimplemented abstract method'), -1);
-                        })
-                        .finally(function() {
-                            test.done();
-                        });
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    hostname,
+                    machineId,
+                    hostMac
                 }
-            },
+            );
 
-            testLicensedImmediately: function(test) {
-                icontrolMock.when(
-                    'create',
-                    '/cm/shared/licensing/pools/1/members',
-                    {
-                        state: 'LICENSED'
-                    }
-                );
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', null, {bigIpMgmtAddress: 'bigIpMgmtAddress'})
-                    .then(function() {
-                        test.deepEqual(icontrolMock.getRequest(
-                            'create',
-                            '/cm/shared/licensing/pools/1/members'),
-                            {
-                                deviceAddress: 'bigIpMgmtAddress:443',
-                                username: 'user',
-                                password: 'password'
-                            });
-                    })
-                    .catch(function(err) {
-                        test.ok(false, err.message);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testLicensedLater: function(test) {
-                var licenseUuid = '123456';
-
-                icontrolMock.when(
-                    'create',
-                    '/cm/shared/licensing/pools/1/members',
-                    {
-                        state: 'FOOBAR',
-                        uuid: licenseUuid
-                    }
-                );
-                icontrolMock.when(
-                    'list',
-                    '/cm/shared/licensing/pools/1/members/123456',
-                    {
-                        state: 'LICENSED'
-                    }
-                );
-
-                test.expect(2);
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', null, {bigIpMgmtAddress: 'bigIpMgmtAddress'})
-                    .then(function() {
-                        test.strictEqual(icontrolMock.lastCall.method, 'list');
-                        test.strictEqual(icontrolMock.lastCall.path, '/cm/shared/licensing/pools/1/members/' + licenseUuid);
-                    })
-                    .catch(function(err) {
-                        test.ok(false, err.message);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testLicenseFailure: function(test) {
-                var licenseUuid = '123456';
-                BigIq50.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
-
-                icontrolMock.when(
-                    'create',
-                    '/cm/shared/licensing/pools/1/members',
-                    {
-                        state: 'FOOBAR',
-                        uuid: licenseUuid
-                    }
-                );
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', null, {bigIpMgmtAddress: 'bigIpMgmtAddress'})
-                    .then(function() {
-                        test.ok(false, 'should have thrown license failure');
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('Giving up'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            }
+            test.expect(4);
+            bigIp.onboard.revokeLicenseViaBigIq('host', 'user', 'password', poolName)
+                .then(function() {
+                    test.strictEqual(poolNameSent, poolName);
+                    test.strictEqual(instanceSent.hostname, hostname);
+                    test.strictEqual(instanceSent.machineId, machineId);
+                    test.strictEqual(instanceSent.macAddress, hostMac);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
         },
 
-        testBigIq52: {
-            setUp: function(callback) {
-                icontrolMock.when(
-                    'list',
-                    '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                    [
-                        {
-                            version: '5.2.0'
-                        }
-                    ]
-                );
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_2 + '?$select=id,name',
-                    [
-                        {
-                            name: 'pool1',
-                            id: poolUuid
-                        }
-                    ]
-                );
-                callback();
-            },
-
-            testEmptyPools: function(test) {
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_2 + '?$select=id,name',
-                    []
-                );
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq()
-                    .then(function() {
-                        test.ok(false, "Should have thrown empty pools.");
-                    })
-                    .catch(function() {
-                        test.ok(true);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testNoPools: function(test) {
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_2 + '?$select=id,name',
-                    {}
-                );
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq()
-                    .then(function() {
-                        test.ok(false, "Should have thrown no pools.");
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('No license pool'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testPoolQueryError: function(test) {
-                icontrolMock.fail(
-                    'list',
-                    LICENSE_PATH_5_2 + '?$select=id,name'
-                );
-
-                BigIq52.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq()
-                    .then(function() {
-                        test.ok(false, "Should have thrown query error.");
-                    })
-                    .catch(function(err) {
-                        test.strictEqual(err.message, 'We were told to fail this.');
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testNoActiveRegKeys: function(test) {
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_2 + poolUuid + '/offerings?$select=licenseState',
-                    [
-                        {
-                            licenseState: {
-                                licenseStartDateTime: undefined,
-                                licenseEndDateTime: undefined
-                            }
-                        }
-                    ]
-                );
-
-                util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                    .then(function() {
-                        test.ok(false, "Should have thrown no active licenses.");
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testNoValidRegKeys: function(test) {
-                var regKey = '1234';
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_2 + poolUuid + '/offerings?$select=licenseState',
-                    [
-                        {
-                            licenseState: {
-                                licenseStartDateTime: new Date(1970, 1, 1),
-                                licenseEndDateTime: new Date(2999, 12, 31),
-                                registrationKey: regKey
-                            }
-                        }
-                    ]
-                );
-
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
-                    [
-                        {
-                            foo: "bar"
-                        }
-                    ]
-                );
-
-                util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                    .then(function() {
-                        test.ok(false, "Should have thrown no valid licenses.");
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testLicenseRequestError: function(test) {
-                icontrolMock.fail('list', LICENSE_PATH_5_2 + poolUuid + '/offerings?$select=licenseState');
-
-                util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                    .then(function() {
-                        test.ok(false, "Should have thrown license error.");
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('We were told to fail this.'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testGetMembersForKeyError: function(test) {
-                var regKey = '1234';
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_2 + poolUuid + '/offerings?$select=licenseState',
-                    [
-                        {
-                            licenseState: {
-                                licenseStartDateTime: new Date(1970, 1, 1),
-                                licenseEndDateTime: new Date(2999, 12, 31),
-                                registrationKey: regKey
-                            }
-                        }
-                    ]
-                );
-
-                icontrolMock.fail('list', LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members');
-
-                util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
-
-                test.expect(1);
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                    .then(function() {
-                        test.ok(false, "Should have thrown license error.");
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-
-            },
-
-            testLicensed: {
-                setUp: function(callback) {
-                    var regKey = '1234';
-                    icontrolMock.when(
-                        'list',
-                        LICENSE_PATH_5_2 + poolUuid + '/offerings?$select=licenseState',
-                        [
-                            {
-                                licenseState: {
-                                    licenseStartDateTime: new Date(1970, 1, 1),
-                                    licenseEndDateTime: new Date(2999, 12, 31),
-                                    registrationKey: regKey
-                                }
-                            }
-                        ]
-                    );
-
-                    icontrolMock.when(
-                        'list',
-                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
-                        []
-                    );
-
-                    BigIq52.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
-
-                    callback();
-                },
-
-                testLicensedImmediately: function(test) {
-                    var regKey = '1234';
-                    icontrolMock.when(
-                        'create',
-                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
-                        {
-                            status: 'LICENSED'
-                        }
-                    );
-
-                    bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', null, {bigIpMgmtAddress: 'bigIpMgmtAddress'})
-                        .then(function() {
-                            test.deepEqual(icontrolMock.getRequest(
-                                'create',
-                                LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members'),
-                                {
-                                    deviceAddress: 'bigIpMgmtAddress:443',
-                                    username: 'user',
-                                    password: 'password'
-                                });
-                        })
-                        .catch(function(err) {
-                            test.ok(false, err.message);
-                        })
-                        .finally(function() {
-                            test.done();
-                        });
-                },
-
-                testLicensedLater: function(test) {
-                    var regKey = '1234';
-                    var memberId = '5678';
-
-                    icontrolMock.when(
-                        'create',
-                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
-                        {
-                            id: memberId,
-                            status: 'FOOBAR'
-                        }
-                    );
-
-                    icontrolMock.when(
-                        'list',
-                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members/' + memberId,
-                        {
-                            status: 'LICENSED'
-                        }
-                    );
-
-                    test.expect(2);
-                    bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                        .then(function() {
-                            test.strictEqual(icontrolMock.lastCall.method, 'list');
-                            test.strictEqual(icontrolMock.lastCall.path, LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members/' + memberId);
-                        })
-                        .catch(function(err) {
-                            test.ok(false, err.message);
-                        })
-                        .finally(function() {
-                            test.done();
-                        });
-                },
-
-                testNeverLicensed: function(test) {
-                    var regKey = '1234';
-                    var memberId = '5678';
-
-                    icontrolMock.when(
-                        'create',
-                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members',
-                        {
-                            id: memberId,
-                            status: 'FOOBAR'
-                        }
-                    );
-
-                    icontrolMock.when(
-                        'list',
-                        LICENSE_PATH_5_2 + poolUuid + '/offerings/' + regKey + '/members/' + memberId,
-                        {
-                            status: 'FOOBAR'
-                        }
-                    );
-
-                    util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
-
-                    test.expect(1);
-                    bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                        .then(function() {
-                            test.ok(false, 'should thrown not licensed');
-                        })
-                        .catch(function(err) {
-                            test.notStrictEqual(err.message.indexOf('Giving up'), -1);
-                        })
-                        .finally(function() {
-                            test.done();
-                        });
-                }
-            }
-        },
-
-        testBigIq53: {
-            setUp: function(callback) {
-                icontrolMock.when(
-                    'list',
-                    '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                    [
-                        {
-                            version: '5.3.0'
-                        }
-                    ]
-                );
-                icontrolMock.when(
-                    'create',
-                     LICENSE_PATH_5_3_and_4,
-                     {
-                         id: taskId
-                     }
-                );
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_3_and_4 + taskId,
-                    {
-                        status: 'FINISHED'
-                    }
-                );
-                callback();
-            },
-
-            testBasic: function(test) {
-                test.expect(1);
-
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                    .then(function() {
-                        var licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH_5_3_and_4);
-                        test.strictEqual(licenseRequest.licensePoolName, 'pool1');
-                    })
-                    .catch(function(err) {
-                        test.ok(false, err.message);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testOptions: function(test) {
-                test.expect(3);
-
-                bigIp.onboard.licenseViaBigIq(
-                    'host',
-                    'user',
-                    'password',
-                    'pool1',
-                    null,
-                    {
-                        skuKeyword1: 'sku1',
-                        skuKeyword2: 'sku2',
-                        unitOfMeasure: 'daily'
-                    }
-                )
-                    .then(function() {
-                        var licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH_5_3_and_4);
-                        test.strictEqual(licenseRequest.skuKeyword1, 'sku1');
-                        test.strictEqual(licenseRequest.skuKeyword2, 'sku2');
-                        test.strictEqual(licenseRequest.unitOfMeasure, 'daily');
-                    })
-                    .catch(function(err) {
-                        test.ok(false, err.message);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testLicenseRaceConditionFails: function(test) {
-                BigIq53.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
-
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_3_and_4 + taskId,
-                    {
-                        status: 'FAILED',
-                        errorMessage: 'already been granted to a BIG-IP'
-                    }
-                );
-
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                    .then(function() {
-                        test.ok(false, 'should have thrown license failure');
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('Giving up'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testLicenseFailure: function(test) {
-                BigIq53.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
-
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_3_and_4 + taskId,
-                    {
-                        status: 'FAILED',
-                        errorMessage: 'foo'
-                    }
-                );
-
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                    .then(function() {
-                        test.ok(false, 'should have thrown license failure');
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('Giving up'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testUnknownStatus: function(test) {
-                BigIq53.prototype.getLicenseTimeout = function() {return util.SHORT_RETRY;};
-
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_3_and_4 + taskId,
-                    {
-                        status: 'FOO'
-                    }
-                );
-
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
-                    .then(function() {
-                        test.ok(false, 'should have thrown license failure');
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('Giving up'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            }
-        },
-
-        testBigIq54: {
-            setUp: function(callback) {
-                icontrolMock.when(
-                    'list',
-                    '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                    [
-                        {
-                            version: '5.4.0'
-                        }
-                    ]
-                );
-
-                icontrolMock.when(
-                    'create',
-                    LICENSE_PATH_5_3_and_4,
-                    {
-                        id: taskId
-                    }
-                );
-
-                icontrolMock.when(
-                    'list',
-                    LICENSE_PATH_5_3_and_4 + taskId,
-                    {
-                        status: 'FINISHED',
-                        licenseText: licenseText
-                    }
-                );
-
-                icontrolMock.when(
-                    'list',
-                    '/shared/identified-devices/config/device-info',
-                    {
-                        hostMac: macAddress
-                    }
-                );
-
-                icontrolMock.when(
-                    'list',
-                    '/tm/cm/failover-status',
-                    {
-                        entries: {
-                            'https://localhost/mgmt/tm/cm/failover-status/0': {
-                                nestedStats: {
-                                    entries: {
-                                        status: {
-                                            description: 'ACTIVE'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                );
-
-                callback();
-            },
-
-            testBasic: function(test) {
-                test.expect(3);
-
-                bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', cloud)
-                    .then(function() {
-                        var licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH_5_3_and_4);
-                        test.strictEqual(licenseRequest.licensePoolName, 'pool1');
-                        test.strictEqual(licenseRequest.hypervisor, cloud);
-                        test.strictEqual(licenseRequest.macAddress, macAddress);
-                    })
-                    .catch(function(err) {
-                        test.ok(false, err.message);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            }
+        testFailure: function(test) {
+            const errorMessage = 'this is my error';
+            BigIq.prototype.revokeLicense = function() {
+                return q.reject(new Error(errorMessage));
+            };
+            bigIp.onboard.revokeLicenseViaBigIq('host', 'user', 'password', 'poolName')
+                .then(function () {
+                    test.ok(false, 'Revoke should have thrown');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf(errorMessage), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     },
 

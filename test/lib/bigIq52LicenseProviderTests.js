@@ -23,12 +23,14 @@ const LICENSE_PATH = '/cm/device/licensing/pool/regkey/licenses/';
 const regKey = '1234';
 const memberId = '5678';
 
+var util;
 var BigIqProvider;
 var provider;
 var icontrolMock;
 
 module.exports = {
     setUp: function(callback) {
+        util = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
 
@@ -63,6 +65,363 @@ module.exports = {
                 new BigIqProvider({loggerOptions: loggerOptions});
             });
             test.done();
+        }
+    },
+
+    testGetUnmanagedDeviceLicense: {
+        setUp: function(callback) {
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + '?$select=id,name',
+                [
+                    {
+                        name: 'pool1',
+                        id: poolUuid
+                    }
+                ]
+            );
+
+            callback();
+        },
+
+        testEmptyPools: function(test) {
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + '?$select=id,name',
+                []
+            );
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
+                .then(function() {
+                    test.ok(false, "Should have thrown empty pools.");
+                })
+                .catch(function() {
+                    test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoPools: function(test) {
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + '?$select=id,name',
+                {}
+            );
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
+                .then(function() {
+                    test.ok(false, "Should have thrown no pools.");
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('No license pool'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testPoolQueryError: function(test) {
+            icontrolMock.fail(
+                'list',
+                LICENSE_PATH + '?$select=id,name'
+            );
+
+            provider.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
+                .then(function() {
+                    test.ok(false, "Should have thrown query error.");
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, 'We were told to fail this.');
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoActiveRegKeys: function(test) {
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + poolUuid + '/offerings?$select=licenseState',
+                [
+                    {
+                        licenseState: {
+                            licenseStartDateTime: undefined,
+                            licenseEndDateTime: undefined
+                        }
+                    }
+                ]
+            );
+
+            util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
+                .then(function() {
+                    test.ok(false, "Should have thrown no active licenses.");
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoValidRegKeys: function(test) {
+            var regKey = '1234';
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + poolUuid + '/offerings?$select=licenseState',
+                [
+                    {
+                        licenseState: {
+                            licenseStartDateTime: new Date(1970, 1, 1),
+                            licenseEndDateTime: new Date(2999, 12, 31),
+                            registrationKey: regKey
+                        }
+                    }
+                ]
+            );
+
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                [
+                    {
+                        foo: "bar"
+                    }
+                ]
+            );
+
+            util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
+                .then(function() {
+                    test.ok(false, "Should have thrown no valid licenses.");
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testLicenseRequestError: function(test) {
+            icontrolMock.fail('list', LICENSE_PATH + poolUuid + '/offerings?$select=licenseState');
+
+            util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
+                .then(function() {
+                    test.ok(false, "Should have thrown license error.");
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('We were told to fail this.'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testGetMembersForKeyError: function(test) {
+            var regKey = '1234';
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + poolUuid + '/offerings?$select=licenseState',
+                [
+                    {
+                        licenseState: {
+                            licenseStartDateTime: new Date(1970, 1, 1),
+                            licenseEndDateTime: new Date(2999, 12, 31),
+                            registrationKey: regKey
+                        }
+                    }
+                ]
+            );
+
+            icontrolMock.fail('list', LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members');
+
+            util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
+                .then(function() {
+                    test.ok(false, "Should have thrown license error.");
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testLicensed: {
+            setUp: function(callback) {
+                var regKey = '1234';
+                icontrolMock.when(
+                    'list',
+                    LICENSE_PATH + poolUuid + '/offerings?$select=licenseState',
+                    [
+                        {
+                            licenseState: {
+                                licenseStartDateTime: new Date(1970, 1, 1),
+                                licenseEndDateTime: new Date(2999, 12, 31),
+                                registrationKey: regKey
+                            }
+                        }
+                    ]
+                );
+
+                icontrolMock.when(
+                    'list',
+                    LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                    []
+                );
+
+                provider.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+
+                callback();
+            },
+
+            testLicensedImmediately: function(test) {
+                var regKey = '1234';
+                icontrolMock.when(
+                    'create',
+                    LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                    {
+                        status: 'LICENSED'
+                    }
+                );
+
+                provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+                   .then(function() {
+                        test.deepEqual(icontrolMock.getRequest(
+                            'create',
+                            LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members'),
+                            {
+                                deviceAddress: 'bigIpMgmtAddress:443',
+                                username: 'user',
+                                password: 'password'
+                            });
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err.message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
+            testLicensedImmediately: function(test) {
+                var regKey = '1234';
+                icontrolMock.when(
+                    'create',
+                    LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                    {
+                        status: 'LICENSED'
+                    }
+                );
+
+                provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+                    .then(function() {
+                        test.deepEqual(icontrolMock.getRequest(
+                            'create',
+                            LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members'),
+                            {
+                                deviceAddress: 'bigIpMgmtAddress:443',
+                                username: 'user',
+                                password: 'password'
+                            });
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err.message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
+            testLicensedLater: function(test) {
+                var regKey = '1234';
+                var memberId = '5678';
+
+                icontrolMock.when(
+                    'create',
+                    LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                    {
+                        id: memberId,
+                        status: 'FOOBAR'
+                    }
+                );
+
+                icontrolMock.when(
+                    'list',
+                    LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members/' + memberId,
+                    {
+                        status: 'LICENSED'
+                    }
+                );
+
+                test.expect(2);
+                provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+                    .then(function() {
+                        test.strictEqual(icontrolMock.lastCall.method, 'list');
+                        test.strictEqual(icontrolMock.lastCall.path, LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members/' + memberId);
+                    })
+                    .catch(function(err) {
+                        test.ok(false, err.message);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            },
+
+            testNeverLicensed: function(test) {
+                var regKey = '1234';
+                var memberId = '5678';
+
+                icontrolMock.when(
+                    'create',
+                    LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members',
+                    {
+                        id: memberId,
+                        status: 'FOOBAR'
+                    }
+                );
+
+                icontrolMock.when(
+                    'list',
+                    LICENSE_PATH + poolUuid + '/offerings/' + regKey + '/members/' + memberId,
+                    {
+                        status: 'FOOBAR'
+                    }
+                );
+
+                util.MEDIUM_RETRY = {maxRetries: 0, retryIntervalMs: 0};
+
+                test.expect(1);
+                provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+                    .then(function() {
+                        test.ok(false, 'should thrown not licensed');
+                    })
+                    .catch(function(err) {
+                        test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                    })
+                    .finally(function() {
+                        test.done();
+                    });
+            }
         }
     },
 

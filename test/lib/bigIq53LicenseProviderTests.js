@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 F5 Networks, Inc.
+ * Copyright 2017-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,19 @@
 const poolName = 'myLicensePool';
 const poolUuid = '1234';
 const licenseUuid = '5678';
-const LICENSE_PATH = '/cm/device/licensing/pool/regkey/licenses/';
+const LICENSE_PATH = '/cm/device/tasks/licensing/pool/member-management/';
 const regKey = '1234';
 const memberId = '5678';
+const taskId = '1234';
 
+var util;
 var BigIqProvider;
 var provider;
 var icontrolMock;
 
 module.exports = {
     setUp: function(callback) {
+        util = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
 
@@ -62,6 +65,143 @@ module.exports = {
                 new BigIqProvider({loggerOptions: loggerOptions});
             });
             test.done();
+        }
+    },
+
+    testGetUnmanagedDeviceLicense: {
+        setUp: function(callback) {
+            icontrolMock.when(
+                'create',
+                 LICENSE_PATH,
+                 {
+                     id: taskId
+                 }
+            );
+
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + taskId,
+                {
+                    status: 'FINISHED'
+                }
+            );
+
+            callback();
+        },
+
+        testBasic: function(test) {
+            test.expect(1);
+
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
+                .then(function() {
+                    var licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH);
+                    test.strictEqual(licenseRequest.licensePoolName, 'pool1');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testOptions: function(test) {
+            test.expect(3);
+
+            provider.getUnmanagedDeviceLicense(
+                icontrolMock,
+                'pool1',
+                'bigIpMgmtAddress',
+                '443',
+                {
+                    skuKeyword1: 'mySku1',
+                    skuKeyword2: 'mySku2',
+                    unitOfMeasure: 'myUnitOfMeasure'
+                }
+            )
+                .then(function() {
+                    var licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH);
+                    test.strictEqual(licenseRequest.skuKeyword1, 'mySku1');
+                    test.strictEqual(licenseRequest.skuKeyword2, 'mySku2');
+                    test.strictEqual(licenseRequest.unitOfMeasure, 'myUnitOfMeasure');
+                })
+                .catch(function(err) {
+                    test.ok(false, err.message);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testLicenseRaceConditionFails: function(test) {
+            provider.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + taskId,
+                {
+                    status: 'FAILED',
+                    errorMessage: 'already been granted to a BIG-IP'
+                }
+            );
+
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+                .then(function() {
+                    test.ok(false, 'should have thrown license failure');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testLicenseFailure: function(test) {
+            provider.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + taskId,
+                {
+                    status: 'FAILED',
+                    errorMessage: 'foo'
+                }
+            );
+
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+                .then(function() {
+                    test.ok(false, 'should have thrown license failure');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testUnknownStatus: function(test) {
+            provider.getLicenseTimeout = function() {return util.SHORT_RETRY;};
+
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + taskId,
+                {
+                    status: 'FOO'
+                }
+            );
+
+            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+                .then(function() {
+                    test.ok(false, 'should have thrown license failure');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
         }
     },
 
