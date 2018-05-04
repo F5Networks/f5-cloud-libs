@@ -282,6 +282,23 @@ module.exports = {
         }
     },
 
+    testManagementRoute: function(test) {
+        argv.push('--mgmt-route', 'name:foo, gw:1.2.3.4, network:10.1.0.0');
+        test.expect(1);
+        network.run(argv, testOptions, function() {
+            var request = icontrolMock.getRequest('create', '/tm/sys/management-route');
+            test.deepEqual(
+                request,
+                {
+                    name: 'foo',
+                    gateway: '1.2.3.4',
+                    network: '10.1.0.0/24'
+                }
+            );
+            test.done();
+        });
+    },
+
     testVlan: {
         testBasic: function(test) {
             argv.push('--vlan', 'name:foo,nic:1.1');

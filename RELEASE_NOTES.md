@@ -1,5 +1,8 @@
 # Release notes
 
+## Version 4.2.0
+* Support for setting management route via network.js
+
 ## Version 4.1.0
 * Support for revoke of CLPv2 license for autoscaling solutions that license from BIG-IQ 5.3+
 * Support for licensing an unreachable device from BIG-IQ 5.4+

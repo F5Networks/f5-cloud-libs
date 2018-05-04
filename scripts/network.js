@@ -46,6 +46,7 @@ const util = require('../lib/util');
             const vlans = [];
             const selfIps = [];
             const routes = [];
+            const mgmtRoutes = [];
             const loggerOptions = {};
 
             let loggableArgs;
@@ -132,6 +133,12 @@ const util = require('../lib/util');
                         'Create arbitrary route with name for destination network via gateway address.',
                         util.mapArray,
                         routes
+                    )
+                    .option(
+                        '--mgmt-route <name:name, gw:address, network:network>',
+                        'Create management route with name for destination network via gateway address.',
+                        util.mapArray,
+                        mgmtRoutes
                     )
                     .option(
                         '--local-only',
@@ -446,6 +453,46 @@ const util = require('../lib/util');
                         const promises = [];
                         let routeBody;
 
+                        for (let i = 0; i < mgmtRoutes.length; i++) {
+                            const route = mgmtRoutes[i];
+                            if (!route.name || !route.gw || !route.network) {
+                                const message
+                                    = 'Bad management route params. Name, gateway, network required';
+                                return q.reject(new Error(message));
+                            }
+
+                            let network = route.network;
+                            if (network.indexOf('/') === -1) {
+                                network += DEFAULT_CIDR;
+                            }
+
+                            routeBody = {
+                                network,
+                                name: route.name,
+                                gateway: route.gw
+                            };
+
+                            promises.push(
+                                {
+                                    promise: bigIp.create,
+                                    arguments: [
+                                        '/tm/sys/management-route',
+                                        routeBody
+                                    ],
+                                    message:
+                                        `Creating management route ${route.name} with gateway ${route.gw}`
+                                }
+                            );
+                        }
+
+                        return promises.length > 0 ? util.callInSerial(bigIp, promises) : q();
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        const promises = [];
+                        let routeBody;
+
                         for (let i = 0; i < routes.length; i++) {
                             const route = routes[i];
                             if (!route.name || !route.gw || !route.network) {
@@ -498,6 +545,8 @@ const util = require('../lib/util');
                                 '--local-only',
                                 '--vlan',
                                 '--self-ip',
+                                '--route',
+                                '--mgmt-route',
                                 '--force-reboot'];
                             return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP)
                                 .then(() => {
