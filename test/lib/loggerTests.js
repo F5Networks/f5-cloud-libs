@@ -17,8 +17,10 @@
 
 var Logger = require('../../../f5-cloud-libs').logger;
 var fs = require('fs');
+var logger;
 
 const fsWrite = fs.write;
+
 const LOGFILE = 'foo';
 
 var loggedMessage;
@@ -50,6 +52,7 @@ module.exports = {
 
     testLogMessages: {
         setUp: function(callback) {
+            logger = Logger.getLogger({console: false, fileName: LOGFILE});
             loggedMessage = null;
             fs.write = function(fd, message, offset, length, position, cb) {
                 loggedMessage = message.toString();
@@ -60,6 +63,7 @@ module.exports = {
 
         tearDown: function(callback) {
             fs.write = fsWrite;
+
             if (fs.existsSync(LOGFILE)) {
                 fs.unlinkSync(LOGFILE);
             }
@@ -67,57 +71,50 @@ module.exports = {
         },
 
         testPasswordMask: function(test) {
-            var logger = Logger.getLogger({console: false, fileName: LOGFILE});
-
             logger.warn('password=1234', {Password: '5678'});
 
-            setTimeout(function() {
+            logger.transports.file.on('logged', function() {
                 test.notStrictEqual(loggedMessage.indexOf('password='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"Password":'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
                 test.strictEqual(loggedMessage.indexOf('5678'), -1);
                 test.done();
-            }, 10);
+            });
         },
 
         testPassphraseMask: function(test) {
-            var logger = Logger.getLogger({console: false, fileName: LOGFILE});
-
             logger.warn('passphrase=1234', {passphrase: '5678'});
 
-            setTimeout(function() {
+            logger.transports.file.on('logged', function() {
                 test.notStrictEqual(loggedMessage.indexOf('passphrase='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"passphrase":'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
                 test.strictEqual(loggedMessage.indexOf('5678'), -1);
                 test.done();
-            }, 10);
+            });
         },
 
         testWholeWordMask:function(test) {
-            var logger = Logger.getLogger({console: false, fileName: LOGFILE});
-
             // these should be logged in full
             logger.warn('passwordUrl=file:///tmp/foo', {passwordUrl: 'file:///tmp/bar'});
 
-            setTimeout(function() {
+            logger.transports.file.on('logged', function() {
                 test.notStrictEqual(loggedMessage.indexOf('passwordUrl='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"passwordUrl":'), -1);
                 test.notStrictEqual(loggedMessage.indexOf('file:///tmp/foo'), -1);
                 test.notStrictEqual(loggedMessage.indexOf('file:///tmp/bar'), -1);
                 test.done();
-            }, 10);
+            });
         },
 
         testLabel: function(test) {
-            var logger = Logger.getLogger({console: false, fileName: LOGFILE, logLevel: 'debug', module: module});
-
+            logger = Logger.getLogger({console: false, fileName: LOGFILE, logLevel: 'debug', module: module});
             logger.debug('hello, world');
 
-            setTimeout(function() {
+            logger.transports.file.on('logged', function() {
                 test.notStrictEqual(loggedMessage.indexOf('[lib/loggerTests.js]'), -1);
                 test.done();
-            }, 10);
+            });
         }
     }
 };
