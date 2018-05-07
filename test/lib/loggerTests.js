@@ -18,7 +18,10 @@
 var Logger = require('../../../f5-cloud-libs').logger;
 var fs = require('fs');
 
-const TEMP_LOGFILE = 'f5-cloud-libs-loggerTest.log.' + Date.now();
+const fsWrite = fs.write;
+const LOGFILE = 'foo';
+
+var loggedMessage;
 
 module.exports = {
     testConsole: function(test) {
@@ -46,19 +49,29 @@ module.exports = {
     },
 
     testLogMessages: {
+        setUp: function(callback) {
+            loggedMessage = null;
+            fs.write = function(fd, message, offset, length, position, cb) {
+                loggedMessage = message.toString();
+                cb();
+            };
+            callback();
+        },
+
         tearDown: function(callback) {
-            fs.unlinkSync(TEMP_LOGFILE);
+            fs.write = fsWrite;
+            if (fs.existsSync(LOGFILE)) {
+                fs.unlinkSync(LOGFILE);
+            }
             callback();
         },
 
         testPasswordMask: function(test) {
-            var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
-            var loggedMessage;
+            var logger = Logger.getLogger({console: false, fileName: LOGFILE});
 
             logger.warn('password=1234', {Password: '5678'});
 
             setTimeout(function() {
-                loggedMessage = fs.readFileSync(TEMP_LOGFILE).toString();
                 test.notStrictEqual(loggedMessage.indexOf('password='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"Password":'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
@@ -68,13 +81,11 @@ module.exports = {
         },
 
         testPassphraseMask: function(test) {
-            var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
-            var loggedMessage;
+            var logger = Logger.getLogger({console: false, fileName: LOGFILE});
 
             logger.warn('passphrase=1234', {passphrase: '5678'});
 
             setTimeout(function() {
-                loggedMessage = fs.readFileSync(TEMP_LOGFILE).toString();
                 test.notStrictEqual(loggedMessage.indexOf('passphrase='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"passphrase":'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
@@ -84,14 +95,12 @@ module.exports = {
         },
 
         testWholeWordMask:function(test) {
-            var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE});
-            var loggedMessage;
+            var logger = Logger.getLogger({console: false, fileName: LOGFILE});
 
             // these should be logged in full
             logger.warn('passwordUrl=file:///tmp/foo', {passwordUrl: 'file:///tmp/bar'});
 
             setTimeout(function() {
-                loggedMessage = fs.readFileSync(TEMP_LOGFILE).toString();
                 test.notStrictEqual(loggedMessage.indexOf('passwordUrl='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"passwordUrl":'), -1);
                 test.notStrictEqual(loggedMessage.indexOf('file:///tmp/foo'), -1);
@@ -101,13 +110,11 @@ module.exports = {
         },
 
         testLabel: function(test) {
-            var logger = Logger.getLogger({console: false, fileName: TEMP_LOGFILE, logLevel: 'debug', module: module});
-            var loggedMessage;
+            var logger = Logger.getLogger({console: false, fileName: LOGFILE, logLevel: 'debug', module: module});
 
             logger.debug('hello, world');
 
             setTimeout(function() {
-                loggedMessage = fs.readFileSync(TEMP_LOGFILE);
                 test.notStrictEqual(loggedMessage.indexOf('[lib/loggerTests.js]'), -1);
                 test.done();
             }, 10);
