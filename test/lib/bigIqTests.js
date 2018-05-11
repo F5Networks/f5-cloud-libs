@@ -51,6 +51,16 @@ module.exports = {
             ]
         );
 
+        icontrolMock.when(
+            'create',
+            '/shared/authn/login',
+            {
+                token: {
+                    token: 'foo'
+                }
+            }
+        );
+
         BigIq = require('../../../f5-cloud-libs').bigIq;
         bigIq = new BigIq();
         bigIq.icontrol = icontrolMock;
@@ -176,6 +186,26 @@ module.exports = {
                 })
                 .catch(function(err) {
                     test.notStrictEqual(err.message.indexOf('Failed to retrieve'), -1);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoAuthToken: function(test) {
+            icontrolMock.when(
+                'create',
+                '/shared/authn/login',
+                {}
+            );
+
+            test.expect(1);
+            bigIq.init(host, user, password)
+                .then(function() {
+                    test.ok(false, 'Should have thrown no auth token');
+                })
+                .catch(function(err) {
+                    test.notStrictEqual(err.message.indexOf('No auth token'), -1);
                 })
                 .finally(function() {
                     test.done();
