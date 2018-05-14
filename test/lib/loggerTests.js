@@ -64,7 +64,7 @@ module.exports = {
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
                 test.strictEqual(loggedMessage.indexOf('5678'), -1);
                 test.done();
-            }, 10);
+            }, 100);
         },
 
         testPassphraseMask: function(test) {
@@ -80,7 +80,7 @@ module.exports = {
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
                 test.strictEqual(loggedMessage.indexOf('5678'), -1);
                 test.done();
-            }, 10);
+            }, 100);
         },
 
         testWholeWordMask:function(test) {
@@ -97,7 +97,7 @@ module.exports = {
                 test.notStrictEqual(loggedMessage.indexOf('file:///tmp/foo'), -1);
                 test.notStrictEqual(loggedMessage.indexOf('file:///tmp/bar'), -1);
                 test.done();
-            }, 10);
+            }, 100);
         },
 
         testLabel: function(test) {
@@ -110,7 +110,7 @@ module.exports = {
                 loggedMessage = fs.readFileSync(TEMP_LOGFILE);
                 test.notStrictEqual(loggedMessage.indexOf('[lib/loggerTests.js]'), -1);
                 test.done();
-            }, 10);
+            }, 100);
         }
     }
 };
