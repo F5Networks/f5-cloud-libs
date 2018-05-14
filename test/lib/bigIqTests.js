@@ -38,7 +38,11 @@ module.exports = {
         icontrolMock.when(
             'create',
             '/shared/authn/login',
-            {}
+            {
+                token: {
+                    token: 'foo'
+                }
+            }
         );
 
         icontrolMock.when(
