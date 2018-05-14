@@ -38,7 +38,11 @@ module.exports = {
         icontrolMock.when(
             'create',
             '/shared/authn/login',
-            {}
+            {
+                token: {
+                    token: 'foo'
+                }
+            }
         );
 
         icontrolMock.when(
@@ -205,7 +209,7 @@ module.exports = {
                     test.ok(false, 'Should have thrown no auth token');
                 })
                 .catch(function(err) {
-                    test.notStrictEqual(err.message.indexOf('No auth token'), -1);
+                    test.notStrictEqual(err.message.indexOf('Did not receive'), -1);
                 })
                 .finally(function() {
                     test.done();
