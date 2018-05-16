@@ -20,6 +20,7 @@ const q = require('q');
 var localKeyUtilMock;
 var cryptoUtilMock;
 var utilMock;
+var httpUtilMock;
 var localCryptoUtil;
 
 var dataSent;
@@ -30,6 +31,7 @@ var decryptedData;
 module.exports = {
     setUp: function(callback) {
         utilMock = require('../../lib/util');
+        httpUtilMock = require('../../lib/httpUtil');
         localKeyUtilMock = require('../../lib/localKeyUtil');
         cryptoUtilMock = require('../../lib/cryptoUtil');
 
@@ -137,6 +139,49 @@ module.exports = {
                 })
                 .catch(function(err) {
                     test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testDecryptDataFromRestStorage: {
+        testBasic: function(test) {
+            const data = {
+                foo: 'bar'
+            };
+
+            httpUtilMock.post = function() {
+                return q({data: data});
+            };
+
+            test.expect(1);
+            localCryptoUtil.decryptDataFromRestStorage('id', 'salt')
+                .then(function(decryptedData) {
+                    test.deepEqual(decryptedData, data);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testError: function(test) {
+            const error = new Error('foobar');
+            httpUtilMock.post = function() {
+                return q.reject(error);
+            };
+
+            test.expect(1);
+            localCryptoUtil.decryptDataFromRestStorage('id', 'salt')
+                .then(function(decryptedData) {
+                    test.ok(false, 'should have thrown an error');
+                })
+                .catch(function(err) {
+                    test.strictEqual(err.message, error.message);
                 })
                 .finally(function() {
                     test.done();

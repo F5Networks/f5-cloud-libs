@@ -31,6 +31,7 @@ module.exports = {
     dnsProvider: require('./lib/dnsProvider'),
     dnsProviderFactory: require('./lib/dnsProviderFactory'),
     gtmDnsProvider: require('./lib/gtmDnsProvider'),
+    localCryptoUtil: require('./lib/localCryptoUtil'),
     localKeyUtil: require('./lib/localKeyUtil'),
     httpUtil: require('./lib/httpUtil'),
     iControl: require('./lib/iControl'),
