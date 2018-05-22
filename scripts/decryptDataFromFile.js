@@ -40,7 +40,7 @@ const KEYS = require('../lib/sharedConstants').KEYS;
         run(argv, cb) {
             try {
                 options
-                    .version('4.2.0-beta.1')
+                    .version('4.2.0')
                     .option('--data-file <data_file>', 'Full path to file with data (use this or --data)')
                     .parse(argv);
 

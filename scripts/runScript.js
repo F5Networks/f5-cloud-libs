@@ -48,7 +48,7 @@ const util = require('../lib/util');
             try {
                 /* eslint-disable max-len */
                 options
-                    .version('4.2.0-beta.1')
+                    .version('4.2.0')
                     .option(
                         '--background',
                         'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.'
