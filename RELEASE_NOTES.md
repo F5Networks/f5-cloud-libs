@@ -2,6 +2,7 @@
 
 ## Version 4.2.0
 * Support for setting management route via network.js
+* Support for reading from rest storage
 
 ## Version 4.1.0
 * Support for revoke of CLPv2 license for autoscaling solutions that license from BIG-IQ 5.3+
