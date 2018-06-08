@@ -297,11 +297,13 @@ const commonOptions = require('./commonOptions');
 
                         if (Object.keys(this.instances).length === 0) {
                             util.logAndExit('Instance list is empty. Exiting.', 'error', 1);
+                            return q();
                         }
 
                         this.instance = this.instances[this.instanceId];
                         if (!this.instance) {
                             util.logAndExit('Our instance ID is not in instance list. Exiting', 'error', 1);
+                            return q();
                         }
 
                         this.instance.status = this.instance.status || AutoscaleInstance.INSTANCE_STATUS_OK;
@@ -311,9 +313,6 @@ const commonOptions = require('./commonOptions');
                             util.logAndExit('Currently becoming master. Exiting.', 'info');
                         }
 
-                        return asProvider.putInstance(this.instanceId, this.instance);
-                    })
-                    .then(() => {
                         if (optionsForTest.bigIp) {
                             bigIp = optionsForTest.bigIp;
                             return q();
@@ -331,6 +330,20 @@ const commonOptions = require('./commonOptions');
                                 passwordEncrypted: options.passwordEncrypted
                             }
                         );
+                    })
+                    .then(() => {
+                        // Make sure we have our own hostname
+                        if (!this.instance.hostname) {
+                            return bigIp.list('/tm/sys/global-settings');
+                        }
+                        return q();
+                    })
+                    .then((globalSettings) => {
+                        if (globalSettings) {
+                            this.instance.hostname = globalSettings.hostname;
+                        }
+
+                        return asProvider.putInstance(this.instanceId, this.instance);
                     })
                     .then(() => {
                         return asProvider.bigIpReady();
@@ -1226,6 +1239,10 @@ const commonOptions = require('./commonOptions');
                 })
                 .then(() => {
                     return bigIp.save();
+                })
+                .catch((err) => {
+                    logger.info('initEncryption error', err && err.message ? err.message : err);
+                    return q.reject(err);
                 });
         }
         return q();
