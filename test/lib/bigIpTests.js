@@ -22,6 +22,7 @@ const childProcessMock = require('child_process');
 const realSetTimeout = setTimeout;
 const realUnlink = fs.unlink;
 const realExecFile = childProcessMock.execFile;
+const realAccess = fs.access;
 
 const decryptedPassword = 'foofoobarbar';
 
@@ -75,6 +76,7 @@ module.exports = {
         });
         setTimeout = realSetTimeout;
         fs.unlink = realUnlink;
+        fs.access = realAccess;
         childProcessMock.execFile = realExecFile;
 
         callback();
@@ -1452,6 +1454,10 @@ module.exports = {
         setUp: function(callback) {
             icontrolMock.when('create', UCS_TASK_PATH, {_taskId: '1234'});
             icontrolMock.when('list', UCS_TASK_PATH + '/1234/result', {_taskState: 'COMPLETED'});
+
+            fs.access = function(file, cb) {
+                cb();
+            };
 
             setTimeout = function(cb) {
                 cb();
