@@ -92,11 +92,11 @@ GATEWAY=`echo $GATEWAY_NET | awk -F. '{ printf "%d.%d.%d.%d", $1, $2, $3, $4+1 }
 echo GATEWAY: "$GATEWAY"
 
 # Create the network
-echo tmsh create net vlan external interfaces add { 1.0 }
-tmsh create net vlan external interfaces add { 1.0 }
+echo tmsh create net vlan internal interfaces add { 1.0 }
+tmsh create net vlan internal interfaces add { 1.0 }
 
-echo tmsh create net self "$MGMT_ADDR"/$GATEWAY_PREFIX vlan external allow-service default
-tmsh create net self "$MGMT_ADDR"/$GATEWAY_PREFIX vlan external allow-service default
+echo tmsh create net self "$MGMT_ADDR"/$GATEWAY_PREFIX vlan internal allow-service default
+tmsh create net self "$MGMT_ADDR"/$GATEWAY_PREFIX vlan internal allow-service default
 
 echo tmsh create sys folder /LOCAL_ONLY device-group none traffic-group traffic-group-local-only
 tmsh create sys folder /LOCAL_ONLY device-group none traffic-group traffic-group-local-only
@@ -109,9 +109,9 @@ tmsh save sys config
 
 # Added for bug#664393
 GW_SET=false
-while [ $GW_SET == false ] 
+while [ $GW_SET == false ]
 do
-    if ! route -n|grep '^0.0.0.0.*external$' &> /dev/null; then
+    if ! route -n|grep '^0.0.0.0.*internal$' &> /dev/null; then
         echo tmsh delete net route /LOCAL_ONLY/default
         tmsh delete net route /LOCAL_ONLY/default
         echo tmsh create net route /LOCAL_ONLY/default network default gw "$GATEWAY"
