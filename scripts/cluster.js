@@ -318,7 +318,12 @@ const commonOptions = require('./commonOptions');
                         // for its master credentials
                         if (options.cloud && options.joinGroup) {
                             logger.info('Getting master credentials.');
-                            return provider.getMasterCredentials(options.remoteHost, options.remotePort);
+                            return util.tryUntil(
+                                provider,
+                                util.DEFAULT_RETRY,
+                                provider.getMasterCredentials,
+                                [options.remoteHost, options.remotePort]
+                            );
                         }
                         return q();
                     })

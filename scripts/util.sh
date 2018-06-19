@@ -49,12 +49,16 @@ function wipe_temp_dir() {
     remove_temp_dir "$1"
 }
 
+function get_software_version() {
+    echo $(tmsh show sys version | grep Version | sed -n 2p | awk '{print $2}')
+}
+
 # usage: get_private_key_path folder_containing_private_key name_of_key
 function get_private_key_path() {
     PRIVATE_KEY_DIR=/config/filestore/files_d/${1}_d/certificate_key_d/
     FILES=$(ls -1t "$PRIVATE_KEY_DIR")
 
-    KEY_FILE_PREFIX=":${1}:${2}.key";
+    KEY_FILE_PREFIX=":${1}:${2}";
 
     for f in $FILES; do
         if [[ "$f" == ${KEY_FILE_PREFIX}* ]]; then
@@ -62,6 +66,16 @@ function get_private_key_path() {
             break
         fi
     done
+}
+
+function get_private_key_suffix() {
+    VERSION=$(get_software_version)
+    MAJOR_VERSION=$(echo $VERSION | cut -d'.' -f1)
+    if [[ $MAJOR_VERSION -ge 14 ]]; then
+        echo -n
+    else
+        echo -n .key
+    fi
 }
 
 # usage: format_args unit-of-measure:yearly,sku-keyword-1:1G,sku-keyword-2:BT
