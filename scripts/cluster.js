@@ -307,7 +307,11 @@ const commonOptions = require('./commonOptions');
                         // If we are using cloud storage and are the master, store our credentials
                         if (options.cloud && options.master) {
                             logger.info('Storing credentials.');
-                            return provider.putMasterCredentials();
+                            return util.tryUntil(
+                                provider,
+                                util.DEFAULT_RETRY,
+                                provider.putMasterCredentials
+                            );
                         }
                         return q();
                     })
