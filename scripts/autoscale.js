@@ -333,10 +333,10 @@ const commonOptions = require('./commonOptions');
                     })
                     .then(() => {
                         // Make sure we have our own hostname
-                        if (!this.instance.hostname) {
+                        // if (!this.instance.hostname) {
                             return bigIp.list('/tm/sys/global-settings');
-                        }
-                        return q();
+                        // }
+                        // return q();
                     })
                     .then((globalSettings) => {
                         if (globalSettings) {
@@ -994,10 +994,10 @@ const commonOptions = require('./commonOptions');
             })
             .then(() => {
                 // Make sure we have our own hostname
-                if (!this.instance.hostname) {
+                // if (!this.instance.hostname) {
                     return bigIp.list('/tm/sys/global-settings');
-                }
-                return q();
+                // }
+                // return q();
             })
             .then((globalSettings) => {
                 const hostname = globalSettings ? globalSettings.hostname : undefined;
