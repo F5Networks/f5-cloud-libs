@@ -720,6 +720,7 @@ module.exports = {
             setUp: function(callback) {
                 argv.push('--dns', 'gtm', '--dns-app-port', '1234', '--cluster-action', 'update');
 
+                icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
                 bigIpMock.cluster.getCmSyncStatus = function() {
                     return q({
                         disconnected: []
@@ -839,6 +840,7 @@ module.exports = {
         testIsMaster: {
             testDisconnected: function(test) {
                 var devicesRemoved = [];
+                icontrolMock.when('list', '/tm/sys/global-settings', { hostname: "host2" })
                 bigIpMock.cluster.getCmSyncStatus = function() {
                     return q({
                         disconnected: ["host1", "host2", "host3", "host4"]

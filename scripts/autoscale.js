@@ -332,17 +332,10 @@ const commonOptions = require('./commonOptions');
                         );
                     })
                     .then(() => {
-                        // Make sure we have our own hostname
-                        if (!this.instance.hostname) {
-                            return bigIp.list('/tm/sys/global-settings');
-                        }
-                        return q();
+                        return bigIp.list('/tm/sys/global-settings');
                     })
                     .then((globalSettings) => {
-                        if (globalSettings) {
-                            this.instance.hostname = globalSettings.hostname;
-                        }
-
+                        this.instance.hostname = globalSettings.hostname;
                         return asProvider.putInstance(this.instanceId, this.instance);
                     })
                     .then(() => {
@@ -568,13 +561,15 @@ const commonOptions = require('./commonOptions');
                                 const ip =
                                     (options.dnsIpType === 'public' ? instance.publicIp : instance.privateIp);
 
-                                instancesForDns.push(
-                                    {
-                                        ip,
-                                        name: instance.hostname,
-                                        port: options.dnsAppPort
-                                    }
-                                );
+                                if (instance.hostname) {
+                                    instancesForDns.push(
+                                        {
+                                            ip,
+                                            name: instance.hostname,
+                                            port: options.dnsAppPort
+                                        }
+                                    );
+                                }
                             });
                             return dnsProvider.update(instancesForDns);
                         }
@@ -993,16 +988,12 @@ const commonOptions = require('./commonOptions');
                 return q();
             })
             .then(() => {
-                // Make sure we have our own hostname
-                if (!this.instance.hostname) {
-                    return bigIp.list('/tm/sys/global-settings');
-                }
-                return q();
+                return bigIp.list('/tm/sys/global-settings');
             })
             .then((globalSettings) => {
                 const hostname = globalSettings ? globalSettings.hostname : undefined;
 
-                if (!this.instance.hostname && hostname) {
+                if (hostname) {
                     this.instance.hostname = hostname;
                 } else {
                     logger.debug('hostname not found in this.instance or globalSettings');
@@ -1182,7 +1173,9 @@ const commonOptions = require('./commonOptions');
 
                     // get a list of hostnames still in the instances list
                     Object.keys(this.instances).forEach((instanceId) => {
-                        hostnames.push(this.instances[instanceId].hostname);
+                        if (this.instances[instanceId].hostname) {
+                            hostnames.push(this.instances[instanceId].hostname);
+                        }
                     });
 
                     // make sure this is not still in the instances list
