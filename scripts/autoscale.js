@@ -159,6 +159,10 @@ const commonOptions = require('./commonOptions');
                         '    URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.'
                     )
                     .option(
+                        '    --big-iq-password-encrypted',
+                        '    Indicates that the BIG-IQ password is encrypted.'
+                    )
+                    .option(
                         '    --license-pool-name <pool_name>',
                         '    Name of BIG-IQ license pool.'
                     )

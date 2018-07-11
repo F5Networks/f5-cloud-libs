@@ -514,6 +514,7 @@ module.exports = {
                     '--big-iq-host', bigIqHost,
                     '--big-iq-user', bigIqUser,
                     '--big-iq-password', bigIqPassword,
+                    '--big-iq-password-encrypted',
                     '--license-pool-name', licensePool,
                     '--big-ip-mgmt-address', bigIpMgmtAddress,
                     '--big-ip-mgmt-port', bigIpMgmtPort,
@@ -534,6 +535,7 @@ module.exports = {
                         functionsCalled.bigIp.onboard.licenseViaBigIq[5],
                         {
                             passwordIsUri: false,
+                            passwordEncrypted: true,
                             bigIpMgmtAddress: bigIpMgmtAddress,
                             bigIpMgmtPort: bigIpMgmtPort,
                             skuKeyword1: skuKeyword1,

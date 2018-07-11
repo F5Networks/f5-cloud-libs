@@ -20,17 +20,22 @@ const q = require('q');
 const host = 'myHost';
 const user = 'myUser';
 const password = 'myPassword';
+const decryptedPassword = 'myPasswordDecrypted';
 
 var bigIqVersion = '5.2';
 var BigIq;
 var bigIq;
 var utilMock;
+var localKeyUtilMock;
+var cryptoUtilMock;
 var icontrolMock;
 var revokeCalled;
 
 module.exports = {
     setUp: function(callback) {
         utilMock = require('../../../f5-cloud-libs').util;
+        localKeyUtilMock = require('../../../f5-cloud-libs').localKeyUtil;
+        cryptoUtilMock = require('../../../f5-cloud-libs').cryptoUtil;
         icontrolMock = require('../testUtil/icontrolMock');
 
         icontrolMock.reset();
@@ -166,6 +171,42 @@ module.exports = {
                     var loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
 
                     test.strictEqual(loginRequest.password, password);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testPasswordEncrypted: function(test) {
+            const passwordFile = '/tmp/passwordFromUrlTest';
+            const passwordUri = 'file://' + passwordFile;
+
+            utilMock.getDataFromUrl = function() {
+                return q(password);
+            };
+            localKeyUtilMock.getPrivateKeyFilePath = function() {
+                return q('/tmp/foo');
+            };
+            localKeyUtilMock.getPrivateKeyMetadata = function() {
+                return q(
+                    {
+                        passphrase: 'abc123'
+                    }
+                );
+            };
+            cryptoUtilMock.decrypt = function() {
+                return q(decryptedPassword);
+            };
+
+            test.expect(1);
+            bigIq.init(host, user, passwordUri, {passwordIsUri: true, passwordEncrypted: true})
+                .then(function() {
+                    var loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
+
+                    test.strictEqual(loginRequest.password, decryptedPassword);
                 })
                 .catch(function(err) {
                     test.ok(false, err);

@@ -35,6 +35,7 @@ Does initial configuration and provisioning of a BIG-IP.
           --big-iq-user <user>                                                                                                                                                                                                                     BIG-IQ admin user name
           --big-iq-password <password>                                                                                                                                                                                                             BIG-IQ admin user password.
           --big-iq-password-uri <password_uri>                                                                                                                                                                                                     URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
+          --big-iq-password-encrypted                                                                                                                                                                                                              Indicates that the BIG-IQ password is encrypted.
           --license-pool-name <pool_name>                                                                                                                                                                                                          Name of BIG-IQ license pool.
           --sku-keyword-1 <sku_keyword_1>                                                                                                                                                                                                          skuKeyword1 parameter for CLPv2 licensing. Default none.
           --sku-keyword-2 <sku_keyword_2>                                                                                                                                                                                                          skuKeyword2 parameter for CLPv2 licensing. Default none.
@@ -140,6 +141,7 @@ Runs autoscale code to elect master and cluster
           --big-iq-user <user>                               BIG-IQ admin user name
           --big-iq-password <password>                       BIG-IQ admin user password.
           --big-iq-password-uri <password_uri>               URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
+          --big-iq-password-encrypted                        Indicates that the BIG-IQ password is encrypted.
           --license-pool-name <pool_name>                    Name of BIG-IQ license pool.
           --big-ip-mgmt-address <big_ip_address>             IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.
           --big-ip-mgmt-port <big_ip_port>                   Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port

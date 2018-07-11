@@ -146,6 +146,22 @@ module.exports = {
         }
     },
 
+    testDecryptPassword: {
+        testBasic: function(test) {
+
+            localCryptoUtil.decryptPassword('secret')
+                .then(function(decryptedSecret) {
+                    test.deepEqual(decryptedSecret, decryptedData);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
     testDecryptDataFromRestStorage: {
         testBasic: function(test) {
             const data = {
