@@ -48,7 +48,7 @@ module.exports = {
         installCmd = undefined;
 
         childProcessMock.exec = function(command, cb) {
-            if (command.startsWith('/usr/bin/tmsh install')) {
+            if (command.startsWith('/usr/bin/tmsh -a install')) {
                 installCmd = command;
             }
 
@@ -94,16 +94,16 @@ module.exports = {
     testGenerateAndInstallKeyPair: {
         setUp: function(callback) {
             childProcessMock.exec = function(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh show sys version')) {
+                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
                 }
-                else if (command.startsWith('/usr/bin/tmsh list sys crypto key')) {
+                else if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
                     cb(null, false);
                 }
-                else if (command.startsWith('/usr/bin/tmsh list sys folder')) {
+                else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(null, {});
                 }
-                else if (command.startsWith('/usr/bin/tmsh install')) {
+                else if (command.startsWith('/usr/bin/tmsh -a install')) {
                     installCmd = command;
                     cb(null, null);
                 }
@@ -132,10 +132,10 @@ module.exports = {
 
         testPrivateKeyExists: function(test) {
                 childProcessMock.exec = function(command, cb) {
-                    if (command.startsWith('/usr/bin/tmsh show sys version')) {
+                    if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                         cb(null, ' Version 13.0.0 ');
                     }
-                    else if (command.startsWith('/usr/bin/tmsh list sys crypto key')) {
+                    else if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
                         cb(null, 'ok');
                     }
                     else if (command.startsWith('ls -1t')) {
@@ -157,7 +157,7 @@ module.exports = {
 
         testPrivateKeyExistsForce: function(test) {
             childProcessMock.exec = function(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh show sys version')) {
+                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
                 }
                 else if (command.startsWith('ls -1t')) {
@@ -242,13 +242,13 @@ module.exports = {
 
         testBigIpFolderCreated: function(test) {
             childProcessMock.exec = function(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh show sys version')) {
+                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
                 }
-                else if (command.startsWith('/usr/bin/tmsh list sys folder')) {
+                else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(new Error());
                 }
-                else if (command.startsWith('/usr/bin/tmsh create sys folder')) {
+                else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
                     bigIpFolderCreated = true;
                     cb(null, null);
                 }
@@ -272,13 +272,13 @@ module.exports = {
 
         testBigIpFolderExists: function(test) {
             childProcessMock.exec = function(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh show sys version')) {
+                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
                 }
-                else if (command.startsWith('/usr/bin/tmsh list sys folder')) {
+                else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(null, null);
                 }
-                else if (command.startsWith('/usr/bin/tmsh create sys folder')) {
+                else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
                     bigIpFolderCreated = true;
                     cb(null, null);
                 }
@@ -342,10 +342,10 @@ module.exports = {
         testInstallError: function(test) {
             const message = 'install failed';
             childProcessMock.exec = function(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh show sys version')) {
+                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
                 }
-                else if (command.startsWith('/usr/bin/tmsh install')) {
+                else if (command.startsWith('/usr/bin/tmsh -a install')) {
                     cb(new Error(message));
                 }
                 else {
@@ -374,7 +374,7 @@ module.exports = {
             const suffix = "_1234_1";
 
             childProcessMock.exec = function(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh show sys version')) {
+                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
                 }
                 else {
@@ -402,7 +402,7 @@ module.exports = {
             const suffix = "_1234_1";
 
             childProcessMock.exec = function(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh show sys version')) {
+                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 14.0.0 ');
                 }
                 else {
@@ -431,7 +431,7 @@ module.exports = {
         const passphrase = 'foobar';
 
         childProcessMock.exec = function(command, cb) {
-            if (command.startsWith('/usr/bin/tmsh show sys version')) {
+            if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                 cb(null, ' Version 13.0.0 ');
             }
             else {

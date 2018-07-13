@@ -55,7 +55,7 @@ const KEYS = require('../lib/sharedConstants').KEYS;
 
                 // Can't use getCommonOptions here because we don't take host, user, password options
                 options
-                    .version('4.2.0')
+                    .version('4.3.0')
                     .option(
                         '--background',
                         'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.'
@@ -86,7 +86,32 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                     )
                     .option(
                         '--out-file <file_name>',
-                        'Full path to file in which to write encrypted data'
+                        `Full path to file in which to write encrypted data. If symmetric option is used, file format will be:
+                                                    {
+                                                        encryptedKey: <encryptedKey>,
+                                                        iv: <initializationVector>,
+                                                        privateKey: {
+                                                            name: <private_key_name>,
+                                                            folder: <private_key_folder>
+                                                        },
+                                                        encryptedData: <base64_encoded_encryptedData>
+                                                    }`
+                    )
+                    .option(
+                        '--private-key-name <name_for_private_key>',
+                        'Name of the private key. Will be created if missing. Default is sharedConstants.KEYS.LOCAL_PRIVATE_KEY. Matching public key is written to sharedConstants.KEYS.LOCAL_PUBLIC_KEY_DIR. If this option is specified, public key is also installed as an ifile.'
+                    )
+                    .option(
+                        '--private-key-folder <name_for_private_key_folder>',
+                        'Name of the BIG-IP folder in which to find/create the private key. If private-key-name is specified, default is Common. Otherwise, this is ignored.'
+                    )
+                    .option(
+                        '--symmetric',
+                        'Use symmetric encryption and place the encrypted symmetric key in <out-file>.key.enc'
+                    )
+                    .option(
+                        '--no-console',
+                        'Do not log to console. Default false (log to console).'
                     )
                     .parse(argv);
                 /* eslint-enable max-len */
@@ -134,6 +159,22 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                     waitPromise = q();
                 }
 
+                const generateOptions = {};
+                let publicKeyPath;
+                let privateKeyFolder;
+                let privateKeyName;
+
+                if (options.privateKeyName) {
+                    privateKeyName = options.privateKeyName;
+                    privateKeyFolder = options.privateKeyFolder || 'Common';
+                    publicKeyPath = `${KEYS.LOCAL_PUBLIC_KEY_DIR}${privateKeyName}.pub`;
+                    generateOptions.installPublic = true;
+                } else {
+                    privateKeyName = KEYS.LOCAL_PRIVATE_KEY;
+                    privateKeyFolder = KEYS.LOCAL_PRIVATE_KEY_FOLDER;
+                    publicKeyPath = KEYS.LOCAL_PUBLIC_KEY_PATH;
+                }
+
                 waitPromise
                     .then(() => {
                         logger.info('Encrypt data to file starting.');
@@ -142,12 +183,19 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                     .then(() => {
                         return localKeyUtil.generateAndInstallKeyPair(
                             KEYS.LOCAL_PUBLIC_KEY_DIR,
-                            KEYS.LOCAL_PUBLIC_KEY_PATH,
-                            KEYS.LOCAL_PRIVATE_KEY_FOLDER,
-                            KEYS.LOCAL_PRIVATE_KEY
+                            publicKeyPath,
+                            privateKeyFolder,
+                            privateKeyName,
+                            generateOptions
                         );
                     })
-                    .then(() => {
+                    .then((updatedPublicKeyPath) => {
+                        // If we installed our own public key (ie, we're not using the default
+                        // locations, update our public key path)
+                        if (updatedPublicKeyPath) {
+                            publicKeyPath = updatedPublicKeyPath;
+                        }
+
                         if (options.data) {
                             return q(options.data);
                         }
@@ -155,11 +203,27 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                     })
                     .then((data) => {
                         logger.info('Encrypting data.');
-                        return cryptoUtil.encrypt(KEYS.LOCAL_PUBLIC_KEY_PATH, data.toString());
+                        if (options.symmetric) {
+                            logger.info('Symmetric encryption');
+                            return cryptoUtil.symmetricEncrypt(publicKeyPath, data.toString());
+                        }
+                        return cryptoUtil.encrypt(publicKeyPath, data.toString());
                     })
                     .then((encryptedData) => {
                         logger.info('Writing encrypted data to', options.outFile);
-                        return util.writeDataToFile(encryptedData, options.outFile);
+                        const updatedData = encryptedData;
+                        let dataToWrite;
+                        if (options.symmetric) {
+                            updatedData.privateKey = {
+                                name: privateKeyName,
+                                folder: privateKeyFolder
+                            };
+                            dataToWrite = JSON.stringify(updatedData);
+                        } else {
+                            dataToWrite = updatedData;
+                        }
+
+                        return util.writeDataToFile(dataToWrite, options.outFile);
                     })
                     .catch((err) => {
                         logger.error('Encryption failed:', err.message);

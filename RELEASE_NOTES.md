@@ -1,5 +1,11 @@
 # Release notes
 
+## Version 4.3.0
+* Support for symmetric encryption of credentials (to handle large credentials)
+* scripts/getNodes.js script
+    * Replaces f5-cloud-workers cloudNodesWorker
+    * Support for retrieving pool members in a cloud different from where BIG-IP is running
+
 ## Version 4.2.0
 * Support for setting management route via network.js
 * Support for reading from rest storage

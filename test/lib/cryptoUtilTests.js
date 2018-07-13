@@ -23,6 +23,7 @@ var fs;
 var childProcess;
 var crypto;
 var cryptoUtil;
+var symmetricInfo;
 
 var fsReadFile;
 
@@ -128,6 +129,37 @@ module.exports = {
                 })
                 .then(function(encryptedData) {
                     return cryptoUtil.decrypt(privateKeyFile, encryptedData);
+                })
+                .then(function(decryptedData) {
+                    test.deepEqual(JSON.parse(decryptedData), testData);
+                })
+                .catch(function(error) {
+                    test.ok(false, error);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testRoundTripSymmetric: {
+        testPublicKeyInFile: function(test) {
+            const options = {
+                publicKeyOutFile: publicKeyFile
+            };
+
+            test.expect(1);
+            cryptoUtil.generateKeyPair(privateKeyFile, options)
+                .then(function() {
+                    return cryptoUtil.symmetricEncrypt(publicKeyFile, JSON.stringify(testData));
+                })
+                .then(function(encryptedData) {
+                    return cryptoUtil.symmetricDecrypt(
+                        privateKeyFile,
+                        encryptedData.encryptedKey,
+                        encryptedData.iv,
+                        encryptedData.encryptedData
+                    );
                 })
                 .then(function(decryptedData) {
                     test.deepEqual(JSON.parse(decryptedData), testData);

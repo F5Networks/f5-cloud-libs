@@ -123,6 +123,10 @@ def replace(source_file_path, pattern, substring):
     os.remove(source_file_path)
     shutil.move(target_file_path, source_file_path)
 
+def removeFiles(dir, pattern):
+    for f in os.listdir(dir):
+        if re.search(pattern, f):
+            os.remove(os.path.join(dir, f))
 
 def main():
 
@@ -151,10 +155,10 @@ def main():
 
     if not original_ucs or not cloud_provider:
         print "Usage: "
-        print ("    ./%s --cloud_provider <aws | azure> --original-ucs <ucs_filename>" % (sys.argv[0]))
-        print ("    ./%s --cloud_provider <aws | azure> --original-ucs <ucs_filename> --updated-ucs <ucs_filename>" % (sys.argv[0]))
+        print ("    ./%s --cloud-provider <aws | azure | gce> --original-ucs <ucs_filename>" % (sys.argv[0]))
+        print ("    ./%s --cloud-provider <aws | azure | gce> --original-ucs <ucs_filename> --updated-ucs <ucs_filename>" % (sys.argv[0]))
         print "ex. "
-        print ("    ./%s --cloud_provider <aws | azure> --original-ucs original.ucs --updated-ucs updated.ucs" % (sys.argv[0]))
+        print ("    ./%s --cloud-provider aws --original-ucs original.ucs --updated-ucs updated.ucs" % (sys.argv[0]))
         sys.exit()
 
     # Open files
@@ -164,13 +168,10 @@ def main():
     tar_original.extractall(path=extract_ucs_dir)
 
     bigip_base_file = "/config/bigip_base.conf"
-    if cloud_provider == 'azure':
-        gateway_file = "/config/bigip.conf"
-    elif cloud_provider == 'aws':
+    if cloud_provider == 'aws':
         gateway_file = "/config/partitions/LOCAL_ONLY/bigip.conf"
     else:
-        print "Unsupported cloud provider " + cloud_provider
-        sys.exit()
+        gateway_file = "/config/bigip.conf"
 
     # Grab instance's hostname from UCS
     dest_hostname = get_hostname(bigip_base_file)
@@ -239,7 +240,7 @@ def main():
     shutil.rmtree(extract_ucs_dir + '/var/tmp/filestore_temp/files_d/CloudLibsLocal_d', ignore_errors=True)
 
     # Remove the f5-cloud-libs local public keys as they won't match any private keys
-    shutil.rmtree(extract_ucs_dir + '/config/cloud/keys', ignore_errors=True)
+    removeFiles(extract_ucs_dir + '/config/cloud/keys', 'cloudLocal*')
 
     # remove the dynad private key
     os.system("sed -i '/sys dynad key {/ { N ; /\\n[[:space:]]\+key[[:space:]]*\$M\$[^\\n]*/ { N;   /\\n[[:space:]]*}/ { d } } }' " + extract_ucs_dir + "/config/bigip_base.conf")

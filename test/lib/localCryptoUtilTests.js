@@ -20,8 +20,8 @@ const q = require('q');
 var localKeyUtilMock;
 var cryptoUtilMock;
 var utilMock;
-var httpUtilMock;
 var localCryptoUtil;
+var childProcessMock;
 
 var dataSent;
 var optionsSent;
@@ -31,7 +31,6 @@ var decryptedData;
 module.exports = {
     setUp: function(callback) {
         utilMock = require('../../lib/util');
-        httpUtilMock = require('../../lib/httpUtil');
         localKeyUtilMock = require('../../lib/localKeyUtil');
         cryptoUtilMock = require('../../lib/cryptoUtil');
 
@@ -66,11 +65,11 @@ module.exports = {
         callback();
     },
 
-    testDecryptDataFromFile: {
+    testDecryptData: {
         testNoFile: function(test) {
             test.expect(1);
             test.throws(function() {
-                localCryptoUtil.decryptDataFromFile(null, 'foo', 'bar');
+                localCryptoUtil.decryptData(null, 'foo', 'bar');
             });
             test.done();
         },
@@ -78,7 +77,7 @@ module.exports = {
         testNoPrivateKeyFolder: function(test) {
             test.expect(1);
             test.throws(function() {
-                localCryptoUtil.decryptDataFromFile('/foo/bar', null, 'bar');
+                localCryptoUtil.decryptData('foo', null, 'bar');
             });
             test.done();
         },
@@ -86,7 +85,7 @@ module.exports = {
         testNoPrivateKeyName: function(test) {
             test.expect(1);
             test.throws(function() {
-                localCryptoUtil.decryptDataFromFile('/foo/bar', 'bar');
+                localCryptoUtil.decryptData('foo', 'bar');
             });
             test.done();
         },
@@ -96,7 +95,7 @@ module.exports = {
             decryptedData = "hello, world";
 
             test.expect(2);
-            localCryptoUtil.decryptDataFromFile('/foo/bar', 'foo', 'bar')
+            localCryptoUtil.decryptData(dataToDecrypt, 'foo', 'bar')
                 .then(function(response) {
                     test.strictEqual(dataSent, dataToDecrypt);
                     test.strictEqual(response, decryptedData);
@@ -111,7 +110,7 @@ module.exports = {
 
         testNoPassphrase: function(test) {
             test.expect(2);
-            localCryptoUtil.decryptDataFromFile('/foo/bar/', 'foo', 'bar')
+            localCryptoUtil.decryptData('foo', 'foo', 'bar')
                 .then(function() {
                     test.strictEqual(optionsSent.passphrase, undefined);
                     test.strictEqual(optionsSent.passphraseEncrypted, false);
@@ -132,7 +131,7 @@ module.exports = {
             };
 
             test.expect(2);
-            localCryptoUtil.decryptDataFromFile('/foo/bar/', 'foo', 'bar')
+            localCryptoUtil.decryptData('foo', 'foo', 'bar')
                 .then(function() {
                     test.strictEqual(optionsSent.passphrase, passphrase);
                     test.strictEqual(optionsSent.passphraseEncrypted, true);
@@ -162,20 +161,50 @@ module.exports = {
         }
     },
 
-    testDecryptDataFromRestStorage: {
+    testDecryptDataFromFile: {
         testBasic: function(test) {
-            const data = {
-                foo: 'bar'
-            };
+            dataToDecrypt = "abcd";
+            decryptedData = "hello, world";
 
-            httpUtilMock.post = function() {
-                return q({data: data});
+            test.expect(2);
+            localCryptoUtil.decryptDataFromFile('/foo/bar', 'foo', 'bar')
+                .then(function(response) {
+                    test.strictEqual(dataSent, dataToDecrypt);
+                    test.strictEqual(response, decryptedData);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+
+        },
+
+        testError: function(test) {
+            test.expect(1);
+            test.throws(function() {
+                localCryptoUtil.decryptDataFromFile(null, 'foo', 'bar');
+            });
+            test.done();
+        }
+    },
+
+    testDecryptConfValue: {
+        setUp: function(callback) {
+            childProcessMock = require('child_process');
+            callback();
+        },
+
+        testBasic: function(test) {
+            childProcessMock.execFile = function(file, params, cb) {
+                cb(null, decryptedData, null);
             };
 
             test.expect(1);
-            localCryptoUtil.decryptDataFromRestStorage('id', 'salt')
-                .then(function(decryptedData) {
-                    test.deepEqual(decryptedData, data);
+            localCryptoUtil.decryptConfValue('foo')
+                .then(function(response) {
+                    test.strictEqual(response, decryptedData);
                 })
                 .catch(function(err) {
                     test.ok(false, err);
@@ -186,18 +215,17 @@ module.exports = {
         },
 
         testError: function(test) {
-            const error = new Error('foobar');
-            httpUtilMock.post = function() {
-                return q.reject(error);
+            childProcessMock.execFile = function(file, params, cb) {
+                cb(new Error('foo'), null, 'bar');
             };
 
             test.expect(1);
-            localCryptoUtil.decryptDataFromRestStorage('id', 'salt')
-                .then(function(decryptedData) {
-                    test.ok(false, 'should have thrown an error');
+            localCryptoUtil.decryptConfValue('foo')
+                .then(function(response) {
+                    test.ok(false, 'decryptConfValue should have thrown')
                 })
                 .catch(function(err) {
-                    test.strictEqual(err.message, error.message);
+                    test.notStrictEqual(err.message.indexOf('bar'), -1);
                 })
                 .finally(function() {
                     test.done();
