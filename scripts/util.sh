@@ -20,10 +20,14 @@
 STATUS_CHECK_RETRIES=60
 STATUS_CHECK_INTERVAL=10
 
+# absolute path to utilities
 MKDIR=/bin/mkdir
 MOUNT=/bin/mount
 RMDIR=/bin/rmdir
 UMOUNT=/bin/umount
+NODE=/usr/bin/f5-rest-node
+
+SCRIPTS_DIR='.'
 
 # creates a directory for in-memory files
 # usage: create_temp_dir name size
@@ -76,6 +80,33 @@ function get_private_key_suffix() {
     else
         echo -n .key
     fi
+}
+
+# usage: encrypt_secret secret out_file scramble return
+# returns: optionally returns the secret that was encrypted
+function encrypt_secret() {
+    # input
+	secret="$1"
+	out_file="$2"
+	scramble="$3"
+	return="$4"
+
+	tmp_file='/mnt/cloudTmp/.tmp'
+	tmp_dir=$(dirname $tmp_file)
+	create_temp_dir $tmp_dir
+
+	if [ -n "$scramble" ]; then
+		secret=$(echo $secret|sha512sum|cut -d ' ' -f 1)
+	fi
+	echo -n $secret > $tmp_file
+    # encrypt to file
+	$NODE $SCRIPTS_DIR/encryptDataToFile.js --data-file $tmp_file --out-file $out_file
+	wipe_temp_dir $tmp_dir
+
+	# return secret (certain tasks may require this)
+	if [ -n "$return" ]; then
+		echo -n $secret
+	fi
 }
 
 # usage: format_args unit-of-measure:yearly,sku-keyword-1:1G,sku-keyword-2:BT
@@ -170,3 +201,4 @@ function wait_for_management_ip() {
         sleep $RETRY_INTERVAL
     done
 }
+
