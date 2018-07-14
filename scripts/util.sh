@@ -87,7 +87,7 @@ function get_private_key_suffix() {
 # usage: encrypt_secret secret out_file scramble return
 # returns: optionally returns the secret that was encrypted
 function encrypt_secret() {
-    # input
+    	# input
 	secret="$1"
 	out_file="$2"
 	scramble="$3"
@@ -101,8 +101,8 @@ function encrypt_secret() {
 		secret=$(echo $secret|sha512sum|cut -d ' ' -f 1)
 	fi
 	echo -n $secret > $tmp_file
-    # encrypt to file
-	$NODE $SCRIPTS_DIR/encryptDataToFile.js --data-file $tmp_file --out-file $out_file
+        # encrypt to file
+	$NODE $SCRIPTS_DIR/encryptDataToFile.js --data-file $tmp_file --out-file $out_file --no-console
 	wipe_temp_dir $tmp_dir
 
 	# return secret (certain tasks may require this)
