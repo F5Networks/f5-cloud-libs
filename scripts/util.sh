@@ -27,7 +27,9 @@ RMDIR=/bin/rmdir
 UMOUNT=/bin/umount
 NODE=/usr/bin/f5-rest-node
 
-SCRIPTS_DIR='.'
+# need to get absolute location - account for
+# being sourced from relative location
+SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # creates a directory for in-memory files
 # usage: create_temp_dir name size
