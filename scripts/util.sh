@@ -27,8 +27,7 @@ RMDIR=/bin/rmdir
 UMOUNT=/bin/umount
 NODE=/usr/bin/f5-rest-node
 
-# need to get absolute location - account for
-# being sourced from relative location
+# need to get absolute location when being sourced
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # creates a directory for in-memory files
@@ -91,23 +90,23 @@ function encrypt_secret() {
 	secret="$1"
 	out_file="$2"
 	scramble="$3"
-	return="$4"
+	ret="$4"
 
 	tmp_file='/mnt/cloudTmp/.tmp'
 	tmp_dir=$(dirname $tmp_file)
 	create_temp_dir $tmp_dir
 
 	if [ -n "$scramble" ]; then
-		secret=$(echo $secret|sha512sum|cut -d ' ' -f 1)
+	    secret=$(echo $secret|sha512sum|cut -d ' ' -f 1)
 	fi
 	echo -n $secret > $tmp_file
-        # encrypt to file
+        # call encrypt data to file
 	$NODE $SCRIPTS_DIR/encryptDataToFile.js --data-file $tmp_file --out-file $out_file --no-console
 	wipe_temp_dir $tmp_dir
 
 	# return secret (certain tasks may require this)
-	if [ -n "$return" ]; then
-		echo -n $secret
+	if [ -n "$ret" ]; then
+	    echo -n $secret
 	fi
 }
 
