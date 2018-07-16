@@ -26,6 +26,7 @@ MOUNT=/bin/mount
 RMDIR=/bin/rmdir
 UMOUNT=/bin/umount
 NODE=/usr/bin/f5-rest-node
+SHA512SUM=/usr/bin/sha512sum
 
 # need to get absolute location when being sourced
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -97,7 +98,7 @@ function encrypt_secret() {
 	create_temp_dir $tmp_dir
 
 	if [ -n "$scramble" ]; then
-	    secret=$(echo $secret|sha512sum|cut -d ' ' -f 1)
+	    secret=$(echo $secret | $SHA512SUM | cut -d ' ' -f 1)
 	fi
 	echo -n $secret > $tmp_file
         # call encrypt data to file
