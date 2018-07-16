@@ -172,6 +172,10 @@ const commonOptions = require('./commonOptions');
                         '    Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port'
                     )
                     .option(
+                        '    --no-unreachable',
+                        '    Do not use the unreachable API even if it is supported by BIG-IQ.'
+                    )
+                    .option(
                         '    --revoke',
                         '    Request BIG-IQ to revoke this units license rather than granting one.'
                     )
@@ -498,7 +502,8 @@ const commonOptions = require('./commonOptions');
                                         passwordIsUri: typeof options.bigIqPasswordUri !== 'undefined',
                                         passwordEncrypted: options.bigIqPasswordEncrypted,
                                         bigIpMgmtAddress: options.bigIpMgmtAddress,
-                                        bigIpMgmtPort: options.bigIpMgmtPort
+                                        bigIpMgmtPort: options.bigIpMgmtPort,
+                                        noUnreachable: !options.unreachable
                                     }
                                 );
                             }
@@ -517,7 +522,8 @@ const commonOptions = require('./commonOptions');
                                     bigIpMgmtPort: options.bigIpMgmtPort,
                                     skuKeyword1: options.skuKeyword1,
                                     skuKeyword2: options.skuKeyword2,
-                                    unitOfMeasure: options.unitOfMeasure
+                                    unitOfMeasure: options.unitOfMeasure,
+                                    noUnreachable: !options.unreachable
                                 }
                             );
                         }

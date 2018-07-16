@@ -540,7 +540,60 @@ module.exports = {
                             bigIpMgmtPort: bigIpMgmtPort,
                             skuKeyword1: skuKeyword1,
                             skuKeyword2: skuKeyword2,
-                            unitOfMeasure: unitOfMeasure
+                            unitOfMeasure: unitOfMeasure,
+                            noUnreachable: false
+                        }
+                    );
+                    test.done();
+                });
+            },
+
+            testNoUnreachable: function(test) {
+                const bigIqHost = 'myBigIq';
+                const bigIqUser = 'myBigIqUser';
+                const bigIqPassword = 'myBigIqPassword';
+                const licensePool = 'myLicensePool';
+                const bigIpMgmtAddress = 'myMgmtAddress';
+                const bigIpMgmtPort = '1234';
+                const skuKeyword1 = 'mySku1';
+                const skuKeyword2 = 'mySku2';
+                const unitOfMeasure = 'myUnitOfMeasure';
+                const cloud = 'myCloud';
+
+                argv.push(
+                    '--license-pool',
+                    '--big-iq-host', bigIqHost,
+                    '--big-iq-user', bigIqUser,
+                    '--big-iq-password', bigIqPassword,
+                    '--big-iq-password-encrypted',
+                    '--license-pool-name', licensePool,
+                    '--big-ip-mgmt-address', bigIpMgmtAddress,
+                    '--big-ip-mgmt-port', bigIpMgmtPort,
+                    '--sku-keyword-1', skuKeyword1,
+                    '--sku-keyword-2', skuKeyword2,
+                    '--unit-of-measure', unitOfMeasure,
+                    '--cloud', cloud,
+                    '--no-unreachable'
+                );
+
+                test.expect(6);
+                onboard.run(argv, testOptions, function() {
+                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[0], bigIqHost);
+                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[1], bigIqUser);
+                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], bigIqPassword);
+                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[3], licensePool);
+                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[4], cloud);
+                    test.deepEqual(
+                        functionsCalled.bigIp.onboard.licenseViaBigIq[5],
+                        {
+                            passwordIsUri: false,
+                            passwordEncrypted: true,
+                            bigIpMgmtAddress: bigIpMgmtAddress,
+                            bigIpMgmtPort: bigIpMgmtPort,
+                            skuKeyword1: skuKeyword1,
+                            skuKeyword2: skuKeyword2,
+                            unitOfMeasure: unitOfMeasure,
+                            noUnreachable: true
                         }
                     );
                     test.done();
