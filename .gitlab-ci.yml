@@ -60,19 +60,18 @@ package:
         - /^release-.*/
         - /^hf-.*/
     script:
-        - npm install --registry ${NPM_REGISTRY}
         - npm run package -- --no-deps
     artifacts:
         name: f5-cloud-libs-$CI_BUILD_REF
         paths:
             - dist/
-            - doc/
 
 doc:
     tags:
         - docker-executor
     stage: publish
     script:
+        - npm install --registry ${NPM_REGISTRY}
         - npm run doc
     artifacts:
         paths:

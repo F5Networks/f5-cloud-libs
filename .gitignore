@@ -1,6 +1,5 @@
 .vscode
 npm-debug.log
 coverage/
-doc/
 node_modules/
 out/
