@@ -70,6 +70,8 @@ pages:
     tags:
         - docker-executor
     stage: publish
+    only:
+        - develop
     script:
         - npm install --registry ${NPM_REGISTRY}
         - npm run doc
