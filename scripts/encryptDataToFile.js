@@ -107,7 +107,7 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                     )
                     .option(
                         '--symmetric',
-                        'Use symmetric encryption and place the encrypted symmetric key in <out-file>.key.enc'
+                        'Use symmetric encryption and place the encrypted symmetric key in <out-file>'
                     )
                     .option(
                         '--no-console',

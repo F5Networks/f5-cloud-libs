@@ -21,7 +21,6 @@
 const assert = require('assert');
 const options = require('commander');
 const localCryptoUtil = require('../lib/localCryptoUtil');
-const KEYS = require('../lib/sharedConstants').KEYS;
 
 (function run() {
     const runner = {
@@ -41,15 +40,23 @@ const KEYS = require('../lib/sharedConstants').KEYS;
             try {
                 options
                     .version('4.3.0')
-                    .option('--data-file <data_file>', 'Full path to file with data (use this or --data)')
+                    .option(
+                        '--data-file <data_file>',
+                        'Full path to file with data'
+                    )
+                    .option(
+                        '--symmetric',
+                        'Symmetric encryption used, decrypt accordingly'
+                    )
                     .parse(argv);
 
                 assert.ok(options.dataFile, '--data-file must be specified');
 
                 localCryptoUtil.decryptDataFromFile(
                     options.dataFile,
-                    KEYS.LOCAL_PRIVATE_KEY_FOLDER,
-                    KEYS.LOCAL_PRIVATE_KEY
+                    {
+                        symmetric: options.symmetric
+                    }
                 )
                     .then((data) => {
                         console.log(data);

@@ -7,7 +7,7 @@ npm-debug.log
 ./build
 ./coverage
 ./dist
-./doc
+./public
 ./gitHooks
 ./test
 ./doc.sh

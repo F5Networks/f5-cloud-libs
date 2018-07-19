@@ -84,31 +84,40 @@ function get_private_key_suffix() {
     fi
 }
 
-# usage: encrypt_secret secret out_file scramble return
+# usage: encrypt_secret secret out_file scramble symmetric return
 # returns: optionally returns the secret that was encrypted
 function encrypt_secret() {
-    	# input
-	secret="$1"
-	out_file="$2"
-	scramble="$3"
-	ret="$4"
+    # input
+    secret="$1"
+    out_file="$2"
+    scramble="$3"
+    symmetric="$4"
+    ret="$5"
 
-	tmp_file='/mnt/cloudTmp/.tmp'
-	tmp_dir=$(dirname $tmp_file)
-	create_temp_dir $tmp_dir
+    tmp_file='/mnt/cloudTmp/.tmp'
+    tmp_dir=$(dirname $tmp_file)
+    no_console=""
 
-	if [ -n "$scramble" ]; then
-	    secret=$(echo $secret | $SHA512SUM | cut -d ' ' -f 1)
-	fi
-	echo -n $secret > $tmp_file
-        # call encrypt data to file
-	$NODE $SCRIPTS_DIR/encryptDataToFile.js --data-file $tmp_file --out-file $out_file --no-console
-	wipe_temp_dir $tmp_dir
+    create_temp_dir $tmp_dir
+    if [ -n "$scramble" ]; then
+        secret=$(echo $secret | $SHA512SUM | cut -d ' ' -f 1)
+    fi
+    echo -n $secret > $tmp_file
 
-	# return secret (certain tasks may require this)
-	if [ -n "$ret" ]; then
-	    echo -n $secret
-	fi
+    # call encrypt data to file
+    if [ -n "$symmetric" ]; then
+        symmetric="--symmetric"
+    fi
+    if [ -n "$ret" ]; then
+        no_console="--no-console"
+    fi
+    $NODE $SCRIPTS_DIR/encryptDataToFile.js --data-file $tmp_file --out-file $out_file $symmetric $no_console
+    wipe_temp_dir $tmp_dir
+
+    # return secret (certain tasks may require this)
+    if [ -n "$ret" ]; then
+        echo -n $secret
+    fi
 }
 
 # usage: format_args unit-of-measure:yearly,sku-keyword-1:1G,sku-keyword-2:BT

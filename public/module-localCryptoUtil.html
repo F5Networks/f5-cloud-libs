@@ -657,7 +657,7 @@ the filesystem.</p>
     
 
     
-    <h4 class="name" id=".decryptDataFromFile"><span class="type-signature">(static) </span>decryptDataFromFile<span class="signature">(dataFile, privateKeyFolder, privateKeyName)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id=".decryptDataFromFile"><span class="type-signature">(static) </span>decryptDataFromFile<span class="signature">(dataFile, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -689,6 +689,8 @@ the filesystem.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -714,6 +716,14 @@ the filesystem.</p>
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -724,46 +734,94 @@ the filesystem.</p>
 
         <tr>
             
-                <td class="name"><code>privateKeyFolder</code></td>
+                <td class="name"><code>options</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">String</span>
+<span class="param-type">Object</span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>BIG-IP folder in which private key is installed</p></td>
-        </tr>
+            <td class="description last"><p>Optional parameters</p>
+                <h6>Properties</h6>
+                
 
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
     
 
         <tr>
             
-                <td class="name"><code>privateKeyName</code></td>
+                <td class="name"><code>symmetric</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">String</span>
+<span class="param-type">Boolean</span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>Name of private key installed on BIG-IP</p></td>
+            <td class="description last"><p>Data was symmetrically encrypted</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -919,6 +977,161 @@ local private keys.</p>
             
 
             <td class="description last"><p>secret to decrypt</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise which is resolved with the decrypted
+                   secret or rejected if an error occurs</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".symmetricDecryptPassword"><span class="type-signature">(static) </span>symmetricDecryptPassword<span class="signature">(data)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Decrypts a secret that was encrypted symmetrically, typically a large password
+or object (JSON) with multiple values that was encrypted with our local private keys.</p>
+<p>This is just a shortcut for decryptData with symmetric options</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Object (JSON) created by symmetric encrypt operation</p></td>
         </tr>
 
     

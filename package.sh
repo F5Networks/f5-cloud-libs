@@ -1,10 +1,13 @@
 #!/bin/bash
+
+TAR_EXCLUDES="--exclude=${PWD##*/}/dist --exclude=${PWD##*/}/build --exclude=${PWD##*/}/test \
+--exclude=${PWD##*/}/coverage --exclude=${PWD##*/}/coverage --exclude=.git* --exclude=.vscode  --exclude=.tarignore"
 if [ `uname` == 'Darwin' ]; then
     SED_ARGS="-E -i .bak"
-    EXTRA_TAR_ARGS="--exclude=${PWD##*/}/dist --exclude=${PWD##*/}/build --exclude=${PWD##*/}/test --exclude=.git* --exclude=.vscode --exclude=${PWD##*/}/coverage"
+    EXTRA_TAR_ARGS=$TAR_EXCLUDES
 else
     SED_ARGS="-r -i"
-    EXTRA_TAR_ARGS="--owner=root --group=root --exclude-from=.tarignore --exclude=.tarignore"
+    EXTRA_TAR_ARGS="--owner=root --group=root ${TAR_EXCLUDES}"
 fi
 
 if [[ $1 == '--no-deps' ]]; then
@@ -37,3 +40,4 @@ sed $SED_ARGS "s/set hashes\(f5-cloud-libs.tar.gz\) .*/set hashes\(f5-cloud-libs
 sed $SED_ARGS "/script-signature/d" verifyHash
 rm -f verifyHash.bak
 popd
+

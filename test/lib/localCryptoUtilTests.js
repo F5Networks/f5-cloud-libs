@@ -25,6 +25,7 @@ var childProcessMock;
 
 var dataSent;
 var optionsSent;
+var encryptedKeySent;
 var dataToDecrypt;
 var decryptedData;
 
@@ -35,6 +36,8 @@ module.exports = {
         cryptoUtilMock = require('../../lib/cryptoUtil');
 
         localCryptoUtil = require('../../lib/localCryptoUtil');
+
+        encryptedKeySent = undefined;
 
         localKeyUtilMock.getPrivateKeyFilePath = function() {
             return q('/foo/bar');
@@ -51,6 +54,13 @@ module.exports = {
         cryptoUtilMock.decrypt = function(privateKey, data, options) {
             dataSent = data;
             optionsSent = options;
+            return q(decryptedData);
+        };
+
+        cryptoUtilMock.symmetricDecrypt = function(privateKey, encryptedKey, iv, data, options) {
+            dataSent = data;
+            optionsSent = options;
+            encryptedKeySent = encryptedKey
             return q(decryptedData);
         };
 
@@ -147,8 +157,35 @@ module.exports = {
 
     testDecryptPassword: {
         testBasic: function(test) {
+            decryptedData = "hello, world";
 
             localCryptoUtil.decryptPassword('secret')
+                .then(function(decryptedSecret) {
+                    test.deepEqual(decryptedSecret, decryptedData);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
+
+    testSymmetricDecryptPassword: {
+        testBasic: function(test) {
+            dataToDecrypt = {
+                encryptedData: "secret",
+                encryptedKey: "key",
+                iv: "foo",
+                privateKey: {
+                    folder: "foo",
+                    name: "bar"
+                }
+            };
+            decryptedData = "hello, world"
+
+            localCryptoUtil.symmetricDecryptPassword(dataToDecrypt)
                 .then(function(decryptedSecret) {
                     test.deepEqual(decryptedSecret, decryptedData);
                 })
@@ -167,7 +204,7 @@ module.exports = {
             decryptedData = "hello, world";
 
             test.expect(2);
-            localCryptoUtil.decryptDataFromFile('/foo/bar', 'foo', 'bar')
+            localCryptoUtil.decryptDataFromFile('/foo/bar')
                 .then(function(response) {
                     test.strictEqual(dataSent, dataToDecrypt);
                     test.strictEqual(response, decryptedData);
@@ -181,10 +218,40 @@ module.exports = {
 
         },
 
+        testSymmetric: function(test) {
+            const encryptedData = "secret"
+            const encryptedKey = "key"
+            dataToDecrypt = JSON.stringify({
+                encryptedData,
+                encryptedKey,
+                iv: "foo",
+                privateKey: {
+                    folder: "foo",
+                    name: "bar"
+                }
+            });
+            decryptedData = "hello, world";
+
+            test.expect(3);
+            localCryptoUtil.decryptDataFromFile('/foo/bar', {symmetric: true})
+                .then(function(response) {
+                    test.strictEqual(dataSent, encryptedData);
+                    test.strictEqual(response, decryptedData);
+                    test.strictEqual(encryptedKeySent, encryptedKey);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+
+        },
+
         testError: function(test) {
             test.expect(1);
             test.throws(function() {
-                localCryptoUtil.decryptDataFromFile(null, 'foo', 'bar');
+                localCryptoUtil.decryptDataFromFile(null);
             });
             test.done();
         }

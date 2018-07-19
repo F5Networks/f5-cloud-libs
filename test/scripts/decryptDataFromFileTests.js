@@ -25,6 +25,7 @@ var argv;
 var decryptData;
 
 var fileSent;
+var optionsSent;
 var decryptedData;
 
 module.exports = {
@@ -34,8 +35,12 @@ module.exports = {
         decryptData = require('../../scripts/decryptDataFromFile');
 
         localCrytpoUtilMock = require('../../lib/localCryptoUtil');
-        localCrytpoUtilMock.decryptDataFromFile = function(file) {
+
+        optionsSent = undefined;
+
+        localCrytpoUtilMock.decryptDataFromFile = function(file, options) {
             fileSent = file;
+            optionsSent = options;
             return q(decryptedData);
         };
 
@@ -72,6 +77,23 @@ module.exports = {
         decryptData.run(argv, function(data) {
             test.strictEqual(fileSent, fileToDecrypt);
             test.strictEqual(data, decryptedData);
+            test.done();
+        });
+    },
+
+    testSymmetricDecryptDataFromFile: function(test) {
+        var fileToDecrypt = '/foo/bar';
+
+        decryptedData = "hello, world";
+
+        argv.push('--data-file', fileToDecrypt);
+        argv.push('--symmetric');
+
+        test.expect(3);
+        decryptData.run(argv, function(data) {
+            test.strictEqual(fileSent, fileToDecrypt);
+            test.strictEqual(data, decryptedData);
+            test.strictEqual(optionsSent.symmetric, true);
             test.done();
         });
     },
