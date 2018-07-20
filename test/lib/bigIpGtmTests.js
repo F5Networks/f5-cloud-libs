@@ -21,6 +21,7 @@ var BigIp = require('../../../f5-cloud-libs').bigIp;
 var icontrolMock = require('../testUtil/icontrolMock');
 
 var bigIp;
+var authnMock;
 
 const serverName = 'myServer';
 const poolName = 'myPool';
@@ -45,9 +46,14 @@ process.setMaxListeners(0);
 module.exports = {
     setUp: function(callback) {
         bigIp = new BigIp();
+        authnMock = require('../../../f5-cloud-libs').authn;
+        authnMock.authenticate = function(host, user, password) {
+            icontrolMock.password = password;
+            return q.resolve(icontrolMock);
+        };
+
         bigIp.init('host', 'user', 'passowrd')
             .then(function() {
-                bigIp.icontrol = icontrolMock;
                 bigIp.ready = function() {
                     return q();
                 };

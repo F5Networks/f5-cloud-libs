@@ -23,6 +23,7 @@ var AutoscaleInstance = require('../../lib/autoscaleInstance');
 var autoscale;
 var fsMock;
 var BigIp;
+var authnMock;
 var icontrolMock;
 var cloudUtilMock;
 var cryptoUtilMock;
@@ -245,6 +246,12 @@ module.exports = {
 
         functionsCalled = {
             ipc: {}
+        };
+
+        authnMock = require('../../../f5-cloud-libs').authn;
+        authnMock.authenticate = function(host, user, password) {
+            icontrolMock.password = password;
+            return q.resolve(icontrolMock);
         };
 
         bigIpMock = new BigIp();

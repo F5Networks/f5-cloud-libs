@@ -31,6 +31,7 @@ var utilMock;
 var icontrolMock;
 var localKeyUtilMock;
 var cryptoUtilMock;
+var authnMock;
 
 var bigIp;
 var realReady;
@@ -53,6 +54,12 @@ module.exports = {
         icontrolMock = require('../testUtil/icontrolMock');
         localKeyUtilMock = require('../../../f5-cloud-libs').localKeyUtil;
         cryptoUtilMock = require('../../../f5-cloud-libs').cryptoUtil;
+        authnMock = require('../../../f5-cloud-libs').authn;
+
+        authnMock.authenticate = function(host, user, password) {
+            icontrolMock.password = password;
+            return q.resolve(icontrolMock);
+        };
 
         BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIp = new BigIp();
@@ -61,7 +68,6 @@ module.exports = {
         bigIp.init('host', 'user', 'password')
             .then(function() {
                 realReady = bigIp.ready;  // Store this so we can test the ready function
-                bigIp.icontrol = icontrolMock;
                 bigIp.ready = function() {
                     return q();
                 };
@@ -246,121 +252,6 @@ module.exports = {
                 .finally(function() {
                     test.done();
                 });
-        },
-
-        testPasswordUrl: function(test) {
-            var fs = require('fs');
-            var host = 'myHost';
-            var user = 'myUser';
-            var password = 'myPassword';
-            var passwordFile = '/tmp/passwordFromUrlTest';
-            var passwordUrl = 'file://' + passwordFile;
-
-            fs.writeFileSync(passwordFile, password);
-            bigIp = new BigIp();
-
-            test.expect(1);
-            bigIp.init(host, user, passwordUrl, {passwordIsUrl: true})
-                .then(function() {
-                    test.strictEqual(bigIp.password, password);
-                })
-                .catch(function(err) {
-                    test.ok(false, err);
-                })
-                .finally(function() {
-                    fs.unlinkSync(passwordFile);
-                    test.done();
-                });
-        },
-
-        testPasswordEncrypted: {
-            setUp: function(callback) {
-                localKeyUtilMock.getPrivateKeyFilePath = function() {
-                    return q('/tmp/foo');
-                };
-                localKeyUtilMock.getPrivateKeyMetadata = function() {
-                    return q(
-                        {
-                            passphrase: 'abc123'
-                        }
-                    );
-                };
-                cryptoUtilMock.decrypt = function() {
-                    return q(decryptedPassword);
-                };
-
-                callback();
-            },
-
-            testBasic: function(test) {
-                test.expect(1);
-                bigIp.init('host', 'user', 'password', {passwordEncrypted: true})
-                    .then(function() {
-                        test.strictEqual(bigIp.password, decryptedPassword);
-                    })
-                    .catch(function(err) {
-                        test.ok(false, err);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testPrivateKeyFilePathError: function(test) {
-                localKeyUtilMock.getPrivateKeyFilePath = function() {
-                    return q();
-                };
-
-                test.expect(1);
-                bigIp.init('host', 'user', 'password', {passwordEncrypted: true})
-                    .then(function() {
-                        test.ok(false, 'should have thrown no private key');
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('No private key found'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testPrivateKeyMetadataError: function(test) {
-                localKeyUtilMock.getPrivateKeyMetadata = function() {
-                    return q();
-                };
-
-                test.expect(1);
-                bigIp.init('host', 'user', 'password', {passwordEncrypted: true})
-                    .then(function() {
-                        test.ok(false, 'should have thrown no private key metadata');
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('No private key metadata'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            },
-
-            testDecryptError: function(test) {
-                const message = 'decrypt password error';
-
-                cryptoUtilMock.decrypt = function() {
-                    return q.reject(new Error(message));
-                };
-
-                test.expect(1);
-                bigIp.init('host', 'user', 'password', {passwordEncrypted: true})
-                    .then(function() {
-                        test.ok(false, 'should have thrown decryption error');
-                    })
-                    .catch(function(err) {
-                        test.strictEqual(err.message, message);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-            }
         },
 
         testNotInitialized: function(test) {

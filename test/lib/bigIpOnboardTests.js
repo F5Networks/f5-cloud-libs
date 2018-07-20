@@ -19,7 +19,6 @@ const LICENSE_PATH_5_3_and_4 = '/cm/device/tasks/licensing/pool/member-managemen
 
 var q = require('q');
 var icontrolMock = require('../testUtil/icontrolMock');
-var poolUuid = '1';
 var BigIp;
 var BigIq;
 var BigIq50;
@@ -27,7 +26,7 @@ var BigIq52;
 var BigIq53;
 var BigIq54;
 var util;
-
+var authnMock;
 var bigIp;
 var bigIpMgmtAddressSent;
 var bigIpMgmtPortSent;
@@ -53,6 +52,11 @@ module.exports = {
         BigIq54 = require('../../lib/bigIq54LicenseProvider');
 
         bigIp = new BigIp();
+        authnMock = require('../../../f5-cloud-libs').authn;
+        authnMock.authenticate = function(host, user, password) {
+            icontrolMock.password = password;
+            return q.resolve(icontrolMock);
+        };
         bigIp.init('host', 'user', 'password')
             .then(function() {
                 bigIp.icontrol = icontrolMock;

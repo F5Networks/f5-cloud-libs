@@ -45,7 +45,9 @@ module.exports = {
         return this.respond('delete', path);
     },
 
-    setAuthToken: function() {},
+    setAuthToken: function(token) {
+        this.authToken = token;
+    },
 
     requestMap: {},
     responseMap: {},

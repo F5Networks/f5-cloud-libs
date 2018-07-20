@@ -21,6 +21,7 @@ var icontrolMock = require('../testUtil/icontrolMock');
 var bigIp;
 var testOptions;
 
+var authnMock;
 var utilMock;
 var ipcMock;
 var argv;
@@ -56,6 +57,12 @@ module.exports = {
 
         network = require('../../scripts/network');
         argv = ['node', 'network', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
+
+        authnMock = require('../../../f5-cloud-libs').authn;
+        authnMock.authenticate = function(host, user, password) {
+            icontrolMock.password = password;
+            return q.resolve(icontrolMock);
+        };
 
         // we have to call init so we can wait till it's done to set icontrol
         bigIp.init('host', 'user', 'password')

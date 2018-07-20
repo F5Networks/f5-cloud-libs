@@ -25,6 +25,7 @@ const decryptedPassword = 'myPasswordDecrypted';
 var bigIqVersion = '5.2';
 var BigIq;
 var bigIq;
+var authnMock;
 var utilMock;
 var localKeyUtilMock;
 var cryptoUtilMock;
@@ -69,6 +70,12 @@ module.exports = {
                 }
             }
         );
+
+        authnMock = require('../../../f5-cloud-libs').authn;
+        authnMock.authenticate = function(host, user, password) {
+            icontrolMock.password = password;
+            return q.resolve(icontrolMock);
+        };
 
         BigIq = require('../../../f5-cloud-libs').bigIq;
         bigIq = new BigIq();
@@ -115,142 +122,13 @@ module.exports = {
             test.expect(4);
             bigIq.init(host, user, password)
                 .then(function() {
-                    var loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
-
                     test.strictEqual(bigIq.host, host);
                     test.strictEqual(bigIq.user, user);
                     test.strictEqual(bigIq.version, bigIqVersion);
-                    test.strictEqual(loginRequest.password, password);
+                    test.strictEqual(icontrolMock.password, password);
                 })
                 .catch(function(err) {
                     test.ok(false, err);
-                })
-                .finally(function() {
-                    test.done();
-                });
-        },
-
-        testPasswordUrl: function(test) {
-            const passwordFile = '/tmp/passwordFromUrlTest';
-            const passwordUri = 'file://' + passwordFile;
-
-            utilMock.getDataFromUrl = function() {
-                return q(password);
-            };
-
-            test.expect(1);
-            bigIq.init(host, user, passwordUri, {passwordIsUri: true})
-                .then(function() {
-                    var loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
-
-                    test.strictEqual(loginRequest.password, password);
-                })
-                .catch(function(err) {
-                    test.ok(false, err);
-                })
-                .finally(function() {
-                    test.done();
-                });
-        },
-
-        testPasswordArn: function(test) {
-            const passwordUri = 'arn:::foo:bar/password';
-
-            bigIq.provider = {
-                init: function() {
-                    return q();
-                },
-                getDataFromUri: function() {
-                    return q(password);
-                }
-            };
-
-            test.expect(1);
-            bigIq.init(host, user, passwordUri, {passwordIsUri: true})
-                .then(function() {
-                    var loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
-
-                    test.strictEqual(loginRequest.password, password);
-                })
-                .catch(function(err) {
-                    test.ok(false, err);
-                })
-                .finally(function() {
-                    test.done();
-                });
-        },
-
-        testPasswordEncrypted: function(test) {
-            const passwordFile = '/tmp/passwordFromUrlTest';
-            const passwordUri = 'file://' + passwordFile;
-
-            utilMock.getDataFromUrl = function() {
-                return q(password);
-            };
-            localKeyUtilMock.getPrivateKeyFilePath = function() {
-                return q('/tmp/foo');
-            };
-            localKeyUtilMock.getPrivateKeyMetadata = function() {
-                return q(
-                    {
-                        passphrase: 'abc123'
-                    }
-                );
-            };
-            cryptoUtilMock.decrypt = function() {
-                return q(decryptedPassword);
-            };
-
-            test.expect(1);
-            bigIq.init(host, user, passwordUri, {passwordIsUri: true, passwordEncrypted: true})
-                .then(function() {
-                    var loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
-
-                    test.strictEqual(loginRequest.password, decryptedPassword);
-                })
-                .catch(function(err) {
-                    test.ok(false, err);
-                })
-                .finally(function() {
-                    test.done();
-                });
-        },
-
-        testNoPasswordRetrieved: function(test) {
-            const passwordFile = '/tmp/passwordFromUrlTest';
-            const passwordUri = 'file://' + passwordFile;
-
-            utilMock.getDataFromUrl = function() {
-                return q();
-            };
-
-            test.expect(1);
-            bigIq.init(host, user, passwordUri, {passwordIsUri: true})
-                .then(function() {
-                    test.ok(false, 'Should have thrown no password');
-                })
-                .catch(function(err) {
-                    test.notStrictEqual(err.message.indexOf('Failed to retrieve'), -1);
-                })
-                .finally(function() {
-                    test.done();
-                });
-        },
-
-        testNoAuthToken: function(test) {
-            icontrolMock.when(
-                'create',
-                '/shared/authn/login',
-                {}
-            );
-
-            test.expect(1);
-            bigIq.init(host, user, password)
-                .then(function() {
-                    test.ok(false, 'Should have thrown no auth token');
-                })
-                .catch(function(err) {
-                    test.notStrictEqual(err.message.indexOf('Did not receive'), -1);
                 })
                 .finally(function() {
                     test.done();
@@ -272,54 +150,6 @@ module.exports = {
                     test.done();
                 });
 
-        },
-
-        testGetDataFromUrlError: function(test) {
-            const passwordFile = '/tmp/passwordFromUrlTest';
-            const passwordUri = 'file://' + passwordFile;
-            const errorMessage = 'getDataFromUrl error';
-
-            utilMock.getDataFromUrl = function() {
-                return q.reject(new Error(errorMessage));
-            };
-
-            test.expect(1);
-            bigIq.init(host, user, passwordUri, {passwordIsUri: true})
-                .then(function() {
-                    test.ok(false, 'should have thrown getDataFromUri error');
-                })
-                .catch(function(err) {
-                    test.strictEqual(err.message, errorMessage);
-                })
-                .finally(function() {
-                    test.done();
-                });
-        },
-
-        testGetDataFromUriError: function(test) {
-            const passwordUri = 'arn:::foo:bar/password';
-            const errorMessage = 'getDataFromUri error';
-
-            bigIq.provider = {
-                init: function() {
-                    return q();
-                },
-                getDataFromUri: function() {
-                    return q.reject(new Error(errorMessage));
-                }
-            };
-
-            test.expect(1);
-            bigIq.init(host, user, passwordUri, {passwordIsUri: true})
-                .then(function() {
-                    test.ok(false, 'should have thrown getDataFromUri error');
-                })
-                .catch(function(err) {
-                    test.strictEqual(err.message, errorMessage);
-                })
-                .finally(function() {
-                    test.done();
-                });
         }
     },
 
