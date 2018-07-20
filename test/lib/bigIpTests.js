@@ -1095,7 +1095,7 @@ module.exports = {
         testAvailabilityFail: function(test) {
             icontrolMock.fail(
                 'list',
-                '/shared/echo-js/available'
+                '/shared/echo/available'
             );
 
             test.expect(1);
