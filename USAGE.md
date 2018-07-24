@@ -6,7 +6,6 @@ Does initial configuration and provisioning of a BIG-IP.
     
     Usage: onboard [options]
     
-    
     Options:
     
       -V, --version                                                                                                                                                                                                                            output the version number
@@ -60,7 +59,6 @@ Sets up BIG-IPs in a cluster.
     
     Usage: cluster [options]
     
-    
     Options:
     
       -V, --version                                    output the version number
@@ -108,7 +106,6 @@ Runs autoscale code to elect master and cluster
     
     Usage: autoscale [options]
     
-    
     Options:
     
       -V, --version                                      output the version number
@@ -146,6 +143,7 @@ Runs autoscale code to elect master and cluster
           --license-pool-name <pool_name>                    Name of BIG-IQ license pool.
           --big-ip-mgmt-address <big_ip_address>             IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.
           --big-ip-mgmt-port <big_ip_port>                   Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port
+          --no-unreachable                                   Do not use the unreachable API even if it is supported by BIG-IQ.
       --dns <dns_provider>                                   Update the specified DNS provider when autoscaling occurs (gtm is the only current provider)
           --dns-ip-type <address_type>                       Type of ip address to use (public | private).
           --dns-app-port <port>                              Port on which application is listening on for health check
@@ -157,7 +155,6 @@ Runs autoscale code to elect master and cluster
 Sets up default gateway, VLANs and self IPs
     
     Usage: network [options]
-    
     
     Options:
     
@@ -190,7 +187,6 @@ Sets up default gateway, VLANs and self IPs
 Runs an arbitrary script.
     
     Usage: runScript [options]
-    
     
     Options:
     

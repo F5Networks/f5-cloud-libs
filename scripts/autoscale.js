@@ -175,6 +175,10 @@ const commonOptions = require('./commonOptions');
                         '    Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port'
                     )
                     .option(
+                        '    --no-unreachable',
+                        '    Do not use the unreachable API even if it is supported by BIG-IQ.'
+                    )
+                    .option(
                         '--dns <dns_provider>',
                         '    Update the specified DNS provider when autoscaling occurs (gtm is the only current provider)'
                     )

@@ -15,17 +15,29 @@
  */
 'use strict';
 
+const q = require('q');
+
 const poolName = 'myLicensePool';
 const LICENSE_PATH = '/cm/device/tasks/licensing/pool/member-management/';
 
 var BigIqProvider;
 var provider;
 var icontrolMock;
+var BigIq53ProviderMock;
+var bigIq53RevokeCalled;
 
 module.exports = {
     setUp: function(callback) {
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
+
+        bigIq53RevokeCalled = false;
+
+        BigIq53ProviderMock = require('../../lib/bigIq53LicenseProvider');
+        BigIq53ProviderMock.prototype.revoke = function() {
+            bigIq53RevokeCalled = true;
+            return q(true);
+        };
 
         BigIqProvider = require('../../lib/bigIq54LicenseProvider');
         provider = new BigIqProvider();
@@ -80,6 +92,23 @@ module.exports = {
                             macAddress: macAddress
                         }
                     );
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testNoUnreachable: function(test) {
+            test.expect(1);
+            const macAddress = '1234';
+            const ipAddress = '1.2.3.4';
+
+            provider.revoke(icontrolMock, poolName, {macAddress: macAddress, mgmtIp: ipAddress}, {noUnreachable: true})
+                .then(function() {
+                    test.ok(bigIq53RevokeCalled);
                 })
                 .catch(function(err) {
                     test.ok(false, err);
