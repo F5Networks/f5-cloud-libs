@@ -6,13 +6,14 @@ Does initial configuration and provisioning of a BIG-IP.
     
     Usage: onboard [options]
     
+    
     Options:
     
       -V, --version                                                                                                                                                                                                                            output the version number
       --host <ip_address>                                                                                                                                                                                                                      BIG-IP management IP to which to send commands.
-      -u, --user <user>                                                                                                                                                                                                                        BIG-IP admin user name.
-      -p, --password <password>                                                                                                                                                                                                                BIG-IP admin user password. Use this or --password-url
-      --password-url <password_url>                                                                                                                                                                                                            URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      -u, --user <user>                                                                                                                                                                                                                        BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
+      -p, --password <password>                                                                                                                                                                                                                BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url <password_url>                                                                                                                                                                                                            URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.
       --password-encrypted                                                                                                                                                                                                                     Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                                                                                                                                                                                                            BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                                                                                                                                                                                                              Skip reboot even if it is recommended.
@@ -59,13 +60,14 @@ Sets up BIG-IPs in a cluster.
     
     Usage: cluster [options]
     
+    
     Options:
     
       -V, --version                                    output the version number
       --host <ip_address>                              BIG-IP management IP to which to send commands.
-      -u, --user <user>                                BIG-IP admin user name.
-      -p, --password <password>                        BIG-IP admin user password. Use this or --password-url
-      --password-url <password_url>                    URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      -u, --user <user>                                BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
+      -p, --password <password>                        BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url <password_url>                    URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.
       --password-encrypted                             Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                    BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                      Skip reboot even if it is recommended.
@@ -106,13 +108,14 @@ Runs autoscale code to elect master and cluster
     
     Usage: autoscale [options]
     
+    
     Options:
     
       -V, --version                                      output the version number
       --host <ip_address>                                BIG-IP management IP to which to send commands.
-      -u, --user <user>                                  BIG-IP admin user name.
-      -p, --password <password>                          BIG-IP admin user password. Use this or --password-url
-      --password-url <password_url>                      URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      -u, --user <user>                                  BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
+      -p, --password <password>                          BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url <password_url>                      URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.
       --password-encrypted                               Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                      BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                        Skip reboot even if it is recommended.
@@ -156,13 +159,14 @@ Sets up default gateway, VLANs and self IPs
     
     Usage: network [options]
     
+    
     Options:
     
       -V, --version                                                                                     output the version number
       --host <ip_address>                                                                               BIG-IP management IP to which to send commands.
-      -u, --user <user>                                                                                 BIG-IP admin user name.
-      -p, --password <password>                                                                         BIG-IP admin user password. Use this or --password-url
-      --password-url <password_url>                                                                     URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password
+      -u, --user <user>                                                                                 BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
+      -p, --password <password>                                                                         BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url <password_url>                                                                     URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.
       --password-encrypted                                                                              Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                                                                     BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                                                                       Skip reboot even if it is recommended.
@@ -187,6 +191,7 @@ Sets up default gateway, VLANs and self IPs
 Runs an arbitrary script.
     
     Usage: runScript [options]
+    
     
     Options:
     

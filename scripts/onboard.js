@@ -51,7 +51,7 @@ const commonOptions = require('./commonOptions');
                 '--set-root-password',
                 '--big-iq-password'
             ];
-            const REQUIRED_OPTIONS = ['host', 'user'];
+            const REQUIRED_OPTIONS = ['host'];
 
             const dbVars = {};
             const modules = {};
@@ -68,6 +68,7 @@ const commonOptions = require('./commonOptions');
             let rebooting;
             let exiting;
             let index;
+            let randomUser;
 
             Object.assign(optionsForTest, testOpts);
 
@@ -264,8 +265,12 @@ const commonOptions = require('./commonOptions');
                     }
                 }
 
-                if (!options.password && !options.passwordUrl) {
-                    util.logAndExit('One of --password or --password-url is required.', 'error', 1);
+                if (options.user && !(options.password || options.passwordUrl)) {
+                    util.logAndExit(
+                        'If specifying --user, --password or --password-url is required.',
+                        'error',
+                        1
+                    );
                 }
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
@@ -306,14 +311,29 @@ const commonOptions = require('./commonOptions');
                         logger.info('Onboard starting.');
                         ipc.send(signals.ONBOARD_RUNNING);
 
+                        if (!options.user) {
+                            logger.info('Generating temporary user');
+                            return util.createRandomUser();
+                        }
+
+                        return q(
+                            {
+                                user: options.user,
+                                password: options.password || options.passwordUrl
+                            }
+                        );
+                    })
+                    .then((credentials) => {
+                        randomUser = credentials.user; // we need this info later to delete it
+
                         // Create the bigIp client object
                         bigIp = optionsForTest.bigIp || new BigIp({ loggerOptions });
 
                         logger.info('Initializing BIG-IP.');
                         return bigIp.init(
                             options.host,
-                            options.user,
-                            options.password || options.passwordUrl,
+                            credentials.user,
+                            credentials.password,
                             {
                                 port: options.port,
                                 passwordIsUrl: typeof options.passwordUrl !== 'undefined',
@@ -622,6 +642,11 @@ const commonOptions = require('./commonOptions');
                     })
                     .done((response) => {
                         logger.debug(response);
+
+                        if (!options.user) {
+                            logger.info('Deleting temporary user');
+                            util.deleteUser(randomUser);
+                        }
 
                         if (cb) {
                             cb();

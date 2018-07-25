@@ -39,7 +39,7 @@ const util = require('../lib/util');
             const DEFAULT_LOG_FILE = '/tmp/network.log';
             const ARGS_FILE_ID = `network_${Date.now()}`;
             const KEYS_TO_MASK = ['-p', '--password', '--set-password', '--set-root-password'];
-            const REQUIRED_OPTIONS = ['host', 'user'];
+            const REQUIRED_OPTIONS = ['host'];
             const DEFAULT_CIDR = '/24';
 
             const optionsForTest = {};
@@ -53,6 +53,7 @@ const util = require('../lib/util');
             let logger;
             let logFileName;
             let bigIp;
+            let randomUser;
 
             Object.assign(optionsForTest, testOpts);
 
@@ -69,15 +70,15 @@ const util = require('../lib/util');
                     )
                     .option(
                         '-u, --user <user>',
-                        'BIG-IP admin user name.'
+                        'BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).'
                     )
                     .option(
                         '-p, --password <password>',
-                        'BIG-IP admin user password. Use this or --password-url'
+                        'BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.'
                     )
                     .option(
                         '--password-url <password_url>',
-                        'URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password'
+                        'URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.'
                     )
                     .option(
                         '--password-encrypted',
@@ -185,8 +186,12 @@ const util = require('../lib/util');
                     }
                 }
 
-                if (!options.password && !options.passwordUrl) {
-                    util.logAndExit('One of --password or --password-url is required.', 'error', 1);
+                if (options.user && !(options.password || options.passwordUrl)) {
+                    util.logAndExit(
+                        'If specifying --user, --password or --password-url is required.',
+                        'error',
+                        1
+                    );
                 }
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
@@ -228,6 +233,21 @@ const util = require('../lib/util');
                         logger.info('Network setup starting.');
                         ipc.send(signals.NETWORK_RUNNING);
 
+                        if (!options.user) {
+                            logger.info('Generating temporary user');
+                            return util.createRandomUser();
+                        }
+
+                        return q(
+                            {
+                                user: options.user,
+                                password: options.password || options.passwordUrl
+                            }
+                        );
+                    })
+                    .then((credentials) => {
+                        randomUser = credentials.user; // we need this info later to delete it
+
                         // Create the bigIp client object
                         if (optionsForTest.bigIp) {
                             logger.warn('Using test BIG-IP.');
@@ -240,8 +260,8 @@ const util = require('../lib/util');
                         logger.info('Initializing BIG-IP.');
                         return bigIp.init(
                             options.host,
-                            options.user,
-                            options.password || options.passwordUrl,
+                            credentials.user,
+                            credentials.password,
                             {
                                 port: options.port,
                                 passwordIsUrl: typeof options.passwordUrl !== 'undefined',
@@ -571,6 +591,11 @@ const util = require('../lib/util');
                     })
                     .done((response) => {
                         logger.debug(response);
+
+                        if (!options.user) {
+                            logger.info('Deleting temporary user');
+                            util.deleteUser(randomUser);
+                        }
 
                         if (!options.forceReboot) {
                             util.deleteArgs(ARGS_FILE_ID);

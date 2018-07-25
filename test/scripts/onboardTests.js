@@ -28,6 +28,7 @@ var functionsCalled;
 var onboard;
 var ipcMock;
 var utilMock;
+var exitMessage;
 var exitCode;
 
 let bigIpMock;
@@ -183,8 +184,10 @@ module.exports = {
         };
 
         utilMock.logAndExit = function(message, level, code) {
+            exitMessage = message;
             exitCode = code;
         };
+        exitMessage = '';
         exitCode = undefined;
 
         metricsCollectorMock.upload = function() {
@@ -208,18 +211,9 @@ module.exports = {
         testNoHost: function(test) {
             argv = ['node', 'onboard', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
 
-            test.expect(1);
+            test.expect(2);
             onboard.run(argv, testOptions, function() {
-                test.strictEqual(exitCode, 1);
-                test.done();
-            });
-        },
-
-        testNoUser: function(test) {
-            argv = ['node', 'onboard', '--host', '1.2.3.4', '-p', 'bar', '--log-level', 'none'];
-
-            test.expect(1);
-            onboard.run(argv, testOptions, function() {
+                test.notStrictEqual(exitMessage.indexOf('host'), -1);
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
@@ -228,8 +222,9 @@ module.exports = {
         testNoPassword: function(test) {
             argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '--log-level', 'none'];
 
-            test.expect(1);
+            test.expect(2);
             onboard.run(argv, testOptions, function() {
+                test.notStrictEqual(exitMessage.indexOf('password'), -1);
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
@@ -262,6 +257,29 @@ module.exports = {
         test.expect(1);
         onboard.run(argv, testOptions, function() {
             test.ok(runInBackgroundCalled);
+            test.done();
+        });
+    },
+
+    testNoUser: function(test) {
+        argv = ['node', 'onboard', '--host', '1.2.3.4', '-p', 'bar', '--log-level', 'none'];
+
+        const randomUser = 'my random user';
+        let userCreated;
+        let userDeleted;
+        utilMock.createRandomUser = function() {
+            userCreated = true;
+            return q({
+                user: randomUser
+            });
+        }
+        utilMock.deleteUser = function(user) {
+            userDeleted = user;
+        }
+        test.expect(2);
+        onboard.run(argv, testOptions, function() {
+            test.ok(userCreated);
+            test.strictEqual(userDeleted, randomUser);
             test.done();
         });
     },

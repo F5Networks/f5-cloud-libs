@@ -40,15 +40,15 @@ module.exports = {
             )
             .option(
                 '-u, --user <user>',
-                'BIG-IP admin user name.'
+                'BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).'
             )
             .option(
                 '-p, --password <password>',
-                'BIG-IP admin user password. Use this or --password-url'
+                'BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.'
             )
             .option(
                 '--password-url <password_url>',
-                'URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password'
+                'URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.'
             )
             .option(
                 '--password-encrypted',
