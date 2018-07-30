@@ -255,7 +255,7 @@ const util = require('../lib/util');
                             return q();
                         }
 
-                        bigIp = new BigIp({ logger });
+                        bigIp = new BigIp({ loggerOptions });
 
                         logger.info('Initializing BIG-IP.');
                         return bigIp.init(
