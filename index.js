@@ -26,6 +26,7 @@ module.exports = {
     bigIpCluster: require('./lib/bigIpCluster'),
     bigIpOnboard: require('./lib/bigIpOnboard'),
     bigIq: require('./lib/bigIq'),
+    bigIqOnboardMixins: require('./lib/bigIqOnboardMixins'),
     bigIqLicenseProviderFactory: require('./lib/bigIqLicenseProviderFactory'),
     cloudProviderFactory: require('./lib/cloudProviderFactory'),
     cryptoUtil: require('./lib/cryptoUtil'),

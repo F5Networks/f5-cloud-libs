@@ -255,6 +255,16 @@ module.exports = {
         };
 
         bigIpMock = new BigIp();
+        bigIpMock.ready = function() {
+            return q();
+        };
+        icontrolMock.when(
+            'list',
+            '/shared/identified-devices/config/device-info',
+            {
+                product: 'BIG-IP'
+            }
+        );
         bigIpMock.init('localhost', 'admin', 'admin')
             .then(function() {
                 bigIpMock.icontrol = icontrolMock;

@@ -202,6 +202,10 @@ const commonOptions = require('./commonOptions');
                         parseRootPasswords
                     )
                     .option(
+                        '--set-master-key',
+                        'If running on a BIG-IQ, set the master key with a random passphrase'
+                    )
+                    .option(
                         '--update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>',
                         'Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create.',
                         util.mapArray, updateUsers
@@ -312,7 +316,7 @@ const commonOptions = require('./commonOptions');
                         ipc.send(signals.ONBOARD_RUNNING);
 
                         if (!options.user) {
-                            logger.info('Generating temporary user');
+                            logger.info('Generating temporary user.');
                             return util.createRandomUser();
                         }
 
@@ -348,6 +352,42 @@ const commonOptions = require('./commonOptions');
                     .then(() => {
                         logger.info('BIG-IP is ready.');
 
+                        const deferred = q.defer();
+
+                        if (options.setMasterKey && bigIp.isBigIq()) {
+                            bigIp.onboard.isMasterKeySet()
+                                .then((isSet) => {
+                                    if (isSet) {
+                                        logger.info('Master key is already set.');
+                                        deferred.resolve();
+                                    } else {
+                                        logger.info('Setting master key.');
+                                        bigIp.onboard.setRandomMasterPassphrase()
+                                            .then(() => {
+                                                deferred.resolve();
+                                            })
+                                            .catch((err) => {
+                                                this.logger.info(
+                                                    'Unable to set master key',
+                                                    err && err.message ? err.message : err
+                                                );
+                                                deferred.reject(err);
+                                            });
+                                    }
+                                })
+                                .catch((err) => {
+                                    this.logger.info(
+                                        'Unable to check master key', err && err.message ? err.message : err
+                                    );
+                                    deferred.reject(err);
+                                });
+                        } else {
+                            deferred.resolve();
+                        }
+
+                        return deferred.promise;
+                    })
+                    .then(() => {
                         if (options.sslPort) {
                             logger.info('Setting SSL port.');
                             return bigIp.onboard.sslPort(options.sslPort);
@@ -644,7 +684,7 @@ const commonOptions = require('./commonOptions');
                         logger.debug(response);
 
                         if (!options.user) {
-                            logger.info('Deleting temporary user');
+                            logger.info('Deleting temporary user.');
                             util.deleteUser(randomUser);
                         }
 

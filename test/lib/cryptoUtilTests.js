@@ -427,6 +427,7 @@ module.exports = {
 
         testCryptoRandomBytesError: function(test) {
             const message = 'crypto randomBytes error';
+            const realRandomBytes = crypto.randomBytes;
             crypto.randomBytes = function(length, cb) {
                 cb(new Error(message));
             };
@@ -440,9 +441,47 @@ module.exports = {
                     test.strictEqual(err.message, message);
                 })
                 .finally(function() {
+                    crypto.randomBytes = realRandomBytes;
                     test.done();
                 });
         }
+    },
+
+    testGenerateRandomIntInRange: function(test) {
+        const LOW = 0;
+        const HIGH_RANGE_1 = 255;
+        const HIGH_RANGE_2 = 65535;
+        const HIGH_RANGE_3 = 16777215;
+        const HIGH_RANGE_4 = 4294967295;
+        const HIGH_RANGE_5 = 1099511627775;
+
+        let randomNum;
+        for (let i = 0; i < 1000; i++) {
+            randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_1);
+            test.ok(randomNum >= LOW);
+            test.ok(randomNum <= HIGH_RANGE_1);
+        }
+        for (let i = 0; i < 1000; i++) {
+            randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_2);
+            test.ok(randomNum >= LOW);
+            test.ok(randomNum <= HIGH_RANGE_2);
+        }
+        for (let i = 0; i < 1000; i++) {
+            randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_3);
+            test.ok(randomNum >= LOW);
+            test.ok(randomNum <= HIGH_RANGE_3);
+        }
+        for (let i = 0; i < 1000; i++) {
+            randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_4);
+            test.ok(randomNum >= LOW);
+            test.ok(randomNum <= HIGH_RANGE_4);
+        }
+        for (let i = 0; i < 1000; i++) {
+            randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_5);
+            test.ok(randomNum >= LOW);
+            test.ok(randomNum <= HIGH_RANGE_5);
+        }
+        test.done();
     },
 
     testSetLogger: function(test) {

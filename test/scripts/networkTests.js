@@ -65,14 +65,21 @@ module.exports = {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
         };
+        icontrolMock.when(
+            'list',
+            '/shared/identified-devices/config/device-info',
+            {
+                product: 'BIG-IP'
+            }
+        );
+        bigIp.ready = function() {
+            return q();
+        };
 
         // we have to call init so we can wait till it's done to set icontrol
         bigIp.init('host', 'user', 'password')
             .then(function() {
                 bigIp.icontrol = icontrolMock;
-                bigIp.ready = function() {
-                    return q();
-                };
                 icontrolMock.reset();
                 callback();
             });

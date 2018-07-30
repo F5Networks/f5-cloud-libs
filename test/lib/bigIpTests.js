@@ -64,13 +64,20 @@ module.exports = {
         BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIp = new BigIp();
 
+        icontrolMock.when(
+            'list',
+            '/shared/identified-devices/config/device-info',
+            {
+                product: 'BIG-IP'
+            }
+        );
+        realReady = bigIp.ready;  // Store this so we can test the ready function
+        bigIp.ready = function() {
+            return q();
+        };
         // we have to call init so we can wait till it's done to set icontrol
         bigIp.init('host', 'user', 'password')
             .then(function() {
-                realReady = bigIp.ready;  // Store this so we can test the ready function
-                bigIp.ready = function() {
-                    return q();
-                };
                 icontrolMock.reset();
                 callback();
             });
@@ -229,14 +236,28 @@ module.exports = {
     },
 
     testInit: {
+        setUp(callback) {
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    product: 'BIG-IP'
+                }
+            );
+            callback();
+        },
+
         testBasic: function(test) {
             var host = 'myHost';
             var user = 'myUser';
             var password = 'myPassword';
             var port = 1234;
             bigIp = new BigIp();
+            bigIp.ready = function() {
+                return q();
+            };
 
-            test.expect(4);
+            test.expect(5);
             // we have to call init here w/ the same params as the ctor can't
             // be async.
             bigIp.init(host, user, password, {port: port})
@@ -245,6 +266,8 @@ module.exports = {
                     test.strictEqual(bigIp.user, user);
                     test.strictEqual(bigIp.password, password);
                     test.strictEqual(bigIp.port, port);
+                    // Test that for BIG-IP, we do not add in the BIG-IQ mixins
+                    test.strictEqual(bigIp.onboard.isMasterKeySet, undefined);
                 })
                 .catch(function(err) {
                     test.ok(false, err);
@@ -264,6 +287,34 @@ module.exports = {
                 })
                 .catch(function() {
                     test.ok(true);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testBigIq: function(test) {
+            bigIp = new BigIp();
+            bigIp.ready = function() {
+                return q();
+            };
+
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    product: 'BIG-IQ'
+                }
+            );
+
+            test.expect(1);
+            bigIp.init('host', 'user', 'password')
+                .then(function() {
+                    // test that BIG-IQ mixins were added
+                    test.notStrictEqual(bigIp.onboard.isMasterKeySet, undefined);
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
                 })
                 .finally(function() {
                     test.done();

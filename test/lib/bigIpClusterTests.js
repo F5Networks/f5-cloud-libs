@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 var q = require('q');
@@ -45,12 +46,18 @@ module.exports = {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
         };
+        icontrolMock.when(
+            'list',
+            '/shared/identified-devices/config/device-info',
+            {
+                product: 'BIG-IP'
+            }
+        );
+        bigIp.ready = function() {
+            return q();
+        };
         bigIp.init('host', 'user', 'passowrd')
             .then(function() {
-                bigIp.ready = function() {
-                    return q();
-                };
-
                 icontrolMock.reset();
                 callback();
             });

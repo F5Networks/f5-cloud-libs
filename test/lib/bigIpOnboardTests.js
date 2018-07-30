@@ -57,12 +57,19 @@ module.exports = {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
         };
+        icontrolMock.when(
+            'list',
+            '/shared/identified-devices/config/device-info',
+            {
+                product: 'BIG-IP'
+            }
+        );
+        bigIp.ready = function() {
+            return q();
+        };
         bigIp.init('host', 'user', 'password')
             .then(function() {
                 bigIp.icontrol = icontrolMock;
-                bigIp.ready = function() {
-                    return q();
-                };
                 icontrolMock.reset();
                 callback();
             });

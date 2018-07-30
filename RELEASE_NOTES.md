@@ -3,6 +3,9 @@
 ## Version next
 * Add --no-unreachable option to onboard.js to prevent use of the unreachable API when licensing from BIG-IQ 5.4+
 
+## Version 4.4.0
+* Support for onboarding a BIG-IQ
+
 ## Version 4.3.0
 * Support for symmetric encryption of credentials (to handle large credentials)
 * scripts/getNodes.js script
