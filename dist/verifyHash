@@ -1,14 +1,10 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-<<<<<<< HEAD
-            set hashes(f5-cloud-libs.tar.gz) 7ea4b3c2f24a0db9d501a28a342773a2bf0b33a15470b695fb995773d768baaee147f23bcc5639a41c31e355c12e48f17a61fa5fe43e5cc532ae36ac3dfcf8d8
-=======
-            set hashes(f5-cloud-libs.tar.gz) 7ea4b3c2f24a0db9d501a28a342773a2bf0b33a15470b695fb995773d768baaee147f23bcc5639a41c31e355c12e48f17a61fa5fe43e5cc532ae36ac3dfcf8d8
->>>>>>> authnTest
-            set hashes(f5-cloud-libs-aws.tar.gz) da3cab163e7a070237443159fe7440b30e1ccff922442634758c7cf9d48f7343fb401be79cae717d44b74cdc43d42b11daac8e9462f05e0321f9de338617f30c
-            set hashes(f5-cloud-libs-azure.tar.gz) 8751e26b785baa5f8492836285cb05989d160c4c23b1bf545204391aec05f1fee82e0bc12333fd542ae7dc05c70bbce56bb99287b694c1608167377ec3b9b2c4
-            set hashes(f5-cloud-libs-gce.tar.gz) 67e9fef439851ad4f9fbaf3f3574dadb2fceea0b13a77ccde41bcf31c42f87d6c37c64d50d685fc9a90acedc8c80abee9114b9a232809f36746bdc8e1de1b22a
+            set hashes(f5-cloud-libs.tar.gz) f9c9dc5ad17058cc625ee1125d40c166c1f373af26fe47bf7e77fcd9a608d48f2b00a6a77c337fc7abbe6f9fd47eb8c4ff245a9df6cd78b3cd0edf8517f5392c
+            set hashes(f5-cloud-libs-aws.tar.gz) 00dafb59ff566fb79c2a46ebe8152ac27c11b201be01dc0d0abdb753c5c9d7ea862619d705b41911c1f09defc164625a871ddf0ba94ff492359a010967c91a4c
+            set hashes(f5-cloud-libs-azure.tar.gz) a1f264a165b88c03f55d49afb4fdb5f63d80755f1afe947a02e4a36755c7fcec432495417d8084329c6c14e4c426c2e63bab92862afb760d63f584a570b119e6
+            set hashes(f5-cloud-libs-gce.tar.gz) c01b25f4d6f48d9ac21b1a6ba3553c978e4fb8ce8655947a307f27e67833c4bebf8b72fef108ea02e11b5e9aa35d33e39db8624b3db34de509d0d79959c754c7
             set hashes(f5-cloud-libs-openstack.tar.gz) 5c83fe6a93a6fceb5a2e8437b5ed8cc9faf4c1621bfc9e6a0779f6c2137b45eab8ae0e7ed745c8cf821b9371245ca29749ca0b7e5663949d77496b8728f4b0f9
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
             set hashes(f5.http.v1.2.0rc4.tmpl) 47c19a83ebfc7bd1e9e9c35f3424945ef8694aa437eedd17b6a387788d4db1396fefe445199b497064d76967b0d50238154190ca0bd73941298fc257df4dc034
