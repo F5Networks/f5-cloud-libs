@@ -19,6 +19,7 @@ const fs = require('fs');
 const q = require('q');
 
 const token = 'my auth token';
+const refreshToken = 'my refresh token';
 const decryptedPassword = 'my decrypted password';
 
 let authn;
@@ -38,6 +39,9 @@ module.exports = {
             {
                 token: {
                     token: token
+                },
+                refreshToken: {
+                    token: refreshToken
                 }
             }
         );

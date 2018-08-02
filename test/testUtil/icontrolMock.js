@@ -49,6 +49,10 @@ module.exports = {
         this.authToken = token;
     },
 
+    setRefreshToken: function(refreshToken) {
+        this.refreshToken = refreshToken;
+    },
+
     requestMap: {},
     responseMap: {},
     errorMap: {},

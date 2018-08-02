@@ -369,6 +369,73 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>logger</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Logger to use. Or, pass loggerOptions to get your own logger.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>loggerOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the logger.
+                                          See <a href="module-logger.html#.getLogger">module:logger.getLogger</a> for details.</p></td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -2061,7 +2128,7 @@
     
 
     
-    <h4 class="name" id="request"><span class="type-signature"></span>request<span class="signature">(method, path, body<span class="signature-attributes">opt</span>, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="request"><span class="type-signature"></span>request<span class="signature">(method, path, body<span class="signature-attributes">opt</span>, options<span class="signature-attributes">opt</span>, existingDeferred<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -2315,10 +2382,10 @@
 
             
 
-            <td class="description last"><p>Headers to use in the request. Default
-                                     {
-                                         'Content-Type': 'application/json'
-                                     }</p></td>
+            <td class="description last"><p>Headers to use in the request.</p>
+<pre class="prettyprint source"><code>{
+    'Content-Type': 'application/json'
+}</code></pre></td>
         </tr>
 
     
@@ -2326,6 +2393,73 @@
 </table>
 
             </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>existingDeferred</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>An existing deferred to use instead of creating a new one. Used
+                                      for recursion (for retrying the request).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options.noRefresh</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Do not try to refresh the auth token if the request gets a 401</p></td>
         </tr>
 
     
