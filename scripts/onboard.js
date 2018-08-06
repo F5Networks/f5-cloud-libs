@@ -111,11 +111,11 @@ const commonOptions = require('./commonOptions');
                     )
                     .option(
                         '-l, --license <license_key>',
-                        'License BIG-IP with <license_key>.'
+                        'License device with <license_key>.'
                     )
                     .option(
                         '-a, --add-on <add_on_key>',
-                        'License BIG-IP with <add_on_key>. For multiple keys, use multiple -a entries.',
+                        'License device with <add_on_key>. For multiple keys, use multiple -a entries.',
                         util.collect,
                         []
                     )
@@ -181,7 +181,7 @@ const commonOptions = require('./commonOptions');
                     )
                     .option(
                         '-n, --hostname <hostname>',
-                        'Set BIG-IP hostname.'
+                        'Set device hostname.'
                     )
                     .option(
                         '-g, --global-setting <name:value>',
@@ -290,7 +290,7 @@ const commonOptions = require('./commonOptions');
                 }
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
-                // allow the BIG-IP services to start
+                // allow the device services to start
                 if (options.background) {
                     logFileName = options.output || DEFAULT_LOG_FILE;
                     logger.info('Spawning child process to do the work. Output will be in', logFileName);
@@ -345,7 +345,7 @@ const commonOptions = require('./commonOptions');
                         // Create the bigIp client object
                         bigIp = optionsForTest.bigIp || new BigIp({ loggerOptions });
 
-                        logger.info('Initializing BIG-IP.');
+                        logger.info('Initializing device.');
                         return bigIp.init(
                             options.host,
                             credentials.user,
@@ -358,11 +358,11 @@ const commonOptions = require('./commonOptions');
                         );
                     })
                     .then(() => {
-                        logger.info('Waiting for BIG-IP to be ready.');
+                        logger.info('Waiting for device to be ready.');
                         return bigIp.ready();
                     })
                     .then(() => {
-                        logger.info('BIG-IP is ready.');
+                        logger.info('Device is ready.');
 
                         const deferred = q.defer();
 
@@ -679,7 +679,7 @@ const commonOptions = require('./commonOptions');
                     })
                     .then((response) => {
                         logger.debug(response);
-                        logger.info('Waiting for BIG-IP to be active.');
+                        logger.info('Waiting for device to be active.');
                         return bigIp.active();
                     })
                     .then((response) => {
@@ -706,7 +706,7 @@ const commonOptions = require('./commonOptions');
                     })
                     .then((response) => {
                         logger.debug(response);
-                        logger.info('BIG-IP onboard complete.');
+                        logger.info('Device onboard complete.');
                         return bigIp.rebootRequired();
                     })
                     .then((response) => {
@@ -729,7 +729,7 @@ const commonOptions = require('./commonOptions');
 
                         if (err) {
                             if (err instanceof ActiveError || err.name === 'ActiveError') {
-                                logger.warn('BIG-IP active check failed.');
+                                logger.warn('Device active check failed.');
                                 rebooting = true;
                                 return util.reboot(bigIp, { signalOnly: !options.reboot });
                             }
