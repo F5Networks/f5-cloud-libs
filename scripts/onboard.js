@@ -27,10 +27,6 @@ const metricsCollector = require('../lib/metricsCollector');
 const commonOptions = require('./commonOptions');
 
 (function run() {
-    const globalSettings = {
-        guiSetup: 'disabled'
-    };
-
     const runner = {
         /**
          * Runs the onboarding script
@@ -53,6 +49,7 @@ const commonOptions = require('./commonOptions');
             ];
             const REQUIRED_OPTIONS = ['host'];
 
+            const globalSettings = {};
             const dbVars = {};
             const modules = {};
             const rootPasswords = {};
@@ -523,7 +520,13 @@ const commonOptions = require('./commonOptions');
                     .then((response) => {
                         logger.debug(response);
 
-                        if (globalSettings) {
+                        // BIG-IP and BIG-IQ disable their setup gui differently.
+                        // We'll take care of BIG-IQ at the end of onboarding.
+                        if (bigIp.isBigIp()) {
+                            globalSettings.guiSetup = 'disabled';
+                        }
+
+                        if (Object.keys(globalSettings).length > 0) {
                             logger.info('Setting global settings.');
                             return bigIp.onboard.globalSettings(globalSettings);
                         }
@@ -648,6 +651,24 @@ const commonOptions = require('./commonOptions');
                             const regKeys = regKeyCsv.split(',');
                             logger.info('Creating reg key pool.');
                             return bigIp.onboard.createRegKeyPool(names[0], regKeys);
+                        }
+                        return q();
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        if (bigIp.isBigIq()) {
+                            // Disable the BIG-IQ setup gui. BIG-IP is done
+                            // via global settings and is handled with other global
+                            // settings above
+                            return bigIp.modify(
+                                '/shared/system/setup',
+                                {
+                                    isSystemSetup: true,
+                                    isRootPasswordChanged: true,
+                                    isAdminPasswordChanged: true
+                                }
+                            );
                         }
                         return q();
                     })

@@ -51,6 +51,14 @@ module.exports = {
                 return q();
             },
 
+            isBigIp: function() {
+                return true;
+            },
+
+            isBigIq: function() {
+                return false;
+            },
+
             list: function() {
                 functionsCalled.bigIp.list = arguments;
                 return q();
@@ -284,20 +292,54 @@ module.exports = {
         });
     },
 
-    testGlobalSettingsAndHostname: function(test) {
-        var hostnameSet;
-        bigIpMock.onboard.hostname = function(hostname) {
-            hostnameSet = hostname;
-        };
+    testGlobalSettings: {
+        testHostname: function(test) {
+            var hostnameSet;
+            bigIpMock.onboard.hostname = function(hostname) {
+                hostnameSet = hostname;
+            };
 
-        argv.push('--hostname', 'hostname1', '--global-setting', 'hostname:hostname2');
+            argv.push('--hostname', 'hostname1', '--global-setting', 'hostname:hostname2');
 
-        test.expect(2);
-        onboard.run(argv, testOptions, function() {
-            test.strictEqual(hostnameSet, 'hostname1');
-            test.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].hostname, undefined);
-            test.done();
-        });
+            test.expect(2);
+            onboard.run(argv, testOptions, function() {
+                test.strictEqual(hostnameSet, 'hostname1');
+                test.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].hostname, undefined);
+                test.done();
+            });
+        },
+
+        testIsBigIp: function(test) {
+            test.expect(2);
+            onboard.run(argv, testOptions, function() {
+                test.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].guiSetup, 'disabled');
+                test.strictEqual(functionsCalled.bigIp.modify, undefined);
+                test.done();
+            });
+        },
+
+        testIsBigIq: function(test) {
+            bigIpMock.isBigIq = function() {
+                return true;
+            };
+            bigIpMock.isBigIp = function() {
+                return false;
+            };
+
+            test.expect(2);
+            onboard.run(argv, testOptions, function() {
+                test.strictEqual(functionsCalled.bigIp.onboard.globalSettings, undefined);
+                test.deepEqual(
+                    functionsCalled.bigIp.modify[1],
+                    {
+                        isSystemSetup: true,
+                        isRootPasswordChanged: true,
+                        isAdminPasswordChanged: true
+                    }
+                );
+                test.done();
+            });
+        }
     },
 
     testReboot: function(test) {
