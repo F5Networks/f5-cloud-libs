@@ -59,6 +59,8 @@ const commonOptions = require('./commonOptions');
             const updateUsers = [];
             const loggerOptions = {};
             const metrics = {};
+            const createRegKeyPool = {};
+            const createLicensePool = {};
             const optionsForTest = {};
 
             let loggableArgs;
@@ -206,9 +208,22 @@ const commonOptions = require('./commonOptions');
                         'If running on a BIG-IQ, set the master key with a random passphrase'
                     )
                     .option(
+                        '--create-license-pool <name:reg_key>',
+                        'If running on a BIG-IQ, create a pool-style license (purchased pool, utility, volume, or FPS) with the name and reg key.',
+                        util.pair,
+                        createLicensePool
+                    )
+                    .option(
+                        '--create-reg-key-pool <name:reg_key_list>',
+                        'If running on a BIG-IQ, create a reg key pool with the given name and reg keys. Reg keys should be comma separated.',
+                        util.pair,
+                        createRegKeyPool
+                    )
+                    .option(
                         '--update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>',
                         'Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create.',
-                        util.mapArray, updateUsers
+                        util.mapArray,
+                        updateUsers
                     )
                     .option(
                         '-m, --module <name:level>',
@@ -611,6 +626,29 @@ const commonOptions = require('./commonOptions');
                             );
                         }
 
+                        return q();
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        const names = Object.keys(createLicensePool);
+                        if (names.length > 0 && bigIp.isBigIq()) {
+                            const regKey = createLicensePool[names[0]];
+                            logger.info('Creating license pool.');
+                            return bigIp.onboard.createLicensePool(names[0], regKey);
+                        }
+                        return q();
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        const names = Object.keys(createRegKeyPool);
+                        if (names.length > 0 && bigIp.isBigIq()) {
+                            const regKeyCsv = createRegKeyPool[names[0]];
+                            const regKeys = regKeyCsv.split(',');
+                            logger.info('Creating reg key pool.');
+                            return bigIp.onboard.createRegKeyPool(names[0], regKeys);
+                        }
                         return q();
                     })
                     .then((response) => {

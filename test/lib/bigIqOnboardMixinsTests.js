@@ -17,6 +17,10 @@
 'use strict';
 
 const icontrolMock = require('../testUtil/icontrolMock');
+const Logger = require('../../../f5-cloud-libs').logger;
+
+const regKey1 = '1234';
+const eulaText = 'this is the eula';
 
 let BigIp;
 let bigIp;
@@ -32,9 +36,173 @@ module.exports = {
         bigIp.icontrol = icontrolMock;
 
         bigIqOnboardMixins.core = bigIp;
+        bigIqOnboardMixins.logger = Logger.getLogger({console: false});
 
         icontrolMock.reset();
         callback();
+    },
+
+    testLicensePools: {
+        testCreateLicensePool: {
+            setUp(callback) {
+                icontrolMock.when(
+                    'list',
+                    `/cm/device/licensing/pool/initial-activation/${regKey1}`,
+                    {
+                        eulaText,
+                        status: 'ACTIVATING_AUTOMATIC_NEED_EULA_ACCEPT',
+                    }
+                );
+                icontrolMock.whenNext(
+                    'list',
+                    `/cm/device/licensing/pool/initial-activation/${regKey1}`,
+                    {
+                        status: 'ACTIVATING_AUTOMATIC_EULA_ACCEPTED'
+                    }
+                );
+                icontrolMock.whenNext(
+                    'list',
+                    `/cm/device/licensing/pool/initial-activation/${regKey1}`,
+                    {
+                        status: 'READY',
+                        licenseReference: {
+                            link: 'https://localhost/mgmt/cm/check/license/ready'
+                        }
+                    }
+                );
+                callback();
+            },
+
+            testStatusReady(test) {
+                icontrolMock.when(
+                    'list',
+                    '/cm/check/license/ready',
+                    {
+                        status: 'READY'
+                    }
+                );
+
+                test.expect(3);
+                bigIqOnboardMixins.createLicensePool('mypool', '1234')
+                    .then(() => {
+                        test.deepEqual(icontrolMock.getRequest(
+                            'create',
+                            '/cm/device/licensing/pool/initial-activation'),
+                            {
+                                name: 'mypool',
+                                regKey: '1234',
+                                status: 'ACTIVATING_AUTOMATIC'
+                            }
+                        );
+                        test.strictEqual(
+                            icontrolMock.getNumRequests('list', `/cm/device/licensing/pool/initial-activation/${regKey1}`),
+                            3
+                        );
+                        test.strictEqual(
+                            icontrolMock.getNumRequests('list', '/cm/check/license/ready'),
+                            1
+                        );
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            },
+
+            testStateLicensed(test) {
+                icontrolMock.when(
+                    'list',
+                    '/cm/check/license/ready',
+                    {
+                        state: 'LICENSED'
+                    }
+                );
+
+                test.expect(2);
+                bigIqOnboardMixins.createLicensePool('mypool', '1234')
+                    .then(() => {
+                        test.strictEqual(
+                            icontrolMock.getNumRequests('list', `/cm/device/licensing/pool/initial-activation/${regKey1}`),
+                            3
+                        );
+                        test.strictEqual(
+                            icontrolMock.getNumRequests('list', '/cm/check/license/ready'),
+                            1
+                        );
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            }
+        },
+
+        testCreateRegKeyPool: {
+            testBasic(test) {
+                const poolUuid = '998877';
+
+                icontrolMock.when(
+                    'create',
+                    '/cm/device/licensing/pool/regkey/licenses',
+                    {
+                        id: poolUuid
+                    }
+                );
+                icontrolMock.when(
+                    'list',
+                    `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings/${regKey1}`,
+                    {
+                        eulaText,
+                        status: 'ACTIVATING_AUTOMATIC_NEED_EULA_ACCEPT',
+                    }
+                );
+                icontrolMock.whenNext(
+                    'list',
+                    `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings/${regKey1}`,
+                    {
+                        status: 'ACTIVATING_AUTOMATIC_EULA_ACCEPTED'
+                    }
+                );
+                icontrolMock.whenNext(
+                    'list',
+                    `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings/${regKey1}`,
+                    {
+                        status: 'READY',
+                        licenseReference: {
+                            link: 'https://localhost/mgmt/cm/check/license/ready'
+                        }
+                    }
+                );
+
+                test.expect(2);
+                bigIqOnboardMixins.createRegKeyPool('mypool', ['1234'])
+                    .then(() => {
+                        test.deepEqual(icontrolMock.getRequest(
+                            'create',
+                            `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings`),
+                            {
+                                regKey: '1234',
+                                description: '1234',
+                                status: 'ACTIVATING_AUTOMATIC'
+                            }
+                        );
+                        test.strictEqual(
+                            icontrolMock.getNumRequests('list', `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings/${regKey1}`),
+                            3
+                        );
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            }
+        }
     },
 
     testIsMasterKeySet: {

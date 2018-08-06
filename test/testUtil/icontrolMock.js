@@ -53,13 +53,23 @@ module.exports = {
         this.refreshToken = refreshToken;
     },
 
+    numRequests: {},
     requestMap: {},
     responseMap: {},
+    nextResponseMap: {},
     errorMap: {},
     lastCall: {},
 
     when: function(method, path, response) {
         this.responseMap[method + '_' + path] = response;
+    },
+
+    whenNext: function(method, path, response) {
+        const key = method + '_' + path;
+        if (!this.nextResponseMap[key]) {
+            this.nextResponseMap[key] = [];
+        }
+        this.nextResponseMap[key].push(response);
     },
 
     /**
@@ -75,8 +85,9 @@ module.exports = {
     },
 
     reset: function() {
+        this.numRequests = {};
         this.responseMap = {};
-
+        this.nextResponseMap = {};
         this.requestMap = {};
         this.lastCall.method = '';
         this.lastCall.path = '';
@@ -91,6 +102,11 @@ module.exports = {
 
     recordRequest: function(method, path, body, opts) {
         var key = method + '_' + path;
+        if (typeof this.numRequests[key] === 'undefined') {
+            this.numRequests[key] = 1;
+        } else {
+            this.numRequests[key]++;
+        }
         if (!this.requestMap[key]) {
             this.requestMap[key] = [];
         }
@@ -101,6 +117,11 @@ module.exports = {
         this.lastCall.opts = opts;
     },
 
+    getNumRequests: function(method, path) {
+        var key = method + '_' + path;
+        return this.numRequests[key] || 0;
+    },
+
     getRequest: function(method, path) {
         var key = method + '_' + path;
         if (this.requestMap[key]) {
@@ -109,10 +130,15 @@ module.exports = {
     },
 
     respond: function(method, path) {
-        var response = this.responseMap[method + '_' + path];
+        const key = method + '_' + path;
+        var response = this.responseMap[key];
+
+        if (this.nextResponseMap[key] && this.nextResponseMap[key].length > 0) {
+            this.responseMap[key] = this.nextResponseMap[key].shift();
+        }
 
         if (response === FAIL_REQUEST) {
-            const error = this.errorMap[method + '_' + path]
+            const error = this.errorMap[key]
             if (error) {
                 return q.reject (error);
             }
