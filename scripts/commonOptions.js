@@ -36,19 +36,19 @@ module.exports = {
             .version('4.3.0')
             .option(
                 '--host <ip_address>',
-                'BIG-IP management IP to which to send commands.'
+                'Device management IP to which to send commands.'
             )
             .option(
                 '-u, --user <user>',
-                'BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).'
+                'Device admin user name. Default is to create a temporary user (this only works when running on the device).'
             )
             .option(
                 '-p, --password <password>',
-                'BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.'
+                'Device admin user password. Use this or --password-url. One of these is required when specifying the user.'
             )
             .option(
                 '--password-url <password_url>',
-                'URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.'
+                'URL (file, http(s)) to location that contains device admin user password. Use this or --password. One of these is required when specifying the user.'
             )
             .option(
                 '--password-encrypted',
@@ -56,7 +56,7 @@ module.exports = {
             )
             .option(
                 '--port <port>',
-                'BIG-IP management SSL port to connect to. Default 443.'
+                'device management SSL port to connect to. Default 443.'
             )
             .option(
                 '--no-reboot',
