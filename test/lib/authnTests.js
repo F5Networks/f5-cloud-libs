@@ -25,13 +25,19 @@ const decryptedPassword = 'my decrypted password';
 let authn;
 let icontrolMock;
 let localCryptoUtilMock;
+let utilMock;
 
 module.exports = {
     setUp(callback) {
+        utilMock = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
         localCryptoUtilMock = require('../../../f5-cloud-libs').localCryptoUtil;
         authn = require('../../../f5-cloud-libs').authn;
         authn.icontrol = icontrolMock;
+
+        utilMock.getProduct = function() {
+            return q('BIG-IQ');
+        }
 
         icontrolMock.when(
             'create',

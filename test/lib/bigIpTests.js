@@ -64,13 +64,10 @@ module.exports = {
         BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIp = new BigIp();
 
-        icontrolMock.when(
-            'list',
-            '/shared/identified-devices/config/device-info',
-            {
-                product: 'BIG-IP'
-            }
-        );
+        utilMock.getProduct = function() {
+            return q('BIG-IP');
+        };
+
         realReady = bigIp.ready;  // Store this so we can test the ready function
         bigIp.ready = function() {
             return q();
@@ -236,17 +233,6 @@ module.exports = {
     },
 
     testInit: {
-        setUp(callback) {
-            icontrolMock.when(
-                'list',
-                '/shared/identified-devices/config/device-info',
-                {
-                    product: 'BIG-IP'
-                }
-            );
-            callback();
-        },
-
         testBasic: function(test) {
             var host = 'myHost';
             var user = 'myUser';
@@ -299,13 +285,9 @@ module.exports = {
                 return q();
             };
 
-            icontrolMock.when(
-                'list',
-                '/shared/identified-devices/config/device-info',
-                {
-                    product: 'BIG-IQ'
-                }
-            );
+            utilMock.getProduct = function() {
+                return q('BIG-IQ');
+            };
 
             test.expect(1);
             bigIp.init('host', 'user', 'password')
@@ -323,7 +305,6 @@ module.exports = {
     },
 
     testList: function(test) {
-
         test.expect(1);
         bigIp.list()
             .then(function() {
