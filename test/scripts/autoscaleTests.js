@@ -103,6 +103,13 @@ ProviderMock.prototype.electMaster = function(instances) {
     return q();
 };
 
+ProviderMock.prototype.tagMasterInstance = function tagMasterInstance(masterIid, gInstances) {
+    this.functionCalls.tagMasterInstance = true;
+    this.functionCalls.taggedMasterIid = masterIid;
+    this.functionCalls.taggedMasterInstances = gInstances;
+    return q();
+};
+
 ProviderMock.prototype.instancesRemoved = function(instances) {
     this.functionCalls.instancesRemoved = instances;
     return q();
@@ -1223,5 +1230,31 @@ module.exports = {
                 test.done();
             });
         }
-    }
+    },
+    testTagMasterCalled: function(test) {
+        instances = {
+            "one": {
+                isMaster: false,
+                hostname: 'host1',
+                privateIp: '1.2.3.4',
+                mgmtIp: '1.2.3.4',
+                providerVisible: true
+            },
+            "two": {
+                isMaster: true,
+                privateIp: '5.6.7.8',
+                mgmtIp: '5.6.7.8',
+                providerVisible: true
+            }
+        };
+
+        test.expect(4);
+        autoscale.run(argv, testOptions, function() {
+            test.strictEqual(providerMock.functionCalls.taggedMasterInstances.one.isMaster, false);
+            test.strictEqual(providerMock.functionCalls.taggedMasterIid, 'two');
+            test.notStrictEqual(providerMock.functionCalls.taggedMasterIid, 'one');
+            test.ok(providerMock.functionCalls.tagMasterInstance);
+            test.done();
+        })
+    },
 };

@@ -507,6 +507,12 @@ const commonOptions = require('./commonOptions');
                         return q();
                     })
                     .then(() => {
+                        if (masterIid && this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
+                            return asProvider.tagMasterInstance(masterIid, this.instances);
+                        }
+                        return q();
+                    })
+                    .then(() => {
                         let message;
                         if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
                             switch (options.clusterAction) {
