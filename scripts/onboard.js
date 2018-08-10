@@ -223,12 +223,12 @@ const commonOptions = require('./commonOptions');
                         util.mapArray,
                         updateUsers
                     )
-                    .option(
-                        '-m, --module <name:level>',
-                        'Provision module <name> to <level>. For multiple modules, use multiple -m entries.',
-                        util.pair,
-                        modules
-                    )
+//                    .option(
+//                        '-m, --module <name:level>',
+//                        'Provision module <name> to <level>. For multiple modules, use multiple -m entries.',
+//                        util.pair,
+//                        modules
+//                    )
                     .option(
                         '--modules <name:level>',
                         'Comma-separated list of provision modules.',
