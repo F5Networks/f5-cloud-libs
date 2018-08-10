@@ -51,7 +51,6 @@ const commonOptions = require('./commonOptions');
 
             const globalSettings = {};
             const dbVars = {};
-            const modules = {};
             const modulesMap = {};
             const rootPasswords = {};
             const updateUsers = [];
@@ -223,12 +222,6 @@ const commonOptions = require('./commonOptions');
                         util.mapArray,
                         updateUsers
                     )
-//                    .option(
-//                        '-m, --module <name:level>',
-//                        'Provision module <name> to <level>. For multiple modules, use multiple -m entries.',
-//                        util.pair,
-//                        modules
-//                    )
                     .option(
                         '--modules <name:level>',
                         'Comma-separated list of provision modules.',
@@ -617,7 +610,7 @@ const commonOptions = require('./commonOptions');
                     })
                     .then((response) => {
                         logger.debug(response);
-                        
+
                         if (Object.keys(modulesMap).length > 0) {
                             logger.info('Provisioning modules', modulesMap);
                             return bigIp.onboard.provision(modulesMap);
