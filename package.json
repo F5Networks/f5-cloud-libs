@@ -18,7 +18,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "commander": "^2.9.0",
-    "q": "^1.4.1",
+    "q": "^1.5.1",
     "uuid5": "^1.0.2",
     "winston": "^2.2.0"
   },

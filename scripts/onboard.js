@@ -52,6 +52,7 @@ const commonOptions = require('./commonOptions');
             const globalSettings = {};
             const dbVars = {};
             const modules = {};
+            const modulesMap = {};
             const rootPasswords = {};
             const updateUsers = [];
             const loggerOptions = {};
@@ -227,6 +228,12 @@ const commonOptions = require('./commonOptions');
                         'Provision module <name> to <level>. For multiple modules, use multiple -m entries.',
                         util.pair,
                         modules
+                    )
+                    .option(
+                        '--modules <name:level>',
+                        'Comma-separated list of provision modules.',
+                        util.map,
+                        modulesMap
                     )
                     .option(
                         '--ping [address]',
@@ -610,10 +617,10 @@ const commonOptions = require('./commonOptions');
                     })
                     .then((response) => {
                         logger.debug(response);
-
-                        if (Object.keys(modules).length > 0) {
-                            logger.info('Provisioning modules', modules);
-                            return bigIp.onboard.provision(modules);
+                        
+                        if (Object.keys(modulesMap).length > 0) {
+                            logger.info('Provisioning modules', modulesMap);
+                            return bigIp.onboard.provision(modulesMap);
                         }
 
                         return q();

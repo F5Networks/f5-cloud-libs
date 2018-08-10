@@ -686,6 +686,19 @@ module.exports = {
 
     },
 
+
+    testProvisionMultiple : function(test) {
+        const modulesMap = {'module1' : 'level1'}; 
+        
+        argv.push('--modules', modulesMap);
+        
+        test.expect(1);
+        onboard.run(argv, testOptions, function() {
+            test.deepEqual(functionCalled.bigIp.onboard.provision[0], modulesMap);
+            test.done();
+        });
+    },
+
     testAsmSignatures: function(test) {
         argv.push('--update-sigs');
         test.expect(1);
