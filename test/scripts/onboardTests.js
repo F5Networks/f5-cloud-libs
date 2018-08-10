@@ -672,29 +672,14 @@ module.exports = {
         }
     },
 
-    testProvision: function(test) {
-        const module1 = 'module1:level1';
-        const module2 = 'module2:level2';
-
-        argv.push('--module', module1, '--module', module2);
-
-        test.expect(1);
-        onboard.run(argv, testOptions, function() {
-            test.deepEqual(functionsCalled.bigIp.onboard.provision[0], {module1: 'level1', module2: 'level2'});
-            test.done();
-        });
-
-    },
-
-
-    testProvisionMultiple : function(test) {
-        const modulesMap = {'module1' : 'level1'}; 
+    testProvision : function(test) {
+        const modulesString = 'module1:level1,module2:level2'; 
         
-        argv.push('--modules', modulesMap);
+        argv.push('--modules', modulesString);
         
         test.expect(1);
         onboard.run(argv, testOptions, function() {
-            test.deepEqual(functionCalled.bigIp.onboard.provision[0], modulesMap);
+            test.deepEqual(functionsCalled.bigIp.onboard.provision[0], {module1 : 'level1', module2 : 'level2'});
             test.done();
         });
     },
