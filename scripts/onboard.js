@@ -231,7 +231,7 @@ const commonOptions = require('./commonOptions');
                     )
                     .option(
                         '--modules <name:level>',
-                        'Provision module(s) <name> to <level> (comma-separated list).',
+                        'Provision module(s) <name> to <level> (comma-separated list of module:level pairs).',
                         util.map,
                         modules
                     )
