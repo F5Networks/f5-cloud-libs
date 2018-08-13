@@ -52,6 +52,7 @@ const commonOptions = require('./commonOptions');
             const globalSettings = {};
             const dbVars = {};
             const modules = {};
+            const module = {};
             const rootPasswords = {};
             const updateUsers = [];
             const loggerOptions = {};
@@ -223,8 +224,14 @@ const commonOptions = require('./commonOptions');
                         updateUsers
                     )
                     .option(
+                        '-m, --module <name:level>',
+                        'Provision module <name> to <level>. For multiple entries, use --modules',
+                        util.pair,
+                        module
+                    )
+                    .option(
                         '--modules <name:level>',
-                        'Comma-separated list of provision modules.',
+                        'Provision module(s) <name> to <level> (comma-separated list).',
                         util.map,
                         modules
                     )
@@ -604,6 +611,16 @@ const commonOptions = require('./commonOptions');
                                     noUnreachable: !options.unreachable
                                 }
                             );
+                        }
+
+                        return q();
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        if (Object.keys(module).length > 0) {
+                            logger.info('Provisioning module', module);
+                            return bigIp.onboard.provision(module);
                         }
 
                         return q();

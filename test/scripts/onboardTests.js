@@ -672,7 +672,20 @@ module.exports = {
         }
     },
 
+
     testProvision : function(test) {
+        const module = 'module:level';
+        
+        argv.push('--module', module);
+
+        test.expect(1);
+        onboard.run(argv, testOptions, function() {
+            test.deepEqual(functionsCalled.bigIp.onboard.provision[0], {module : 'level'});
+            test.done();
+        });
+    },
+
+    testProvisionMultiple : function(test) {
         const modulesString = 'module1:level1,module2:level2'; 
         
         argv.push('--modules', modulesString);
