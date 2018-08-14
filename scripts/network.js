@@ -152,7 +152,7 @@ const util = require('../lib/util');
                         vlans
                     )
                     .option(
-                        '--self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2]>',
+                        '--self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2], [trafficGroup:traffic_group_name]>',
                         'Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified.',
                         util.mapArray,
                         selfIps
@@ -371,6 +371,21 @@ const util = require('../lib/util');
                         logger.debug(response);
 
                         const promises = [];
+
+                        for (let i = 0; i < selfIps.length; i++) {
+                            const selfIp = selfIps[i];
+                            if (selfIp.trafficGroup) {
+                                const trafficGroup = selfIp.trafficGroup;
+                                promises.push(createTrafficGroup(bigIp, trafficGroup));
+                            }
+                        }
+
+                        q.all(promises);
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        const promises = [];
                         let selfIpBody;
                         let portLockdown;
 
@@ -408,15 +423,30 @@ const util = require('../lib/util');
                                 allowService: portLockdown
                             };
 
+                            // eslint-disable-next-line max-len
+                            let message = `Creating self IP ${selfIp.name} with address ${address} on vlan ${selfIp.vlan} allowing ${(selfIp.allow ? selfIp.allow : 'default')}`;
+
+                            // If traffic group provided, add to create call
+                            if (selfIp.trafficGroup) {
+                                selfIpBody.trafficGroup = selfIp.trafficGroup;
+                                message = `${message} in traffic group ${selfIp.trafficGroup}`;
+                            }
+
+                            const continueOnErrorMessage = /(Traffic group \(.+?\) does not exist)/;
                             promises.push(
                                 {
                                     promise: bigIp.create,
                                     arguments: [
                                         '/tm/net/self',
-                                        selfIpBody
+                                        selfIpBody,
+                                        undefined,
+                                        {
+                                            maxRetries: 60,
+                                            retryIntervalMs: 1000,
+                                            continueOnErrorMessage
+                                        }
                                     ],
-                                    // eslint-disable-next-line max-len
-                                    message: `Creating self IP ${selfIp.name} with address ${address} on vlan ${selfIp.vlan} allowing ${(selfIp.allow ? selfIp.allow : 'default')}`
+                                    message
                                 }
                             );
                         }
@@ -634,6 +664,40 @@ const util = require('../lib/util');
             }
         }
     };
+
+    /**
+     * Creates a Traffic Group on BigIP, if the Traffic Group does not exist
+     *
+     * @param {Object}  bigIp - bigIp client object
+     * @param {String}  trafficGroup - Traffic Group name
+     *
+     * @returns {Promise} Promise that will be resolved when Traffic Group is created,
+     *                    already exists, or if an error occurs.
+     */
+    function createTrafficGroup(bigIp, trafficGroup) {
+        let createGroup = true;
+        bigIp.list('/tm/cm/traffic-group')
+            .then((response) => {
+                response.forEach((group) => {
+                    if (group.name === trafficGroup) {
+                        createGroup = false;
+                    }
+                });
+                if (createGroup) {
+                    return bigIp.create(
+                        '/tm/cm/traffic-group',
+                        {
+                            name: trafficGroup,
+                            partition: '/Common'
+                        }
+                    );
+                }
+                return q();
+            })
+            .catch((err) => {
+                return q.reject(err);
+            });
+    }
 
     module.exports = runner;
 
