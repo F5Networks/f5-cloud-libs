@@ -6,6 +6,7 @@ Does initial configuration and provisioning of a BIG-IP.
     
     Usage: onboard [options]
     
+    
     Options:
     
       -V, --version                                                                                                                                                                                                                            output the version number
@@ -63,6 +64,7 @@ Sets up BIG-IPs in a cluster.
     
     Usage: cluster [options]
     
+    
     Options:
     
       -V, --version                                    output the version number
@@ -109,6 +111,7 @@ Sets up BIG-IPs in a cluster.
 Runs autoscale code to elect master and cluster
     
     Usage: autoscale [options]
+    
     
     Options:
     
@@ -160,6 +163,7 @@ Sets up default gateway, VLANs and self IPs
     
     Usage: network [options]
     
+    
     Options:
     
       -V, --version                                                                                                                        output the version number
@@ -191,6 +195,7 @@ Sets up default gateway, VLANs and self IPs
 Runs an arbitrary script.
     
     Usage: runScript [options]
+    
     
     Options:
     
