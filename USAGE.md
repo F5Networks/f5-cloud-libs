@@ -6,7 +6,6 @@ Does initial configuration and provisioning of a BIG-IP.
     
     Usage: onboard [options]
     
-    
     Options:
     
       -V, --version                                                                                                                                                                                                                            output the version number
@@ -64,7 +63,6 @@ Sets up BIG-IPs in a cluster.
     
     Usage: cluster [options]
     
-    
     Options:
     
       -V, --version                                    output the version number
@@ -112,7 +110,6 @@ Runs autoscale code to elect master and cluster
     
     Usage: autoscale [options]
     
-    
     Options:
     
       -V, --version                                      output the version number
@@ -134,7 +131,7 @@ Runs autoscale code to elect master and cluster
       -c, --cluster-action <type>                        join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us) | backup-ucs (save a ucs to cloud storage)
       --device-group <device_group>                      Device group name.
           --full-load-on-sync                                Enable full load on sync. Default false.
-          --asm-sync                                         Enable ASM sync. Default false. Default false.
+          --asm-sync                                         Enable ASM sync. Default sets ASM sync if ASM is provisioned.
           --network-failover                                 Enable network failover. Default false.
           --no-auto-sync                                     Enable auto sync. Default false (auto sync).
           --no-save-on-auto-sync                             Enable save on sync if auto sync is enabled. Default false (save on auto sync).
@@ -162,7 +159,6 @@ Runs autoscale code to elect master and cluster
 Sets up default gateway, VLANs and self IPs
     
     Usage: network [options]
-    
     
     Options:
     
@@ -195,7 +191,6 @@ Sets up default gateway, VLANs and self IPs
 Runs an arbitrary script.
     
     Usage: runScript [options]
-    
     
     Options:
     

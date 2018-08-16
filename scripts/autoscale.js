@@ -112,7 +112,7 @@ const commonOptions = require('./commonOptions');
                     )
                     .option(
                         '    --asm-sync',
-                        '    Enable ASM sync. Default false. Default false.'
+                        '    Enable ASM sync. Default sets ASM sync if ASM is provisioned.'
                     )
                     .option(
                         '    --network-failover',
@@ -1013,6 +1013,17 @@ const commonOptions = require('./commonOptions');
                     logger.debug('hostname not found in this.instance or globalSettings');
                 }
 
+                return bigIp.list('/tm/sys/provision');
+            })
+            .then((response) => {
+                const modulesProvisioned = {};
+
+                if (response && response.length > 0) {
+                    response.forEach((module) => {
+                        modulesProvisioned[module.name] = !(module.level === 'none');
+                    });
+                }
+
                 // Make sure device group exists
                 logger.info('Creating device group.');
 
@@ -1020,7 +1031,7 @@ const commonOptions = require('./commonOptions');
                     autoSync: options.autoSync,
                     saveOnAutoSync: options.saveOnAutoSync,
                     fullLoadOnSync: options.fullLoadOnSync,
-                    asmSync: options.asmSync,
+                    asmSync: modulesProvisioned.asm || options.asmSync,
                     networkFailover: options.networkFailover
                 };
 
