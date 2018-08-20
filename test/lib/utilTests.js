@@ -101,6 +101,7 @@ module.exports = {
         httpMock.reset();
 
         util = require('../../../f5-cloud-libs').util;
+        runTmshCommand = util.runTmshCommand;
 
         callback();
     },
@@ -127,6 +128,8 @@ module.exports = {
         fs.readdirSync = fsReaddirSync;
         fs.mkdirSync = fsMkdirSync;
         fs.createWriteStream = fsCreateWriteStream;
+
+        util.runTmshCommand = runTmshCommand;
 
         callback();
     },
@@ -1227,6 +1230,33 @@ module.exports = {
                 });
         }
     },
+    
+    testGetProductUtil: {
+        setUp : function(callback) {
+            util.runTmshCommand = function() {
+                return q("Big IP");
+            };
+            callback();
+        },
+
+        tearDown: function(callback) {
+            util.runTmshCommand = runTmshCommand;
+            callback();
+        },
+
+        testGetProduct : function(test) {
+            util.getProduct()
+                .then(function(response) {
+                    test.strictEqual(getProduct(), "Big IP");
+                })
+                .catch(function(err) {
+                    // err
+                })
+                .finally(function() {
+                    test.done();
+                });
+        }
+    },
 
     testTryUntil: {
         setUp: function(callback) {
@@ -1480,6 +1510,9 @@ module.exports = {
         test.strictEqual(util.versionCompare("12.0.0-1", "12.0.0-a1"), 1);
         test.strictEqual(util.versionCompare("12.0.0-a1", "12.0.0-1"), -1);
 
-        test.done();
+        test.done()
     }
 };
+
+
+    }
