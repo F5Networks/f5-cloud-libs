@@ -118,7 +118,7 @@ module.exports = {
         test.expect(1);
         argv.push('--out-file', 'foo');
         encryptData.run(argv, function(err) {
-            test.strictEqual(err.name, 'AssertionError');
+            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             console.log = log;
             test.done();
         });
@@ -130,7 +130,7 @@ module.exports = {
         test.expect(1);
         argv.push('--data', 'foo');
         encryptData.run(argv, function(err) {
-            test.strictEqual(err.name, 'AssertionError');
+            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             console.log = log;
             test.done();
         });
@@ -142,7 +142,7 @@ module.exports = {
         test.expect(1);
         argv.push('--data-file', 'foo');
         encryptData.run(argv, function(err) {
-            test.strictEqual(err.name, 'AssertionError');
+            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             console.log = log;
             test.done();
         });
@@ -154,7 +154,7 @@ module.exports = {
         test.expect(1);
         argv.push('--data', 'foo', '--data-file', 'bar', '--out-file', 'hello');
         encryptData.run(argv, function(err) {
-            test.strictEqual(err.name, 'AssertionError');
+            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             console.log = log;
             test.done();
         });

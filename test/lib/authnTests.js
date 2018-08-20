@@ -39,6 +39,7 @@ module.exports = {
             return q('BIG-IQ');
         }
 
+        icontrolMock.reset();
         icontrolMock.when(
             'create',
             '/shared/authn/login',
@@ -72,6 +73,24 @@ module.exports = {
             .then((icontrol) => {
                 test.strictEqual(
                     icontrolMock.getRequest('create', '/shared/authn/login').password, password);
+            })
+            .catch((err) => {
+                test.ok(false, err);
+            })
+            .finally(() => {
+                test.done();
+            });
+    },
+
+    testProductSpecified(test) {
+        const host = 'myHost';
+        const user = 'myUser';
+        const password = 'myPassword';
+
+        test.expect(1);
+        authn.authenticate(host, user, password, { product: 'BIG-IP'})
+            .then((icontrol) => {
+                test.strictEqual(icontrolMock.getRequest('create', '/shared/authn/login'), undefined);
             })
             .catch((err) => {
                 test.ok(false, err);

@@ -1,4 +1,4 @@
-image: node:4
+image: node:6
 
 stages:
     - test
@@ -14,8 +14,8 @@ cache:
     paths:
         - node_modules/
 
-test_node4:
-    image: node:4
+test_node6:
+    image: node:6
     tags:
         - docker-executor
     stage: test
@@ -26,8 +26,8 @@ test_node4:
         - npm run lint
         - npm test
 
-test_node6:
-    image: node:6
+test_node8:
+    image: node:8
     tags:
         - docker-executor
     stage: test

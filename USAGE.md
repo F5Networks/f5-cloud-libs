@@ -6,7 +6,6 @@ Does initial configuration and provisioning of a BIG-IP.
     
     Usage: onboard [options]
     
-    
     Options:
     
       -V, --version                                                                                                                                                                                                                            output the version number
@@ -52,7 +51,8 @@ Does initial configuration and provisioning of a BIG-IP.
       --create-license-pool <name:reg_key>                                                                                                                                                                                                     If running on a BIG-IQ, create a pool-style license (purchased pool, utility, volume, or FPS) with the name and reg key. (default: [object Object])
       --create-reg-key-pool <name:reg_key_list>                                                                                                                                                                                                If running on a BIG-IQ, create a reg key pool with the given name and reg keys. Reg keys should be comma separated. (default: [object Object])
       --update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>                                                                                                                                                Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create. (default: )
-      -m, --module <name:level>                                                                                                                                                                                                                Provision module <name> to <level>. For multiple modules, use multiple -m entries. (default: [object Object])
+      -m, --module <name:level>                                                                                                                                                                                                                Provision module <name> to <level>. For multiple entries, use --modules (default: [object Object])
+      --modules <name:level>                                                                                                                                                                                                                   Provision module(s) <name> to <level> (comma-separated list of module:level pairs). (default: [object Object])
       --ping [address]                                                                                                                                                                                                                         Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
       --update-sigs                                                                                                                                                                                                                            Update ASM signatures
       --metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:<aws | azure | gce | etc.>, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]  Optional usage metrics to collect. Customer ID should not identify a specific customer. (default: [object Object])
@@ -62,7 +62,6 @@ Does initial configuration and provisioning of a BIG-IP.
 Sets up BIG-IPs in a cluster.
     
     Usage: cluster [options]
-    
     
     Options:
     
@@ -111,7 +110,6 @@ Runs autoscale code to elect master and cluster
     
     Usage: autoscale [options]
     
-    
     Options:
     
       -V, --version                                      output the version number
@@ -133,7 +131,7 @@ Runs autoscale code to elect master and cluster
       -c, --cluster-action <type>                        join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us) | backup-ucs (save a ucs to cloud storage)
       --device-group <device_group>                      Device group name.
           --full-load-on-sync                                Enable full load on sync. Default false.
-          --asm-sync                                         Enable ASM sync. Default false. Default false.
+          --asm-sync                                         Enable ASM sync. Default sets ASM sync if ASM is provisioned.
           --network-failover                                 Enable network failover. Default false.
           --no-auto-sync                                     Enable auto sync. Default false (auto sync).
           --no-save-on-auto-sync                             Enable save on sync if auto sync is enabled. Default false (save on auto sync).
@@ -162,39 +160,37 @@ Sets up default gateway, VLANs and self IPs
     
     Usage: network [options]
     
-    
     Options:
     
-      -V, --version                                                                                     output the version number
-      --host <ip_address>                                                                               BIG-IP management IP to which to send commands.
-      -u, --user <user>                                                                                 BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
-      -p, --password <password>                                                                         BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.
-      --password-url <password_url>                                                                     URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.
-      --password-encrypted                                                                              Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
-      --port <port>                                                                                     BIG-IP management SSL port to connect to. Default 443.
-      --no-reboot                                                                                       Skip reboot even if it is recommended.
-      --background                                                                                      Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
-      --signal <signal>                                                                                 Signal to send when done. Default ONBOARD_DONE.
-      --wait-for <signal>                                                                               Wait for the named signal before running.
-      --log-level <level>                                                                               Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
-      -o, --output <file>                                                                               Log to file as well as console. This is the default if background process is spawned. Default is /tmp/network.log
-      --no-console                                                                                      Do not log to console. Default false (log to console).
-      --single-nic                                                                                      Set db variables for single NIC configuration.
-      --multi-nic                                                                                       Set db variables for multi NIC configuration.
-      --default-gw <gateway_address>                                                                    Set default gateway to gateway_address.
-      --route <name:name, gw:address, network:network>                                                  Create arbitrary route with name for destination network via gateway address. (default: )
-      --mgmt-route <name:name, gw:address, network:network>                                             Create management route with name for destination network via gateway address. (default: )
-      --local-only                                                                                      Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.
-      --vlan <name:name, nic:nic, [mtu:mtu], [tag:tag]>                                                 Create vlan with name on nic (for example, 1.1). Optionally specify mtu and tag. For multiple vlans, use multiple --vlan entries. (default: )
-      --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified. (default: )
-      --force-reboot                                                                                    Force a reboot at the end. This is necessary for some 2+ NIC configurations.
-      -h, --help                                                                                        output usage information
+      -V, --version                                                                                                                        output the version number
+      --host <ip_address>                                                                                                                  BIG-IP management IP to which to send commands.
+      -u, --user <user>                                                                                                                    BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
+      -p, --password <password>                                                                                                            BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url <password_url>                                                                                                        URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.
+      --password-encrypted                                                                                                                 Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
+      --port <port>                                                                                                                        BIG-IP management SSL port to connect to. Default 443.
+      --no-reboot                                                                                                                          Skip reboot even if it is recommended.
+      --background                                                                                                                         Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
+      --signal <signal>                                                                                                                    Signal to send when done. Default ONBOARD_DONE.
+      --wait-for <signal>                                                                                                                  Wait for the named signal before running.
+      --log-level <level>                                                                                                                  Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
+      -o, --output <file>                                                                                                                  Log to file as well as console. This is the default if background process is spawned. Default is /tmp/network.log
+      --no-console                                                                                                                         Do not log to console. Default false (log to console).
+      --single-nic                                                                                                                         Set db variables for single NIC configuration.
+      --multi-nic                                                                                                                          Set db variables for multi NIC configuration.
+      --default-gw <gateway_address>                                                                                                       Set default gateway to gateway_address.
+      --route <name:name, gw:address, network:network>                                                                                     Create arbitrary route with name for destination network via gateway address. (default: )
+      --mgmt-route <name:name, gw:address, network:network>                                                                                Create management route with name for destination network via gateway address. (default: )
+      --local-only                                                                                                                         Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.
+      --vlan <name:name, nic:nic, [mtu:mtu], [tag:tag]>                                                                                    Create vlan with name on nic (for example, 1.1). Optionally specify mtu and tag. For multiple vlans, use multiple --vlan entries. (default: )
+      --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2], [trafficGroup:traffic_group_name]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified. (default: )
+      --force-reboot                                                                                                                       Force a reboot at the end. This is necessary for some 2+ NIC configurations.
+      -h, --help                                                                                                                           output usage information
 ## runScript.js
 
 Runs an arbitrary script.
     
     Usage: runScript [options]
-    
     
     Options:
     

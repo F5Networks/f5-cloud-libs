@@ -61,7 +61,7 @@ module.exports = {
     testNoFile: function(test) {
         test.expect(1);
         decryptData.run(argv, function(err) {
-            test.strictEqual(err.name, 'AssertionError');
+            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             test.done();
         });
     },
