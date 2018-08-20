@@ -21,6 +21,7 @@ var util = require('../../../f5-cloud-libs').util;
 var icontrolMock = require('../testUtil/icontrolMock');
 
 var authnMock;
+var utilMock;
 
 var localHostname = 'localhostname';
 var deviceGroup = 'testDeviceGroup';
@@ -39,8 +40,12 @@ process.setMaxListeners(0);
 
 module.exports = {
     setUp: function(callback) {
+        utilMock = require('../../../f5-cloud-libs').util;
         BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIp = new BigIp();
+        utilMock.getProduct = function() {
+            return q('BIG-IP');
+        };
         authnMock = require('../../../f5-cloud-libs').authn;
         authnMock.authenticate = function(host, user, password) {
             icontrolMock.password = password;
