@@ -69,7 +69,6 @@ var fileNameWritten;
 var dataWritten;
 var createdDir;
 var unlinkSyncCalled;
-var runTmshCommand;
 // http mock
 var httpMock;
 
@@ -126,9 +125,6 @@ module.exports = {
         fs.readdirSync = fsReaddirSync;
         fs.mkdirSync = fsMkdirSync;
         fs.createWriteStream = fsCreateWriteStream;
-
-        util.runTmshCommand = runTmshCommand;
-
         callback();
     },
 
