@@ -19,25 +19,23 @@ var fs = require('fs');
 var ipc = require('../../../f5-cloud-libs').ipc;
 var util = require('../../../f5-cloud-libs').util;
 
-const mkdirSync = fs.mkdirSync;
 const existsSync = fs.existsSync;
 const closeSync = fs.closeSync;
 const readdirSync = fs.readdirSync;
 
-var checkSignaled = function(expected, test) {
-    test.strictEqual(signaled, expected);
+var counter;
+var checkCounter = function(expected, test) {
+    test.strictEqual(counter, expected);
     test.done();
 };
-var signaled;
 
 module.exports = {
     setUp: function(callback) {
-        signaled = 0;
+        counter = 0;
         callback();
     },
 
     tearDown: function(callback) {
-        fs.mkdirSync = mkdirSync;
         fs.readdirSync = readdirSync;
         fs.closeSync = closeSync;
         fs.existsSync = existsSync;
@@ -50,31 +48,31 @@ module.exports = {
         testBasic: function(test) {
             ipc.once('foo')
                 .then(function() {
-                    signaled++;
+                    counter++;
                 });
 
             test.expect(2);
-            test.strictEqual(signaled, 0);
+            test.strictEqual(counter, 0);
             ipc.send('foo');
             ipc.send('foo');
-            setTimeout(checkSignaled, 1100, 1, test);
+            setTimeout(checkCounter, 1100, 1, test);
         },
 
         testTwice: function(test) {
             ipc.once('foo')
                 .then(function() {
-                    signaled++;
+                    counter++;
                 });
             ipc.once('foo')
                 .then(function() {
-                    signaled++;
+                    counter++;
                 });
 
             test.expect(2);
-            test.strictEqual(signaled, 0);
+            test.strictEqual(counter, 0);
             ipc.send('foo');
             ipc.send('foo');
-            setTimeout(checkSignaled, 1100, 2, test);
+            setTimeout(checkCounter, 1100, 2, test);
         },
 
         testError: function(test) {
@@ -82,30 +80,26 @@ module.exports = {
             fs.existsSync = function() {
                 throw new Error(message);
             };
-            fs.mkdirSync = function() {
-                return true;
-            }
 
-            test.expect(1);
+            // We have to both try/catch and then/catch because we see different
+            // behavior in different environments
             try {
                 ipc.once('foo')
                     .then(() => {
-                        console.log('in then');
                         test.ok(false, 'once should have thrown');
                     })
                     .catch((err) => {
-                        console.log('in then/catch catch');
+                        counter++;
                         test.strictEqual(err.message, message);
                     });
             }
             catch (err) {
-                console.log('in try/catch catch');
+                counter++;
                 test.strictEqual(err.message, message);
             }
-            finally {
-                console.log('test done');
-                test.done();
-            }
+
+            test.expect(2);
+            setTimeout(checkCounter, 1100, 1, test);
         }
     },
 
