@@ -19,6 +19,7 @@ var fs = require('fs');
 var ipc = require('../../../f5-cloud-libs').ipc;
 var util = require('../../../f5-cloud-libs').util;
 
+const mkdirSync = fs.mkdirSync;
 const existsSync = fs.existsSync;
 const closeSync = fs.closeSync;
 const readdirSync = fs.readdirSync;
@@ -36,6 +37,7 @@ module.exports = {
     },
 
     tearDown: function(callback) {
+        fs.mkdirSync = mkdirSync;
         fs.readdirSync = readdirSync;
         fs.closeSync = closeSync;
         fs.existsSync = existsSync;
@@ -80,21 +82,28 @@ module.exports = {
             fs.existsSync = function() {
                 throw new Error(message);
             };
+            fs.mkdirSync = function() {
+                return true;
+            }
 
             test.expect(1);
             try {
                 ipc.once('foo')
                     .then(() => {
+                        console.log('in then');
                         test.ok(false, 'once should have thrown');
                     })
                     .catch((err) => {
+                        console.log('in then/catch catch');
                         test.strictEqual(err.message, message);
                     });
             }
             catch (err) {
-                test.ok(false, 'shold not be here');
+                console.log('in try/catch catch');
+                test.strictEqual(err.message, message);
             }
             finally {
+                console.log('test done');
                 test.done();
             }
         }
