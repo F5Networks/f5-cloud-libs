@@ -80,7 +80,7 @@ module.exports = {
             fs.existsSync = function() {
                 throw new Error(message);
             };
-
+console.log('node version', process.version);
             test.expect(1);
             try {
                 ipc.once('foo')
