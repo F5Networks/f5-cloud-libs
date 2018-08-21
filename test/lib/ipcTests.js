@@ -83,11 +83,16 @@ module.exports = {
 
             test.expect(1);
             try {
-                ipc.once('foo');
-                test.ok(false, 'once should have thrown');
+                ipc.once('foo')
+                    .then(() => {
+                        test.ok(false, 'once should have thrown');
+                    })
+                    .catch((err) => {
+                        test.strictEqual(err.message, message);
+                    });
             }
             catch (err) {
-                test.strictEqual(err.message, message);
+                test.ok(false, 'shold not be here');
             }
             finally {
                 test.done();
