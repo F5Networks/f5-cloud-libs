@@ -1552,7 +1552,7 @@ module.exports = {
         test.strictEqual(util.versionCompare("12.0.0-1", "12.0.0-a1"), 1);
         test.strictEqual(util.versionCompare("12.0.0-a1", "12.0.0-1"), -1);
 
-        test.done()
+        test.done();
     }
 };
 
