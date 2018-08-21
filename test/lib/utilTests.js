@@ -69,7 +69,7 @@ var fileNameWritten;
 var dataWritten;
 var createdDir;
 var unlinkSyncCalled;
-
+var runTmshCommand;
 // http mock
 var httpMock;
 
@@ -101,8 +101,6 @@ module.exports = {
         httpMock.reset();
 
         util = require('../../../f5-cloud-libs').util;
-        runTmshCommand = util.runTmshCommand;
-
         callback();
     },
 
@@ -1231,31 +1229,79 @@ module.exports = {
         }
     },
     
-    testGetProductUtil: {
-        setUp : function(callback) {
-            util.runTmshCommand = function() {
-                return q("Big IP");
-            };
-            callback();
-        },
-
-        tearDown: function(callback) {
-            util.runTmshCommand = runTmshCommand;
-            callback();
-        },
-
-        testGetProduct : function(test) {
+    testGetProduct: {
+        testHasProductString : function(test) {
+            util.getProductString = function() {
+                return q("BIG-IQ");
+            }; 
             util.getProduct()
                 .then(function(response) {
-                    test.strictEqual(getProduct(), "Big IP");
+                    test.strictEqual(response, "BIG-IQ");
                 })
                 .catch(function(err) {
-                    // err
+                    test.ok(false, err);
                 })
                 .finally(function() {
                     test.done();
                 });
-        }
+        },
+
+        testEmptyProductString : function(test) {
+            util.getProductString = function() {
+                return q('');
+            };
+            util.runTmshCommand = function() {
+                util.getProductString = function() {
+                    return q('BIG-IP');
+                };
+                return q('BIG-IP');
+            };
+            util.getProduct()
+                .then(function(response) {
+                     test.strictEqual(response, 'BIG-IP');
+                })
+                .catch(function(err) {
+                    test.ok(false, err);
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testFailToGetProductString : function(test) {
+            util.getProductString = function() {
+                return q.reject('failed');
+            };
+            util.getProduct()
+                .then(function(response) {
+                    test.ok(false, response);
+                })
+                .catch(function(err) {
+                    test.strictEqual(err, 'failed');
+                })
+                .finally(function() {
+                    test.done();
+                });
+        },
+
+        testFailToRunTmshCommand : function(test) {
+            util.runTmshCommand = function() {
+                return q.reject('failed');
+            };
+            util.getProductString = function() {
+                return q('');
+            };
+            util.getProduct()
+                .then(function(response) {
+                    test.ok(false, response);
+                })
+                .catch(function(err) {
+                    test.strictEqual(err, 'failed');
+                })
+                .finally(function() {
+                    test.done();
+                });
+        } 
     },
 
     testTryUntil: {
@@ -1514,5 +1560,3 @@ module.exports = {
     }
 };
 
-
-    }

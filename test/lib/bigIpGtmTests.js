@@ -22,6 +22,7 @@ var icontrolMock = require('../testUtil/icontrolMock');
 
 var bigIp;
 var authnMock;
+var utilMock;
 
 const serverName = 'myServer';
 const poolName = 'myPool';
@@ -50,6 +51,11 @@ module.exports = {
         authnMock.authenticate = function(host, user, password) {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
+        };
+
+        utilMock = require('../../../f5-cloud-libs').util;
+        utilMock.getProduct = function() {
+            return q("BIG-IP");      
         };
 
         icontrolMock.when(
