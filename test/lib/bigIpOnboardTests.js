@@ -33,6 +33,7 @@ var bigIpMgmtPortSent;
 var optionsSent;
 var initCalled;
 
+
 var poolNameSent;
 var instanceSent;
 
@@ -57,6 +58,11 @@ module.exports = {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
         };
+
+        util.getProduct = function() {
+            return q("BIG-IP");      
+        };
+
         icontrolMock.when(
             'list',
             '/shared/identified-devices/config/device-info',
