@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,38 @@
 
 'use strict';
 
-var q = require('q');
-var util = require('../../../f5-cloud-libs').util;
-var icontrolMock = require('../testUtil/icontrolMock');
+const q = require('q');
+const util = require('../../../f5-cloud-libs').util;
+const icontrolMock = require('../testUtil/icontrolMock');
 
-var authnMock;
-var utilMock;
+const localHostname = 'localhostname';
+const deviceGroup = 'testDeviceGroup';
 
-var localHostname = 'localhostname';
-var deviceGroup = 'testDeviceGroup';
+let authnMock;
+let utilMock;
+let BigIp;
+let bigIp;
 
-var BigIp;
-var bigIp;
-
-var utilCallInSerial;
-var bigIpList;
-var bigIpCreate;
-var bigIpReady;
-var bigIpDeviceInfo;
+let utilCallInSerial;
+let bigIpList;
+let bigIpCreate;
+let bigIpReady;
+let bigIpDeviceInfo;
 
 // Our tests cause too many event listeners. Turn off the check.
 process.setMaxListeners(0);
 
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
+        /* eslint-disable global-require */
         utilMock = require('../../../f5-cloud-libs').util;
         BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIp = new BigIp();
-        utilMock.getProduct = function() {
+        utilMock.getProduct = function getProduct() {
             return q('BIG-IP');
         };
         authnMock = require('../../../f5-cloud-libs').authn;
-        authnMock.authenticate = function(host, user, password) {
+        authnMock.authenticate = function authenticate(host, user, password) {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
         };
@@ -58,95 +58,103 @@ module.exports = {
                 product: 'BIG-IP'
             }
         );
-        bigIp.ready = function() {
+        bigIp.ready = function ready() {
             return q();
         };
         bigIp.init('host', 'user', 'passowrd')
-            .then(function() {
+            .then(() => {
                 icontrolMock.reset();
                 callback();
             });
     },
 
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
         callback();
     },
 
     testAddToTrust: {
-        testNotInTrust: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/someOtherDevice']
-                              });
+        testNotInTrust(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['/Common/someOtherDevice']
+                }
+            );
 
             test.expect(3);
             bigIp.cluster.addToTrust(localHostname, 'host', 'user', 'pass')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/add-to-trust');
                     test.strictEqual(icontrolMock.lastCall.body.deviceName, localHostname);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testAlreadyInTrust: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/someOtherDevice', '/Common/' + localHostname]
-                              });
+        testAlreadyInTrust(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['/Common/someOtherDevice', `/Common/${localHostname}`]
+
+                }
+            );
 
             test.expect(2);
             bigIp.cluster.addToTrust(localHostname, 'host', 'user', 'pass')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain/Root');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testAddToDeviceGroup: {
-        testNotInDeviceGroup: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                   {
-                                       name: 'notTheLocalDevice'
-                                   }
-                              ]
-                            );
+        testNotInDeviceGroup(test) {
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: 'notTheLocalDevice'
+                    }
+                ]
+            );
 
             test.expect(3);
             bigIp.cluster.addToDeviceGroup(localHostname, deviceGroup)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/~Common~' + deviceGroup + '/devices');
-                    test.deepEqual(icontrolMock.lastCall.body, {name: localHostname});
+                    test.strictEqual(
+                        icontrolMock.lastCall.path, `/tm/cm/device-group/~Common~${deviceGroup}/devices`
+                    );
+                    test.deepEqual(icontrolMock.lastCall.body, { name: localHostname });
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testAlreadyInDeviceGroup: function(test) {
+        testAlreadyInDeviceGroup(test) {
             icontrolMock.when(
                 'list',
                 '/tm/cm/device-group/',
@@ -159,171 +167,182 @@ module.exports = {
 
             icontrolMock.when(
                 'list',
-                '/tm/cm/device-group/' + deviceGroup + '/devices',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
                 [
                     {
                         name: localHostname
                     }
                 ]
-                );
+            );
 
             test.expect(2);
             bigIp.cluster.addToDeviceGroup(localHostname, deviceGroup)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup + '/devices');
+                    test.strictEqual(
+                        icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}/devices`
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testAreInTrustGroup: {
-        setUp: function(callback) {
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/device1', '/Common/device2']
-                              }
-                              );
+        setUp(callback) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['/Common/device1', '/Common/device2']
+                }
+            );
             callback();
         },
 
-        testNoneInGroup: function(test) {
-            var devices = ['device3', 'device4'];
+        testNoneInGroup(test) {
+            const devices = ['device3', 'device4'];
 
             test.expect(1);
             bigIp.cluster.areInTrustGroup(devices)
-                .then(function(devicesInGroup) {
+                .then((devicesInGroup) => {
                     test.strictEqual(devicesInGroup.length, 0);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testSomeInGroup: function(test) {
-            var devices = ['device1', 'device3'];
+        testSomeInGroup(test) {
+            const devices = ['device1', 'device3'];
 
             test.expect(2);
             bigIp.cluster.areInTrustGroup(devices)
-                .then(function(devicesInGroup) {
+                .then((devicesInGroup) => {
                     test.strictEqual(devicesInGroup.length, 1);
                     test.strictEqual(devicesInGroup.indexOf('device1'), 0);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testAllInGroup: function(test) {
-            var devices = ['device1', 'device2'];
+        testAllInGroup(test) {
+            const devices = ['device1', 'device2'];
 
             test.expect(3);
             bigIp.cluster.areInTrustGroup(devices)
-                .then(function(devicesInGroup) {
+                .then((devicesInGroup) => {
                     test.strictEqual(devicesInGroup.length, 2);
                     test.strictEqual(devicesInGroup.indexOf('device1'), 0);
                     test.strictEqual(devicesInGroup.indexOf('device2'), 1);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testCreateDeviceGroup: {
-        testAlreadyExistsWithDeviceInGroup: function(test) {
-            var deviceGroup = 'groupFoo';
-            var devices = ['someDevice'];
+        testAlreadyExistsWithDeviceInGroup(test) {
+            const devices = ['someDevice'];
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/',
-                              [
-                                  {
-                                      name: deviceGroup
-                                  }
-                              ]);
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device-group/',
+                [
+                    {
+                        name: deviceGroup
+                    }
+                ]
+            );
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                  {
-                                      name: 'someDevice'
-                                  }
-                              ]
-                              );
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: 'someDevice'
+                    }
+                ]
+            );
 
             test.expect(2);
             bigIp.cluster.createDeviceGroup(deviceGroup, 'sync-only', devices)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup + '/devices');
+                    test.strictEqual(
+                        icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}/devices`
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testAlreadyExistsDeviceNotInGroup: function(test) {
-            var deviceGroup = 'groupFoo';
-            var devices = ['someDevice'];
+        testAlreadyExistsDeviceNotInGroup(test) {
+            const devices = ['someDevice'];
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/',
-                              [
-                                  {
-                                      name: deviceGroup
-                                  }
-                              ]);
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device-group/',
+                [
+                    {
+                        name: deviceGroup
+                    }
+                ]
+            );
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                  {
-                                      name: 'someOtherDevice'
-                                  }
-                              ]
-                              );
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: 'someOtherDevice'
+                    }
+                ]
+            );
 
             test.expect(2);
             bigIp.cluster.createDeviceGroup(deviceGroup, 'sync-only', devices)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/~Common~' + deviceGroup + '/devices');
+                    test.strictEqual(
+                        icontrolMock.lastCall.path, `/tm/cm/device-group/~Common~${deviceGroup}/devices`
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDefaults: function(test) {
-            var name = 'groupFoo';
-            var type = 'sync-failover';
-            var devices =['device1', 'device2'];
+        testDefaults(test) {
+            const name = 'groupFoo';
+            const type = 'sync-failover';
+            const devices = ['device1', 'device2'];
 
             test.expect(10);
             bigIp.cluster.createDeviceGroup(name, type, devices)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
                     test.strictEqual(icontrolMock.lastCall.body.name, name);
@@ -336,19 +355,19 @@ module.exports = {
                     test.strictEqual(icontrolMock.lastCall.body.fullLoadOnSync, false);
                     test.strictEqual(icontrolMock.lastCall.body.asmSync, 'disabled');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testFull: function(test) {
-            var name = 'groupFoo';
-            var type = 'sync-failover';
-            var devices =['device1', 'device2'];
-            var options = {
+        testFull(test) {
+            const name = 'groupFoo';
+            const type = 'sync-failover';
+            const devices = ['device1', 'device2'];
+            const options = {
                 autoSync: true,
                 saveOnAutoSync: true,
                 networkFailover: true,
@@ -358,7 +377,7 @@ module.exports = {
 
             test.expect(12);
             bigIp.cluster.createDeviceGroup(name, type, devices, options)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
                     test.strictEqual(icontrolMock.lastCall.body.name, name);
@@ -373,309 +392,318 @@ module.exports = {
                     test.strictEqual(icontrolMock.lastCall.body.asmSync, 'enabled');
                     test.strictEqual(icontrolMock.lastCall.body.networkFailover, 'enabled');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testSyncOnly: function(test) {
+        testSyncOnly(test) {
             test.expect(1);
             bigIp.cluster.createDeviceGroup('abc', 'sync-only', [])
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.body.type, 'sync-only');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testSingleDevice: function(test) {
-            var name = 'groupFoo';
-            var type = 'sync-failover';
-            var device ='device1';
+        testSingleDevice(test) {
+            const name = 'groupFoo';
+            const type = 'sync-failover';
+            const device = 'device1';
 
             test.expect(1);
             bigIp.cluster.createDeviceGroup(name, type, device)
-                .then(function() {
+                .then(() => {
                     test.deepEqual(icontrolMock.lastCall.body.devices, [device]);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNoName: function(test) {
+        testNoName(test) {
             test.expect(1);
             bigIp.cluster.createDeviceGroup()
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'Should have thrown deviceGroup required');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notEqual(err.message.indexOf('deviceGroup is required'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBadType: function(test) {
+        testBadType(test) {
             test.expect(1);
             bigIp.cluster.createDeviceGroup('abc', 'foo')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'Should have thrown bad type');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notEqual(err.message.indexOf('type must be'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNoType: function(test) {
+        testNoType(test) {
             test.expect(1);
             bigIp.cluster.createDeviceGroup('abc')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'Should have thrown no type');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notEqual(err.message.indexOf('type must be'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNoDevices: function(test) {
+        testNoDevices(test) {
             test.expect(1);
             bigIp.cluster.createDeviceGroup('abc', 'sync-failover', [])
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.body.devices.length, 0);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testDeleteDeviceGroup: {
-        testDeviceGroupDoesntExist: function(test) {
-            icontrolMock.when('list', '/tm/cm/device-group/', [{name: 'def'}]);
+        testDeviceGroupDoesntExist(test) {
+            icontrolMock.when('list', '/tm/cm/device-group/', [{ name: 'def' }]);
 
             test.expect(2);
             bigIp.cluster.deleteDeviceGroup('abc')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDeviceGroupExists: function(test) {
-            icontrolMock.when('list', '/tm/cm/device-group/', [{name: 'abc'}]);
+        testDeviceGroupExists(test) {
+            icontrolMock.when('list', '/tm/cm/device-group/', [{ name: 'abc' }]);
 
             test.expect(2);
             bigIp.cluster.deleteDeviceGroup('abc')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'delete');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/abc');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDevicesRemoved: function(test) {
-            icontrolMock.when('list', '/tm/cm/device-group/', [{name: 'abc'}]);
+        testDevicesRemoved(test) {
+            icontrolMock.when('list', '/tm/cm/device-group/', [{ name: 'abc' }]);
 
             test.expect(1);
             bigIp.cluster.deleteDeviceGroup('abc')
-                .then(function() {
-                    test.deepEqual(icontrolMock.getRequest('modify', '/tm/cm/device-group/abc'), {devices: []});
+                .then(() => {
+                    test.deepEqual(
+                        icontrolMock.getRequest('modify', '/tm/cm/device-group/abc'), { devices: [] }
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testConfigSync: {
-        testSetConfigSyncIp: function(test) {
-            var ip = '1.2.3.4';
+        testSetConfigSyncIp(test) {
+            const ip = '1.2.3.4';
 
-            icontrolMock.when('list',
-                              '/shared/identified-devices/config/device-info',
-                              {
-                                  hostname: localHostname
-                              });
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    hostname: localHostname
+                }
+            );
 
             test.expect(3);
             bigIp.cluster.configSyncIp(ip)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device/~Common~' + localHostname);
-                    test.deepEqual(icontrolMock.lastCall.body, {configsyncIp: ip});
+                    test.strictEqual(icontrolMock.lastCall.path, `/tm/cm/device/~Common~${localHostname}`);
+                    test.deepEqual(icontrolMock.lastCall.body, { configsyncIp: ip });
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testSyncBasic: function(test) {
-            var deviceGroup = 'someDeviceGroup';
-
+        testSyncBasic(test) {
             test.expect(4);
             bigIp.cluster.sync('to-group', deviceGroup)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm');
                     test.strictEqual(icontrolMock.lastCall.body.command, 'run');
-                    test.strictEqual(icontrolMock.lastCall.body.utilCmdArgs, 'config-sync  to-group ' + deviceGroup);
+                    test.strictEqual(
+                        icontrolMock.lastCall.body.utilCmdArgs, `config-sync  to-group ${deviceGroup}`
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testSyncForceFullLoadPush: function(test) {
-            var deviceGroup = 'someDeviceGroup';
-
+        testSyncForceFullLoadPush(test) {
             test.expect(4);
             bigIp.cluster.sync('to-group', deviceGroup, true)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm');
                     test.strictEqual(icontrolMock.lastCall.body.command, 'run');
-                    test.strictEqual(icontrolMock.lastCall.body.utilCmdArgs, 'config-sync force-full-load-push to-group ' + deviceGroup);
+                    test.strictEqual(
+                        icontrolMock.lastCall.body.utilCmdArgs,
+                        `config-sync force-full-load-push to-group ${deviceGroup}`
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testSyncComplete: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/sync-status',
-                              {
-                                  entries: {
-                                      "https://localhost/mgmt/tm/cm/sync-status/0": {
-                                          nestedStats: {
-                                              entries: {
-                                                  color: {
-                                                      description: "green"
-                                                  }
-                                              }
-                                          }
-                                      }
-                                  }
-                              });
+        testSyncComplete(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/sync-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/sync-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    color: {
+                                        description: 'green'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
 
             test.expect(1);
             bigIp.cluster.syncComplete()
-                .then(function() {
+                .then(() => {
                     test.ok(true);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testSyncNotComplete: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/sync-status',
-                              {
-                                  entries: {
-                                      "https://localhost/mgmt/tm/cm/sync-status/0": {
-                                          nestedStats: {
-                                              entries: {
-                                                  color: {
-                                                      description: "red"
-                                                  }
-                                              }
-                                          }
-                                      }
-                                  }
-                              });
+        testSyncNotComplete(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/sync-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/sync-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    color: {
+                                        description: 'red'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
 
             test.expect(1);
             bigIp.cluster.syncComplete(util.NO_RETRY)
-                .then(function() {
-                    test.ok(false, "syncComplete should have thrown.");
+                .then(() => {
+                    test.ok(false, 'syncComplete should have thrown.');
                 })
-                .catch(function() {
+                .catch(() => {
                     test.ok(true);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testGetCmSyncStatus: {
-        testBasic: function(test) {
+        testBasic(test) {
             icontrolMock.when(
                 'list',
                 '/tm/cm/sync-status',
                 {
-                    "entries": {
-                        "https://localhost/mgmt/tm/cm/sync-status/0": {
-                            "nestedStats": {
-                                "entries": {
-                                    "color": {
-                                        "description": "red"
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/sync-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    color: {
+                                        description: 'red'
                                     },
-                                    "https://localhost/mgmt/tm/cm/syncStatus/0/details": {
-                                        "nestedStats": {
-                                            "entries": {
-                                                "https://localhost/mgmt/tm/cm/syncStatus/0/details/0": {
-                                                    "nestedStats": {
-                                                        "entries": {
-                                                            "details": {
-                                                                "description": "iAmDisconnected: disconnected"
+                                    'https://localhost/mgmt/tm/cm/syncStatus/0/details': {
+                                        nestedStats: {
+                                            entries: {
+                                                'https://localhost/mgmt/tm/cm/syncStatus/0/details/0': {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'iAmDisconnected: disconnected'
                                                             }
                                                         }
                                                     }
                                                 },
-                                                "https://localhost/mgmt/tm/cm/syncStatus/0/details/1": {
-                                                    "nestedStats": {
-                                                        "entries": {
-                                                            "details": {
-                                                                "description": "iAmConnected: connected"
+                                                'https://localhost/mgmt/tm/cm/syncStatus/0/details/1': {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'iAmConnected: connected'
                                                             }
                                                         }
                                                     }
@@ -687,67 +715,65 @@ module.exports = {
                             }
                         }
                     },
-                    "kind": "tm:cm:sync-status:sync-statusstats",
-                    "selfLink": "https://localhost/mgmt/tm/cm/sync-status?ver=13.0.0"
+                    kind: 'tm:cm:sync-status:sync-statusstats',
+                    selfLink: 'https://localhost/mgmt/tm/cm/sync-status?ver=13.0.0'
                 }
             );
 
             test.expect(4);
             bigIp.cluster.getCmSyncStatus()
-                .then(function(response) {
+                .then((response) => {
                     test.strictEqual(response.connected.length, 1);
                     test.notStrictEqual(response.connected.indexOf('iAmConnected'), -1);
                     test.strictEqual(response.disconnected.length, 1);
                     test.notStrictEqual(response.disconnected.indexOf('iAmDisconnected'), -1);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNoEntries: function(test) {
+        testNoEntries(test) {
             icontrolMock.when(
                 'list',
                 '/tm/cm/sync-status',
                 {
-                    "entries": {
-                        "https://localhost/mgmt/tm/cm/sync-status/0": {
-                            "nestedStats": {
-                                "entries": {
-                                    "color": {
-                                        "description": "red"
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/sync-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    color: {
+                                        description: 'red'
                                     }
                                 }
                             }
                         }
                     },
-                    "kind": "tm:cm:sync-status:sync-statusstats",
-                    "selfLink": "https://localhost/mgmt/tm/cm/sync-status?ver=13.0.0"
+                    kind: 'tm:cm:sync-status:sync-statusstats',
+                    selfLink: 'https://localhost/mgmt/tm/cm/sync-status?ver=13.0.0'
                 }
             );
 
             test.expect(2);
             bigIp.cluster.getCmSyncStatus()
-                .then(function(response) {
-                    test.strictEqual(response.connected.length,0);
+                .then((response) => {
+                    test.strictEqual(response.connected.length, 0);
                     test.strictEqual(response.disconnected.length, 0);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testIsInDeviceGroup: {
-        testGroupDoesNotExist: function(test) {
-            var deviceGroup = 'myDeviceGroup';
-
+        testGroupDoesNotExist(test) {
             icontrolMock.when(
                 'list',
                 '/tm/cm/device-group/',
@@ -760,20 +786,18 @@ module.exports = {
 
             test.expect(1);
             bigIp.cluster.isInDeviceGroup(localHostname, deviceGroup)
-                .then(function(isInGroup) {
+                .then((isInGroup) => {
                     test.strictEqual(isInGroup, false);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testInGroup: function(test) {
-            var deviceGroup = 'myDeviceGroup';
-
+        testInGroup(test) {
             icontrolMock.when(
                 'list',
                 '/tm/cm/device-group/',
@@ -785,7 +809,7 @@ module.exports = {
             );
             icontrolMock.when(
                 'list',
-                '/tm/cm/device-group/' + deviceGroup + '/devices',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
                 [
                     {
                         name: localHostname
@@ -795,87 +819,90 @@ module.exports = {
 
             test.expect(1);
             bigIp.cluster.isInDeviceGroup(localHostname, deviceGroup)
-                .then(function(isInGroup) {
+                .then((isInGroup) => {
                     test.ok(isInGroup);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNotInGroup: function(test) {
-            var deviceGroup = 'myDeviceGroup';
-
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                  {
-                                      name: 'someOtherDevice'
-                                  }
-                              ]
-                            );
+        testNotInGroup(test) {
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: 'someOtherDevice'
+                    }
+                ]
+            );
 
             test.expect(1);
             bigIp.cluster.isInDeviceGroup(localHostname, deviceGroup)
-                .then(function(isInGroup) {
+                .then((isInGroup) => {
                     test.ok(!isInGroup);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testIsInTrustGroup: {
-        testInGroup: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/' + localHostname]
-                              });
+        testInGroup(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: [`/Common/${localHostname}`]
+                }
+            );
 
             test.expect(1);
             bigIp.cluster.isInTrustGroup(localHostname)
-                .then(function(isInGroup) {
+                .then((isInGroup) => {
                     test.ok(isInGroup);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNotInGroup: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/notMe']
-                              });
+        testNotInGroup(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['/Common/notMe']
+                }
+            );
 
             test.expect(1);
             bigIp.cluster.isInTrustGroup(localHostname)
-                .then(function(isInGroup) {
+                .then((isInGroup) => {
                     test.ok(!isInGroup);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testJoinCluster: {
-        setUp: function(callback) {
+        setUp(callback) {
             icontrolMock.reset();
             icontrolMock.when(
                 'list',
@@ -922,7 +949,7 @@ module.exports = {
                 '/tm/cm/sync-status',
                 {
                     entries: {
-                        "https://localhost/mgmt/tm/cm/sync-status/0": {
+                        'https://localhost/mgmt/tm/cm/sync-status/0': {
                             nestedStats: {
                                 entries: {
                                     color: {
@@ -960,16 +987,18 @@ module.exports = {
 
             // In this test, the code under test creates its own remoteBigIp object
             // so we need to do dependency injection a little differently
-            BigIp.prototype.list = function() {
+            /* eslint-disable prefer-spread, prefer-rest-params */
+            BigIp.prototype.list = function list() {
                 return icontrolMock.list.apply(icontrolMock, arguments);
             };
-            BigIp.prototype.create = function() {
+            BigIp.prototype.create = function create() {
                 return icontrolMock.create.apply(icontrolMock, arguments);
             };
-            BigIp.prototype.ready = function() {
+            /* eslint-enable prefer-spread, prefer-rest-params */
+            BigIp.prototype.ready = function ready() {
                 return q();
             };
-            BigIp.prototype.deviceInfo = function() {
+            BigIp.prototype.deviceInfo = function deviceInfo() {
                 return q({
                     hostname: 'remoteHost',
                     managementAddress: '5.6.7.8',
@@ -980,7 +1009,7 @@ module.exports = {
             callback();
         },
 
-        tearDown: function(callback) {
+        tearDown(callback) {
             BigIp.prototype.list = bigIpList;
             BigIp.prototype.create = bigIpCreate;
             BigIp.prototype.ready = bigIpReady;
@@ -989,16 +1018,15 @@ module.exports = {
             callback();
         },
 
-        testMissingParameters: function(test) {
+        testMissingParameters(test) {
             test.expect(1);
-            test.throws(function() {
+            test.throws(() => {
                 bigIp.cluster.joinCluster();
             });
             test.done();
         },
 
-        testBasic: function(test) {
-            var deviceGroup = 'myDeviceGroup';
+        testBasic(test) {
             icontrolMock.when(
                 'create',
                 '/tm/cm',
@@ -1006,24 +1034,25 @@ module.exports = {
             );
 
             test.expect(3);
-            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, {syncDelay: 5})
-                .then(function() {
-                    var syncRequest = icontrolMock.getRequest('create', '/tm/cm');
+            bigIp.cluster.joinCluster(
+                deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, { syncDelay: 5 }
+            )
+                .then(() => {
+                    const syncRequest = icontrolMock.getRequest('create', '/tm/cm');
                     test.strictEqual(syncRequest.command, 'run');
                     test.notStrictEqual(syncRequest.utilCmdArgs.indexOf('to-group'), -1);
                     test.notStrictEqual(syncRequest.utilCmdArgs.indexOf(deviceGroup), -1);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBelow121: function(test) {
-            var deviceGroup = 'myDeviceGroup';
-            BigIp.prototype.deviceInfo = function() {
+        testBelow121(test) {
+            BigIp.prototype.deviceInfo = function deviceInfo() {
                 return q({
                     hostname: 'remoteHost',
                     managementAddress: '5.6.7.8',
@@ -1041,47 +1070,52 @@ module.exports = {
             );
             icontrolMock.when(
                 'modify',
-                '/tm/cm/device-group/datasync-global-dg/devices/' + localHostname,
+                `/tm/cm/device-group/datasync-global-dg/devices/${localHostname}`,
                 {}
             );
 
             test.expect(1);
-            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, {syncDelay: 5})
-                .then(function() {
-                    var syncRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/datasync-global-dg/devices/' + localHostname);
-                    test.deepEqual(syncRequest, {'set-sync-leader': true});
+            bigIp.cluster.joinCluster(
+                deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, { syncDelay: 5 }
+            )
+                .then(() => {
+                    const syncRequest =
+                        icontrolMock.getRequest(
+                            'modify', `/tm/cm/device-group/datasync-global-dg/devices/${localHostname}`
+                        );
+                    test.deepEqual(syncRequest, { 'set-sync-leader': true });
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testRecommendedAction: function(test) {
-            var deviceGroup = 'myDeviceGroup';
-            var recommendedGroup = 'otherDeviceGroup';
+        testRecommendedAction(test) {
+            const recommendedGroup = 'otherDeviceGroup';
 
+            /* eslint-disable max-len */
             icontrolMock.when(
                 'list',
                 '/tm/cm/sync-status',
                 {
                     entries: {
-                        "https://localhost/mgmt/tm/cm/sync-status/0": {
+                        'https://localhost/mgmt/tm/cm/sync-status/0': {
                             nestedStats: {
                                 entries: {
                                     color: {
                                         description: 'red'
                                     },
-                                    "https://localhost/mgmt/tm/cm/syncStatus/0/details": {
+                                    'https://localhost/mgmt/tm/cm/syncStatus/0/details': {
                                         nestedStats: {
                                             entries: {
                                                 1: {
                                                     nestedStats: {
                                                         entries: {
                                                             details: {
-                                                                description: 'Recommended action: to group ' + recommendedGroup
+                                                                description: `Recommended action: to group ${recommendedGroup}`
                                                             }
                                                         }
                                                     }
@@ -1095,6 +1129,7 @@ module.exports = {
                     }
                 }
             );
+            /* eslint-enable max-len */
 
             icontrolMock.when(
                 'create',
@@ -1103,15 +1138,22 @@ module.exports = {
             );
 
             test.expect(3);
-            bigIp.cluster.joinCluster(deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, {syncDelay: 5, syncCompDelay: 5})
-                .then(function() {
+            bigIp.cluster.joinCluster(
+                deviceGroup,
+                'remoteHost',
+                'remoteUser',
+                'remotePassword',
+                false,
+                { syncDelay: 5, syncCompDelay: 5 }
+            )
+                .then(() => {
                     test.ok(false, 'Should have been rejected due to our mock.');
                 })
-                .catch(function() {
+                .catch(() => {
                     // promise will be rejected because our final syncComplete never passes because
                     // we mocked it, but check that the last sync request was for the recommendedGroup
-                    var syncRequest = icontrolMock.getRequest('create', '/tm/cm');
-                    var lastSyncRequest;
+                    let syncRequest = icontrolMock.getRequest('create', '/tm/cm');
+                    let lastSyncRequest;
 
                     while (syncRequest) {
                         lastSyncRequest = syncRequest;
@@ -1121,14 +1163,13 @@ module.exports = {
                     test.notStrictEqual(lastSyncRequest.utilCmdArgs.indexOf('to-group'), -1);
                     test.notStrictEqual(lastSyncRequest.utilCmdArgs.indexOf(recommendedGroup), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testLocal: function(test) {
-            var deviceGroup = 'myDeviceGroup';
-            var remoteIp = '1.2.3.4';
+        testLocal(test) {
+            const remoteIp = '1.2.3.4';
             icontrolMock.when(
                 'create',
                 '/tm/cm',
@@ -1136,50 +1177,62 @@ module.exports = {
             );
 
             test.expect(1);
-            bigIp.cluster.joinCluster(deviceGroup, remoteIp, 'remoteUser', 'remotePassword', true, {syncDelay: 5})
-                .then(function() {
-                    var addToTrustRequest = icontrolMock.getRequest('create', '/tm/cm/add-to-trust');
+            bigIp.cluster.joinCluster(
+                deviceGroup,
+                remoteIp,
+                'remoteUser',
+                'remotePassword',
+                true,
+                { syncDelay: 5 }
+            )
+                .then(() => {
+                    const addToTrustRequest = icontrolMock.getRequest('create', '/tm/cm/add-to-trust');
                     test.strictEqual(addToTrustRequest.device, remoteIp);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testLocalAlreadyInGroup: function(test) {
-            var deviceGroup = 'myDeviceGroup';
-            var remoteIp = '1.2.3.4';
+        testLocalAlreadyInGroup(test) {
+            const remoteIp = '1.2.3.4';
             icontrolMock.when(
                 'create',
                 '/tm/cm',
                 {}
             );
 
-            var isInDeviceGroup = bigIp.cluster.isInDeviceGroup;
-            bigIp.cluster.isInDeviceGroup = function() {
+            const isInDeviceGroup = bigIp.cluster.isInDeviceGroup;
+            bigIp.cluster.isInDeviceGroup = () => {
                 return q(true);
             };
 
             test.expect(1);
-            bigIp.cluster.joinCluster(deviceGroup, remoteIp, 'remoteUser', 'remotePassword', true, {syncDelay: 5})
-                .then(function(response) {
+            bigIp.cluster.joinCluster(
+                deviceGroup,
+                remoteIp,
+                'remoteUser',
+                'remotePassword',
+                true,
+                { syncDelay: 5 }
+            )
+                .then((response) => {
                     test.strictEqual(response, false);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     bigIp.cluster.isInDeviceGroup = isInDeviceGroup;
                     test.done();
                 });
         },
 
-        testRemote: function(test) {
-            var deviceGroup = 'myDeviceGroup';
-            var remoteIp = '1.2.3.4';
+        testRemote(test) {
+            const remoteIp = '1.2.3.4';
             icontrolMock.when(
                 'create',
                 '/tm/cm',
@@ -1187,49 +1240,55 @@ module.exports = {
             );
 
             test.expect(1);
-            bigIp.cluster.joinCluster(deviceGroup, remoteIp, 'remoteUser', 'remotePassword', false, {syncDelay: 5})
-                .then(function() {
-                    var addToTrustRequest = icontrolMock.getRequest('create', '/tm/cm/add-to-trust');
+            bigIp.cluster.joinCluster(
+                deviceGroup,
+                remoteIp,
+                'remoteUser',
+                'remotePassword',
+                false,
+                { syncDelay: 5 }
+            )
+                .then(() => {
+                    const addToTrustRequest = icontrolMock.getRequest('create', '/tm/cm/add-to-trust');
                     test.strictEqual(addToTrustRequest.device, '5.6.7.8');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testRemoveFromCluster: {
-        setUp: function(callback) {
+        setUp(callback) {
             icontrolMock.when(
                 'list',
                 '/tm/cm/device-group/',
                 [
                     {
-                        name: 'myDeviceGroup'
+                        name: deviceGroup
                     }
                 ]
             );
             callback();
         },
 
-        testOneDevice: function(test) {
-            var device1 = 'device1';
-            var device2 = 'device2';
-            var deviceGroup = 'myDeviceGroup';
+        testOneDevice(test) {
+            const device1 = 'device1';
+            const device2 = 'device2';
 
             icontrolMock.when(
                 'list',
-                '/tm/cm/device-group/' + deviceGroup + '/devices',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
                 [
-                     {
-                         name: device1
-                     },
-                     {
-                         name: device2
-                     }
+                    {
+                        name: device1
+                    },
+                    {
+                        name: device2
+                    }
                 ]
             );
 
@@ -1237,309 +1296,333 @@ module.exports = {
                 'list',
                 '/tm/cm/trust-domain/Root',
                 {
-                    caDevices: ['/Common/' + device1, '/Common/' + device2]
+                    caDevices: [`/Common/${device1}`, `/Common/${device2}`]
                 }
             );
 
-            icontrolMock.when (
+            icontrolMock.when(
                 'create',
-                 '/tm/cm/remove-from-trust',
-                 {}
-             );
+                '/tm/cm/remove-from-trust',
+                {}
+            );
 
             test.expect(2);
             bigIp.cluster.removeFromCluster(device1)
-                .then(function() {
-                    var modifyFromDeviceGroupRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/' + deviceGroup);
-                    var removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
+                .then(() => {
+                    const modifyFromDeviceGroupRequest =
+                        icontrolMock.getRequest('modify', `/tm/cm/device-group/${deviceGroup}`);
+                    const removeFromTrustRequest =
+                        icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
 
                     test.deepEqual(modifyFromDeviceGroupRequest.devices, [device2]);
                     test.strictEqual(removeFromTrustRequest.deviceName, device1);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testTwoDevices: function(test) {
-            var device1 = 'device1';
-            var device2 = 'device2';
-            var deviceGroup = 'myDeviceGroup';
+        testTwoDevices(test) {
+            const device1 = 'device1';
+            const device2 = 'device2';
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                   {
-                                       name: device1
-                                   },
-                                   {
-                                       name: device2
-                                   }
-                              ]
-                            );
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/' + device1, '/Common/' + device2]
-                              });
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: device1
+                    },
+                    {
+                        name: device2
+                    }
+                ]
+            );
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: [`/Common/${device1}`, `/Common/${device2}`]
+                }
+            );
 
-            icontrolMock.when ('create',
-                               '/tm/cm/remove-from-trust',
-                               {});
+            icontrolMock.when(
+                'create',
+                '/tm/cm/remove-from-trust',
+                {}
+            );
 
             test.expect(3);
             bigIp.cluster.removeFromCluster([device1, device2])
-                .then(function() {
-                    var modifyFromDeviceGroupRequest = icontrolMock.getRequest('modify', '/tm/cm/device-group/' + deviceGroup);
-                    var removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
+                .then(() => {
+                    const modifyFromDeviceGroupRequest =
+                        icontrolMock.getRequest('modify', `/tm/cm/device-group/${deviceGroup}`);
+                    let removeFromTrustRequest =
+                        icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
 
                     test.deepEqual(modifyFromDeviceGroupRequest.devices, []);
                     test.strictEqual(removeFromTrustRequest.deviceName, device1);
                     removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
                     test.strictEqual(removeFromTrustRequest.deviceName, device2);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testRemoveFromDeviceGroup: {
-        testInGroup: function(test) {
-            var device1 = 'device1';
-            var device2 = 'device2';
-            var deviceGroup = 'myDeviceGroup';
+        testInGroup(test) {
+            const device1 = 'device1';
+            const device2 = 'device2';
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                   {
-                                       name: device1
-                                   },
-                                   {
-                                       name: device2
-                                   }
-                              ]
-                            );
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: device1
+                    },
+                    {
+                        name: device2
+                    }
+                ]
+            );
 
             test.expect(3);
             bigIp.cluster.removeFromDeviceGroup(device1, deviceGroup)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup);
-                    test.deepEqual(icontrolMock.lastCall.body,
-                                   {
-                                       devices: [device2]
-                                   }
+                    test.strictEqual(icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}`);
+                    test.deepEqual(
+                        icontrolMock.lastCall.body,
+                        {
+                            devices: [device2]
+                        }
                     );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testArrayInGroup: function(test) {
-            var device1 = 'device1';
-            var device2 = 'device2';
-            var keepMe = 'keepMe';
-            var deviceGroup = 'myDeviceGroup';
+        testArrayInGroup(test) {
+            const device1 = 'device1';
+            const device2 = 'device2';
+            const keepMe = 'keepMe';
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                   {
-                                       name: device1
-                                   },
-                                   {
-                                       name: device2
-                                   },
-                                   {
-                                       name: keepMe
-                                   }
-                              ]
-                            );
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: device1
+                    },
+                    {
+                        name: device2
+                    },
+                    {
+                        name: keepMe
+                    }
+                ]
+            );
 
             test.expect(3);
             bigIp.cluster.removeFromDeviceGroup(['device1', 'device2'], deviceGroup)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup);
-                    test.deepEqual(icontrolMock.lastCall.body,
-                                   {
-                                       devices: [keepMe]
-                                   }
+                    test.strictEqual(icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}`);
+                    test.deepEqual(
+                        icontrolMock.lastCall.body,
+                        {
+                            devices: [keepMe]
+                        }
                     );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNotInGroup: function(test) {
-            var device1 = 'device1';
-            var device2 = 'device2';
-            var deviceGroup = 'myDeviceGroup';
+        testNotInGroup(test) {
+            const device1 = 'device1';
+            const device2 = 'device2';
 
-            icontrolMock.when('list',
-                              '/tm/cm/device-group/' + deviceGroup + '/devices',
-                              [
-                                   {
-                                       name: device2
-                                   }
-                              ]
-                            );
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: device2
+                    }
+                ]
+            );
 
             test.expect(2);
             bigIp.cluster.removeFromDeviceGroup(device1, deviceGroup)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/' + deviceGroup + '/devices');
+                    test.strictEqual(
+                        icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}/devices`
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testRemoveAllFromDeviceGroup: {
-        testBasic: function(test) {
+        testBasic(test) {
             test.expect(3);
             bigIp.cluster.removeAllFromDeviceGroup('abc')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, ('modify'));
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/abc');
-                    test.deepEqual(icontrolMock.lastCall.body, {devices: []});
+                    test.deepEqual(icontrolMock.lastCall.body, { devices: [] });
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDeviceTrustGroup: function(test) {
+        testDeviceTrustGroup(test) {
             test.expect(1);
             bigIp.cluster.removeAllFromDeviceGroup('device_trust_group')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, '');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testRemoveFromTrust: {
-        testInTrust: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/someOtherDevice', '/Common/' + localHostname]
-                              });
+        testInTrust(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['/Common/someOtherDevice', `/Common/${localHostname}`]
+                }
+            );
 
-            icontrolMock.when ('create',
-                               '/tm/cm/remove-from-trust',
-                               {});
+            icontrolMock.when(
+                'create',
+                '/tm/cm/remove-from-trust',
+                {}
+            );
 
             test.expect(3);
             bigIp.cluster.removeFromTrust(localHostname)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'create');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/remove-from-trust');
                     test.strictEqual(icontrolMock.lastCall.body.deviceName, localHostname);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testArrayInTrust: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/device1', '/Common/device2', '/Common/someOtherDevice']
-                              });
+        testArrayInTrust(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['/Common/device1', '/Common/device2', '/Common/someOtherDevice']
+                }
+            );
 
-            icontrolMock.when ('create',
-                               '/tm/cm/remove-from-trust',
-                               {});
+            icontrolMock.when(
+                'create',
+                '/tm/cm/remove-from-trust',
+                {}
+            );
 
             test.expect(2);
             bigIp.cluster.removeFromTrust(['device1', 'device2'])
-                .then(function() {
-                    var request = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
-                    test.deepEqual(request,
-                                   {
-                                       command: "run",
-                                       name: "Root",
-                                       caDevice: true,
-                                       deviceName: "device1"
-                                   }
+                .then(() => {
+                    let request = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
+                    test.deepEqual(
+                        request,
+                        {
+                            command: 'run',
+                            name: 'Root',
+                            caDevice: true,
+                            deviceName: 'device1'
+                        }
                     );
                     request = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
-                    test.deepEqual(request,
-                                   {
-                                       command: "run",
-                                       name: "Root",
-                                       caDevice: true,
-                                       deviceName: "device2"
-                                   }
+                    test.deepEqual(
+                        request,
+                        {
+                            command: 'run',
+                            name: 'Root',
+                            caDevice: true,
+                            deviceName: 'device2'
+                        }
                     );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNotInTrust: function(test) {
-            icontrolMock.when('list',
-                              '/tm/cm/trust-domain/Root',
-                              {
-                                  caDevices: ['/Common/someOtherDevice']
-                              });
+        testNotInTrust(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/trust-domain/Root',
+                {
+                    caDevices: ['/Common/someOtherDevice']
+                }
+            );
 
             test.expect(2);
             bigIp.cluster.removeFromTrust(localHostname)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'list');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain/Root');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testResetTrust: {
-        testBelowV13: function(test) {
+        testBelowV13(test) {
             icontrolMock.when(
                 'list',
                 '/shared/identified-devices/config/device-info',
@@ -1550,19 +1633,19 @@ module.exports = {
 
             test.expect(2);
             bigIp.cluster.resetTrust()
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'delete');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain/Root');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testV13Above: function(test) {
+        testV13Above(test) {
             icontrolMock.when(
                 'list',
                 '/shared/identified-devices/config/device-info',
@@ -1573,14 +1656,14 @@ module.exports = {
 
             test.expect(2);
             bigIp.cluster.resetTrust()
-                .then(function() {
+                .then(() => {
                     test.strictEqual(icontrolMock.lastCall.method, 'delete');
                     test.strictEqual(icontrolMock.lastCall.path, '/tm/cm/trust-domain');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err.message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
