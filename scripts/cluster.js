@@ -65,7 +65,7 @@ const commonOptions = require('./commonOptions');
                     )
                     .option(
                         '--cloud <provider>',
-                        'Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of autoscaleProvider must exist at the correct location.'
+                        'Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of cloudProvider must exist at the correct location.'
                     )
                     .option(
                         '    --master',

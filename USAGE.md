@@ -81,7 +81,7 @@ Sets up BIG-IPs in a cluster.
       -o, --output <file>                              Log to file as well as console. This is the default if background process is spawned. Default is /tmp/cluster.log
       --no-console                                     Do not log to console. Default false (log to console).
       --config-sync-ip <config_sync_ip>                IP address for config sync.
-      --cloud <provider>                               Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of autoscaleProvider must exist at the correct location.
+      --cloud <provider>                               Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of cloudProvider must exist at the correct location.
           --master                                     If using a cloud provider, indicates that this is the master and credentials should be stored.
           --provider-options <cloud_options>           Any options (JSON stringified) that are required for the specific cloud provider. (default: )
       --create-group                                   Create a device group with the options:
