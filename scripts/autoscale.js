@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const q = require('q');
-const AutoscaleProvider = require('../lib/autoscaleProvider');
+const CloudProvider = require('../lib/cloudProvider');
 const util = require('../lib/util');
 const cryptoUtil = require('../lib/cryptoUtil');
 const childProcess = require('child_process');
@@ -80,7 +80,7 @@ const commonOptions = require('./commonOptions');
             let masterBad;
             let masterBadReason;
             let newMaster;
-            let asProvider;
+            let cloudProvider;
             let dnsProvider;
 
             Object.assign(optionsForTest, testOpts);
@@ -238,9 +238,9 @@ const commonOptions = require('./commonOptions');
                 logger.info(`${loggableArgs[1]} called with`, loggableArgs.join(' '));
 
                 // Get the concrete autoscale provider instance
-                asProvider = optionsForTest.autoscaleProvider;
-                if (!asProvider) {
-                    asProvider = cloudProviderFactory.getCloudProvider(
+                cloudProvider = optionsForTest.cloudProvider;
+                if (!cloudProvider) {
+                    cloudProvider = cloudProviderFactory.getCloudProvider(
                         options.cloud,
                         {
                             loggerOptions,
@@ -276,7 +276,7 @@ const commonOptions = require('./commonOptions');
                     })
                     .then(() => {
                         logger.info('Initializing autoscale provider');
-                        return asProvider.init(providerOptions, { autoscale: true });
+                        return cloudProvider.init(providerOptions, { autoscale: true });
                     })
                     .then(() => {
                         if (options.dns) {
@@ -287,7 +287,7 @@ const commonOptions = require('./commonOptions');
                     })
                     .then(() => {
                         logger.info('Getting this instance ID.');
-                        return asProvider.getInstanceId();
+                        return cloudProvider.getInstanceId();
                     })
                     .then((response) => {
                         logger.debug('This instance ID:', response);
@@ -297,7 +297,7 @@ const commonOptions = require('./commonOptions');
                         if (Object.keys(externalTag).length === 0) {
                             externalTag = undefined;
                         }
-                        return asProvider.getInstances({ externalTag });
+                        return cloudProvider.getInstances({ externalTag });
                     })
                     .then((response) => {
                         this.instances = response || {};
@@ -344,10 +344,10 @@ const commonOptions = require('./commonOptions');
                     })
                     .then((globalSettings) => {
                         this.instance.hostname = globalSettings.hostname;
-                        return asProvider.putInstance(this.instanceId, this.instance);
+                        return cloudProvider.putInstance(this.instanceId, this.instance);
                     })
                     .then(() => {
-                        return asProvider.bigIpReady();
+                        return cloudProvider.bigIpReady();
                     })
                     .then(() => {
                         return bigIp.deviceInfo();
@@ -357,10 +357,10 @@ const commonOptions = require('./commonOptions');
                         this.instance.macAddress = response.hostMac; // we need this for revoke on BIG-IQ 5.4
                         this.instance.version = response.version;
                         markVersions(this.instances);
-                        return asProvider.putInstance(this.instanceId, this.instance);
+                        return cloudProvider.putInstance(this.instanceId, this.instance);
                     })
                     .then(() => {
-                        let status = AutoscaleProvider.STATUS_UNKNOWN;
+                        let status = CloudProvider.STATUS_UNKNOWN;
 
                         logger.info('Determining master instance id.');
                         masterInstance = getMasterInstance(this.instances);
@@ -369,18 +369,18 @@ const commonOptions = require('./commonOptions');
                             if (!masterInstance.instance.versionOk) {
                                 masterBadReason = 'version not most recent in group';
                                 logger.silly(masterBadReason);
-                                status = AutoscaleProvider.STATUS_VERSION_NOT_UP_TO_DATE;
+                                status = CloudProvider.STATUS_VERSION_NOT_UP_TO_DATE;
                                 masterBad = true;
                             } else if (!isMasterExternalValueOk(masterInstance.id, this.instances)) {
                                 // if there are external instances in the mix, make sure the master
                                 // is one of them
                                 masterBadReason = 'master is not external, but there are external instances';
                                 logger.silly(masterBadReason);
-                                status = AutoscaleProvider.STATUS_NOT_EXTERNAL;
+                                status = CloudProvider.STATUS_NOT_EXTERNAL;
                                 masterBad = true;
                             } else if (!masterInstance.instance.providerVisible) {
                                 // The cloud provider does not currently see this instance
-                                status = AutoscaleProvider.STATUS_NOT_IN_CLOUD_LIST;
+                                status = CloudProvider.STATUS_NOT_IN_CLOUD_LIST;
                             } else {
                                 masterIid = masterInstance.id;
 
@@ -388,11 +388,11 @@ const commonOptions = require('./commonOptions');
                                     this.instance.isMaster = true;
                                 }
 
-                                status = AutoscaleProvider.STATUS_OK;
+                                status = CloudProvider.STATUS_OK;
                             }
                         }
 
-                        return updateMasterStatus.call(this, asProvider, status);
+                        return updateMasterStatus.call(this, cloudProvider, status);
                     })
                     .then(() => {
                         // If the master is not visible, check to see if it's been gone
@@ -404,7 +404,7 @@ const commonOptions = require('./commonOptions');
 
                         if (masterIid) {
                             logger.info('Possible master ID:', masterIid);
-                            return asProvider.isValidMaster(masterIid, this.instances);
+                            return cloudProvider.isValidMaster(masterIid, this.instances);
                         } else if (masterBad) {
                             logger.info('Old master no longer valid:', masterBadReason);
                             return q();
@@ -432,7 +432,7 @@ const commonOptions = require('./commonOptions');
                         // false or undefined validMaster means no masterIid or invalid masterIid
                         if (validMaster === false) {
                             logger.info('Invalid master ID:', masterIid);
-                            asProvider.masterInvalidated(masterIid);
+                            cloudProvider.masterInvalidated(masterIid);
                         }
 
                         // if no master, master is visible or expired, elect, otherwise, wait
@@ -440,7 +440,7 @@ const commonOptions = require('./commonOptions');
                             masterInstance.instance.providerVisible ||
                             masterBad) {
                             logger.info('Electing master.');
-                            return asProvider.electMaster(this.instances);
+                            return cloudProvider.electMaster(this.instances);
                         }
                         return q();
                     })
@@ -464,12 +464,12 @@ const commonOptions = require('./commonOptions');
 
                                 this.instance.masterStatus = {
                                     instanceId: masterIid,
-                                    status: AutoscaleProvider.STATUS_OK,
+                                    status: CloudProvider.STATUS_OK,
                                     lastUpdate: now,
                                     lastStatusChange: now
                                 };
 
-                                return asProvider.putInstance(this.instanceId, this.instance);
+                                return cloudProvider.putInstance(this.instanceId, this.instance);
                             }
                         }
                         return q();
@@ -477,13 +477,13 @@ const commonOptions = require('./commonOptions');
                     .then(() => {
                         if (this.instance.isMaster && newMaster) {
                             this.instance.status = AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER;
-                            return asProvider.putInstance(this.instanceId, this.instance);
+                            return cloudProvider.putInstance(this.instanceId, this.instance);
                         }
                         return q();
                     })
                     .then(() => {
                         if (this.instance.isMaster && newMaster) {
-                            return becomeMaster.call(this, asProvider, bigIp, options);
+                            return becomeMaster.call(this, cloudProvider, bigIp, options);
                         }
                         return q();
                     })
@@ -494,7 +494,7 @@ const commonOptions = require('./commonOptions');
                         ) {
                             this.instance.status = AutoscaleInstance.INSTANCE_STATUS_OK;
                             logger.silly('Became master');
-                            return asProvider.putInstance(this.instanceId, this.instance);
+                            return cloudProvider.putInstance(this.instanceId, this.instance);
                         } else if (response === false) {
                             logger.warn('Error writing master file');
                         }
@@ -502,13 +502,13 @@ const commonOptions = require('./commonOptions');
                     })
                     .then(() => {
                         if (masterIid && this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
-                            return asProvider.masterElected(masterIid);
+                            return cloudProvider.masterElected(masterIid);
                         }
                         return q();
                     })
                     .then(() => {
                         if (masterIid && this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
-                            return asProvider.tagMasterInstance(masterIid, this.instances);
+                            return cloudProvider.tagMasterInstance(masterIid, this.instances);
                         }
                         return q();
                     })
@@ -520,7 +520,7 @@ const commonOptions = require('./commonOptions');
                                 logger.info('Cluster action join');
                                 return handleJoin.call(
                                     this,
-                                    asProvider,
+                                    cloudProvider,
                                     bigIp,
                                     masterIid,
                                     options
@@ -529,7 +529,7 @@ const commonOptions = require('./commonOptions');
                                 logger.info('Cluster action update');
                                 return handleUpdate.call(
                                     this,
-                                    asProvider,
+                                    cloudProvider,
                                     bigIp,
                                     masterIid,
                                     masterBad || newMaster,
@@ -540,7 +540,7 @@ const commonOptions = require('./commonOptions');
                                 return bigIp.cluster.configSyncIp(this.instance.privateIp);
                             case 'backup-ucs':
                                 logger.info('Cluster action backup-ucs');
-                                return handleBackupUcs.call(this, asProvider, bigIp, options);
+                                return handleBackupUcs.call(this, cloudProvider, bigIp, options);
                             default:
                                 message = `Unknown cluster action ${options.clusterAction}`;
                                 logger.warn(message);
@@ -553,10 +553,10 @@ const commonOptions = require('./commonOptions');
                     })
                     .then(() => {
                         if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
-                            if (asProvider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)
+                            if (cloudProvider.hasFeature(CloudProvider.FEATURE_MESSAGING)
                                 && (options.clusterAction === 'join' || options.clusterAction === 'update')) {
                                 logger.info('Checking for messages');
-                                return handleMessages.call(this, asProvider, bigIp, options);
+                                return handleMessages.call(this, cloudProvider, bigIp, options);
                             }
                         } else {
                             logger.debug('Instance status not OK. Waiting.', this.instance.status);
@@ -643,7 +643,7 @@ const commonOptions = require('./commonOptions');
                 // If we are master and are replacing an expired master, other instances
                 // will join to us. Just set our config sync ip.
                 if (this.instance.isMaster) {
-                    if (!provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
+                    if (!provider.hasFeature(CloudProvider.FEATURE_MESSAGING)) {
                         logger.info('Storing master credentials.');
                         promise = provider.putMasterCredentials();
                     } else {
@@ -750,11 +750,11 @@ const commonOptions = require('./commonOptions');
         let messageMetadata = [];
 
         if (this.instance.isMaster && !options.blockSync) {
-            actions.push(AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER);
+            actions.push(CloudProvider.MESSAGE_ADD_TO_CLUSTER);
         }
 
         if (!this.instance.isMaster) {
-            actions.push(AutoscaleProvider.MESSAGE_SYNC_COMPLETE);
+            actions.push(CloudProvider.MESSAGE_SYNC_COMPLETE);
         }
 
         provider.getMessages(actions, { toInstanceId: this.instanceId })
@@ -809,7 +809,7 @@ const commonOptions = require('./commonOptions');
                         let discard = false;
                         switch (metadata.action) {
                         // Add an instance to our cluster
-                        case AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER:
+                        case CloudProvider.MESSAGE_ADD_TO_CLUSTER:
                             logger.silly('message MESSAGE_ADD_TO_CLUSTER');
 
                             if (alreadyAdding(metadata.fromInstanceId)) {
@@ -843,7 +843,7 @@ const commonOptions = require('./commonOptions');
                             break;
 
                         // sync is complete
-                        case AutoscaleProvider.MESSAGE_SYNC_COMPLETE:
+                        case CloudProvider.MESSAGE_SYNC_COMPLETE:
                             logger.silly('message MESSAGE_SYNC_COMPLETE');
                             actionPromises.push(
                                 provider.syncComplete(messageData.fromUser, messageData.fromPassword)
@@ -878,7 +878,7 @@ const commonOptions = require('./commonOptions');
 
                             messageMetadata.push(
                                 {
-                                    action: AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
+                                    action: CloudProvider.MESSAGE_SYNC_COMPLETE,
                                     toInstanceId: instanceIdsBeingAdded[i].toInstanceId,
                                     fromInstanceId: this.instanceId
                                 }
@@ -913,7 +913,7 @@ const commonOptions = require('./commonOptions');
 
                     syncCompletePromises.push(
                         provider.sendMessage(
-                            AutoscaleProvider.MESSAGE_SYNC_COMPLETE,
+                            CloudProvider.MESSAGE_SYNC_COMPLETE,
                             {
                                 toInstanceId: metadata.toInstanceId,
                                 fromInstanceId: metadata.fromInstanceId,
@@ -1075,7 +1075,7 @@ const commonOptions = require('./commonOptions');
 
         logger.info('Joining cluster.');
 
-        if (provider.hasFeature(AutoscaleProvider.FEATURE_MESSAGING)) {
+        if (provider.hasFeature(CloudProvider.FEATURE_MESSAGING)) {
             this.instance.lastJoinRequest = now;
             return provider.putInstance(this.instanceId, this.instance)
                 .then((response) => {
@@ -1128,7 +1128,7 @@ const commonOptions = require('./commonOptions');
                 .then((preppedData) => {
                     if (preppedData) {
                         return provider.sendMessage(
-                            AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                            CloudProvider.MESSAGE_ADD_TO_CLUSTER,
                             {
                                 toInstanceId: masterIid,
                                 fromInstanceId: this.instanceId,
@@ -1234,7 +1234,7 @@ const commonOptions = require('./commonOptions');
 
         let passphrase;
 
-        if (provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
+        if (provider.hasFeature(CloudProvider.FEATURE_ENCRYPTION)) {
             logger.debug('Generating public/private keys for autoscaling.');
             return cryptoUtil.generateRandomBytes(PASSPHRASE_LENGTH, 'base64')
                 .then((response) => {
@@ -1365,7 +1365,7 @@ const commonOptions = require('./commonOptions');
         let isExpired = false;
         let disconnectedMs;
 
-        if (masterStatus.status !== AutoscaleProvider.STATUS_OK) {
+        if (masterStatus.status !== CloudProvider.STATUS_OK) {
             disconnectedMs = new Date() - new Date(masterStatus.lastStatusChange);
             logger.silly('master has been disconnected for', disconnectedMs.toString(), 'ms');
             if (disconnectedMs > MAX_DISCONNECTED_MS) {
@@ -1460,7 +1460,7 @@ const commonOptions = require('./commonOptions');
 
                         // If we're not sharing the password, put our current user back after
                         // load
-                        if (!provider.hasFeature(AutoscaleProvider.FEATURE_SHARED_PASSWORD)) {
+                        if (!provider.hasFeature(CloudProvider.FEATURE_SHARED_PASSWORD)) {
                             loadUcsOptions.restoreUser = true;
                         }
 
@@ -1554,7 +1554,7 @@ const commonOptions = require('./commonOptions');
     }
 
     function prepareMessageData(provider, instanceId, messageData) {
-        if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
+        if (!provider.hasFeature(CloudProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
         return util.tryUntil(provider, util.SHORT_RETRY, provider.getPublicKey, [instanceId])
@@ -1566,7 +1566,7 @@ const commonOptions = require('./commonOptions');
     function readMessageData(provider, bigIp, messageData) {
         let filePromise;
 
-        if (!provider.hasFeature(AutoscaleProvider.FEATURE_ENCRYPTION)) {
+        if (!provider.hasFeature(CloudProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
 

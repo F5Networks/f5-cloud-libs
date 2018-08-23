@@ -17,11 +17,11 @@
 
 var q = require('q');
 var util = require('util');
-var AutoscaleProvider = require('../../../f5-cloud-libs').autoscaleProvider;
+var CloudProvider = require('../../../f5-cloud-libs').cloudProvider;
 
-util.inherits(TestAutoscaleProvider, AutoscaleProvider);
-function TestAutoscaleProvider(options) {
-    TestAutoscaleProvider.super_.call(this, options);
+util.inherits(TestCloudProvider, CloudProvider);
+function TestCloudProvider(options) {
+    TestCloudProvider.super_.call(this, options);
 }
 
 // Our tests cause too many event listeners. Turn off the check.
@@ -30,13 +30,13 @@ options.setMaxListeners(0);
 process.setMaxListeners(0);
 
 var instancesCalled = [];
-var testAutoscaleProvider;
+var testCloudProvider;
 var bigIqMock;
 var poolCalled;
 
 module.exports = {
     setUp: function(callback) {
-        testAutoscaleProvider = new TestAutoscaleProvider();
+        testCloudProvider = new TestCloudProvider();
         callback();
     },
 
@@ -53,8 +53,8 @@ module.exports = {
             a: 1,
             b:2
         };
-        testAutoscaleProvider = new TestAutoscaleProvider({logger: logger});
-        test.deepEqual(testAutoscaleProvider.logger, logger);
+        testCloudProvider = new TestCloudProvider({logger: logger});
+        test.deepEqual(testCloudProvider.logger, logger);
         test.done();
     },
 
@@ -64,14 +64,14 @@ module.exports = {
             hello: 'world'
         };
 
-        testAutoscaleProvider = new TestAutoscaleProvider({clOptions: clOptions});
-        test.deepEqual(testAutoscaleProvider.clOptions, clOptions);
+        testCloudProvider = new TestCloudProvider({clOptions: clOptions});
+        test.deepEqual(testCloudProvider.clOptions, clOptions);
         test.done();
     },
 
     testInit: function(test) {
         test.expect(1);
-        testAutoscaleProvider.init()
+        testCloudProvider.init()
             .then(function() {
                 test.ok(true);
                 test.done();
@@ -80,56 +80,56 @@ module.exports = {
 
     testUnimplementedBigIpReady: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.bigIpReady();
+            testCloudProvider.bigIpReady();
         });
         test.done();
     },
 
     testUnimplementedGetDataFromUri: function(test) {
         test.throws(function() {
-            testAutoscaleProvider.getDataFromUri();
+            testCloudProvider.getDataFromUri();
         });
         test.done();
     },
 
     testUnimplementedGetInstanceId: function(test) {
         test.throws(function() {
-            testAutoscaleProvider.getInstanceId();
+            testCloudProvider.getInstanceId();
         });
         test.done();
     },
 
     testUnimplementedGetInstances: function(test) {
         test.throws(function() {
-            testAutoscaleProvider.getInstances();
+            testCloudProvider.getInstances();
         });
         test.done();
     },
 
     testUnimplementedElectMaster: function(test) {
         test.throws(function() {
-            testAutoscaleProvider.electMaster();
+            testCloudProvider.electMaster();
         });
         test.done();
     },
 
     testUnimplementedGetMasterCredentials: {
         tearDown: function(callback) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = false;
+            testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
             callback();
         },
 
         testMessagingNotSupported: function(test) {
             test.throws(function() {
-                testAutoscaleProvider.getMasterCredentials();
+                testCloudProvider.getMasterCredentials();
             });
             test.done();
         },
 
         testMessagingSupported: function(test) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = true;
+            testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
             test.doesNotThrow(function() {
-                testAutoscaleProvider.getMasterCredentials();
+                testCloudProvider.getMasterCredentials();
             });
             test.done();
         }
@@ -137,28 +137,28 @@ module.exports = {
 
     testUnimplementedGetMasterStatus: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.getMasterStatus();
+            testCloudProvider.getMasterStatus();
         });
         test.done();
     },
 
     testUnimplementedGetPublicKey: {
         tearDown: function(callback) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_ENCRYPTION] = false;
+            testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = false;
             callback();
         },
 
         testEncryptionSupported: function(test) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_ENCRYPTION] = true;
+            testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = true;
             test.throws(function() {
-                testAutoscaleProvider.getPublicKey();
+                testCloudProvider.getPublicKey();
             });
             test.done();
         },
 
         testEncryptionNotSupported: function(test) {
             test.doesNotThrow(function() {
-                testAutoscaleProvider.getPublicKey();
+                testCloudProvider.getPublicKey();
             });
             test.done();
         }
@@ -166,48 +166,48 @@ module.exports = {
 
     testHasFeature: {
         setUp: function(callback) {
-            testAutoscaleProvider.features = {};
+            testCloudProvider.features = {};
             callback();
         },
 
         testHasFeature: function(test) {
-            testAutoscaleProvider.features.FOO = true;
+            testCloudProvider.features.FOO = true;
             test.expect(1);
-            test.strictEqual(testAutoscaleProvider.hasFeature('FOO'), true);
+            test.strictEqual(testCloudProvider.hasFeature('FOO'), true);
             test.done();
         },
 
         testDoesNotHaveFeature: function(test) {
             test.expect(1);
-            test.strictEqual(testAutoscaleProvider.hasFeature('FOO'), false);
+            test.strictEqual(testCloudProvider.hasFeature('FOO'), false);
             test.done();
         }
     },
 
     testUnimplementedPutMasterCredentials: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.putMasterCredentials();
+            testCloudProvider.putMasterCredentials();
         });
         test.done();
     },
 
     testUnimplementedPutPublicKey: {
         tearDown: function(callback) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_ENCRYPTION] = false;
+            testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = false;
             callback();
         },
 
         testEncryptionSupported: function(test) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_ENCRYPTION] = true;
+            testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = true;
             test.throws(function() {
-                testAutoscaleProvider.putPublicKey();
+                testCloudProvider.putPublicKey();
             });
             test.done();
         },
 
         testEncryptionNotSupported: function(test) {
             test.doesNotThrow(function() {
-                testAutoscaleProvider.putPublicKey();
+                testCloudProvider.putPublicKey();
             });
             test.done();
         }
@@ -215,77 +215,77 @@ module.exports = {
 
     testUnimplementedGetNicsByTag: function(test) {
             test.doesNotThrow(function() {
-                testAutoscaleProvider.getNicsByTag();
+                testCloudProvider.getNicsByTag();
             });
             test.done();
     },
 
     testUnimplementedGetVmsByTag: function(test) {
             test.doesNotThrow(function() {
-                testAutoscaleProvider.getVmsByTag();
+                testCloudProvider.getVmsByTag();
             });
             test.done();
     },
 
     testUnimplementedIsValidMaster: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.isValidMaster();
+            testCloudProvider.isValidMaster();
         });
         test.done();
     },
 
     testUnimplementedMasterElected: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.masterElected();
+            testCloudProvider.masterElected();
         });
         test.done();
     },
 
     testUnimplementedMasterInvalidated: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.masterInvalidated();
+            testCloudProvider.masterInvalidated();
         });
         test.done();
     },
 
     testUnimplementedGetStoredUcs: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.getStoredUcs();
+            testCloudProvider.getStoredUcs();
         });
         test.done();
     },
 
     testUnimplementedStoreUcs: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.storeUcs();
+            testCloudProvider.storeUcs();
         });
         test.done();
     },
 
     testUnimplementedPutInstance: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.putInstance();
+            testCloudProvider.putInstance();
         });
         test.done();
     },
 
     testUnimplementedSendMessage: {
         tearDown: function(callback) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = false;
+            testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
             callback();
         },
 
         testMessagingNotSupported: function(test) {
             test.doesNotThrow(function() {
-                testAutoscaleProvider.sendMessage();
+                testCloudProvider.sendMessage();
             });
             test.done();
         },
 
         testMessagingSupported: function(test) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = true;
+            testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
             test.throws(function() {
-                testAutoscaleProvider.sendMessage();
+                testCloudProvider.sendMessage();
             });
             test.done();
         }
@@ -293,21 +293,21 @@ module.exports = {
 
     testUnimplementedGetMessages: {
         tearDown: function(callback) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = false;
+            testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
             callback();
         },
 
         testMessagingNotSupported: function(test) {
             test.doesNotThrow(function() {
-                testAutoscaleProvider.getMessages();
+                testCloudProvider.getMessages();
             });
             test.done();
         },
 
         testMessagingSupported: function(test) {
-            testAutoscaleProvider.features[AutoscaleProvider.FEATURE_MESSAGING] = true;
+            testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
             test.throws(function() {
-                testAutoscaleProvider.getMessages();
+                testCloudProvider.getMessages();
             });
             test.done();
         }
@@ -315,7 +315,7 @@ module.exports = {
 
     testUnimplementedSyncComplete: function(test) {
         test.doesNotThrow(function() {
-            testAutoscaleProvider.syncComplete();
+            testCloudProvider.syncComplete();
         });
         test.done();
     },
@@ -326,7 +326,7 @@ module.exports = {
                 lastUpdate: new Date(1970, 1, 1)
             };
 
-            test.strictEqual(testAutoscaleProvider.isInstanceExpired(instance), true);
+            test.strictEqual(testCloudProvider.isInstanceExpired(instance), true);
             test.done();
         },
 
@@ -335,7 +335,7 @@ module.exports = {
                 lastUpdate: new Date()
             };
 
-            test.strictEqual(testAutoscaleProvider.isInstanceExpired(instance), false);
+            test.strictEqual(testCloudProvider.isInstanceExpired(instance), false);
             test.done();
         }
     },
@@ -353,7 +353,7 @@ module.exports = {
                 }
             };
 
-            testAutoscaleProvider.bigIq = bigIqMock;
+            testCloudProvider.bigIq = bigIqMock;
             instancesCalled = [];
             poolCalled = undefined;
 
@@ -371,13 +371,13 @@ module.exports = {
             ];
             var licensePool = 'myLicensePool';
 
-            testAutoscaleProvider.clOptions = {
+            testCloudProvider.clOptions = {
                 licensePool: true,
                 licensePoolName: licensePool
             };
 
             test.expect(2);
-            testAutoscaleProvider.revokeLicenses(instances, {})
+            testCloudProvider.revokeLicenses(instances, {})
                 .then(function() {
                     test.strictEqual(poolCalled, licensePool);
                     test.strictEqual(instancesCalled.length, instances.length);
@@ -400,10 +400,10 @@ module.exports = {
                 }
             ];
 
-            testAutoscaleProvider.clOptions = {};
+            testCloudProvider.clOptions = {};
 
             test.expect(2);
-            testAutoscaleProvider.revokeLicenses(instances, {})
+            testCloudProvider.revokeLicenses(instances, {})
                 .then(function() {
                     test.strictEqual(poolCalled, undefined);
                     test.strictEqual(instancesCalled.length, 0);
@@ -427,7 +427,7 @@ module.exports = {
             ];
             var licensePool = 'myLicensePool';
 
-            testAutoscaleProvider.clOptions = {
+            testCloudProvider.clOptions = {
                 licensePool: true,
                 licensePoolName: licensePool
             };
@@ -437,7 +437,7 @@ module.exports = {
             }
 
             test.expect(1);
-            testAutoscaleProvider.revokeLicenses(instances, {})
+            testCloudProvider.revokeLicenses(instances, {})
                 .then(function() {
                     test.ok(false, 'Revoke should have thrown');
                 })

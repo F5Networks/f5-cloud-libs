@@ -21,7 +21,7 @@ module.exports = {
     activeError: require('./lib/activeError'),
     authn: require('./lib/authn'),
     autoscaleInstance: require('./lib/autoscaleInstance'),
-    autoscaleProvider: require('./lib/autoscaleProvider'),
+    cloudProvider: require('./lib/cloudProvider'),
     bigIp: require('./lib/bigIp'),
     bigIpCluster: require('./lib/bigIpCluster'),
     bigIpOnboard: require('./lib/bigIpOnboard'),

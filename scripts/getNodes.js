@@ -121,7 +121,7 @@ const Logger = require('../lib/logger');
                     }
                 }
 
-                provider = optionsForTest.autoscaleProvider;
+                provider = optionsForTest.cloudProvider;
                 if (!provider) {
                     provider = cloudProviderFactory.getCloudProvider(
                         options.cloud,
