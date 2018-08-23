@@ -48,11 +48,10 @@ const commonOptions = require('./commonOptions');
                 '--big-iq-password'
             ];
             const REQUIRED_OPTIONS = ['host'];
-
             const globalSettings = {};
             const dbVars = {};
-            const modules = {};
-            const module = {};
+            const provisionModules = {};
+            const provisionModule = {};
             const rootPasswords = {};
             const updateUsers = [];
             const loggerOptions = {};
@@ -227,13 +226,13 @@ const commonOptions = require('./commonOptions');
                         '-m, --module <name:level>',
                         'Provision module <name> to <level>. For multiple entries, use --modules',
                         util.pair,
-                        module
+                        provisionModule
                     )
                     .option(
                         '--modules <name:level>',
                         'Provision module(s) <name> to <level> (comma-separated list of module:level pairs).',
                         util.map,
-                        modules
+                        provisionModules
                     )
                     .option(
                         '--ping [address]',
@@ -618,9 +617,9 @@ const commonOptions = require('./commonOptions');
                     .then((response) => {
                         logger.debug(response);
 
-                        if (Object.keys(module).length > 0) {
-                            logger.info('Provisioning module', module);
-                            return bigIp.onboard.provision(module);
+                        if (Object.keys(provisionModule).length > 0) {
+                            logger.info('Provisioning module', provisionModule);
+                            return bigIp.onboard.provision(provisionModule);
                         }
 
                         return q();
@@ -628,9 +627,9 @@ const commonOptions = require('./commonOptions');
                     .then((response) => {
                         logger.debug(response);
 
-                        if (Object.keys(modules).length > 0) {
-                            logger.info('Provisioning modules', modules);
-                            return bigIp.onboard.provision(modules);
+                        if (Object.keys(provisionModules).length > 0) {
+                            logger.info('Provisioning modules', provisionModules);
+                            return bigIp.onboard.provision(provisionModules);
                         }
 
                         return q();
