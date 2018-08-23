@@ -18,7 +18,7 @@
 var deviceGroup = 'testDeviceGroup';
 var util = require('util');
 var q = require('q');
-var AutoscaleProvider = require('../../lib/autoscaleProvider');
+var CloudProvider = require('../../lib/cloudProvider');
 var AutoscaleInstance = require('../../lib/autoscaleInstance');
 var autoscale;
 var fsMock;
@@ -66,7 +66,7 @@ var options = require('commander');
 options.setMaxListeners(0);
 process.setMaxListeners(0);
 
-util.inherits(ProviderMock, AutoscaleProvider);
+util.inherits(ProviderMock, CloudProvider);
 function ProviderMock() {
     ProviderMock.super_.call(this);
     this.functionCalls = {};
@@ -280,7 +280,7 @@ module.exports = {
 
                 testOptions = {
                     bigIp: bigIpMock,
-                    autoscaleProvider: providerMock
+                    cloudProvider: providerMock
                 };
 
                 bigIpMock.functionCalls = {};
@@ -490,7 +490,7 @@ module.exports = {
 
             test.expect(1);
             autoscale.run(argv, testOptions, function () {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, AutoscaleProvider.STATUS_VERSION_NOT_UP_TO_DATE);
+                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, CloudProvider.STATUS_VERSION_NOT_UP_TO_DATE);
                 test.done();
             });
         },
@@ -515,7 +515,7 @@ module.exports = {
 
             test.expect(1);
             autoscale.run(argv, testOptions, function () {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, AutoscaleProvider.STATUS_NOT_EXTERNAL);
+                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, CloudProvider.STATUS_NOT_EXTERNAL);
                 test.done();
             });
         },
@@ -538,7 +538,7 @@ module.exports = {
 
             test.expect(1);
             autoscale.run(argv, testOptions, function () {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, AutoscaleProvider.STATUS_NOT_IN_CLOUD_LIST);
+                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, CloudProvider.STATUS_NOT_IN_CLOUD_LIST);
                 test.done();
             });
         },
@@ -1055,7 +1055,7 @@ module.exports = {
 
         testEncryption: {
             setUp: function (callback) {
-                providerMock.features[AutoscaleProvider.FEATURE_ENCRYPTION] = true;
+                providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
                 callback();
             },
 
@@ -1153,7 +1153,7 @@ module.exports = {
 
     messagingTests: {
         setUp: function (callback) {
-            providerMock.features[AutoscaleProvider.FEATURE_MESSAGING] = true;
+            providerMock.features[CloudProvider.FEATURE_MESSAGING] = true;
             argv.push('--cluster-action', 'join');
             callback();
         },
@@ -1161,7 +1161,7 @@ module.exports = {
         testIsMaster: {
             testActions: function (test) {
                 autoscale.run(argv, testOptions, function () {
-                    test.deepEqual(providerMock.functionCalls.getMessages[0], [AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER]);
+                    test.deepEqual(providerMock.functionCalls.getMessages[0], [CloudProvider.MESSAGE_ADD_TO_CLUSTER]);
                     test.done();
                 });
             },
@@ -1182,7 +1182,7 @@ module.exports = {
                     );
                     const messages = [
                         {
-                            action: AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                            action: CloudProvider.MESSAGE_ADD_TO_CLUSTER,
                             data: messageData
                         }
                     ];
@@ -1208,14 +1208,14 @@ module.exports = {
 
             testActions: function (test) {
                 autoscale.run(argv, testOptions, function () {
-                    test.deepEqual(providerMock.functionCalls.getMessages[0], [AutoscaleProvider.MESSAGE_SYNC_COMPLETE]);
+                    test.deepEqual(providerMock.functionCalls.getMessages[0], [CloudProvider.MESSAGE_SYNC_COMPLETE]);
                     test.done();
                 });
             },
 
             testPrepareEncryptedMessageData: function (test) {
                 const publicKey = 'myPubKey';
-                providerMock.features[AutoscaleProvider.FEATURE_ENCRYPTION] = true;
+                providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
                 providerMock.getPublicKey = function () {
                     return q(publicKey);
                 };
@@ -1228,11 +1228,11 @@ module.exports = {
 
         testEncrypted: {
             setUp: function (callback) {
-                providerMock.features[AutoscaleProvider.FEATURE_ENCRYPTION] = true;
+                providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
                 providerMock.getMessages = function () {
                     const messages = [
                         {
-                            action: AutoscaleProvider.MESSAGE_ADD_TO_CLUSTER,
+                            action: CloudProvider.MESSAGE_ADD_TO_CLUSTER,
                             data: {}
                         }
                     ];
@@ -1280,7 +1280,7 @@ module.exports = {
 
     testNonMessagingTests: {
         setUp: function (callback) {
-            providerMock.features[AutoscaleProvider.FEATURE_MESSAGING] = false;
+            providerMock.features[CloudProvider.FEATURE_MESSAGING] = false;
             argv.push('--cluster-action', 'join');
             callback();
         },
