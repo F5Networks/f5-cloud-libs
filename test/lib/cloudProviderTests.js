@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var q = require('q');
-var util = require('util');
-var CloudProvider = require('../../../f5-cloud-libs').cloudProvider;
+const q = require('q');
+const util = require('util');
+const CloudProvider = require('../../../f5-cloud-libs').cloudProvider;
 
 util.inherits(TestCloudProvider, CloudProvider);
 function TestCloudProvider(options) {
@@ -25,139 +26,140 @@ function TestCloudProvider(options) {
 }
 
 // Our tests cause too many event listeners. Turn off the check.
-var options = require('commander');
+const options = require('commander');
+
 options.setMaxListeners(0);
 process.setMaxListeners(0);
 
-var instancesCalled = [];
-var testCloudProvider;
-var bigIqMock;
-var poolCalled;
+let instancesCalled = [];
+let testCloudProvider;
+let bigIqMock;
+let poolCalled;
 
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
         testCloudProvider = new TestCloudProvider();
         callback();
     },
 
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
 
         callback();
     },
 
-    testLogger: function(test) {
-        var logger = {
+    testLogger(test) {
+        const logger = {
             a: 1,
-            b:2
+            b: 2
         };
-        testCloudProvider = new TestCloudProvider({logger: logger});
+        testCloudProvider = new TestCloudProvider({ logger });
         test.deepEqual(testCloudProvider.logger, logger);
         test.done();
     },
 
-    testClOptions: function(test) {
-        var clOptions = {
+    testClOptions(test) {
+        const clOptions = {
             foo: 'bar',
             hello: 'world'
         };
 
-        testCloudProvider = new TestCloudProvider({clOptions: clOptions});
+        testCloudProvider = new TestCloudProvider({ clOptions });
         test.deepEqual(testCloudProvider.clOptions, clOptions);
         test.done();
     },
 
-    testInit: function(test) {
+    testInit(test) {
         test.expect(1);
         testCloudProvider.init()
-            .then(function() {
+            .then(() => {
                 test.ok(true);
                 test.done();
             });
     },
 
-    testUnimplementedBigIpReady: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedBigIpReady(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.bigIpReady();
         });
         test.done();
     },
 
-    testUnimplementedGetDataFromUri: function(test) {
-        test.throws(function() {
+    testUnimplementedGetDataFromUri(test) {
+        test.throws(() => {
             testCloudProvider.getDataFromUri();
         });
         test.done();
     },
 
-    testUnimplementedGetInstanceId: function(test) {
-        test.throws(function() {
+    testUnimplementedGetInstanceId(test) {
+        test.throws(() => {
             testCloudProvider.getInstanceId();
         });
         test.done();
     },
 
-    testUnimplementedGetInstances: function(test) {
-        test.throws(function() {
+    testUnimplementedGetInstances(test) {
+        test.throws(() => {
             testCloudProvider.getInstances();
         });
         test.done();
     },
 
-    testUnimplementedElectMaster: function(test) {
-        test.throws(function() {
+    testUnimplementedElectMaster(test) {
+        test.throws(() => {
             testCloudProvider.electMaster();
         });
         test.done();
     },
 
     testUnimplementedGetMasterCredentials: {
-        tearDown: function(callback) {
+        tearDown(callback) {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
             callback();
         },
 
-        testMessagingNotSupported: function(test) {
-            test.throws(function() {
+        testMessagingNotSupported(test) {
+            test.throws(() => {
                 testCloudProvider.getMasterCredentials();
             });
             test.done();
         },
 
-        testMessagingSupported: function(test) {
+        testMessagingSupported(test) {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
-            test.doesNotThrow(function() {
+            test.doesNotThrow(() => {
                 testCloudProvider.getMasterCredentials();
             });
             test.done();
         }
     },
 
-    testUnimplementedGetMasterStatus: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedGetMasterStatus(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.getMasterStatus();
         });
         test.done();
     },
 
     testUnimplementedGetPublicKey: {
-        tearDown: function(callback) {
+        tearDown(callback) {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = false;
             callback();
         },
 
-        testEncryptionSupported: function(test) {
+        testEncryptionSupported(test) {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = true;
-            test.throws(function() {
+            test.throws(() => {
                 testCloudProvider.getPublicKey();
             });
             test.done();
         },
 
-        testEncryptionNotSupported: function(test) {
-            test.doesNotThrow(function() {
+        testEncryptionNotSupported(test) {
+            test.doesNotThrow(() => {
                 testCloudProvider.getPublicKey();
             });
             test.done();
@@ -165,126 +167,126 @@ module.exports = {
     },
 
     testHasFeature: {
-        setUp: function(callback) {
+        setUp(callback) {
             testCloudProvider.features = {};
             callback();
         },
 
-        testHasFeature: function(test) {
+        testHasFeature(test) {
             testCloudProvider.features.FOO = true;
             test.expect(1);
             test.strictEqual(testCloudProvider.hasFeature('FOO'), true);
             test.done();
         },
 
-        testDoesNotHaveFeature: function(test) {
+        testDoesNotHaveFeature(test) {
             test.expect(1);
             test.strictEqual(testCloudProvider.hasFeature('FOO'), false);
             test.done();
         }
     },
 
-    testUnimplementedPutMasterCredentials: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedPutMasterCredentials(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.putMasterCredentials();
         });
         test.done();
     },
 
     testUnimplementedPutPublicKey: {
-        tearDown: function(callback) {
+        tearDown(callback) {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = false;
             callback();
         },
 
-        testEncryptionSupported: function(test) {
+        testEncryptionSupported(test) {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = true;
-            test.throws(function() {
+            test.throws(() => {
                 testCloudProvider.putPublicKey();
             });
             test.done();
         },
 
-        testEncryptionNotSupported: function(test) {
-            test.doesNotThrow(function() {
+        testEncryptionNotSupported(test) {
+            test.doesNotThrow(() => {
                 testCloudProvider.putPublicKey();
             });
             test.done();
         }
     },
 
-    testUnimplementedGetNicsByTag: function(test) {
-            test.doesNotThrow(function() {
-                testCloudProvider.getNicsByTag();
-            });
-            test.done();
+    testUnimplementedGetNicsByTag(test) {
+        test.doesNotThrow(() => {
+            testCloudProvider.getNicsByTag();
+        });
+        test.done();
     },
 
-    testUnimplementedGetVmsByTag: function(test) {
-            test.doesNotThrow(function() {
-                testCloudProvider.getVmsByTag();
-            });
-            test.done();
+    testUnimplementedGetVmsByTag(test) {
+        test.doesNotThrow(() => {
+            testCloudProvider.getVmsByTag();
+        });
+        test.done();
     },
 
-    testUnimplementedIsValidMaster: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedIsValidMaster(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.isValidMaster();
         });
         test.done();
     },
 
-    testUnimplementedMasterElected: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedMasterElected(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.masterElected();
         });
         test.done();
     },
 
-    testUnimplementedMasterInvalidated: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedMasterInvalidated(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.masterInvalidated();
         });
         test.done();
     },
 
-    testUnimplementedGetStoredUcs: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedGetStoredUcs(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.getStoredUcs();
         });
         test.done();
     },
 
-    testUnimplementedStoreUcs: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedStoreUcs(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.storeUcs();
         });
         test.done();
     },
 
-    testUnimplementedPutInstance: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedPutInstance(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.putInstance();
         });
         test.done();
     },
 
     testUnimplementedSendMessage: {
-        tearDown: function(callback) {
+        tearDown(callback) {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
             callback();
         },
 
-        testMessagingNotSupported: function(test) {
-            test.doesNotThrow(function() {
+        testMessagingNotSupported(test) {
+            test.doesNotThrow(() => {
                 testCloudProvider.sendMessage();
             });
             test.done();
         },
 
-        testMessagingSupported: function(test) {
+        testMessagingSupported(test) {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
-            test.throws(function() {
+            test.throws(() => {
                 testCloudProvider.sendMessage();
             });
             test.done();
@@ -292,37 +294,37 @@ module.exports = {
     },
 
     testUnimplementedGetMessages: {
-        tearDown: function(callback) {
+        tearDown(callback) {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
             callback();
         },
 
-        testMessagingNotSupported: function(test) {
-            test.doesNotThrow(function() {
+        testMessagingNotSupported(test) {
+            test.doesNotThrow(() => {
                 testCloudProvider.getMessages();
             });
             test.done();
         },
 
-        testMessagingSupported: function(test) {
+        testMessagingSupported(test) {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
-            test.throws(function() {
+            test.throws(() => {
                 testCloudProvider.getMessages();
             });
             test.done();
         }
     },
 
-    testUnimplementedSyncComplete: function(test) {
-        test.doesNotThrow(function() {
+    testUnimplementedSyncComplete(test) {
+        test.doesNotThrow(() => {
             testCloudProvider.syncComplete();
         });
         test.done();
     },
 
     testIsInstanceExpired: {
-        testExpired: function(test) {
-            var instance = {
+        testExpired(test) {
+            const instance = {
                 lastUpdate: new Date(1970, 1, 1)
             };
 
@@ -330,8 +332,8 @@ module.exports = {
             test.done();
         },
 
-        testNotExpired: function(test) {
-            var instance = {
+        testNotExpired(test) {
+            const instance = {
                 lastUpdate: new Date()
             };
 
@@ -341,12 +343,12 @@ module.exports = {
     },
 
     testRevokeLicenses: {
-        setUp: function(callback) {
+        setUp(callback) {
             bigIqMock = {
-                init: function() {
+                init() {
                     return q();
                 },
-                revokeLicense: function(poolName, hostname) {
+                revokeLicense(poolName, hostname) {
                     poolCalled = poolName;
                     instancesCalled.push(hostname);
                     return q();
@@ -360,8 +362,8 @@ module.exports = {
             callback();
         },
 
-        testBasic: function(test) {
-            var instances = [
+        testBasic(test) {
+            const instances = [
                 {
                     hostname: 'host1'
                 },
@@ -369,7 +371,7 @@ module.exports = {
                     hostname: 'host2'
                 }
             ];
-            var licensePool = 'myLicensePool';
+            const licensePool = 'myLicensePool';
 
             testCloudProvider.clOptions = {
                 licensePool: true,
@@ -378,20 +380,20 @@ module.exports = {
 
             test.expect(2);
             testCloudProvider.revokeLicenses(instances, {})
-                .then(function() {
+                .then(() => {
                     test.strictEqual(poolCalled, licensePool);
                     test.strictEqual(instancesCalled.length, instances.length);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNoLicensePool: function(test) {
-            var instances = [
+        testNoLicensePool(test) {
+            const instances = [
                 {
                     hostname: 'host1'
                 },
@@ -404,20 +406,20 @@ module.exports = {
 
             test.expect(2);
             testCloudProvider.revokeLicenses(instances, {})
-                .then(function() {
+                .then(() => {
                     test.strictEqual(poolCalled, undefined);
                     test.strictEqual(instancesCalled.length, 0);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testRevokeFail: function(test) {
-            var instances = [
+        testRevokeFail(test) {
+            const instances = [
                 {
                     hostname: 'host1'
                 },
@@ -425,26 +427,26 @@ module.exports = {
                     hostname: 'host2'
                 }
             ];
-            var licensePool = 'myLicensePool';
+            const licensePool = 'myLicensePool';
 
             testCloudProvider.clOptions = {
                 licensePool: true,
                 licensePoolName: licensePool
             };
 
-            bigIqMock.revokeLicense = function(poolName, hostname) {
+            bigIqMock.revokeLicense = () => {
                 return q.reject(new Error('foo'));
-            }
+            };
 
             test.expect(1);
             testCloudProvider.revokeLicenses(instances, {})
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'Revoke should have thrown');
                 })
-                .catch(function(err) {
+                .catch(() => {
                     test.ok(true);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
