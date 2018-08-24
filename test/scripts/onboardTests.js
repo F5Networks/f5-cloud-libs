@@ -19,11 +19,14 @@ const realExit = process.exit;
 
 const fs = require('fs');
 const q = require('q');
+const util = require('util');
 const ActiveError = require('../../../f5-cloud-libs').activeError;
+const CloudProvider = require('../../lib/cloudProvider');
 
 var metricsCollectorMock;
 
 var rebootCalled = false;
+let signalInstanceProvisionedCalled = false;
 var functionsCalled;
 var onboard;
 var ipcMock;
@@ -32,6 +35,7 @@ var exitMessage;
 var exitCode;
 
 let bigIpMock;
+let providerMock;
 
 var testOptions = {}
 
@@ -42,6 +46,22 @@ var signalsSent;
 // Our tests cause too many event listeners. Turn off the check.
 var options = require('commander');
 options.setMaxListeners(0);
+
+util.inherits(ProviderMock, CloudProvider);
+function ProviderMock() {
+    ProviderMock.super_.call(this);
+    this.functionCalls = {};
+}
+
+ProviderMock.prototype.init = function () {
+    this.functionCalls.init = arguments;
+    return q();
+};
+
+ProviderMock.prototype.signalInstanceProvisioned = function () {
+    signalInstanceProvisionedCalled = true;
+    return q();
+};
 
 module.exports = {
     setUp: function(callback) {
@@ -369,6 +389,38 @@ module.exports = {
             test.notStrictEqual(signalsSent.indexOf('REBOOT_REQUIRED'), -1);
             test.done();
         });
+    },
+
+    testProvider: {
+        setUp: function(callback) {
+            providerMock = new ProviderMock();
+            testOptions.cloudProvider = providerMock;
+
+            signalInstanceProvisionedCalled = false;
+
+            callback();
+        },
+
+        testSignalInstanceProvisioned: function(test) {
+            argv.push('--cloud', 'aws', '--signal-resource');
+            
+            test.expect(1);
+            onboard.run(argv, testOptions, function() {
+                test.strictEqual(signalInstanceProvisionedCalled, true);
+                test.done();
+            });
+        },
+
+        testOnboardNoSignal: function(test) {
+            argv.push('--cloud', 'aws');
+
+            test.expect(1);
+            onboard.run(argv, testOptions, function() {
+                test.strictEqual(signalInstanceProvisionedCalled, false);
+                test.done();
+            });
+        }
+
     },
 
     testSslPortArgs: {
