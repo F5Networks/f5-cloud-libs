@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const fs = require('fs');
@@ -29,15 +30,18 @@ let utilMock;
 
 module.exports = {
     setUp(callback) {
+        /* eslint-disable global-require */
         utilMock = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
         localCryptoUtilMock = require('../../../f5-cloud-libs').localCryptoUtil;
         authn = require('../../../f5-cloud-libs').authn;
+        /* eslint-enable global-require */
+
         authn.icontrol = icontrolMock;
 
-        utilMock.getProduct = function() {
+        utilMock.getProduct = () => {
             return q('BIG-IQ');
-        }
+        };
 
         icontrolMock.reset();
         icontrolMock.when(
@@ -45,7 +49,7 @@ module.exports = {
             '/shared/authn/login',
             {
                 token: {
-                    token: token
+                    token
                 },
                 refreshToken: {
                     token: refreshToken
@@ -56,8 +60,8 @@ module.exports = {
         callback();
     },
 
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
         callback();
@@ -70,9 +74,10 @@ module.exports = {
 
         test.expect(1);
         authn.authenticate(host, user, password)
-            .then((icontrol) => {
+            .then(() => {
                 test.strictEqual(
-                    icontrolMock.getRequest('create', '/shared/authn/login').password, password);
+                    icontrolMock.getRequest('create', '/shared/authn/login').password, password
+                );
             })
             .catch((err) => {
                 test.ok(false, err);
@@ -88,8 +93,8 @@ module.exports = {
         const password = 'myPassword';
 
         test.expect(1);
-        authn.authenticate(host, user, password, { product: 'BIG-IP'})
-            .then((icontrol) => {
+        authn.authenticate(host, user, password, { product: 'BIG-IP' })
+            .then(() => {
                 test.strictEqual(icontrolMock.getRequest('create', '/shared/authn/login'), undefined);
             })
             .catch((err) => {
@@ -105,15 +110,16 @@ module.exports = {
         const user = 'myUser';
         const password = 'myPassword';
         const passwordFile = '/tmp/passwordFromUrlTest';
-        const passwordUrl = 'file://' + passwordFile;
+        const passwordUrl = `file://${passwordFile}`;
 
         fs.writeFileSync(passwordFile, password);
 
         test.expect(2);
-        authn.authenticate(host, user, passwordUrl, {passwordIsUri: true})
+        authn.authenticate(host, user, passwordUrl, { passwordIsUri: true })
             .then((icontrol) => {
                 test.strictEqual(
-                    icontrolMock.getRequest('create', '/shared/authn/login').password, password);
+                    icontrolMock.getRequest('create', '/shared/authn/login').password, password
+                );
                 test.strictEqual(icontrol.authToken, token);
             })
             .catch((err) => {
@@ -125,50 +131,51 @@ module.exports = {
             });
     },
 
-    testPasswordArn: function(test) {
+    testPasswordArn(test) {
         const host = 'myHost';
         const user = 'myUser';
         const password = 'myPassword';
         const passwordUri = 'arn:::foo:bar/password';
 
         authn.provider = {
-            init: function() {
+            init: () => {
                 return q();
             },
-            getDataFromUri: function() {
+            getDataFromUri: () => {
                 return q(password);
             }
         };
 
         test.expect(1);
-        authn.authenticate(host, user, passwordUri, {passwordIsUri: true})
-            .then(function() {
+        authn.authenticate(host, user, passwordUri, { passwordIsUri: true })
+            .then(() => {
                 const loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
                 test.strictEqual(loginRequest.password, password);
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
     testPasswordEncrypted: {
         setUp(callback) {
-            localCryptoUtilMock.decryptPassword = function() {
+            localCryptoUtilMock.decryptPassword = () => {
                 return q(decryptedPassword);
-            }
+            };
             callback();
         },
 
         testBasic(test) {
             test.expect(1);
-            authn.authenticate('host', 'user', 'password', {passwordEncrypted: true})
+            authn.authenticate('host', 'user', 'password', { passwordEncrypted: true })
                 .then(() => {
                     test.strictEqual(
-                        icontrolMock.getRequest('create', '/shared/authn/login').password, decryptedPassword);
-                    })
+                        icontrolMock.getRequest('create', '/shared/authn/login').password, decryptedPassword
+                    );
+                })
                 .catch((err) => {
                     test.ok(false, err);
                 })
@@ -178,14 +185,14 @@ module.exports = {
         },
 
         testDecryptError(test) {
-            const errorMessage = 'decryption error'
-            localCryptoUtilMock.decryptPassword = function() {
+            const errorMessage = 'decryption error';
+            localCryptoUtilMock.decryptPassword = () => {
                 return q.reject(new Error(errorMessage));
-            }
+            };
             test.expect(1);
-            authn.authenticate('host', 'user', 'password', {passwordEncrypted: true})
+            authn.authenticate('host', 'user', 'password', { passwordEncrypted: true })
                 .then(() => {
-                    test.ok(false, 'should have thrown decryption error')
+                    test.ok(false, 'should have thrown decryption error');
                 })
                 .catch((err) => {
                     test.notStrictEqual(err.message.indexOf(errorMessage), -1);
@@ -205,7 +212,7 @@ module.exports = {
 
         test.expect(1);
         authn.authenticate('host', 'user', 'password')
-            .then((icontrol) => {
+            .then(() => {
                 test.ok(false, 'should have thrown no auth token');
             })
             .catch((err) => {
