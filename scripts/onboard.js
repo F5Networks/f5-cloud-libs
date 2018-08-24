@@ -25,6 +25,7 @@ const signals = require('../lib/signals');
 const util = require('../lib/util');
 const metricsCollector = require('../lib/metricsCollector');
 const commonOptions = require('./commonOptions');
+const cloudProviderFactory = require('../lib/cloudProviderFactory');
 
 (function run() {
     const runner = {
@@ -68,6 +69,8 @@ const commonOptions = require('./commonOptions');
             let exiting;
             let index;
             let randomUser;
+
+            let provider;
 
             Object.assign(optionsForTest, testOpts);
 
@@ -125,7 +128,7 @@ const commonOptions = require('./commonOptions');
                     )
                     .option(
                         '--cloud <provider>',
-                        'Cloud provider (aws | azure | etc.). This is only required if licensing via BIG-IQ 5.4+ is being used.'
+                        'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, or signalling resource provisioned.'
                     )
                     .option(
                         '    --big-iq-host <ip_address or FQDN>',
@@ -178,6 +181,10 @@ const commonOptions = require('./commonOptions');
                     .option(
                         '    --revoke',
                         '    Request BIG-IQ to revoke this units license rather than granting one.'
+                    )
+                    .option(
+                        '   --signal-resource',
+                        '   Signal cloud provider when BIG-IP has been provisioned.'
                     )
                     .option(
                         '-n, --hostname <hostname>',
@@ -312,6 +319,17 @@ const commonOptions = require('./commonOptions');
                     }
                 }
 
+                if (options.cloud && options.signalResource) {
+                    provider = optionsForTest.cloudProvider;
+                    if (!provider) {
+                        provider = cloudProviderFactory.getCloudProvider(
+                            options.cloud,
+                            {
+                                loggerOptions
+                            }
+                        );
+                    }
+                }
                 // Start processing...
 
                 // Save args in restart script in case we need to reboot to recover from an error
@@ -328,6 +346,13 @@ const commonOptions = require('./commonOptions');
                         // Whatever we're waiting for is done, so don't wait for
                         // that again in case of a reboot
                         return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                    })
+                    .then(() => {
+                        if (provider) {
+                            logger.info('Initializing cloud provider');
+                            return provider.init();
+                        }
+                        return q();
                     })
                     .then(() => {
                         logger.info('Onboard starting.');
@@ -732,6 +757,13 @@ const commonOptions = require('./commonOptions');
                             return util.reboot(bigIp, { signalOnly: !options.reboot });
                         }
 
+                        return q();
+                    })
+                    .then(() => {
+                        if (!rebooting && provider) {
+                            logger.info('Signalling provider that instance provisioned.');
+                            return provider.signalInstanceProvisioned();
+                        }
                         return q();
                     })
                     .catch((err) => {

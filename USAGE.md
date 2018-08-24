@@ -29,7 +29,7 @@ Does initial configuration and provisioning of a BIG-IP.
       -l, --license <license_key>                                                                                                                                                                                                              License device with <license_key>.
       -a, --add-on <add_on_key>                                                                                                                                                                                                                License device with <add_on_key>. For multiple keys, use multiple -a entries. (default: )
       --license-pool                                                                                                                                                                                                                           License BIG-IP from a BIG-IQ license pool. Supply the following:
-      --cloud <provider>                                                                                                                                                                                                                       Cloud provider (aws | azure | etc.). This is only required if licensing via BIG-IQ 5.4+ is being used.
+      --cloud <provider>                                                                                                                                                                                                                       Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, or signalling resource provisioned.
           --big-iq-host <ip_address or FQDN>                                                                                                                                                                                                       IP address or FQDN of BIG-IQ
           --big-iq-user <user>                                                                                                                                                                                                                     BIG-IQ admin user name
           --big-iq-password <password>                                                                                                                                                                                                             BIG-IQ admin user password.
@@ -43,6 +43,7 @@ Does initial configuration and provisioning of a BIG-IP.
           --big-ip-mgmt-port <big_ip_port>                                                                                                                                                                                                         Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port
           --no-unreachable                                                                                                                                                                                                                         Do not use the unreachable API even if it is supported by BIG-IQ.
           --revoke                                                                                                                                                                                                                                 Request BIG-IQ to revoke this units license rather than granting one.
+         --signal-resource                                                                                                                                                                                                                        Signal cloud provider when BIG-IP has been provisioned.
       -n, --hostname <hostname>                                                                                                                                                                                                                Set device hostname.
       -g, --global-setting <name:value>                                                                                                                                                                                                        Set global setting <name> to <value>. For multiple settings, use multiple -g entries. (default: [object Object])
       -d, --db <name:value>                                                                                                                                                                                                                    Set db variable <name> to <value>. For multiple settings, use multiple -d entries. (default: [object Object])
@@ -57,7 +58,6 @@ Does initial configuration and provisioning of a BIG-IP.
       --update-sigs                                                                                                                                                                                                                            Update ASM signatures
       --metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:<aws | azure | gce | etc.>, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]  Optional usage metrics to collect. Customer ID should not identify a specific customer. (default: [object Object])
       -h, --help                                                                                                                                                                                                                               output usage information
-    
 ## cluster.js
 
 Sets up BIG-IPs in a cluster.
@@ -105,7 +105,6 @@ Sets up BIG-IPs in a cluster.
           --device-group <device_group>                    Name of the device group.
           --device <device_name>                           Device name to remove.
       -h, --help                                       output usage information
-    
 ## autoscale.js
 
 Runs autoscale code to elect master and cluster
@@ -156,7 +155,6 @@ Runs autoscale code to elect master and cluster
           --dns-provider-options <dns_provider_options>      Options specific to dns_provider. Ex: param1:value1,param2:value2 (default: [object Object])
       --max-ucs-files <max_ucs_files_to_save>            When running cluster action backup-ucs, maximum number of backup files to keep. (default: 7)
       -h, --help                                         output usage information
-    
 ## network.js
 
 Sets up default gateway, VLANs and self IPs
@@ -189,7 +187,6 @@ Sets up default gateway, VLANs and self IPs
       --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2], [trafficGroup:traffic_group_name]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified. (default: )
       --force-reboot                                                                                                                       Force a reboot at the end. This is necessary for some 2+ NIC configurations.
       -h, --help                                                                                                                           output usage information
-    
 ## runScript.js
 
 Runs an arbitrary script.
@@ -211,7 +208,6 @@ Runs an arbitrary script.
       -o, --output <file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log
       --no-console                   Do not log to console. Default false (log to console).
       -h, --help                     output usage information
-    
 ## Standalone licensing
 
 ### Install
