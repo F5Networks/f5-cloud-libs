@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,71 +13,73 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var fs = require('fs');
-var childProcess = require('child_process');
-var q = require('q');
+const fs = require('fs');
+const childProcess = require('child_process');
+const q = require('q');
 
-var UTIL_ARGS_TEST_FILE = 'UTIL_ARGS_TEST_FILE';
+const UTIL_ARGS_TEST_FILE = 'UTIL_ARGS_TEST_FILE';
 
-var http;
-var httpGet;
+let http;
+let httpGet;
 
-var util;
+let util;
 
-var argv;
-var funcCount;
+let argv;
+let funcCount;
 
 // process mock
 const processExit = process.exit;
-var exitCalled;
-var spawnCalled;
-var calledArgs;
+let exitCalled;
+let spawnCalled;
+let calledArgs;
 
 // child_process mock
-var childProcessSpawn;
-var unrefCalled;
-var childMock = {
-    unref: function() {
+let childProcessSpawn;
+let unrefCalled;
+const childMock = {
+    unref() {
         unrefCalled = true;
     }
 };
 
-var bigIpMock = {};
+const bigIpMock = {};
 
 // fs mock
-var fsOpen;
-var fsOpenSync;
-var fsCloseSync;
-var fsStat;
-var fsExistsSync;
-var fsUnlink;
-var fsUnlinkSync;
-var fsReadFile;
-var fsReadFileSync;
-var fsWriteSync;
-var fsWriteFile;
-var fsWriteFileSync;
-var fsMkdirSync;
-var fsReaddirSync;
-var fsCreateWriteStream;
-var startupCommands;
-var startupScripts;
-var writtenCommands;
-var fileNameWritten;
-var dataWritten;
-var createdDir;
-var unlinkSyncCalled;
+let fsOpen;
+let fsOpenSync;
+let fsCloseSync;
+let fsStat;
+let fsExistsSync;
+let fsUnlink;
+let fsUnlinkSync;
+let fsReadFile;
+let fsReadFileSync;
+let fsWriteSync;
+let fsWriteFile;
+let fsWriteFileSync;
+let fsMkdirSync;
+let fsReaddirSync;
+let fsCreateWriteStream;
+let startupCommands;
+let startupScripts;
+let writtenCommands;
+let fileNameWritten;
+let dataWritten;
+let createdDir;
+let unlinkSyncCalled;
 // http mock
-var httpMock;
+let httpMock;
 
-var getSavedArgs = function() {
-    return fs.readFileSync('/tmp/rebootScripts/' + UTIL_ARGS_TEST_FILE + '.sh').toString();
+const getSavedArgs = function () {
+    return fs.readFileSync(`/tmp/rebootScripts/${UTIL_ARGS_TEST_FILE}.sh`).toString();
 };
 
+/* eslint-disable global-require */
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
         fsOpen = fs.open;
         fsOpenSync = fs.openSync;
         fsCloseSync = fs.closeSync;
@@ -103,8 +105,8 @@ module.exports = {
         callback();
     },
 
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
 
@@ -129,9 +131,9 @@ module.exports = {
     },
 
     testCommandLineParsing: {
-        testCollect: function(test) {
-            var container = [];
-            var input = 'foobar';
+        testCollect(test) {
+            const container = [];
+            let input = 'foobar';
             util.collect(input, container);
             input = 'hello world';
             util.collect(input, container);
@@ -141,35 +143,35 @@ module.exports = {
             test.done();
         },
 
-        testCsv: function(test) {
-            test.deepEqual(util.csv("1,2,3", []), [["1", "2", "3"]]);
-            test.deepEqual(util.csv("1, 2, 3 ", []), [["1", "2", "3"]]);
-            test.deepEqual(util.csv("1, 2, 3", [["4", "5", "6"]]), [["4", "5", "6"], ["1", "2", "3"]]);
+        testCsv(test) {
+            test.deepEqual(util.csv('1,2,3', []), [['1', '2', '3']]);
+            test.deepEqual(util.csv('1, 2, 3 ', []), [['1', '2', '3']]);
+            test.deepEqual(util.csv('1, 2, 3', [['4', '5', '6']]), [['4', '5', '6'], ['1', '2', '3']]);
 
             test.done();
         },
 
-        testMap: function(test) {
-            var container = {};
-            var input = 'foo:bar, hello:world';
+        testMap(test) {
+            let container = {};
+            let input = 'foo:bar, hello:world';
             util.map(input, container);
-            test.deepEqual(container, {foo: 'bar', hello: 'world'});
+            test.deepEqual(container, { foo: 'bar', hello: 'world' });
             input = 'fooz:bazz';
             util.map(input, container);
-            test.deepEqual(container, {foo: 'bar', hello: 'world', fooz: 'bazz'});
+            test.deepEqual(container, { foo: 'bar', hello: 'world', fooz: 'bazz' });
             input = 'hello:goodbye';
             util.map(input, container);
-            test.deepEqual(container, {foo: 'bar', hello: 'goodbye', fooz: 'bazz'});
+            test.deepEqual(container, { foo: 'bar', hello: 'goodbye', fooz: 'bazz' });
             input = 'key1:value1,key2:true,key3:false';
             container = {};
             util.map(input, container);
-            test.deepEqual(container, {key1: 'value1', key2: true, key3: false});
+            test.deepEqual(container, { key1: 'value1', key2: true, key3: false });
             test.done();
         },
 
-        testMapArray: function(test) {
-            var container = [];
-            var input = 'foo:bar, hello:world';
+        testMapArray(test) {
+            const container = [];
+            let input = 'foo:bar, hello:world';
             util.mapArray(input, container);
             input = 'fooz:bazz';
             util.mapArray(input, container);
@@ -179,9 +181,9 @@ module.exports = {
             test.done();
         },
 
-        testPair: function(test) {
-            var container = {};
-            var input = 'foo:bar';
+        testPair(test) {
+            const container = {};
+            let input = 'foo:bar';
             util.pair(input, container);
             input = 'hello: world ';
             util.pair(input, container);
@@ -191,12 +193,12 @@ module.exports = {
         }
     },
 
-    testDeleteArgs: function(test) {
-        var id = 'foo';
-        var deletedPath;
+    testDeleteArgs(test) {
+        const id = 'foo';
+        let deletedPath;
 
-        fs.existsSync = function() {return true;};
-        fs.unlinkSync = function(path) {
+        fs.existsSync = function existsSync() { return true; };
+        fs.unlinkSync = function unlinkSync(path) {
             deletedPath = path;
         };
         util.deleteArgs(id);
@@ -204,14 +206,14 @@ module.exports = {
         test.done();
     },
 
-    testIpToNumber: function(test) {
+    testIpToNumber(test) {
         test.strictEqual(util.ipToNumber('10.11.12.13'), 168496141);
         test.done();
     },
 
     testWriteDataToFile: {
-        setUp: function(callback) {
-            fs.writeFile = function(file, data, options, cb) {
+        setUp(callback) {
+            fs.writeFile = function writeFile(file, data, options, cb) {
                 fileNameWritten = file;
                 dataWritten = data;
                 cb(null);
@@ -220,125 +222,125 @@ module.exports = {
             callback();
         },
 
-        testDoesNotExist: function(test) {
-            var fileToWrite = '/tmp/foo/bar';
-            var dataToWrite = {
+        testDoesNotExist(test) {
+            const fileToWrite = '/tmp/foo/bar';
+            const dataToWrite = {
                 hello: 'world'
             };
 
-            fs.existsSync = function() {return false;};
+            fs.existsSync = function existsSync() { return false; };
 
             test.expect(2);
             util.writeDataToFile(dataToWrite, fileToWrite)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(fileNameWritten, fileToWrite);
                     test.deepEqual(dataWritten, dataToWrite);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testExists: function(test) {
-            fs.existsSync = function() {return true;};
-            fs.unlinkSync = function() {
+        testExists(test) {
+            fs.existsSync = function existsSync() { return true; };
+            fs.unlinkSync = function unlinkSync() {
                 unlinkSyncCalled = true;
             };
             unlinkSyncCalled = false;
 
             test.expect(1);
             util.writeDataToFile('foo', 'bar')
-                .then(function() {
+                .then(() => {
                     test.ok(unlinkSyncCalled);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testError: function(test) {
-            var message = 'foo foo';
-            fs.writeFile = function(file, data, options, cb) {
+        testError(test) {
+            const message = 'foo foo';
+            fs.writeFile = function writeFile(file, data, options, cb) {
                 cb(new Error(message));
             };
 
             test.expect(1);
             util.writeDataToFile('foo', 'bar')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown fs error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testReadDataFromFile: {
-        testBasic: function(test) {
-            var dataToRead = {
+        testBasic(test) {
+            const dataToRead = {
                 foo: 'bar'
             };
-            var fileToRead = '/tmp/hello/world';
-            var fileRead;
+            const fileToRead = '/tmp/hello/world';
+            let fileRead;
 
-            fs.readFile = function(file, cb) {
+            fs.readFile = function readFile(file, cb) {
                 fileRead = file;
                 cb(null, dataToRead);
             };
 
             test.expect(2);
             util.readDataFromFile(fileToRead)
-                .then(function(dataRead) {
+                .then((dataRead) => {
                     test.strictEqual(fileRead, fileToRead);
                     test.deepEqual(dataRead, dataToRead);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testError: function(test) {
-            var message = 'file error';
+        testError(test) {
+            const message = 'file error';
 
-            fs.readFile = function(file, cb) {
+            fs.readFile = function readFile(file, cb) {
                 cb(new Error(message));
             };
 
             test.expect(1);
             util.readDataFromFile()
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown file read error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testWriteDataToUrl: {
-        testBasic: function(test) {
-            var fileToWrite = '/tmp/foo';
-            var fileUrl = 'file://' + fileToWrite;
-            var dataToWrite = {
+        testBasic(test) {
+            const fileToWrite = '/tmp/foo';
+            const fileUrl = `file://${fileToWrite}`;
+            const dataToWrite = {
                 foo: 'bar'
             };
 
-            fs.writeFile = function(file, data, options, cb) {
+            fs.writeFile = function writeFile(file, data, options, cb) {
                 fileNameWritten = file;
                 dataWritten = data;
                 cb(null);
@@ -346,141 +348,141 @@ module.exports = {
 
             test.expect(2);
             util.writeDataToUrl(dataToWrite, fileUrl)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(fileNameWritten, fileToWrite);
                     test.deepEqual(dataWritten, dataToWrite);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBadUrl: function(test) {
-            var fileUrl = {};
+        testBadUrl(test) {
+            const fileUrl = {};
 
             test.expect(1);
             util.writeDataToUrl('foo', fileUrl)
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown bad url');
                 })
-                .catch(function(err) {
-                    test.notStrictEqual(err.message.indexOf("must be a string"), -1);
+                .catch((err) => {
+                    test.notStrictEqual(err.message.indexOf('must be a string'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNonFileUrl: function(test) {
-            var fileUrl = 'http://www.example.com';
+        testNonFileUrl(test) {
+            const fileUrl = 'http://www.example.com';
 
             test.expect(1);
             util.writeDataToUrl('foo', fileUrl)
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown bad url');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf('Only file URLs'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testWriteError: function(test) {
-            var message = 'bad write';
-            fs.writeFile = function(file, data, options, cb) {
+        testWriteError(test) {
+            const message = 'bad write';
+            fs.writeFile = function writeFile(file, data, options, cb) {
                 cb(new Error(message));
             };
 
             test.expect(1);
             util.writeDataToUrl('foo', 'file:///tmp/foo')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown bad url');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testDownload: {
-        setUp: function(callback) {
+        setUp(callback) {
             dataWritten = false;
 
-            var incomingMessageHandler = {
-                pipe: function() {
+            const incomingMessageHandler = {
+                pipe() {
                     dataWritten = true;
                 }
             };
 
-            var fileMock = {
-                on: function(event, cb) {
+            const fileMock = {
+                on(event, cb) {
                     cb();
                 },
 
-                close: function(cb) {
+                close(cb) {
                     cb();
                 }
             };
 
-            fs.createWriteStream = function() {
+            fs.createWriteStream = function createWriteStream() {
                 return fileMock;
             };
 
             httpGet = http.get;
-            http.get = function(url, cb) {
+            http.get = function get(url, cb) {
                 cb(incomingMessageHandler);
                 return {
-                    on: function() {}
+                    on() {}
                 };
             };
 
             callback();
         },
 
-        tearDown: function(callback) {
+        tearDown(callback) {
             http.get = httpGet;
             callback();
         },
 
-        testBasic: function(test) {
+        testBasic(test) {
             util.download('http://www.example.com')
-                .then(function() {
+                .then(() => {
                     test.ok(dataWritten, 'No data written');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBadProtocol: function(test) {
+        testBadProtocol(test) {
             test.expect(1);
             util.download('file:///tmp')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown bad protocol');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf('Unhandled protocol'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testHttpError: function(test) {
+        testHttpError(test) {
             const message = 'http get error';
 
-            Object.keys(require.cache).forEach(function(key) {
+            Object.keys(require.cache).forEach((key) => {
                 delete require.cache[key];
             });
 
@@ -496,21 +498,21 @@ module.exports = {
 
             test.expect(1);
             util.download('http://www.example.com/foo')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown http error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testHttpErrorFileWritten: function(test) {
+        testHttpErrorFileWritten(test) {
             const message = 'http get error';
 
-            Object.keys(require.cache).forEach(function(key) {
+            Object.keys(require.cache).forEach((key) => {
                 delete require.cache[key];
             });
 
@@ -524,26 +526,26 @@ module.exports = {
 
             util = require('../../../f5-cloud-libs').util;
 
-            fs.existsSync = function() {
+            fs.existsSync = function existsSync() {
                 return true;
             };
-            fs.unlink = function() {};
+            fs.unlink = function unlink() {};
 
             test.expect(1);
             util.download('http://www.example.com/foo')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown http error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
-    testRemoveDirectorySync: function(test) {
+    testRemoveDirectorySync(test) {
         const os = require('os');
         const sep = require('path').sep;
         const tmpDirBase = os.tmpdir();
@@ -562,29 +564,29 @@ module.exports = {
     },
 
     testGetDataFromUrl: {
-        testFile: function(test) {
-            var password = 'foobar';
-            var passwordFile = '/tmp/mypass';
+        testFile(test) {
+            const password = 'foobar';
+            const passwordFile = '/tmp/mypass';
 
-            fs.writeFileSync(passwordFile, password, {encoding: 'ascii'});
+            fs.writeFileSync(passwordFile, password, { encoding: 'ascii' });
 
             test.expect(1);
-            util.getDataFromUrl('file://' + passwordFile)
-                .then(function(readPassword) {
+            util.getDataFromUrl(`file://${passwordFile}`)
+                .then((readPassword) => {
                     test.strictEqual(readPassword, password);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     fs.unlinkSync(passwordFile);
                     test.done();
                 });
         },
 
         testHttp: {
-            setUp: function(callback) {
-                Object.keys(require.cache).forEach(function(key) {
+            setUp(callback) {
+                Object.keys(require.cache).forEach((key) => {
                     delete require.cache[key];
                 });
 
@@ -600,209 +602,208 @@ module.exports = {
                 callback();
             },
 
-            testBasic: function(test) {
-                var password = 'foobar';
+            testBasic(test) {
+                const password = 'foobar';
 
                 httpMock.setResponse(password);
 
                 test.expect(2);
                 util.getDataFromUrl('http://www.example.com')
-                    .then(function(readPassword) {
+                    .then((readPassword) => {
                         test.strictEqual(httpMock.lastRequest.path, '/');
                         test.strictEqual(readPassword, password);
                     })
-                    .catch(function(err) {
+                    .catch((err) => {
                         test.ok(false, err);
                     })
-                    .finally(function() {
+                    .finally(() => {
                         test.done();
                     });
             },
 
-            testPathAndHeaders: function(test) {
-                var path = '/foo/bar';
-                var headers = {headerName: 'headerValue'};
+            testPathAndHeaders(test) {
+                const path = '/foo/bar';
+                const headers = { headerName: 'headerValue' };
 
                 test.expect(2);
-                util.getDataFromUrl('http://www.example.com' + path, {headers: headers})
-                    .then(function() {
+                util.getDataFromUrl(`http://www.example.com${path}`, { headers })
+                    .then(() => {
                         test.strictEqual(httpMock.lastRequest.path, path);
                         test.deepEqual(httpMock.lastRequest.headers, headers);
                     })
-                    .catch(function(err) {
+                    .catch((err) => {
                         test.ok(false, err);
                     })
-                    .finally(function() {
+                    .finally(() => {
                         test.done();
                     });
             },
 
-            testQuery: function(test) {
-                var query = '?hello=world&alpha=beta';
+            testQuery(test) {
+                const query = '?hello=world&alpha=beta';
 
                 test.expect(1);
-                util.getDataFromUrl('http://www.example.com' + query)
-                    .then(function() {
-                        test.strictEqual(httpMock.lastRequest.path, '/' + query);
+                util.getDataFromUrl(`http://www.example.com${query}`)
+                    .then(() => {
+                        test.strictEqual(httpMock.lastRequest.path, `/${query}`);
                     })
-                    .catch(function(err) {
+                    .catch((err) => {
                         test.ok(false, err);
                     })
-                    .finally(function() {
+                    .finally(() => {
                         test.done();
                     });
             },
 
-            testJson: function(test) {
-                var response = {foo: 'bar', hello: 'world'};
+            testJson(test) {
+                const response = { foo: 'bar', hello: 'world' };
 
-                httpMock.setResponse(response, {'content-type': 'application/json'});
+                httpMock.setResponse(response, { 'content-type': 'application/json' });
 
                 test.expect(1);
                 util.getDataFromUrl('http://www.example.com')
-                    .then(function(data) {
+                    .then((data) => {
                         test.deepEqual(data, response);
                     })
-                    .catch(function(err) {
+                    .catch((err) => {
                         test.ok(false, err);
                     })
-                    .finally(function() {
+                    .finally(() => {
                         test.done();
                     });
             },
 
-            testBadJson: function(test) {
-                var response = 'foobar';
+            testBadJson(test) {
+                const response = 'foobar';
 
-                httpMock.setResponse(response, {'content-type': 'application/json'});
+                httpMock.setResponse(response, { 'content-type': 'application/json' });
 
                 test.expect(1);
                 util.getDataFromUrl('http://www.example.com')
-                    .then(function() {
+                    .then(() => {
                         test.ok(false, 'Should have thrown bad json');
                     })
-                    .catch(function() {
+                    .catch(() => {
                         test.ok(true);
                     })
-                    .finally(function() {
+                    .finally(() => {
                         test.done();
                     });
             },
 
-            testBadStatus: function(test) {
+            testBadStatus(test) {
                 const status = 400;
 
                 httpMock.setResponse('foo', {}, status);
 
                 test.expect(1);
                 util.getDataFromUrl('http://www.example.com')
-                    .then(function() {
+                    .then(() => {
                         test.ok(false, 'Should have been a bad status');
                     })
-                    .catch(function(err) {
+                    .catch((err) => {
                         test.notStrictEqual(err.message.indexOf(400), -1);
                     })
-                    .finally(function() {
+                    .finally(() => {
                         test.done();
                     });
             },
 
-            testHttpError: function(test) {
+            testHttpError(test) {
                 const message = 'http error occurred';
                 httpMock.setError(message);
 
                 test.expect(1);
                 util.getDataFromUrl('http://www.example.com')
-                    .then(function() {
+                    .then(() => {
                         test.ok(false, 'Should have thrown an error');
                     })
-                    .catch(function(err) {
+                    .catch((err) => {
                         test.strictEqual(err.message, message);
                     })
-                    .finally(function() {
+                    .finally(() => {
                         test.done();
                     });
             },
 
-            testHttpThrow: function(test) {
+            testHttpThrow(test) {
                 const message = 'http get threw';
-                httpMock.get = function() {
+                httpMock.get = function get() {
                     throw new Error(message);
                 };
 
                 test.expect(1);
                 util.getDataFromUrl('http://www.example.com')
-                    .then(function() {
+                    .then(() => {
                         test.ok(false, 'Should have thrown an error');
                     })
-                    .catch(function(err) {
+                    .catch((err) => {
                         test.strictEqual(err.message, message);
                     })
-                    .finally(function() {
+                    .finally(() => {
                         test.done();
                     });
             }
         },
 
-        testUnsupportedUrl: function(test) {
+        testUnsupportedUrl(test) {
             test.expect(1);
             util.getDataFromUrl('ftp://www.foo.com')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'Unsupported URL should have failed');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf('URLs are currently supported'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testReadFileError: function(test) {
+        testReadFileError(test) {
             const message = 'read file error';
-            fs.readFile = function(file, options, cb) {
-                cb (new Error(message));
+            fs.readFile = function readFile(file, options, cb) {
+                cb(new Error(message));
             };
 
             util.getDataFromUrl('file:///foo/bar')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown read file error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
-    }
+        }
     },
 
-    testLogAndExit: function(test) {
-        var exitCalled;
-        var setImmediateTemp = setImmediate;
+    testLogAndExit(test) {
+        const setImmediateTemp = setImmediate;
 
-        setImmediate = function(cb) {cb();};
-        process.exit = function() {
+        setImmediate = function (cb) { cb(); }; // eslint-disable-line no-global-assign
+        process.exit = function exit() {
             exitCalled = true;
         };
 
         util.logAndExit();
         test.strictEqual(exitCalled, true);
         test.done();
-        setImmediate = setImmediateTemp;
+        setImmediate = setImmediateTemp; // eslint-disable-line no-global-assign
     },
 
     testRunInBackgroundAndExit: {
-        setUp: function(callback) {
+        setUp(callback) {
             exitCalled = false;
             unrefCalled = false;
             spawnCalled = false;
-            process.exit = function() {
+            process.exit = function exit() {
                 exitCalled = true;
             };
 
             childProcessSpawn = childProcess.spawn;
-            childProcess.spawn = function(name, args) {
+            childProcess.spawn = function spawn(name, args) {
                 spawnCalled = true;
                 calledArgs = args;
                 return childMock;
@@ -811,12 +812,12 @@ module.exports = {
             callback();
         },
 
-        tearDown: function(callback) {
+        tearDown(callback) {
             childProcess.spawn = childProcessSpawn;
             callback();
         },
 
-        testBasic: function(test) {
+        testBasic(test) {
             util.runInBackgroundAndExit(process);
             test.ok(spawnCalled, 'child_process.spawn() was not called');
             test.ok(unrefCalled, 'child.unref() was not called');
@@ -824,12 +825,11 @@ module.exports = {
             test.done();
         },
 
-        testTooManyArgs: function(test) {
-            var processArgv = process.argv;
-            var argvMock = [];
-            var i;
+        testTooManyArgs(test) {
+            const processArgv = process.argv;
+            const argvMock = [];
 
-            for (i = 0; i < 101; ++i) {
+            for (let i = 0; i < 101; ++i) {
                 argvMock.push(i);
             }
 
@@ -843,9 +843,9 @@ module.exports = {
             test.done();
         },
 
-        testBackgroundRemoved: function(test) {
-            var processArgv = process.argv;
-            var argvMock = ['node', '--foo', '--background'];
+        testBackgroundRemoved(test) {
+            const processArgv = process.argv;
+            const argvMock = ['node', '--foo', '--background'];
 
             process.argv = argvMock;
 
@@ -858,10 +858,10 @@ module.exports = {
             test.done();
         },
 
-        testOutputAdded: function(test) {
-            var processArgv = process.argv;
-            var argvMock = ['node'];
-            var logFile = 'myLogFile';
+        testOutputAdded(test) {
+            const processArgv = process.argv;
+            const argvMock = ['node'];
+            const logFile = 'myLogFile';
 
             process.argv = argvMock;
 
@@ -877,29 +877,29 @@ module.exports = {
     },
 
     testReboot: {
-        setUp: function(callback) {
+        setUp(callback) {
             startupCommands = 'command 1';
             startupScripts = ['script1', 'script2'];
 
             writtenCommands = undefined;
 
-            fs.existsSync = function() {
+            fs.existsSync = function existsSync() {
                 return true;
             };
-            fs.readFileSync = function() {
+            fs.readFileSync = function readFileSync() {
                 return startupCommands;
             };
-            fs.writeFileSync = function(fileName, commands) {
+            fs.writeFileSync = function writeFileSync(fileName, commands) {
                 writtenCommands = commands;
             };
-            fs.readdirSync = function() {
+            fs.readdirSync = function readdirSync() {
                 return startupScripts;
             };
-            fs.mkdirSync = function() {};
-            fs.closeSync = function() {};
-            fs.openSync = function() {};
+            fs.mkdirSync = function mkdirSync() {};
+            fs.closeSync = function closeSync() {};
+            fs.openSync = function openSync() {};
 
-            bigIpMock.reboot = function() {
+            bigIpMock.reboot = function reboot() {
                 bigIpMock.rebootCalled = true;
                 return q();
             };
@@ -908,109 +908,109 @@ module.exports = {
             callback();
         },
 
-        testBasic: function(test) {
+        testBasic(test) {
             test.expect(4);
             util.reboot(bigIpMock)
-                .then(function() {
-                    startupScripts.forEach(function(script) {
+                .then(() => {
+                    startupScripts.forEach((script) => {
                         test.notStrictEqual(writtenCommands.indexOf(script), -1);
                         test.strictEqual(bigIpMock.rebootCalled, true);
                     });
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testSignalOnly: function(test) {
+        testSignalOnly(test) {
             test.expect(4);
-            util.reboot(bigIpMock, {signalOnly: true})
-                .then(function() {
-                    startupScripts.forEach(function(script) {
+            util.reboot(bigIpMock, { signalOnly: true })
+                .then(() => {
+                    startupScripts.forEach((script) => {
                         test.notStrictEqual(writtenCommands.indexOf(script), -1);
                         test.strictEqual(bigIpMock.rebootCalled, false);
                     });
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testMissingStartupDir: function(test) {
-            fs.existsSync = function() {
+        testMissingStartupDir(test) {
+            fs.existsSync = function existsSync() {
                 return false;
             };
 
             test.expect(2);
             util.reboot(bigIpMock)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(writtenCommands, undefined);
                     test.strictEqual(bigIpMock.rebootCalled, true);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testReadFileError: function(test) {
-            fs.readFileSync = function() {
+        testReadFileError(test) {
+            fs.readFileSync = function readFileSync() {
                 throw new Error();
             };
 
             test.expect(1);
             util.reboot(bigIpMock)
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'fs.readFileSync should have thrown');
                 })
-                .catch(function() {
+                .catch(() => {
                     test.ok(true);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testReaddirError: function(test) {
-            fs.readdirSync = function() {
+        testReaddirError(test) {
+            fs.readdirSync = function readdirSync() {
                 throw new Error();
             };
 
             test.expect(1);
             util.reboot(bigIpMock)
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'fs.readdirSync should have thrown');
                 })
-                .catch(function() {
+                .catch(() => {
                     test.ok(true);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testWriteFileSyncError: function(test) {
-            fs.writeFileSync = function() {
+        testWriteFileSyncError(test) {
+            fs.writeFileSync = function writeFileSync() {
                 throw new Error();
             };
 
             test.expect(1);
             util.reboot(bigIpMock)
-                .then(function() {
+                .then(() => {
                     test.ok(true);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
@@ -1018,322 +1018,318 @@ module.exports = {
 
     testSaveArgs: {
 
-        setUp: function(callback) {
+        setUp(callback) {
             argv = ['node', 'utilTests.js', '--one', '--two', 'abc'];
             callback();
         },
 
-        tearDown: function(callback) {
-            var filesToDelete;
+        tearDown(callback) {
+            let filesToDelete;
             try {
                 if (fs.existsSync('/tmp/rebootScripts')) {
                     filesToDelete = fs.readdirSync('/tmp/rebootScripts/');
-                    filesToDelete.forEach(function(fileToDelete) {
-                        fs.unlinkSync('/tmp/rebootScripts/' + fileToDelete);
+                    filesToDelete.forEach((fileToDelete) => {
+                        fs.unlinkSync(`/tmp/rebootScripts/${fileToDelete}`);
                     });
                     fs.rmdirSync('/tmp/rebootScripts');
                 }
-            }
-            catch(err) {
-                console.log('Error deleting test directory', err);
-            }
-            finally {
+            } catch (err) {
+                console.log('Error deleting test directory', err); // eslint-disable-line no-console
+            } finally {
                 callback();
             }
         },
 
-        testBasic: function(test) {
+        testBasic(test) {
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
-                .then(function() {
-                    var savedArgs = getSavedArgs();
+                .then(() => {
+                    const savedArgs = getSavedArgs();
                     test.notStrictEqual(savedArgs.indexOf('--one'), -1);
                     test.notStrictEqual(savedArgs.indexOf('--two abc'), -1);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testStripArgsWithParam: function(test) {
+        testStripArgsWithParam(test) {
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE, ['--two'])
-                .then(function() {
-                    var savedArgs = getSavedArgs();
+                .then(() => {
+                    const savedArgs = getSavedArgs();
                     test.notStrictEqual(savedArgs.indexOf('--one'), -1);
                     test.strictEqual(savedArgs.indexOf('abc'), -1);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testStripArgsWithoutParam: function(test) {
+        testStripArgsWithoutParam(test) {
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE, ['--one'])
-                .then(function() {
-                    var savedArgs = getSavedArgs();
+                .then(() => {
+                    const savedArgs = getSavedArgs();
                     test.strictEqual(savedArgs.indexOf('--one'), -1);
                     test.notStrictEqual(savedArgs.indexOf('--two abc'), -1);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDirCreated: function(test) {
-            fs.stat = function(dir, cb) {
-                cb({code: 'ENOENT'});
+        testDirCreated(test) {
+            fs.stat = function stat(dir, cb) {
+                cb({ code: 'ENOENT' });
             };
 
-            fs.mkdirSync = function(dirName) {
+            fs.mkdirSync = function mkdirSync(dirName) {
                 createdDir = dirName;
             };
 
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(createdDir, '/tmp/rebootScripts/');
                     test.done();
                 });
         },
 
-        testDirCreateError: function(test) {
-            fs.stat = function(dir, cb) {
-                cb({code: 'FOOBAR'});
+        testDirCreateError(test) {
+            fs.stat = function stat(dir, cb) {
+                cb({ code: 'FOOBAR' });
             };
 
             test.expect(1);
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
-                .then(function() {
+                .then(() => {
                     test.ok(true);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testMkdirRaceCondition: function(test) {
-            function eexistError() {
-                /*jshint validthis: true */
+        testMkdirRaceCondition(test) {
+            function EexistError() {
                 this.code = 'EEXIST';
             }
-            eexistError.prototype = Error.prototype;
+            EexistError.prototype = Error.prototype;
 
-            fs.stat = function(dir, cb) {
-                cb({code: 'ENOENT'});
+            fs.stat = function stat(dir, cb) {
+                cb({ code: 'ENOENT' });
             };
 
-            fs.mkdirSync = function(dirName) {
+            fs.mkdirSync = function mkdirSync(dirName) {
                 fsMkdirSync(dirName);
-                throw new eexistError();
+                throw new EexistError();
             };
 
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
-                .then(function() {
-                    var savedArgs = getSavedArgs();
+                .then(() => {
+                    const savedArgs = getSavedArgs();
                     test.notStrictEqual(savedArgs.indexOf('--one'), -1);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testMkdirRaceConditionFail: function(test) {
-            fs.stat = function(dir, cb) {
-                cb({code: 'ENOENT'});
+        testMkdirRaceConditionFail(test) {
+            fs.stat = function stat(dir, cb) {
+                cb({ code: 'ENOENT' });
             };
 
-            fs.mkdirSync = function(dirName) {
+            fs.mkdirSync = function mkdirSync(dirName) {
                 fsMkdirSync(dirName);
                 throw new Error();
             };
 
             test.expect(1);
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
-                .then(function() {
+                .then(() => {
                     test.ok(true);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testStatThrows: function(test) {
-            fs.stat = function() {
+        testStatThrows(test) {
+            fs.stat = function stat() {
                 throw new Error('fsStat threw');
             };
 
             test.expect(1);
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
-                .then(function() {
+                .then(() => {
                     test.ok(true);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testOpenThrows: function(test) {
-            fs.open = function() {
+        testOpenThrows(test) {
+            fs.open = function open() {
                 throw new Error('fsOpen threw');
             };
 
             test.expect(1);
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
-                .then(function() {
+                .then(() => {
                     test.ok(true);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testWriteSyncThrows: function(test) {
-            fs.writeSync = function() {
+        testWriteSyncThrows(test) {
+            fs.writeSync = function writeSync() {
                 throw new Error('fsWriteSync threw');
             };
 
             test.expect(1);
             util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
-                .then(function() {
+                .then(() => {
                     test.ok(true);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
-    
+
     testGetProduct: {
-        testHasProductString : function(test) {
-            util.getProductString = function() {
-                return q("BIG-IQ");
-            }; 
+        testHasProductString(test) {
+            util.getProductString = function getProductString() {
+                return q('BIG-IQ');
+            };
             util.getProduct()
-                .then(function(response) {
-                    test.strictEqual(response, "BIG-IQ");
+                .then((response) => {
+                    test.strictEqual(response, 'BIG-IQ');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testEmptyProductString : function(test) {
-            util.getProductString = function() {
+        testEmptyProductString(test) {
+            util.getProductString = function getProductString() {
                 return q('');
             };
-            util.runTmshCommand = function() {
-                util.getProductString = function() {
+            util.runTmshCommand = function runTmshCommand() {
+                util.getProductString = function getProductString() {
                     return q('BIG-IP');
                 };
                 return q('BIG-IP');
             };
             util.getProduct()
-                .then(function(response) {
-                     test.strictEqual(response, 'BIG-IP');
+                .then((response) => {
+                    test.strictEqual(response, 'BIG-IP');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testFailToGetProductString : function(test) {
-            util.getProductString = function() {
+        testFailToGetProductString(test) {
+            util.getProductString = function getProductString() {
                 return q.reject('failed');
             };
             util.getProduct()
-                .then(function(response) {
+                .then((response) => {
                     test.ok(false, response);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err, 'failed');
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testFailToRunTmshCommand : function(test) {
-            util.runTmshCommand = function() {
+        testFailToRunTmshCommand(test) {
+            util.runTmshCommand = function runTmshCommand() {
                 return q.reject('failed');
             };
-            util.getProductString = function() {
+            util.getProductString = function getProductString() {
                 return q('');
             };
             util.getProduct()
-                .then(function(response) {
+                .then((response) => {
                     test.ok(false, response);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err, 'failed');
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
-        } 
+        }
     },
 
     testTryUntil: {
-        setUp: function(callback) {
+        setUp(callback) {
             funcCount = 0;
             callback();
         },
 
-        testCalledOnce: function(test) {
-            var func = function() {
-                var deferred = q.defer();
-                funcCount++;
+        testCalledOnce(test) {
+            const func = function () {
+                const deferred = q.defer();
+                funcCount += 1;
                 deferred.resolve();
                 return deferred.promise;
             };
 
             test.expect(1);
             util.tryUntil(this, util.NO_RETRY, func)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(funcCount, 1);
                     test.done();
                 });
         },
 
-        testCalledMultiple: function(test) {
-            var retries = 3;
+        testCalledMultiple(test) {
+            const retries = 3;
 
-            var func = function() {
-                var deferred = q.defer();
+            const func = function () {
+                const deferred = q.defer();
 
-                funcCount++;
+                funcCount += 1;
 
                 if (funcCount < retries) {
                     deferred.reject();
-                }
-                else {
+                } else {
                     deferred.resolve();
                 }
 
@@ -1341,28 +1337,26 @@ module.exports = {
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: retries, retryIntervalMs: 10}, func)
-                .then(function() {
+            util.tryUntil(this, { maxRetries: retries, retryIntervalMs: 10 }, func)
+                .then(() => {
                     test.strictEqual(funcCount, retries);
                     test.done();
                 });
         },
 
-        testWithThrow: function(test) {
-            var retries = 3;
+        testWithThrow(test) {
+            const retries = 3;
 
-            var func = function() {
-                var deferred = q.defer();
+            const func = function () {
+                const deferred = q.defer();
 
-                funcCount++;
+                funcCount += 1;
 
                 if (funcCount === 1) {
                     deferred.reject();
-                }
-                else if (funcCount > 1 && funcCount < retries) {
+                } else if (funcCount > 1 && funcCount < retries) {
                     throw new Error('foo');
-                }
-                else if (funcCount === retries) {
+                } else if (funcCount === retries) {
                     deferred.resolve();
                 }
 
@@ -1370,187 +1364,187 @@ module.exports = {
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: retries, retryIntervalMs: 10}, func)
-                .then(function() {
+            util.tryUntil(this, { maxRetries: retries, retryIntervalMs: 10 }, func)
+                .then(() => {
                     test.strictEqual(funcCount, retries);
                     test.done();
                 });
         },
 
-        testNotResolved: function(test) {
-            var func = function() {
-                var deferred = q.defer();
+        testNotResolved(test) {
+            const func = function () {
+                const deferred = q.defer();
                 deferred.reject();
                 return deferred.promise;
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10}, func)
-                .then(function() {
+            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10 }, func)
+                .then(() => {
                     test.ok(false, 'func should never have resolved');
                 })
-                .catch(function() {
+                .catch(() => {
                     test.ok(true);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBadRequest: function(test) {
+        testBadRequest(test) {
             const errorMessage = 'foo';
-            var func = function() {
+            const func = function () {
                 return q.reject(
                     {
                         code: 400,
                         message: errorMessage
                     }
-                )
+                );
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: 90, retryIntervalMs: 10}, func)
-                .then(function() {
+            util.tryUntil(this, { maxRetries: 90, retryIntervalMs: 10 }, func)
+                .then(() => {
                     test.ok(false, 'func should never have resolved');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, errorMessage);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testContinueOnError: function(test) {
-            var func = function() {
+        testContinueOnError(test) {
+            const func = function () {
                 return q.reject(
                     {
                         code: 400,
                         message: 'foo'
                     }
-                )
+                );
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10, continueOnError: true}, func)
-                .then(function() {
+            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10, continueOnError: true }, func)
+                .then(() => {
                     test.ok(false, 'func should never have resolved');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf('max tries'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testContinueOnErrorMessageIsMessage: function(test) {
-            var func = function() {
+        testContinueOnErrorMessageIsMessage(test) {
+            const func = function () {
                 return q.reject(
                     {
                         code: 400,
                         message: 'is foo'
                     }
-                )
+                );
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: 'foo'}, func)
-                .then(function() {
+            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: 'foo' }, func)
+                .then(() => {
                     test.ok(false, 'func should never have resolved');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf('max tries'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testContinueOnErrorMessageIsMessageRegex: function(test) {
-            var func = function() {
+        testContinueOnErrorMessageIsMessageRegex(test) {
+            const func = function () {
                 return q.reject(
                     {
                         code: 400,
                         message: 'is foo'
                     }
-                )
+                );
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: /foo/}, func)
-                .then(function() {
+            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: /foo/ }, func)
+                .then(() => {
                     test.ok(false, 'func should never have resolved');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf('max tries'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testContinueOnErrorMessageIsNotMessage: function(test) {
-            var func = function() {
+        testContinueOnErrorMessageIsNotMessage(test) {
+            const func = function () {
                 return q.reject(
                     {
                         code: 400,
                         message: 'is foo'
                     }
-                )
+                );
             };
 
             test.expect(1);
-            util.tryUntil(this, {maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: 'bar'}, func)
-                .then(function() {
+            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: 'bar' }, func)
+                .then(() => {
                     test.ok(false, 'func should never have resolved');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message.indexOf('max tries'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
-    testVersionCompare: function(test) {
-        test.strictEqual(util.versionCompare("1.7.1", "1.7.10"), -1);
-        test.strictEqual(util.versionCompare("1.7.10", "1.7.1"), 1);
-        test.strictEqual(util.versionCompare("1.7.2", "1.7.10"), -1);
-        test.strictEqual(util.versionCompare("1.6.1", "1.7.10"), -1);
-        test.strictEqual(util.versionCompare("1.6.20", "1.7.10"), -1);
-        test.strictEqual(util.versionCompare("1.7.1", "1.7.10"), -1);
-        test.strictEqual(util.versionCompare("1.7", "1.7.0"), -1);
-        test.strictEqual(util.versionCompare("1.7", "1.8.0"), -1);
-        test.strictEqual(util.versionCompare("1.7.2", "1.7.10b"), -1);
+    testVersionCompare(test) {
+        test.strictEqual(util.versionCompare('1.7.1', '1.7.10'), -1);
+        test.strictEqual(util.versionCompare('1.7.10', '1.7.1'), 1);
+        test.strictEqual(util.versionCompare('1.7.2', '1.7.10'), -1);
+        test.strictEqual(util.versionCompare('1.6.1', '1.7.10'), -1);
+        test.strictEqual(util.versionCompare('1.6.20', '1.7.10'), -1);
+        test.strictEqual(util.versionCompare('1.7.1', '1.7.10'), -1);
+        test.strictEqual(util.versionCompare('1.7', '1.7.0'), -1);
+        test.strictEqual(util.versionCompare('1.7', '1.8.0'), -1);
+        test.strictEqual(util.versionCompare('1.7.2', '1.7.10b'), -1);
 
-        test.strictEqual(util.versionCompare("1.7.10", "1.7.1"), 1);
-        test.strictEqual(util.versionCompare("1.7.10", "1.6.1"), 1);
-        test.strictEqual(util.versionCompare("1.7.10", "1.6.20"), 1);
-        test.strictEqual(util.versionCompare("1.7.0", "1.7"), 1);
-        test.strictEqual(util.versionCompare("1.8.0", "1.7"), 1);
+        test.strictEqual(util.versionCompare('1.7.10', '1.7.1'), 1);
+        test.strictEqual(util.versionCompare('1.7.10', '1.6.1'), 1);
+        test.strictEqual(util.versionCompare('1.7.10', '1.6.20'), 1);
+        test.strictEqual(util.versionCompare('1.7.0', '1.7'), 1);
+        test.strictEqual(util.versionCompare('1.8.0', '1.7'), 1);
 
-        test.strictEqual(util.versionCompare("1.7.10", "1.7.10"), 0);
-        test.strictEqual(util.versionCompare("1.7", "1.7"), 0);
-        test.strictEqual(util.versionCompare("1.7", "1.7.0", {zeroExtend: true}), 0);
+        test.strictEqual(util.versionCompare('1.7.10', '1.7.10'), 0);
+        test.strictEqual(util.versionCompare('1.7', '1.7'), 0);
+        test.strictEqual(util.versionCompare('1.7', '1.7.0', { zeroExtend: true }), 0);
 
-        test.strictEqual(util.versionCompare("1.3-dev1", "1.3-dev1"), 0);
-        test.strictEqual(util.versionCompare("1.3-dev1", "1.3-dev2"), -1);
-        test.strictEqual(util.versionCompare("1.3-dev2", "1.3-dev1"), 1);
-        test.strictEqual(util.versionCompare("1.3-dev19", "1.3-dev2"), 1);
+        test.strictEqual(util.versionCompare('1.3-dev1', '1.3-dev1'), 0);
+        test.strictEqual(util.versionCompare('1.3-dev1', '1.3-dev2'), -1);
+        test.strictEqual(util.versionCompare('1.3-dev2', '1.3-dev1'), 1);
+        test.strictEqual(util.versionCompare('1.3-dev19', '1.3-dev2'), 1);
 
-        test.strictEqual(util.versionCompare("12.0.0-hf1", "12.0.0-hf2"), -1);
-        test.strictEqual(util.versionCompare("12.0.1-hf1", "12.0.0-hf3"), 1);
-        test.strictEqual(util.versionCompare("12.1.0", "12.0.0-hf1"), 1);
+        test.strictEqual(util.versionCompare('12.0.0-hf1', '12.0.0-hf2'), -1);
+        test.strictEqual(util.versionCompare('12.0.1-hf1', '12.0.0-hf3'), 1);
+        test.strictEqual(util.versionCompare('12.1.0', '12.0.0-hf1'), 1);
 
-        test.strictEqual(util.versionCompare("12.0.0-a1", "12.0.0-b1"), -1);
-        test.strictEqual(util.versionCompare("12.0.1-b1", "12.0.0-a1"), 1);
+        test.strictEqual(util.versionCompare('12.0.0-a1', '12.0.0-b1'), -1);
+        test.strictEqual(util.versionCompare('12.0.1-b1', '12.0.0-a1'), 1);
 
-        test.strictEqual(util.versionCompare("12.0.0-b1", "12.0.0-a1"), 1);
+        test.strictEqual(util.versionCompare('12.0.0-b1', '12.0.0-a1'), 1);
 
-        test.strictEqual(util.versionCompare("12.0.0-1", "12.0.0-a1"), 1);
-        test.strictEqual(util.versionCompare("12.0.0-a1", "12.0.0-1"), -1);
+        test.strictEqual(util.versionCompare('12.0.0-1', '12.0.0-a1'), 1);
+        test.strictEqual(util.versionCompare('12.0.0-a1', '12.0.0-1'), -1);
 
         test.done();
     }
