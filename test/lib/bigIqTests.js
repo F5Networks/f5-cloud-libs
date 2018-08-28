@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const q = require('q');
@@ -20,23 +21,18 @@ const q = require('q');
 const host = 'myHost';
 const user = 'myUser';
 const password = 'myPassword';
-const decryptedPassword = 'myPasswordDecrypted';
 
-var bigIqVersion = '5.2';
-var BigIq;
-var bigIq;
-var authnMock;
-var utilMock;
-var localKeyUtilMock;
-var cryptoUtilMock;
-var icontrolMock;
-var revokeCalled;
+const bigIqVersion = '5.2';
+
+let BigIq;
+let bigIq;
+let authnMock;
+let icontrolMock;
+let revokeCalled;
 
 module.exports = {
-    setUp: function(callback) {
-        utilMock = require('../../../f5-cloud-libs').util;
-        localKeyUtilMock = require('../../../f5-cloud-libs').localKeyUtil;
-        cryptoUtilMock = require('../../../f5-cloud-libs').cryptoUtil;
+    setUp(callback) {
+        /* eslint-disable global-require */
         icontrolMock = require('../testUtil/icontrolMock');
 
         icontrolMock.reset();
@@ -72,8 +68,8 @@ module.exports = {
         );
 
         authnMock = require('../../../f5-cloud-libs').authn;
-        authnMock.authenticate = function(host, user, password) {
-            icontrolMock.password = password;
+        authnMock.authenticate = (authHost, authUser, authPassword) => {
+            icontrolMock.password = authPassword;
             return q.resolve(icontrolMock);
         };
 
@@ -84,8 +80,8 @@ module.exports = {
         callback();
     },
 
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
 
@@ -93,76 +89,77 @@ module.exports = {
     },
 
     testConstructor: {
-        testSetLogger: function(test) {
+        testSetLogger(test) {
             const logger = {
                 a: 1,
                 b: 2
             };
 
-            bigIq = new BigIq({logger: logger});
+            bigIq = new BigIq({ logger });
             test.deepEqual(bigIq.logger, logger);
             test.done();
         },
 
-        testLoggerOptions: function(test) {
+        testLoggerOptions(test) {
             const loggerOptions = {
                 a: 1,
                 b: 2
             };
 
-            test.doesNotThrow(function() {
-                new BigIq({loggerOptions: loggerOptions});
+            test.doesNotThrow(() => {
+                // eslint-disable-next-line no-new
+                new BigIq({ loggerOptions });
             });
             test.done();
         }
     },
 
     testInit: {
-        testBasic: function(test) {
+        testBasic(test) {
             test.expect(4);
             bigIq.init(host, user, password)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(bigIq.host, host);
                     test.strictEqual(bigIq.user, user);
                     test.strictEqual(bigIq.version, bigIqVersion);
                     test.strictEqual(icontrolMock.password, password);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testGetVersionError: function(test) {
-            icontrolMock.fail('list', '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version');
+        testGetVersionError(test) {
+            icontrolMock.fail('list',
+                '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version');
 
             test.expect(1);
             bigIq.init(host, user, password)
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown init error');
                 })
-                .catch(function() {
+                .catch(() => {
                     test.ok(true);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
-
         }
     },
 
     testRevokeLicense: {
-        setUp: function(callback) {
+        setUp(callback) {
             revokeCalled = false;
             callback();
         },
 
-        test5_0: function(test) {
-            var licenseProvider = require('../../lib/bigIq50LicenseProvider');
+        test5_0(test) {
+            const licenseProvider = require('../../lib/bigIq50LicenseProvider');
 
-            licenseProvider.revoke = function() {
+            licenseProvider.revoke = () => {
                 return q();
             };
 
@@ -178,24 +175,24 @@ module.exports = {
 
             test.expect(1);
             bigIq.init('host', 'user', 'password')
-                .then(function() {
+                .then(() => {
                     bigIq.revokeLicense()
-                    .then(function() {
-                        test.strictEqual(revokeCalled, true);
-                    })
-                    .catch(function() {
-                        test.ok(true);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
+                        .then(() => {
+                            test.strictEqual(revokeCalled, true);
+                        })
+                        .catch(() => {
+                            test.ok(true);
+                        })
+                        .finally(() => {
+                            test.done();
+                        });
                 });
         },
 
-        test5_2: function(test) {
-            var licenseProvider = require('../../lib/bigIq52LicenseProvider');
+        test5_2(test) {
+            const licenseProvider = require('../../lib/bigIq52LicenseProvider');
 
-            licenseProvider.revoke = function() {
+            licenseProvider.revoke = () => {
                 return q();
             };
 
@@ -211,24 +208,24 @@ module.exports = {
 
             test.expect(1);
             bigIq.init('host', 'user', 'password')
-                .then(function() {
+                .then(() => {
                     bigIq.revokeLicense()
-                    .then(function() {
-                        test.strictEqual(revokeCalled, true);
-                    })
-                    .catch(function() {
-                        test.ok(true);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
+                        .then(() => {
+                            test.strictEqual(revokeCalled, true);
+                        })
+                        .catch(() => {
+                            test.ok(true);
+                        })
+                        .finally(() => {
+                            test.done();
+                        });
                 });
         },
 
-        test5_3: function(test) {
-            var licenseProvider = require('../../lib/bigIq53LicenseProvider');
+        test5_3(test) {
+            const licenseProvider = require('../../lib/bigIq53LicenseProvider');
 
-            licenseProvider.revoke = function() {
+            licenseProvider.revoke = () => {
                 return q();
             };
 
@@ -244,21 +241,21 @@ module.exports = {
 
             test.expect(1);
             bigIq.init('host', 'user', 'password')
-                .then(function() {
+                .then(() => {
                     bigIq.revokeLicense()
-                    .then(function() {
-                        test.strictEqual(revokeCalled, true);
-                    })
-                    .catch(function() {
-                        test.ok(true);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
+                        .then(() => {
+                            test.strictEqual(revokeCalled, true);
+                        })
+                        .catch(() => {
+                            test.ok(true);
+                        })
+                        .finally(() => {
+                            test.done();
+                        });
                 });
         },
 
-        testPre5_0: function(test) {
+        testPre5_0(test) {
             icontrolMock.when(
                 'list',
                 '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
@@ -271,17 +268,17 @@ module.exports = {
 
             test.expect(1);
             bigIq.init('host', 'user', 'password')
-                .then(function() {
+                .then(() => {
                     bigIq.revokeLicense()
-                    .then(function() {
-                        test.ok(false, 'should have thrown not supported');
-                    })
-                    .catch(function(err) {
-                        test.notStrictEqual(err.message.indexOf('BIG-IQ versions'), -1);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
+                        .then(() => {
+                            test.ok(false, 'should have thrown not supported');
+                        })
+                        .catch((err) => {
+                            test.notStrictEqual(err.message.indexOf('BIG-IQ versions'), -1);
+                        })
+                        .finally(() => {
+                            test.done();
+                        });
                 });
         }
     }
