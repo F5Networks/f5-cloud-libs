@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const Module = require('module');
@@ -20,35 +21,38 @@ const path = require('path');
 const cloudProviderFactory = require('../../../f5-cloud-libs').cloudProviderFactory;
 
 module.exports = {
-    testSupported: function(test) {
+    testSupported: (test) => {
+        // eslint-disable-next-line no-underscore-dangle
         const realResolve = Module._resolveFilename;
         const providerName = 'foo';
         const requestedFile = path.normalize(`${__dirname}/../../../f5-cloud-libs-${providerName}/index.js`);
         let constructorCalled = false;
 
-        Module._resolveFilename = function() {
+        // eslint-disable-next-line no-underscore-dangle
+        Module._resolveFilename = () => {
             return requestedFile;
         };
 
         test.expect(2);
         require.cache[requestedFile] = {
             exports: {
-                provider: function () {
+                provider: function provider() {
                     constructorCalled = true;
                 }
             }
         };
-        test.doesNotThrow(function () {
+        test.doesNotThrow(() => {
             cloudProviderFactory.getCloudProvider(providerName);
         });
         test.ok(constructorCalled, 'constructor was not called');
+        // eslint-disable-next-line no-underscore-dangle
         Module._resolveFilename = realResolve;
         test.done();
     },
 
-    testNotSupported: function(test) {
+    testNotSupported(test) {
         test.expect(1);
-        test.throws(function () {
+        test.throws(() => {
             cloudProviderFactory.getCloudProvider('bar');
         });
         test.done();
