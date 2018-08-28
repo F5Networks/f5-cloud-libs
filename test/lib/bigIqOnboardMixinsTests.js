@@ -28,6 +28,7 @@ let bigIqOnboardMixins;
 
 module.exports = {
     setUp(callback) {
+        /* eslint-disable global-require */
         BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIqOnboardMixins = require('../../../f5-cloud-libs').bigIqOnboardMixins;
 
@@ -36,7 +37,7 @@ module.exports = {
         bigIp.icontrol = icontrolMock;
 
         bigIqOnboardMixins.core = bigIp;
-        bigIqOnboardMixins.logger = Logger.getLogger({console: false});
+        bigIqOnboardMixins.logger = Logger.getLogger({ console: false });
 
         icontrolMock.reset();
         callback();
@@ -87,15 +88,16 @@ module.exports = {
                     .then(() => {
                         test.deepEqual(icontrolMock.getRequest(
                             'create',
-                            '/cm/device/licensing/pool/initial-activation'),
-                            {
-                                name: 'mypool',
-                                regKey: '1234',
-                                status: 'ACTIVATING_AUTOMATIC'
-                            }
-                        );
+                            '/cm/device/licensing/pool/initial-activation'
+                        ),
+                        {
+                            name: 'mypool',
+                            regKey: '1234',
+                            status: 'ACTIVATING_AUTOMATIC'
+                        });
                         test.strictEqual(
-                            icontrolMock.getNumRequests('list', `/cm/device/licensing/pool/initial-activation/${regKey1}`),
+                            icontrolMock.getNumRequests('list',
+                                `/cm/device/licensing/pool/initial-activation/${regKey1}`),
                             3
                         );
                         test.strictEqual(
@@ -124,7 +126,8 @@ module.exports = {
                 bigIqOnboardMixins.createLicensePool('mypool', '1234')
                     .then(() => {
                         test.strictEqual(
-                            icontrolMock.getNumRequests('list', `/cm/device/licensing/pool/initial-activation/${regKey1}`),
+                            icontrolMock.getNumRequests('list',
+                                `/cm/device/licensing/pool/initial-activation/${regKey1}`),
                             3
                         );
                         test.strictEqual(
@@ -183,15 +186,16 @@ module.exports = {
                     .then(() => {
                         test.deepEqual(icontrolMock.getRequest(
                             'create',
-                            `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings`),
-                            {
-                                regKey: '1234',
-                                description: '1234',
-                                status: 'ACTIVATING_AUTOMATIC'
-                            }
-                        );
+                            `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings`
+                        ),
+                        {
+                            regKey: '1234',
+                            description: '1234',
+                            status: 'ACTIVATING_AUTOMATIC'
+                        });
                         test.strictEqual(
-                            icontrolMock.getNumRequests('list', `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings/${regKey1}`),
+                            icontrolMock.getNumRequests('list',
+                                `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings/${regKey1}`),
                             3
                         );
                     })
