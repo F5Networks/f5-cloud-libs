@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var q = require('q');
-var util = require('util');
-var DnsProvider = require('../../../f5-cloud-libs').dnsProvider;
+const util = require('util');
+const DnsProvider = require('../../../f5-cloud-libs').dnsProvider;
 
 util.inherits(TestDnsProvider, DnsProvider);
 function TestDnsProvider(options) {
@@ -27,25 +27,25 @@ function TestDnsProvider(options) {
 // Our tests cause too many event listeners. Turn off the check.
 process.setMaxListeners(0);
 
-var testDnsProvider;
+let testDnsProvider;
 
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
         testDnsProvider = new TestDnsProvider();
         callback();
     },
 
-    testInit: function(test) {
+    testInit(test) {
         test.expect(1);
         testDnsProvider.init()
-            .then(function() {
+            .then(() => {
                 test.ok(true);
                 test.done();
             });
     },
 
-    testUnimplementedUpdate: function(test) {
-        test.throws(function() {
+    testUnimplementedUpdate(test) {
+        test.throws(() => {
             testDnsProvider.update();
         });
         test.done();
