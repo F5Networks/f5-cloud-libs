@@ -13,242 +13,244 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var IControl = require('../../../f5-cloud-libs').iControl;
-var httpMock = require('../testUtil/httpMock');
-var iControl;
+const IControl = require('../../../f5-cloud-libs').iControl;
+const httpMock = require('../testUtil/httpMock');
+
+let iControl;
 
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
         iControl = new IControl();
         iControl.https = httpMock;
         httpMock.reset();
         callback();
     },
 
-    testAuthToken: function(test) {
-        iControl = new IControl({authToken: 'foofoofoo'});
+    testAuthToken(test) {
+        iControl = new IControl({ authToken: 'foofoofoo' });
         iControl.https = httpMock;
         iControl.list('somepath')
-            .then(function() {
+            .then(() => {
                 test.strictEqual(httpMock.lastRequest.headers['X-F5-Auth-Token'], 'foofoofoo');
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testBadJsonResponse: function(test) {
-        httpMock.setResponse('badjson', {'Content-Type': 'application/json'});
+    testBadJsonResponse(test) {
+        httpMock.setResponse('badjson', { 'Content-Type': 'application/json' });
         iControl.list('somepath')
-            .then(function() {
+            .then(() => {
                 test.ok(false, 'should have thrown bad json');
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.notStrictEqual(err.indexOf('Unable to parse JSON'), -1);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testEmptyResponse: function(test) {
-        httpMock.setResponse('', {'Content-Type': 'application/json'});
+    testEmptyResponse(test) {
+        httpMock.setResponse('', { 'Content-Type': 'application/json' });
         iControl.list('somepath')
-            .then(function(response) {
+            .then((response) => {
                 test.deepEqual(response, {});
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testBadStatusCode: function(test) {
+    testBadStatusCode(test) {
         const errorCode = 300;
-        httpMock.setResponse({foo: 'bar'}, {'Content-Type': 'application/json'}, errorCode);
+        httpMock.setResponse({ foo: 'bar' }, { 'Content-Type': 'application/json' }, errorCode);
         iControl.list('somepath')
-            .then(function() {
+            .then(() => {
                 test.ok(false, 'should have thrown bad status code');
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.strictEqual(err.code, errorCode);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testCreate: function(test) {
-        var body = {foo: 'bar'};
+    testCreate(test) {
+        const body = { foo: 'bar' };
         iControl.create('somepath', body)
-            .then(function() {
+            .then(() => {
                 test.deepEqual(httpMock.lastRequest.method, 'POST');
-                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({foo: 'bar'}));
+                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testDelete: function(test) {
+    testDelete(test) {
         iControl.delete('somepath')
-            .then(function() {
+            .then(() => {
                 test.deepEqual(httpMock.lastRequest.method, 'DELETE');
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testList: function(test) {
-        var expectedResponse = 'foo';
+    testList(test) {
+        const expectedResponse = 'foo';
         httpMock.setResponse(expectedResponse);
         iControl.list('somepath')
-            .then(function(response) {
+            .then((response) => {
                 test.strictEqual(response, expectedResponse);
                 test.deepEqual(httpMock.lastRequest.method, 'GET');
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testListJson: function(test) {
-        var expectedResponse = {
+    testListJson(test) {
+        const expectedResponse = {
             foo: 'bar'
         };
-        httpMock.setResponse(expectedResponse, {'Content-Type': 'application/json'});
+        httpMock.setResponse(expectedResponse, { 'Content-Type': 'application/json' });
         iControl.list('somepath')
-            .then(function(response) {
+            .then((response) => {
                 test.deepEqual(response, expectedResponse);
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testListItems: function(test) {
-        var items = [
+    testListItems(test) {
+        const items = [
             {
                 one: 1,
                 two: 2
             }
         ];
-        var expectedResponse = {
+        const expectedResponse = {
             kind: 'foo',
-            items: items
+            items
         };
 
-        httpMock.setResponse(expectedResponse, {'Content-Type': 'application/json'});
+        httpMock.setResponse(expectedResponse, { 'Content-Type': 'application/json' });
         iControl.list('somepath')
-            .then(function(response) {
+            .then((response) => {
                 test.deepEqual(response, items);
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testHeaderContentType: function(test) {
-        var contentType = 'foo/bar';
-        var headers = {
+    testHeaderContentType(test) {
+        const contentType = 'foo/bar';
+        const headers = {
             'Content-type': contentType
         };
 
-        iControl.list('somepath', {headers: headers});
+        iControl.list('somepath', { headers });
         test.deepEqual(httpMock.lastRequest.headers['Content-Type'], contentType);
         test.done();
     },
 
-    testHeaderOther: function(test) {
-        var headers = {
+    testHeaderOther(test) {
+        const headers = {
             foo: 'bar'
         };
 
-        iControl.list('somepath', {headers: headers});
+        iControl.list('somepath', { headers });
         test.deepEqual(httpMock.lastRequest.headers.foo, headers.foo);
         test.done();
     },
 
-    testModify: function(test) {
-        var body = {foo: 'bar'};
+    testModify(test) {
+        const body = { foo: 'bar' };
         iControl.modify('somepath', body)
-            .then(function() {
+            .then(() => {
                 test.deepEqual(httpMock.lastRequest.method, 'PATCH');
-                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({foo: 'bar'}));
+                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testReplace: function(test) {
-        var body = {foo: 'bar'};
+    testReplace(test) {
+        const body = { foo: 'bar' };
         iControl.replace('somepath', body)
-            .then(function() {
+            .then(() => {
                 test.deepEqual(httpMock.lastRequest.method, 'PUT');
-                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({foo: 'bar'}));
+                test.deepEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testNoWait: function(test) {
-        var expectedResponse = 'foo';
+    testNoWait(test) {
+        const expectedResponse = 'foo';
         httpMock.setResponse(expectedResponse);
-        iControl.list('somepath', {noWait: true})
-            .then(function(response) {
+        iControl.list('somepath', { noWait: true })
+            .then((response) => {
                 test.strictEqual(response, undefined);
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err.message);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     },
 
-    testError: function(test) {
-        var message = 'http error';
+    testError(test) {
+        const message = 'http error';
         httpMock.setError(message);
         iControl.list('somepath')
-        .then(function() {
-            test.ok(false, 'should have thrown an error');
-        })
-        .catch(function(err) {
-            test.strictEqual(err.message, message);
-        })
-        .finally(function() {
-            test.done();
-        });
-}
+            .then(() => {
+                test.ok(false, 'should have thrown an error');
+            })
+            .catch((err) => {
+                test.strictEqual(err.message, message);
+            })
+            .finally(() => {
+                test.done();
+            });
+    }
 };
