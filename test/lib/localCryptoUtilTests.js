@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const q = require('q');
 
-var localKeyUtilMock;
-var cryptoUtilMock;
-var utilMock;
-var localCryptoUtil;
-var childProcessMock;
+let localKeyUtilMock;
+let cryptoUtilMock;
+let utilMock;
+let localCryptoUtil;
+let childProcessMock;
 
-var dataSent;
-var optionsSent;
-var encryptedKeySent;
-var dataToDecrypt;
-var decryptedData;
+let dataSent;
+let optionsSent;
+let encryptedKeySent;
+let dataToDecrypt;
+let decryptedData;
 
+/* eslint-disable global-require */
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
         utilMock = require('../../lib/util');
         localKeyUtilMock = require('../../lib/localKeyUtil');
         cryptoUtilMock = require('../../lib/cryptoUtil');
@@ -39,36 +41,42 @@ module.exports = {
 
         encryptedKeySent = undefined;
 
-        localKeyUtilMock.getPrivateKeyFilePath = function() {
+        localKeyUtilMock.getPrivateKeyFilePath = function getPrivateKeyFilePath() {
             return q('/foo/bar');
         };
 
-        localKeyUtilMock.getPrivateKeyMetadata = function() {
+        localKeyUtilMock.getPrivateKeyMetadata = function getPrivateKeyMetadata() {
             return q({});
         };
 
-        utilMock.readDataFromFile = function() {
+        utilMock.readDataFromFile = function readDataFromFile() {
             return q(dataToDecrypt);
         };
 
-        cryptoUtilMock.decrypt = function(privateKey, data, options) {
+        cryptoUtilMock.decrypt = function decrypt(privateKey, data, options) {
             dataSent = data;
             optionsSent = options;
             return q(decryptedData);
         };
 
-        cryptoUtilMock.symmetricDecrypt = function(privateKey, encryptedKey, iv, data, options) {
+        cryptoUtilMock.symmetricDecrypt = function symmetricDecrypt(
+            privateKey,
+            encryptedKey,
+            iv,
+            data,
+            options
+        ) {
             dataSent = data;
             optionsSent = options;
-            encryptedKeySent = encryptedKey
+            encryptedKeySent = encryptedKey;
             return q(decryptedData);
         };
 
         callback();
     },
 
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
 
@@ -76,181 +84,179 @@ module.exports = {
     },
 
     testDecryptData: {
-        testNoFile: function(test) {
+        testNoFile(test) {
             test.expect(1);
-            test.throws(function() {
+            test.throws(() => {
                 localCryptoUtil.decryptData(null, 'foo', 'bar');
             });
             test.done();
         },
 
-        testNoPrivateKeyFolder: function(test) {
+        testNoPrivateKeyFolder(test) {
             test.expect(1);
-            test.throws(function() {
+            test.throws(() => {
                 localCryptoUtil.decryptData('foo', null, 'bar');
             });
             test.done();
         },
 
-        testNoPrivateKeyName: function(test) {
+        testNoPrivateKeyName(test) {
             test.expect(1);
-            test.throws(function() {
+            test.throws(() => {
                 localCryptoUtil.decryptData('foo', 'bar');
             });
             test.done();
         },
 
-        testBasic: function(test) {
-            dataToDecrypt = "abcd";
-            decryptedData = "hello, world";
+        testBasic(test) {
+            dataToDecrypt = 'abcd';
+            decryptedData = 'hello, world';
 
             test.expect(2);
             localCryptoUtil.decryptData(dataToDecrypt, 'foo', 'bar')
-                .then(function(response) {
+                .then((response) => {
                     test.strictEqual(dataSent, dataToDecrypt);
                     test.strictEqual(response, decryptedData);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNoPassphrase: function(test) {
+        testNoPassphrase(test) {
             test.expect(2);
             localCryptoUtil.decryptData('foo', 'foo', 'bar')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(optionsSent.passphrase, undefined);
                     test.strictEqual(optionsSent.passphraseEncrypted, false);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testPassphrase: function(test) {
-            var passphrase = 'mypassphrase';
+        testPassphrase(test) {
+            const passphrase = 'mypassphrase';
 
-            localKeyUtilMock.getPrivateKeyMetadata = function() {
-                return q({passphrase: passphrase});
+            localKeyUtilMock.getPrivateKeyMetadata = function getPrivateKeyMetadata() {
+                return q({ passphrase });
             };
 
             test.expect(2);
             localCryptoUtil.decryptData('foo', 'foo', 'bar')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(optionsSent.passphrase, passphrase);
                     test.strictEqual(optionsSent.passphraseEncrypted, true);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testDecryptPassword: {
-        testBasic: function(test) {
-            decryptedData = "hello, world";
+        testBasic(test) {
+            decryptedData = 'hello, world';
 
             localCryptoUtil.decryptPassword('secret')
-                .then(function(decryptedSecret) {
+                .then((decryptedSecret) => {
                     test.deepEqual(decryptedSecret, decryptedData);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testSymmetricDecryptPassword: {
-        testBasic: function(test) {
+        testBasic(test) {
             dataToDecrypt = {
-                encryptedData: "secret",
-                encryptedKey: "key",
-                iv: "foo",
+                encryptedData: 'secret',
+                encryptedKey: 'key',
+                iv: 'foo',
                 privateKey: {
-                    folder: "foo",
-                    name: "bar"
+                    folder: 'foo',
+                    name: 'bar'
                 }
             };
-            decryptedData = "hello, world"
+            decryptedData = 'hello, world';
 
             localCryptoUtil.symmetricDecryptPassword(dataToDecrypt)
-                .then(function(decryptedSecret) {
+                .then((decryptedSecret) => {
                     test.deepEqual(decryptedSecret, decryptedData);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testDecryptDataFromFile: {
-        testBasic: function(test) {
-            dataToDecrypt = "abcd";
-            decryptedData = "hello, world";
+        testBasic(test) {
+            dataToDecrypt = 'abcd';
+            decryptedData = 'hello, world';
 
             test.expect(2);
             localCryptoUtil.decryptDataFromFile('/foo/bar')
-                .then(function(response) {
+                .then((response) => {
                     test.strictEqual(dataSent, dataToDecrypt);
                     test.strictEqual(response, decryptedData);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
-
         },
 
-        testSymmetric: function(test) {
-            const encryptedData = "secret"
-            const encryptedKey = "key"
+        testSymmetric(test) {
+            const encryptedData = 'secret';
+            const encryptedKey = 'key';
             dataToDecrypt = JSON.stringify({
                 encryptedData,
                 encryptedKey,
-                iv: "foo",
+                iv: 'foo',
                 privateKey: {
-                    folder: "foo",
-                    name: "bar"
+                    folder: 'foo',
+                    name: 'bar'
                 }
             });
-            decryptedData = "hello, world";
+            decryptedData = 'hello, world';
 
             test.expect(3);
-            localCryptoUtil.decryptDataFromFile('/foo/bar', {symmetric: true})
-                .then(function(response) {
+            localCryptoUtil.decryptDataFromFile('/foo/bar', { symmetric: true })
+                .then((response) => {
                     test.strictEqual(dataSent, encryptedData);
                     test.strictEqual(response, decryptedData);
                     test.strictEqual(encryptedKeySent, encryptedKey);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
-
         },
 
-        testError: function(test) {
+        testError(test) {
             test.expect(1);
-            test.throws(function() {
+            test.throws(() => {
                 localCryptoUtil.decryptDataFromFile(null);
             });
             test.done();
@@ -258,43 +264,43 @@ module.exports = {
     },
 
     testDecryptConfValue: {
-        setUp: function(callback) {
+        setUp(callback) {
             childProcessMock = require('child_process');
             callback();
         },
 
-        testBasic: function(test) {
-            childProcessMock.execFile = function(file, params, cb) {
+        testBasic(test) {
+            childProcessMock.execFile = function execFile(file, params, cb) {
                 cb(null, decryptedData, null);
             };
 
             test.expect(1);
             localCryptoUtil.decryptConfValue('foo')
-                .then(function(response) {
+                .then((response) => {
                     test.strictEqual(response, decryptedData);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testError: function(test) {
-            childProcessMock.execFile = function(file, params, cb) {
+        testError(test) {
+            childProcessMock.execFile = function execFile(file, params, cb) {
                 cb(new Error('foo'), null, 'bar');
             };
 
             test.expect(1);
             localCryptoUtil.decryptConfValue('foo')
-                .then(function(response) {
-                    test.ok(false, 'decryptConfValue should have thrown')
+                .then(() => {
+                    test.ok(false, 'decryptConfValue should have thrown');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf('bar'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
