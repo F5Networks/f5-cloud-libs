@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 F5 Networks, Inc.
+ * Copyright 2017-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const q = require('q');
@@ -22,22 +23,23 @@ const realWriteFile = fsMock.writeFile;
 
 const passphrase = 'abc123';
 
-var childProcessMock;
-var cryptoUtilMock;
-var localKeyUtil;
+const publicKeyDirctory = 'myPublicKeyDir';
+const publicKeyOutFile = 'myPublicKeyOutFile';
+const privateKeyFolder = 'myPrivateKeyFolder';
+const privateKeyName = 'myPrivateKeyName';
 
-var dirCreated;
-var keyPairGenerated;
-var bigIpFolderCreated;
-var installCmd;
+let childProcessMock;
+let cryptoUtilMock;
+let localKeyUtil;
 
-var publicKeyDirctory = 'myPublicKeyDir';
-var publicKeyOutFile = 'myPublicKeyOutFile';
-var privateKeyFolder = 'myPrivateKeyFolder';
-var privateKeyName = 'myPrivateKeyName';
+let dirCreated;
+let keyPairGenerated;
+let bigIpFolderCreated;
+let installCmd;
 
+/* eslint-disable global-require */
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
         childProcessMock = require('child_process');
         cryptoUtilMock = require('../../lib/cryptoUtil');
         localKeyUtil = require('../../lib/localKeyUtil');
@@ -47,44 +49,44 @@ module.exports = {
         bigIpFolderCreated = false;
         installCmd = undefined;
 
-        childProcessMock.exec = function(command, cb) {
+        childProcessMock.exec = function exec(command, cb) {
             if (command.startsWith('/usr/bin/tmsh -a install')) {
                 installCmd = command;
             }
 
             cb(null, null);
         };
-        childProcessMock.execFile = function(file, cb) {
+        childProcessMock.execFile = function execFile(file, cb) {
             cb();
         };
-        cryptoUtilMock.generateKeyPair = function() {
+        cryptoUtilMock.generateKeyPair = function generateKeyPair() {
             keyPairGenerated = true;
             return q();
         };
 
-        cryptoUtilMock.encrypt = function() {
+        cryptoUtilMock.encrypt = function encrypt() {
             return q();
         };
-        cryptoUtilMock.generateRandomBytes = function() {
+        cryptoUtilMock.generateRandomBytes = function generateRandomBytes() {
             return q(passphrase);
         };
 
-        fsMock.writeFile = function(file, data, options, cb) {
+        fsMock.writeFile = function writeFile(file, data, options, cb) {
             cb();
         };
-        fsMock.mkdir = function(dir, cb) {
+        fsMock.mkdir = function mkdir(dir, cb) {
             dirCreated = true;
             cb();
         };
-        fsMock.access = function(file, cb) {
+        fsMock.access = function access(file, cb) {
             cb();
         };
 
         callback();
     },
 
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
         fsMock.writeFile = realWriteFile;
@@ -92,22 +94,18 @@ module.exports = {
     },
 
     testGenerateAndInstallKeyPair: {
-        setUp: function(callback) {
-            childProcessMock.exec = function(command, cb) {
+        setUp(callback) {
+            childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
-                }
-                else if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
+                } else if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
                     cb(null, false);
-                }
-                else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
+                } else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(null, {});
-                }
-                else if (command.startsWith('/usr/bin/tmsh -a install')) {
+                } else if (command.startsWith('/usr/bin/tmsh -a install')) {
                     installCmd = command;
                     cb(null, null);
-                }
-                else {
+                } else {
                     cb(null, null);
                 }
             };
@@ -115,340 +113,387 @@ module.exports = {
             callback();
         },
 
-        testPrivateKeyCreated: function(test) {
+        testPrivateKeyCreated(test) {
             test.expect(2);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ok(keyPairGenerated);
-                    test.ok(installCmd.endsWith('passphrase ' + passphrase));
+                    test.ok(installCmd.endsWith(`passphrase ${passphrase}`));
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testPrivateKeyExists: function(test) {
-                childProcessMock.exec = function(command, cb) {
-                    if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                        cb(null, ' Version 13.0.0 ');
-                    }
-                    else if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
-                        cb(null, 'ok');
-                    }
-                    else if (command.startsWith('ls -1t')) {
-                        cb(null, ':' + privateKeyFolder + ':' + privateKeyName + '.key');
-                    }
-                };
-                test.expect(1);
-                localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                    .then(function() {
-                        test.ifError(keyPairGenerated);
-                    })
-                    .catch(function(err) {
-                        test.ok(false, err);
-                    })
-                    .finally(function() {
-                        test.done();
-                    });
-        },
-
-        testPrivateKeyExistsForce: function(test) {
-            childProcessMock.exec = function(command, cb) {
+        testPrivateKeyExists(test) {
+            childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
+                } else if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
+                    cb(null, 'ok');
+                } else if (command.startsWith('ls -1t')) {
+                    cb(null, `:${privateKeyFolder}:${privateKeyName}.key`);
                 }
-                else if (command.startsWith('ls -1t')) {
-                    cb(null, ':' + privateKeyFolder + ':' + privateKeyName + '.key');
-                }
-                else {
+            };
+            test.expect(1);
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
+                    test.ifError(keyPairGenerated);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testPrivateKeyExistsForce(test) {
+            childProcessMock.exec = function exec(command, cb) {
+                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
+                    cb(null, ' Version 13.0.0 ');
+                } else if (command.startsWith('ls -1t')) {
+                    cb(null, `:${privateKeyFolder}:${privateKeyName}.key`);
+                } else {
                     cb(null, 'ok');
                 }
             };
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName, {force: true})
-                .then(function() {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName,
+                { force: true }
+            )
+                .then(() => {
                     test.ok(keyPairGenerated);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDirectoryCreated: function(test) {
-            fsMock.access = function(file, cb) {
+        testDirectoryCreated(test) {
+            fsMock.access = function access(file, cb) {
                 cb(new Error());
             };
 
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ok(dirCreated);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDirectoryExists: function(test) {
-            fsMock.access = function(file, cb) {
+        testDirectoryExists(test) {
+            fsMock.access = function access(file, cb) {
                 cb();
             };
 
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ifError(dirCreated);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDirectoryCreateError: function(test) {
+        testDirectoryCreateError(test) {
             const message = 'cannot make directory';
 
-            fsMock.access = function(file, cb) {
+            fsMock.access = function access(file, cb) {
                 cb(new Error());
             };
 
-            fsMock.mkdir = function(dir, cb) {
+            fsMock.mkdir = function mkdir(dir, cb) {
                 cb(new Error(message));
             };
 
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ok(false, 'should have thrown mkdir error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBigIpFolderCreated: function(test) {
-            childProcessMock.exec = function(command, cb) {
+        testBigIpFolderCreated(test) {
+            childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
-                }
-                else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
+                } else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(new Error());
-                }
-                else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
+                } else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
                     bigIpFolderCreated = true;
                     cb(null, null);
-                }
-                else {
+                } else {
                     cb(null, null);
                 }
             };
 
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ok(bigIpFolderCreated);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBigIpFolderExists: function(test) {
-            childProcessMock.exec = function(command, cb) {
+        testBigIpFolderExists(test) {
+            childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
-                }
-                else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
+                } else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(null, null);
-                }
-                else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
+                } else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
                     bigIpFolderCreated = true;
                     cb(null, null);
-                }
-                else {
+                } else {
                     cb(null, null);
                 }
             };
 
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ifError(bigIpFolderCreated);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testTempPrivateKeyRemoved: function(test) {
-            var fileDeleted = false;
-            fsMock.unlink = function(file, cb) {
+        testTempPrivateKeyRemoved(test) {
+            let fileDeleted = false;
+            fsMock.unlink = function unlink(file, cb) {
                 fileDeleted = true;
                 cb();
             };
 
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ok(fileDeleted);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBigIpNotReady: function(test) {
+        testBigIpNotReady(test) {
             const message = 'mcp not ready';
-            childProcessMock.execFile = function(file, cb) {
+            childProcessMock.execFile = function execFile(file, cb) {
                 cb(new Error(message));
             };
 
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ok(false, 'should have thrown mkdir error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testInstallError: function(test) {
+        testInstallError(test) {
             const message = 'install failed';
-            childProcessMock.exec = function(command, cb) {
+            childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
-                }
-                else if (command.startsWith('/usr/bin/tmsh -a install')) {
+                } else if (command.startsWith('/usr/bin/tmsh -a install')) {
                     cb(new Error(message));
-                }
-                else {
+                } else {
                     cb(null, null);
                 }
             };
 
             test.expect(1);
-            localKeyUtil.generateAndInstallKeyPair(publicKeyDirctory, publicKeyOutFile, privateKeyFolder, privateKeyName)
-                .then(function () {
+            localKeyUtil.generateAndInstallKeyPair(
+                publicKeyDirctory,
+                publicKeyOutFile,
+                privateKeyFolder,
+                privateKeyName
+            )
+                .then(() => {
                     test.ok(false, 'should have thrown install error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf(message), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testGetPrivateKeyFilePath: {
-        test13_0: function(test) {
-            const folder = "hello";
-            const name = "world";
-            const suffix = "_1234_1";
+        test13_0(test) {
+            const folder = 'hello';
+            const name = 'world';
+            const suffix = '_1234_1';
 
-            childProcessMock.exec = function(command, cb) {
+            childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 13.0.0 ');
-                }
-                else {
-                    var shellOut = ":" + folder + ":" + name + ".key" + suffix;
-                    cb (null, shellOut);
+                } else {
+                    const shellOut = `:${folder}:${name}.key${suffix}`;
+                    cb(null, shellOut);
                 }
             };
 
             test.expect(1);
             localKeyUtil.getPrivateKeyFilePath(folder, name)
-                .then(function(path) {
-                    test.strictEqual(path, '/config/filestore/files_d/' + folder + '_d/certificate_key_d/:' + folder + ':' + name + '.key' + suffix);
+                .then((path) => {
+                    test.strictEqual(
+                        path,
+                        `/config/filestore/files_d/${folder}_d/certificate_key_d/:${folder}:${name}.key${suffix}` // eslint-disable-line max-len
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        test14_0: function(test) {
-            const folder = "hello";
-            const name = "world";
-            const suffix = "_1234_1";
+        test14_0(test) {
+            const folder = 'hello';
+            const name = 'world';
+            const suffix = '_1234_1';
 
-            childProcessMock.exec = function(command, cb) {
+            childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                     cb(null, ' Version 14.0.0 ');
-                }
-                else {
-                    var shellOut = ":" + folder + ":" + name + suffix;
-                    cb (null, shellOut);
+                } else {
+                    const shellOut = `:${folder}:${name}${suffix}`;
+                    cb(null, shellOut);
                 }
             };
 
             test.expect(1);
             localKeyUtil.getPrivateKeyFilePath(folder, name)
-                .then(function(path) {
-                    test.strictEqual(path, '/config/filestore/files_d/' + folder + '_d/certificate_key_d/:' + folder + ':' + name + suffix);
+                .then((path) => {
+                    test.strictEqual(
+                        path,
+                        `/config/filestore/files_d/${folder}_d/certificate_key_d/:${folder}:${name}${suffix}`
+                    );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
-    testGetPrivateKeyMetadata: function(test) {
-        const folder = "hello";
-        const name = "world";
-        const passphrase = 'foobar';
+    testGetPrivateKeyMetadata(test) {
+        const folder = 'hello';
+        const name = 'world';
 
-        childProcessMock.exec = function(command, cb) {
+        childProcessMock.exec = function exec(command, cb) {
             if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
                 cb(null, ' Version 13.0.0 ');
-            }
-            else {
-                var tmshOut = 'sys file ssl-key /CloudLibsLocal/cloudLibsLocalPrivate.key { passphrase ' + passphrase + ' security-type password }';
-                cb (null, tmshOut);
+            } else {
+                // eslint-disable-next-line max-len
+                const tmshOut = `sys file ssl-key /CloudLibsLocal/cloudLibsLocalPrivate.key { passphrase ${passphrase} security-type password }`;
+                cb(null, tmshOut);
             }
         };
 
         test.expect(1);
         localKeyUtil.getPrivateKeyMetadata(folder, name)
-            .then(function(metadata) {
+            .then((metadata) => {
                 test.strictEqual(metadata.passphrase, passphrase);
             })
-            .catch(function(err) {
+            .catch((err) => {
                 test.ok(false, err);
             })
-            .finally(function() {
+            .finally(() => {
                 test.done();
             });
     }

@@ -58,6 +58,7 @@ Does initial configuration and provisioning of a BIG-IP.
       --update-sigs                                                                                                                                                                                                                            Update ASM signatures
       --metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:<aws | azure | gce | etc.>, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]  Optional usage metrics to collect. Customer ID should not identify a specific customer. (default: [object Object])
       -h, --help                                                                                                                                                                                                                               output usage information
+    
 ## cluster.js
 
 Sets up BIG-IPs in a cluster.
@@ -105,6 +106,7 @@ Sets up BIG-IPs in a cluster.
           --device-group <device_group>                    Name of the device group.
           --device <device_name>                           Device name to remove.
       -h, --help                                       output usage information
+    
 ## autoscale.js
 
 Runs autoscale code to elect master and cluster
@@ -155,6 +157,7 @@ Runs autoscale code to elect master and cluster
           --dns-provider-options <dns_provider_options>      Options specific to dns_provider. Ex: param1:value1,param2:value2 (default: [object Object])
       --max-ucs-files <max_ucs_files_to_save>            When running cluster action backup-ucs, maximum number of backup files to keep. (default: 7)
       -h, --help                                         output usage information
+    
 ## network.js
 
 Sets up default gateway, VLANs and self IPs
@@ -187,6 +190,7 @@ Sets up default gateway, VLANs and self IPs
       --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2], [trafficGroup:traffic_group_name]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified. (default: )
       --force-reboot                                                                                                                       Force a reboot at the end. This is necessary for some 2+ NIC configurations.
       -h, --help                                                                                                                           output usage information
+    
 ## runScript.js
 
 Runs an arbitrary script.
@@ -208,6 +212,7 @@ Runs an arbitrary script.
       -o, --output <file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log
       --no-console                   Do not log to console. Default false (log to console).
       -h, --help                     output usage information
+    
 ## Standalone licensing
 
 ### Install
