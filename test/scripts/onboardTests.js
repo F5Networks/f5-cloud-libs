@@ -1,18 +1,19 @@
 /**
  * Copyright 2016 F5 Networks, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const realExit = process.exit;
@@ -23,28 +24,29 @@ const util = require('util');
 const ActiveError = require('../../../f5-cloud-libs').activeError;
 const CloudProvider = require('../../lib/cloudProvider');
 
-var metricsCollectorMock;
+let metricsCollectorMock;
 
-var rebootCalled = false;
+let rebootCalled = false;
 let signalInstanceProvisionedCalled = false;
-var functionsCalled;
-var onboard;
-var ipcMock;
-var utilMock;
-var exitMessage;
-var exitCode;
+let functionsCalled;
+let onboard;
+let ipcMock;
+let utilMock;
+let exitMessage;
+let exitCode;
 
 let bigIpMock;
 let providerMock;
 
-var testOptions = {}
+const testOptions = {};
 
-var argv;
-var rebootRequested;
-var signalsSent;
+let argv;
+let rebootRequested;
+let signalsSent;
 
 // Our tests cause too many event listeners. Turn off the check.
-var options = require('commander');
+const options = require('commander');
+
 options.setMaxListeners(0);
 
 util.inherits(ProviderMock, CloudProvider);
@@ -53,129 +55,129 @@ function ProviderMock() {
     this.functionCalls = {};
 }
 
-ProviderMock.prototype.init = function () {
-    this.functionCalls.init = arguments;
+ProviderMock.prototype.init = function init(...args) {
+    this.functionCalls.init = args;
     return q();
 };
 
-ProviderMock.prototype.signalInstanceProvisioned = function () {
+ProviderMock.prototype.signalInstanceProvisioned = () => {
     signalInstanceProvisionedCalled = true;
     return q();
 };
 
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
         bigIpMock = {
-            init: function() {
-                functionsCalled.bigIp.init = arguments;
+            init(...args) {
+                functionsCalled.bigIp.init = args;
                 return q();
             },
 
-            isBigIp: function() {
+            isBigIp() {
                 return true;
             },
 
-            isBigIq: function() {
+            isBigIq() {
                 return false;
             },
 
-            list: function() {
-                functionsCalled.bigIp.list = arguments;
+            list(...args) {
+                functionsCalled.bigIp.list = args;
                 return q();
             },
 
-            modify: function() {
-                functionsCalled.bigIp.modify = arguments;
+            modify(...args) {
+                functionsCalled.bigIp.modify = args;
                 return q();
             },
 
-            create: function() {
-                functionsCalled.bigIp.create = arguments;
+            create(...args) {
+                functionsCalled.bigIp.create = args;
                 return q();
             },
 
-            delete: function() {
-                functionsCalled.bigIp.delete = arguments;
+            delete(...args) {
+                functionsCalled.bigIp.delete = args;
                 return q();
             },
 
-            ready: function() {
-                functionsCalled.bigIp.ready = arguments;
+            ready(...args) {
+                functionsCalled.bigIp.ready = args;
                 return q();
             },
 
-            save: function() {
-                functionsCalled.bigIp.save = arguments;
+            save(...args) {
+                functionsCalled.bigIp.save = args;
                 return q();
             },
 
-            active: function() {
-                functionsCalled.bigIp.active = arguments;
+            active(...args) {
+                functionsCalled.bigIp.active = args;
                 return q();
             },
 
-            ping: function() {
-                functionsCalled.bigIp.ping = arguments;
+            ping(...args) {
+                functionsCalled.bigIp.ping = args;
                 return q();
             },
 
-            rebootRequired: function() {
-                functionsCalled.bigIp.rebootRequired = arguments;
+            rebootRequired(...args) {
+                functionsCalled.bigIp.rebootRequired = args;
                 return q(false);
             },
 
-            reboot: function() {
-                functionsCalled.bigIp.reboot = arguments;
+            reboot(...args) {
+                functionsCalled.bigIp.reboot = args;
                 rebootRequested = true;
                 return q();
             },
 
             onboard: {
-                globalSettings: function() {
-                    functionsCalled.bigIp.onboard.globalSettings = arguments;
+                globalSettings(...args) {
+                    functionsCalled.bigIp.onboard.globalSettings = args;
                     return q();
                 },
 
-                license: function() {
-                    functionsCalled.bigIp.onboard.license = arguments;
+                license(...args) {
+                    functionsCalled.bigIp.onboard.license = args;
                     return q();
                 },
 
-                licenseViaBigIq: function() {
-                    functionsCalled.bigIp.onboard.licenseViaBigIq = arguments;
+                licenseViaBigIq(...args) {
+                    functionsCalled.bigIp.onboard.licenseViaBigIq = args;
                     return q();
                 },
 
-                password: function() {
-                    functionsCalled.bigIp.onboard.password = arguments;
+                password(...args) {
+                    functionsCalled.bigIp.onboard.password = args;
                     return q();
                 },
 
-                provision: function() {
-                    functionsCalled.bigIp.onboard.provision = arguments;
+                provision(...args) {
+                    functionsCalled.bigIp.onboard.provision = args;
                     return q();
                 },
 
-                setDbVars: function() {
-                    functionsCalled.bigIp.onboard.setDbVars = arguments;
+                setDbVars(...args) {
+                    functionsCalled.bigIp.onboard.setDbVars = args;
                     return q();
                 },
 
-                updateUser: function(user, password, role, shell) {
-                    functionsCalled.bigIp.onboard.updateUser = arguments;
+                updateUser(user, password, role, shell, ...args) {
+                    functionsCalled.bigIp.onboard.updateUser = args;
                     this.updatedUsers = this.updatedUsers || [];
                     this.updatedUsers.push({
-                        user: user,
-                        password: password,
-                        role: role,
-                        shell: shell
+                        user,
+                        password,
+                        role,
+                        shell
                     });
 
                     return q();
                 },
 
-                sslPort: function() {
-                    functionsCalled.bigIp.onboard.sslPort = arguments;
+                sslPort(...args) {
+                    functionsCalled.bigIp.onboard.sslPort = args;
                     return q();
                 }
             }
@@ -185,15 +187,16 @@ module.exports = {
 
         signalsSent = [];
 
+        /* eslint-disable global-require */
         ipcMock = require('../../lib/ipc');
 
-        ipcMock.once = function() {
-            var deferred = q.defer();
-            functionsCalled.ipc.once = arguments;
+        ipcMock.once = function once(...args) {
+            const deferred = q.defer();
+            functionsCalled.ipc.once = args;
             return deferred.promise;
         };
 
-        ipcMock.send = function(signal) {
+        ipcMock.send = (signal) => {
             signalsSent.push(signal);
         };
 
@@ -211,47 +214,47 @@ module.exports = {
             metrics: {}
         };
 
-        utilMock.logAndExit = function(message, level, code) {
+        utilMock.logAndExit = (message, level, code) => {
             exitMessage = message;
             exitCode = code;
         };
         exitMessage = '';
         exitCode = undefined;
 
-        metricsCollectorMock.upload = function() {
-            functionsCalled.metrics.upload = arguments;
+        metricsCollectorMock.upload = function upload(...args) {
+            functionsCalled.metrics.upload = args;
             return q();
         };
 
         callback();
     },
 
-    tearDown: function(callback) {
+    tearDown(callback) {
         process.exit = realExit;
         utilMock.removeDirectorySync(ipcMock.signalBasePath);
-        Object.keys(require.cache).forEach(function(key) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
         callback();
     },
 
     testRequiredOptions: {
-        testNoHost: function(test) {
+        testNoHost(test) {
             argv = ['node', 'onboard', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
 
             test.expect(2);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.notStrictEqual(exitMessage.indexOf('host'), -1);
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
         },
 
-        testNoPassword: function(test) {
+        testNoPassword(test) {
             argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '--log-level', 'none'];
 
             test.expect(2);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.notStrictEqual(exitMessage.indexOf('password'), -1);
                 test.strictEqual(exitCode, 1);
                 test.done();
@@ -259,53 +262,53 @@ module.exports = {
         }
     },
 
-    testWaitFor: function(test) {
+    testWaitFor(test) {
         argv.push('--wait-for', 'foo');
 
-        ipcMock.once = function() {
-            functionsCalled.ipc.once = arguments;
+        ipcMock.once = function once(...args) {
+            functionsCalled.ipc.once = args;
             return q();
         };
 
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
+        onboard.run(argv, testOptions, () => {
             test.strictEqual(functionsCalled.ipc.once[0], 'foo');
             test.done();
         });
     },
 
-    testBackground: function(test) {
-        var runInBackgroundCalled = false;
-        utilMock.runInBackgroundAndExit = function() {
+    testBackground(test) {
+        let runInBackgroundCalled = false;
+        utilMock.runInBackgroundAndExit = () => {
             runInBackgroundCalled = true;
         };
 
         argv.push('--background');
 
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
+        onboard.run(argv, testOptions, () => {
             test.ok(runInBackgroundCalled);
             test.done();
         });
     },
 
-    testNoUser: function(test) {
+    testNoUser(test) {
         argv = ['node', 'onboard', '--host', '1.2.3.4', '-p', 'bar', '--log-level', 'none'];
 
         const randomUser = 'my random user';
         let userCreated;
         let userDeleted;
-        utilMock.createRandomUser = function() {
+        utilMock.createRandomUser = () => {
             userCreated = true;
             return q({
                 user: randomUser
             });
-        }
-        utilMock.deleteUser = function(user) {
+        };
+        utilMock.deleteUser = (user) => {
             userDeleted = user;
-        }
+        };
         test.expect(2);
-        onboard.run(argv, testOptions, function() {
+        onboard.run(argv, testOptions, () => {
             test.ok(userCreated);
             test.strictEqual(userDeleted, randomUser);
             test.done();
@@ -313,41 +316,41 @@ module.exports = {
     },
 
     testGlobalSettings: {
-        testHostname: function(test) {
-            var hostnameSet;
-            bigIpMock.onboard.hostname = function(hostname) {
+        testHostname(test) {
+            let hostnameSet;
+            bigIpMock.onboard.hostname = (hostname) => {
                 hostnameSet = hostname;
             };
 
             argv.push('--hostname', 'hostname1', '--global-setting', 'hostname:hostname2');
 
             test.expect(2);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(hostnameSet, 'hostname1');
                 test.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].hostname, undefined);
                 test.done();
             });
         },
 
-        testIsBigIp: function(test) {
+        testIsBigIp(test) {
             test.expect(2);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].guiSetup, 'disabled');
                 test.strictEqual(functionsCalled.bigIp.modify, undefined);
                 test.done();
             });
         },
 
-        testIsBigIq: function(test) {
-            bigIpMock.isBigIq = function() {
+        testIsBigIq(test) {
+            bigIpMock.isBigIq = () => {
                 return true;
             };
-            bigIpMock.isBigIp = function() {
+            bigIpMock.isBigIp = () => {
                 return false;
             };
 
             test.expect(2);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.bigIp.onboard.globalSettings, undefined);
                 test.deepEqual(
                     functionsCalled.bigIp.modify[1],
@@ -362,29 +365,29 @@ module.exports = {
         }
     },
 
-    testReboot: function(test) {
-        bigIpMock.rebootRequired = function() {
-            functionsCalled.bigIp.rebootRequired = arguments;
+    testReboot(test) {
+        bigIpMock.rebootRequired = function rebootRequired(...args) {
+            functionsCalled.bigIp.rebootRequired = args;
             return q(true);
         };
 
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
+        onboard.run(argv, testOptions, () => {
             test.ok(rebootRequested);
             test.done();
         });
     },
 
-    testNoReboot: function(test) {
+    testNoReboot(test) {
         argv.push('--no-reboot');
 
-        bigIpMock.rebootRequired = function() {
-            functionsCalled.bigIp.rebootRequired = arguments;
+        bigIpMock.rebootRequired = function rebootRequired(...args) {
+            functionsCalled.bigIp.rebootRequired = args;
             return q(true);
         };
 
         test.expect(2);
-        onboard.run(argv, testOptions, function() {
+        onboard.run(argv, testOptions, () => {
             test.ifError(rebootRequested);
             test.notStrictEqual(signalsSent.indexOf('REBOOT_REQUIRED'), -1);
             test.done();
@@ -392,7 +395,7 @@ module.exports = {
     },
 
     testProvider: {
-        setUp: function(callback) {
+        setUp(callback) {
             providerMock = new ProviderMock();
             testOptions.cloudProvider = providerMock;
 
@@ -401,21 +404,21 @@ module.exports = {
             callback();
         },
 
-        testSignalInstanceProvisioned: function(test) {
+        testSignalInstanceProvisioned(test) {
             argv.push('--cloud', 'aws', '--signal-resource');
-            
+
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(signalInstanceProvisionedCalled, true);
                 test.done();
             });
         },
 
-        testOnboardNoSignal: function(test) {
+        testOnboardNoSignal(test) {
             argv.push('--cloud', 'aws');
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(signalInstanceProvisionedCalled, false);
                 test.done();
             });
@@ -424,31 +427,31 @@ module.exports = {
     },
 
     testSslPortArgs: {
-        setUp: function(callback) {
-            utilMock.deleteArgs = function() {};
-            Date.now = function() {
+        setUp(callback) {
+            utilMock.deleteArgs = () => { };
+            Date.now = () => {
                 return '1234';
             };
             callback();
         },
 
-        testNoPort: function(test) {
+        testNoPort(test) {
             argv.push('--ssl-port', '8443');
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
-                var argsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
+            onboard.run(argv, testOptions, () => {
+                const argsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
                 test.notStrictEqual(argsFile.indexOf('--port 8443'), -1);
                 test.done();
             });
         },
 
-        testPort: function(test) {
+        testPort(test) {
             argv.push('--port', '443', '--ssl-port', '8443');
 
             test.expect(2);
-            onboard.run(argv, testOptions, function() {
-                var argsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
+            onboard.run(argv, testOptions, () => {
+                const argsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
                 test.strictEqual(argsFile.indexOf('--port 443'), -1);
                 test.notStrictEqual(argsFile.indexOf('--port 8443'), -1);
                 test.done();
@@ -457,11 +460,11 @@ module.exports = {
     },
 
     testRootPassword: {
-        testBasic: function(test) {
+        testBasic(test) {
             argv.push('--set-root-password', 'old:myOldPassword,new:myNewPassword');
 
             test.expect(3);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.bigIp.onboard.password[0], 'root');
                 test.strictEqual(functionsCalled.bigIp.onboard.password[1], 'myNewPassword');
                 test.strictEqual(functionsCalled.bigIp.onboard.password[2], 'myOldPassword');
@@ -469,113 +472,114 @@ module.exports = {
             });
         },
 
-        testMissingNew: function(test) {
+        testMissingNew(test) {
             argv.push('--set-root-password', 'old:myOldPassword,new:');
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
                 test.done();
             });
         },
 
-        testMissingOld: function(test) {
+        testMissingOld(test) {
             argv.push('--set-root-password', 'old:,new:myNewPassword');
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
                 test.done();
             });
         },
 
-        testMissingBoth: function(test) {
+        testMissingBoth(test) {
             argv.push('--set-root-password', 'foo:myOldPassword,bar:myNewPassword');
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
                 test.done();
             });
         }
     },
 
-    testUpdateUser: function(test) {
-        argv.push('--update-user', 'user:user1,password:pass1,role:role1,shell:shell1', '--update-user', 'user:user2,password:pass2,shell:shell2');
-        onboard.run(argv, testOptions, function() {
+    testUpdateUser(test) {
+        argv.push('--update-user', 'user:user1,password:pass1,role:role1,shell:shell1',
+            '--update-user', 'user:user2,password:pass2,shell:shell2');
+        onboard.run(argv, testOptions, () => {
             test.strictEqual(bigIpMock.onboard.updatedUsers.length, 2);
             test.deepEqual(bigIpMock.onboard.updatedUsers[0], {
-                user: "user1",
-                password: "pass1",
-                role: "role1",
-                shell: "shell1"
+                user: 'user1',
+                password: 'pass1',
+                role: 'role1',
+                shell: 'shell1'
             });
             test.deepEqual(bigIpMock.onboard.updatedUsers[1], {
-                user: "user2",
-                password: "pass2",
+                user: 'user2',
+                password: 'pass2',
                 role: undefined,
-                shell: "shell2"
+                shell: 'shell2'
             });
             test.done();
         });
     },
 
     testNtp: {
-        testNtp: function(test) {
+        testNtp(test) {
             const ntpServer = 'ntp.server1';
             argv.push('--ntp', ntpServer);
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
-                test.deepEqual(functionsCalled.bigIp.modify[1], {servers: [ntpServer]});
+            onboard.run(argv, testOptions, () => {
+                test.deepEqual(functionsCalled.bigIp.modify[1], { servers: [ntpServer] });
                 test.done();
             });
         },
 
-        testTz: function(test) {
+        testTz(test) {
             const tz = 'myTimezone';
             argv.push('--tz', tz);
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
-                test.deepEqual(functionsCalled.bigIp.modify[1], {timezone: tz});
+            onboard.run(argv, testOptions, () => {
+                test.deepEqual(functionsCalled.bigIp.modify[1], { timezone: tz });
                 test.done();
             });
         }
     },
 
-    testDns: function(test) {
+    testDns(test) {
         const dns = 'mydns.com';
         argv.push('--dns', dns);
 
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
-            test.deepEqual(functionsCalled.bigIp.modify[1], {'name-servers': [dns]});
+        onboard.run(argv, testOptions, () => {
+            test.deepEqual(functionsCalled.bigIp.modify[1], { 'name-servers': [dns] });
             test.done();
         });
     },
 
-    testDbVars: function(test) {
+    testDbVars(test) {
         const dbVar1 = 'key1:value1';
         const dbVar2 = 'key2:value2';
 
         argv.push('--db', dbVar1, '--db', dbVar2);
 
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
-            test.deepEqual(functionsCalled.bigIp.onboard.setDbVars[0], {key1: 'value1', key2: 'value2'});
+        onboard.run(argv, testOptions, () => {
+            test.deepEqual(functionsCalled.bigIp.onboard.setDbVars[0], { key1: 'value1', key2: 'value2' });
             test.done();
         });
     },
 
     testLicense: {
-        testRegKey: function(test) {
+        testRegKey(test) {
             const regKey = '123345';
 
             argv.push('--license', regKey);
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.deepEqual(
                     functionsCalled.bigIp.onboard.license[0],
                     {
@@ -588,14 +592,14 @@ module.exports = {
             });
         },
 
-        testAddOnKeys: function(test) {
+        testAddOnKeys(test) {
             const addOnKey1 = 'addOn1';
             const addOnKey2 = 'addOn2';
 
             argv.push('--add-on', addOnKey1, '--add-on', addOnKey2);
 
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.deepEqual(
                     functionsCalled.bigIp.onboard.license[0],
                     {
@@ -609,7 +613,7 @@ module.exports = {
         },
 
         testLicenseViaBigIq: {
-            testBasic: function(test) {
+            testBasic(test) {
                 const bigIqHost = 'myBigIq';
                 const bigIqUser = 'myBigIqUser';
                 const bigIqPassword = 'myBigIqPassword';
@@ -637,7 +641,7 @@ module.exports = {
                 );
 
                 test.expect(6);
-                onboard.run(argv, testOptions, function() {
+                onboard.run(argv, testOptions, () => {
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[0], bigIqHost);
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[1], bigIqUser);
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], bigIqPassword);
@@ -648,11 +652,11 @@ module.exports = {
                         {
                             passwordIsUri: false,
                             passwordEncrypted: true,
-                            bigIpMgmtAddress: bigIpMgmtAddress,
-                            bigIpMgmtPort: bigIpMgmtPort,
-                            skuKeyword1: skuKeyword1,
-                            skuKeyword2: skuKeyword2,
-                            unitOfMeasure: unitOfMeasure,
+                            bigIpMgmtAddress,
+                            bigIpMgmtPort,
+                            skuKeyword1,
+                            skuKeyword2,
+                            unitOfMeasure,
                             noUnreachable: false
                         }
                     );
@@ -660,7 +664,7 @@ module.exports = {
                 });
             },
 
-            testNoUnreachable: function(test) {
+            testNoUnreachable(test) {
                 const bigIqHost = 'myBigIq';
                 const bigIqUser = 'myBigIqUser';
                 const bigIqPassword = 'myBigIqPassword';
@@ -689,7 +693,7 @@ module.exports = {
                 );
 
                 test.expect(6);
-                onboard.run(argv, testOptions, function() {
+                onboard.run(argv, testOptions, () => {
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[0], bigIqHost);
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[1], bigIqUser);
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], bigIqPassword);
@@ -700,11 +704,11 @@ module.exports = {
                         {
                             passwordIsUri: false,
                             passwordEncrypted: true,
-                            bigIpMgmtAddress: bigIpMgmtAddress,
-                            bigIpMgmtPort: bigIpMgmtPort,
-                            skuKeyword1: skuKeyword1,
-                            skuKeyword2: skuKeyword2,
-                            unitOfMeasure: unitOfMeasure,
+                            bigIpMgmtAddress,
+                            bigIpMgmtPort,
+                            skuKeyword1,
+                            skuKeyword2,
+                            unitOfMeasure,
                             noUnreachable: true
                         }
                     );
@@ -712,11 +716,11 @@ module.exports = {
                 });
             },
 
-            testMissingParams: function(test) {
+            testMissingParams(test) {
                 argv.push('--license-pool');
 
                 test.expect(1);
-                onboard.run(argv, testOptions, function() {
+                onboard.run(argv, testOptions, () => {
                     test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq, undefined);
                     test.done();
                 });
@@ -725,83 +729,85 @@ module.exports = {
     },
 
 
-    testProvision : function(test) {
+    testProvision(test) {
         const module1 = 'module1:level1';
         const module2 = 'module2:level2';
-        
+
         argv.push('--module', module1, '--module', module2);
 
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
-            test.deepEqual(functionsCalled.bigIp.onboard.provision[0], {module1 : 'level1', module2 : 'level2'});
+        onboard.run(argv, testOptions, () => {
+            test.deepEqual(functionsCalled.bigIp.onboard.provision[0],
+                { module1: 'level1', module2: 'level2' });
             test.done();
         });
     },
 
-    testProvisionMultiple : function(test) {
-        const modulesString = 'module1:level1,module2:level2'; 
-        
+    testProvisionMultiple(test) {
+        const modulesString = 'module1:level1,module2:level2';
+
         argv.push('--modules', modulesString);
-        
+
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
-            test.deepEqual(functionsCalled.bigIp.onboard.provision[0], {module1 : 'level1', module2 : 'level2'});
+        onboard.run(argv, testOptions, () => {
+            test.deepEqual(functionsCalled.bigIp.onboard.provision[0],
+                { module1: 'level1', module2: 'level2' });
             test.done();
         });
     },
 
-    testAsmSignatures: function(test) {
+    testAsmSignatures(test) {
         argv.push('--update-sigs');
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
+        onboard.run(argv, testOptions, () => {
             test.strictEqual(functionsCalled.bigIp.create[0], '/tm/asm/tasks/update-signatures');
             test.done();
         });
     },
 
     testPing: {
-        testDefault: function(test) {
+        testDefault(test) {
             argv.push('--ping');
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.bigIp.ping[0], 'f5.com');
                 test.done();
             });
         },
 
-        testAddress: function(test) {
+        testAddress(test) {
             const address = 'www.foo.com';
 
             argv.push('--ping', address);
             test.expect(1);
-            onboard.run(argv, testOptions, function() {
+            onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.bigIp.ping[0], address);
                 test.done();
             });
         }
     },
 
-    testMetrics: function(test) {
+    testMetrics(test) {
         argv.push('--metrics', 'key1:value1');
         test.expect(2);
-        onboard.run(argv, testOptions, function() {
+        onboard.run(argv, testOptions, () => {
             test.strictEqual(functionsCalled.metrics.upload[0].action, 'onboard');
             test.strictEqual(functionsCalled.metrics.upload[0].key1, 'value1');
             test.done();
         });
     },
 
-    testActiveError: function(test) {
-        utilMock.reboot = function() {
+    testActiveError(test) {
+        utilMock.reboot = () => {
             rebootCalled = true;
         };
 
-        bigIpMock.active = function() {
-            return q.reject(new ActiveError("BIG-IP not active."));
+        bigIpMock.active = () => {
+            return q.reject(new ActiveError('BIG-IP not active.'));
         };
 
         test.expect(1);
-        onboard.run(argv, testOptions, function() {
+        onboard.run(argv, testOptions, () => {
             test.strictEqual(rebootCalled, true);
             test.done();
         });
