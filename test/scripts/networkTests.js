@@ -13,36 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var q = require('q');
-var BigIp = require('../../../f5-cloud-libs').bigIp;
-var icontrolMock = require('../testUtil/icontrolMock');
-var bigIp;
-var testOptions;
+const q = require('q');
+const BigIp = require('../../../f5-cloud-libs').bigIp;
+const icontrolMock = require('../testUtil/icontrolMock');
 
-var authnMock;
-var utilMock;
-var ipcMock;
-var argv;
-var network;
+let bigIp;
+let testOptions;
 
-var functionsCalled;
-var exitMessage;
-var exitCode;
+let authnMock;
+let utilMock;
+let ipcMock;
+let argv;
+let network;
+
+let functionsCalled;
+let exitMessage;
+let exitCode;
 
 module.exports = {
-    setUp: function (callback) {
+    setUp(callback) {
         bigIp = new BigIp();
         testOptions = {
-            bigIp: bigIp
+            bigIp
         };
 
+        /* eslint-disable global-require */
         ipcMock = require('../../lib/ipc');
 
-        ipcMock.once = function () {
-            var deferred = q.defer();
-            functionsCalled.ipc.once = arguments;
+        ipcMock.once = function once(...args) {
+            const deferred = q.defer();
+            functionsCalled.ipc.once = args;
             return deferred.promise;
         };
 
@@ -51,7 +54,7 @@ module.exports = {
         };
 
         utilMock = require('../../../f5-cloud-libs').util;
-        utilMock.logAndExit = function (message, level, code) {
+        utilMock.logAndExit = (message, level, code) => {
             exitMessage = message;
             exitCode = code;
         };
@@ -61,7 +64,7 @@ module.exports = {
         argv = ['node', 'network', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
 
         authnMock = require('../../../f5-cloud-libs').authn;
-        authnMock.authenticate = function (host, user, password) {
+        authnMock.authenticate = (host, user, password) => {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
         };
@@ -72,109 +75,109 @@ module.exports = {
                 product: 'BIG-IP'
             }
         );
-        bigIp.ready = function () {
+        bigIp.ready = () => {
             return q();
         };
 
         // we have to call init so we can wait till it's done to set icontrol
         bigIp.init('host', 'user', 'password')
-            .then(function () {
+            .then(() => {
                 bigIp.icontrol = icontrolMock;
                 icontrolMock.reset();
                 callback();
             });
     },
 
-    tearDown: function (callback) {
+    tearDown(callback) {
         utilMock.removeDirectorySync(ipcMock.signalBasePath);
-        Object.keys(require.cache).forEach(function (key) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
         callback();
     },
 
     testRequiredOptions: {
-        testNoHost: function (test) {
+        testNoHost(test) {
             argv = ['node', 'onboard', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
 
             test.expect(2);
-            network.run(argv, testOptions, function () {
+            network.run(argv, testOptions, () => {
                 test.notStrictEqual(exitMessage.indexOf('host'), -1);
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
         },
 
-        testNoPassword: function (test) {
+        testNoPassword(test) {
             argv = ['node', 'network', '--host', '1.2.3.4', '-u', 'foo', '--log-level', 'none'];
 
             test.expect(2);
-            network.run(argv, testOptions, function () {
+            network.run(argv, testOptions, () => {
                 test.notStrictEqual(exitMessage.indexOf('password'), -1);
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
         },
 
-        testSingleAndMultiNic: function (test) {
+        testSingleAndMultiNic(test) {
             argv.push('--single-nic', '--multi-nic');
 
             test.expect(1);
-            network.run(argv, testOptions, function () {
+            network.run(argv, testOptions, () => {
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
         }
     },
 
-    testWaitFor: function (test) {
+    testWaitFor(test) {
         argv.push('--wait-for', 'foo');
 
-        ipcMock.once = function () {
-            functionsCalled.ipc.once = arguments;
+        ipcMock.once = function once(...args) {
+            functionsCalled.ipc.once = args;
             return q();
         };
 
         test.expect(1);
-        network.run(argv, testOptions, function () {
+        network.run(argv, testOptions, () => {
             test.strictEqual(functionsCalled.ipc.once[0], 'foo');
             test.done();
         });
     },
 
-    testBackground: function (test) {
-        var runInBackgroundCalled = false;
-        utilMock.runInBackgroundAndExit = function () {
+    testBackground(test) {
+        let runInBackgroundCalled = false;
+        utilMock.runInBackgroundAndExit = () => {
             runInBackgroundCalled = true;
         };
 
         argv.push('--background');
 
         test.expect(1);
-        network.run(argv, testOptions, function () {
+        network.run(argv, testOptions, () => {
             test.ok(runInBackgroundCalled);
             test.done();
         });
     },
 
-    testNoUser: function (test) {
+    testNoUser(test) {
         argv = ['node', 'network', '--host', '1.2.3.4', '-p', 'bar', '--log-level', 'none'];
 
         const randomUser = 'my random user';
         let userCreated;
         let userDeleted;
-        utilMock.createRandomUser = function () {
+        utilMock.createRandomUser = () => {
             userCreated = true;
             return q({
                 user: randomUser
             });
-        }
-        utilMock.deleteUser = function (user) {
+        };
+        utilMock.deleteUser = (user) => {
             userDeleted = user;
-        }
+        };
 
         test.expect(2);
-        network.run(argv, testOptions, function () {
+        network.run(argv, testOptions, () => {
             test.ok(userCreated);
             test.strictEqual(userDeleted, randomUser);
             test.done();
@@ -182,21 +185,22 @@ module.exports = {
     },
 
     testSingleNic: {
-        testBasic: function (test) {
+        testBasic(test) {
             argv.push('--single-nic');
             test.expect(3);
-            network.run(argv, testOptions, function () {
+            network.run(argv, testOptions, () => {
                 test.deepEqual(
                     icontrolMock.getRequest('modify', '/tm/sys/db/provision.1nic'),
                     { value: 'enable' }
                 );
                 test.deepEqual(
                     icontrolMock.getRequest('modify', '/tm/sys/db/provision.1nicautoconfig'),
-                    { value: 'disable' });
+                    { value: 'disable' }
+                );
                 test.deepEqual(
                     icontrolMock.getRequest('create', '/tm/util/bash'),
                     {
-                        command: "run",
+                        command: 'run',
                         utilCmdArgs: "-c 'bigstart restart'"
                     }
                 );
@@ -206,11 +210,11 @@ module.exports = {
     },
 
     testDefaultRoute: {
-        testBasic: function (test) {
+        testBasic(test) {
             argv.push('--default-gw', '1.2.3.4');
             test.expect(1);
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/route');
+            network.run(argv, testOptions, () => {
+                const request = icontrolMock.getRequest('create', '/tm/net/route');
                 test.deepEqual(
                     request,
                     {
@@ -222,11 +226,11 @@ module.exports = {
             });
         },
 
-        testLocalOnly: function (test) {
+        testLocalOnly(test) {
             argv.push('--default-gw', '1.2.3.4', '--local-only');
             test.expect(1);
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/route');
+            network.run(argv, testOptions, () => {
+                const request = icontrolMock.getRequest('create', '/tm/net/route');
                 test.deepEqual(
                     request,
                     {
@@ -240,7 +244,7 @@ module.exports = {
             });
         },
 
-        testBadGateway: function (test) {
+        testBadGateway(test) {
             argv.push('--default-gw', 'aaa.com');
             icontrolMock.fail(
                 'create',
@@ -252,8 +256,9 @@ module.exports = {
             );
 
             test.expect(1);
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/route');
+            network.run(argv, testOptions, () => {
+                // eslint-disable-next-line no-unused-vars
+                const request = icontrolMock.getRequest('create', '/tm/net/route');
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
@@ -261,11 +266,11 @@ module.exports = {
     },
 
     testRoute: {
-        testBasic: function (test) {
+        testBasic(test) {
             argv.push('--route', 'name:foo, gw:1.2.3.4, network:10.1.0.0');
             test.expect(1);
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/route');
+            network.run(argv, testOptions, () => {
+                const request = icontrolMock.getRequest('create', '/tm/net/route');
                 test.deepEqual(
                     request,
                     {
@@ -278,11 +283,11 @@ module.exports = {
             });
         },
 
-        testCidr: function (test) {
+        testCidr(test) {
             argv.push('--route', 'name:foo, gw:1.2.3.4, network:10.0.0.0/32');
             test.expect(1);
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/route');
+            network.run(argv, testOptions, () => {
+                const request = icontrolMock.getRequest('create', '/tm/net/route');
                 test.deepEqual(
                     request,
                     {
@@ -295,7 +300,7 @@ module.exports = {
             });
         },
 
-        testBadRoute: function (test) {
+        testBadRoute(test) {
             argv.push('--route', 'name:routename,gw:1.2.3.4,network:networkname');
             icontrolMock.fail(
                 'create',
@@ -304,21 +309,22 @@ module.exports = {
                     code: 400,
                     message: 'foo'
                 }
-            )
+            );
             test.expect(1);
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/route');
+            network.run(argv, testOptions, () => {
+                // eslint-disable-next-line no-unused-vars
+                const request = icontrolMock.getRequest('create', '/tm/net/route');
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
         }
     },
 
-    testManagementRoute: function (test) {
+    testManagementRoute(test) {
         argv.push('--mgmt-route', 'name:foo, gw:1.2.3.4, network:10.1.0.0');
         test.expect(1);
-        network.run(argv, testOptions, function () {
-            var request = icontrolMock.getRequest('create', '/tm/sys/management-route');
+        network.run(argv, testOptions, () => {
+            const request = icontrolMock.getRequest('create', '/tm/sys/management-route');
             test.deepEqual(
                 request,
                 {
@@ -332,11 +338,11 @@ module.exports = {
     },
 
     testVlan: {
-        testBasic: function (test) {
+        testBasic(test) {
             argv.push('--vlan', 'name:foo,nic:1.1');
             test.expect(1);
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/vlan');
+            network.run(argv, testOptions, () => {
+                const request = icontrolMock.getRequest('create', '/tm/net/vlan');
                 test.deepEqual(
                     request,
                     {
@@ -353,11 +359,11 @@ module.exports = {
             });
         },
 
-        testTagMtu: function (test) {
+        testTagMtu(test) {
             argv.push('--vlan', 'name:foo,nic:1.1,tag:1040,mtu:600');
             test.expect(1);
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/vlan');
+            network.run(argv, testOptions, () => {
+                const request = icontrolMock.getRequest('create', '/tm/net/vlan');
                 test.deepEqual(
                     request,
                     {
@@ -376,7 +382,7 @@ module.exports = {
             });
         },
 
-        testBadNicName: function (test) {
+        testBadNicName(test) {
             argv.push('--vlan', 'name:vlanname,nic:nicname');
             test.expect(1);
             icontrolMock.fail(
@@ -386,21 +392,22 @@ module.exports = {
                     code: 400,
                     message: 'foo'
                 }
-            )
+            );
 
-            network.run(argv, testOptions, function () {
-                var request = icontrolMock.getRequest('create', '/tm/net/vlan');
+            network.run(argv, testOptions, () => {
+                // eslint-disable-next-line no-unused-vars
+                const request = icontrolMock.getRequest('create', '/tm/net/vlan');
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
         },
 
         testSelfIp: {
-            testBasic: function (test) {
+            testBasic(test) {
                 argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar');
                 test.expect(1);
-                network.run(argv, testOptions, function () {
-                    var request = icontrolMock.getRequest('create', '/tm/net/self');
+                network.run(argv, testOptions, () => {
+                    const request = icontrolMock.getRequest('create', '/tm/net/self');
                     test.deepEqual(
                         request,
                         {
@@ -414,11 +421,11 @@ module.exports = {
                 });
             },
 
-            testCidr: function (test) {
+            testCidr(test) {
                 argv.push('--self-ip', 'name:foo, address:1.2.0.0/16, vlan:bar');
                 test.expect(1);
-                network.run(argv, testOptions, function () {
-                    var request = icontrolMock.getRequest('create', '/tm/net/self');
+                network.run(argv, testOptions, () => {
+                    const request = icontrolMock.getRequest('create', '/tm/net/self');
                     test.deepEqual(
                         request,
                         {
@@ -433,8 +440,9 @@ module.exports = {
             },
 
             testTrafficGroup: {
-                testExistingTrafficGroup: function (test) {
-                    argv.push('--self-ip', 'name:selfip1, address:1.2.3.4/24, vlan:external, trafficGroup:group1');
+                testExistingTrafficGroup(test) {
+                    argv.push('--self-ip',
+                        'name:selfip1, address:1.2.3.4/24, vlan:external, trafficGroup:group1');
 
                     icontrolMock.when(
                         'list',
@@ -447,7 +455,7 @@ module.exports = {
                     );
 
                     test.expect(2);
-                    network.run(argv, testOptions, function () {
+                    network.run(argv, testOptions, () => {
                         const trafficGroupRequest = icontrolMock.getRequest('create', '/tm/cm/traffic-group');
                         const selfIpRequest = icontrolMock.getRequest('create', '/tm/net/self');
                         test.strictEqual(trafficGroupRequest, undefined);
@@ -465,8 +473,9 @@ module.exports = {
                     });
                 },
 
-                testNewTrafficGroup: function (test) {
-                    argv.push('--self-ip', 'name:selfip1, address:1.2.3.4/24, vlan:external, trafficGroup:group1');
+                testNewTrafficGroup(test) {
+                    argv.push('--self-ip',
+                        'name:selfip1, address:1.2.3.4/24, vlan:external, trafficGroup:group1');
 
                     icontrolMock.when(
                         'list',
@@ -477,7 +486,7 @@ module.exports = {
                     );
 
                     test.expect(3);
-                    network.run(argv, testOptions, function () {
+                    network.run(argv, testOptions, () => {
                         const selfIpRequest = icontrolMock.getRequest('create', '/tm/net/self');
                         const trafficGroupRequest = icontrolMock.getRequest('create', '/tm/cm/traffic-group');
                         test.deepEqual(
@@ -497,11 +506,11 @@ module.exports = {
                 },
             },
             testPortLockdown: {
-                testSpecificSingle: function (test) {
+                testSpecificSingle(test) {
                     argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar, allow:hello:5678');
                     test.expect(1);
-                    network.run(argv, testOptions, function () {
-                        var request = icontrolMock.getRequest('create', '/tm/net/self');
+                    network.run(argv, testOptions, () => {
+                        const request = icontrolMock.getRequest('create', '/tm/net/self');
                         test.deepEqual(
                             request,
                             {
@@ -515,11 +524,12 @@ module.exports = {
                     });
                 },
 
-                testSpecificMultiple: function (test) {
-                    argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar, allow:hello:5678 world:9876');
+                testSpecificMultiple(test) {
+                    argv.push('--self-ip',
+                        'name:foo, address:1.2.3.4, vlan:bar, allow:hello:5678 world:9876');
                     test.expect(1);
-                    network.run(argv, testOptions, function () {
-                        var request = icontrolMock.getRequest('create', '/tm/net/self');
+                    network.run(argv, testOptions, () => {
+                        const request = icontrolMock.getRequest('create', '/tm/net/self');
                         test.deepEqual(
                             request,
                             {
@@ -533,11 +543,11 @@ module.exports = {
                     });
                 },
 
-                testSpecificPlusDefault: function (test) {
+                testSpecificPlusDefault(test) {
                     argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar, allow:default world:9876');
                     test.expect(1);
-                    network.run(argv, testOptions, function () {
-                        var request = icontrolMock.getRequest('create', '/tm/net/self');
+                    network.run(argv, testOptions, () => {
+                        const request = icontrolMock.getRequest('create', '/tm/net/self');
                         test.deepEqual(
                             request,
                             {
@@ -551,11 +561,11 @@ module.exports = {
                     });
                 },
 
-                testGeneral: function (test) {
+                testGeneral(test) {
                     argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar, allow:all');
                     test.expect(1);
-                    network.run(argv, testOptions, function () {
-                        var request = icontrolMock.getRequest('create', '/tm/net/self');
+                    network.run(argv, testOptions, () => {
+                        const request = icontrolMock.getRequest('create', '/tm/net/self');
                         test.deepEqual(
                             request,
                             {
@@ -570,11 +580,11 @@ module.exports = {
                 }
             },
 
-            testMissingVlan: function (test) {
+            testMissingVlan(test) {
                 argv.push('--self-ip', 'name:foo, address:1.2.3.4');
 
                 test.expect(1);
-                network.run(argv, testOptions, function () {
+                network.run(argv, testOptions, () => {
                     test.strictEqual(exitCode, 1);
                     test.done();
                 });
@@ -582,14 +592,14 @@ module.exports = {
         }
     },
 
-    testForceReboot: function (test) {
-        var strippedArgs;
-        var rebootCalled;
-        utilMock.saveArgs = function (args, id, argsToStrip) {
+    testForceReboot(test) {
+        let strippedArgs;
+        let rebootCalled;
+        utilMock.saveArgs = (args, id, argsToStrip) => {
             strippedArgs = argsToStrip;
             return q();
         };
-        utilMock.reboot = function () {
+        utilMock.reboot = () => {
             rebootCalled = true;
             return q();
         };
@@ -597,7 +607,7 @@ module.exports = {
         argv.push('--force-reboot');
 
         test.expect(3);
-        network.run(argv, testOptions, function () {
+        network.run(argv, testOptions, () => {
             test.strictEqual(rebootCalled, true);
             test.notStrictEqual(strippedArgs.indexOf('--force-reboot'), -1);
             test.notStrictEqual(strippedArgs.indexOf('--wait-for'), -1);
