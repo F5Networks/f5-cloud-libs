@@ -1,18 +1,19 @@
 /**
  * Copyright 2017 F5 Networks, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const q = require('q');
@@ -21,8 +22,8 @@ const httpMock = require('../testUtil/httpMock');
 
 const testUrl = 'https://one/two/three';
 const testOptions = {
-    foo: "bar",
-    hello: "world"
+    foo: 'bar',
+    hello: 'world'
 };
 
 const http = require('http');
@@ -34,12 +35,11 @@ const realHttpsRequest = https.request;
 const realHttpClientRequest = http.clientRequest;
 const realHttpsClientRequest = https.clientRequest;
 
-var lastRequest;
-var requestOptions;
+let lastRequest;
 
 module.exports = {
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
 
@@ -47,10 +47,10 @@ module.exports = {
     },
 
     testCRUD: {
-        setUp: function(callback) {
+        setUp(callback) {
             lastRequest = {};
 
-            httpUtil.request = function(method, url, options) {
+            httpUtil.request = (method, url, options) => {
                 lastRequest.method = method;
                 lastRequest.url = url;
                 lastRequest.options = options;
@@ -60,105 +60,104 @@ module.exports = {
             callback();
         },
 
-        tearDown: function(callback) {
+        tearDown(callback) {
             httpUtil.request = realHttpUtilRequest;
             callback();
         },
 
-        testGet: function(test) {
+        testGet(test) {
             test.expect(3);
             httpUtil.get(testUrl, testOptions)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(lastRequest.method, 'GET');
                     test.strictEqual(lastRequest.url, testUrl);
                     test.deepEqual(lastRequest.options, testOptions);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testPost: function(test) {
+        testPost(test) {
             test.expect(3);
             httpUtil.post(testUrl, testOptions)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(lastRequest.method, 'POST');
                     test.strictEqual(lastRequest.url, testUrl);
                     test.deepEqual(lastRequest.options, testOptions);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testPatch: function(test) {
+        testPatch(test) {
             test.expect(3);
             httpUtil.patch(testUrl, testOptions)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(lastRequest.method, 'PATCH');
                     test.strictEqual(lastRequest.url, testUrl);
                     test.deepEqual(lastRequest.options, testOptions);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testPut: function(test) {
+        testPut(test) {
             test.expect(3);
             httpUtil.put(testUrl, testOptions)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(lastRequest.method, 'PUT');
                     test.strictEqual(lastRequest.url, testUrl);
                     test.deepEqual(lastRequest.options, testOptions);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testDelete: function(test) {
+        testDelete(test) {
             test.expect(3);
             httpUtil.delete(testUrl, testOptions)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(lastRequest.method, 'DELETE');
                     test.strictEqual(lastRequest.url, testUrl);
                     test.deepEqual(lastRequest.options, testOptions);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testRequest: {
-        setUp: function(callback) {
+        setUp(callback) {
             httpMock.reset();
             http.request = httpMock.request;
             http.clientRequest = httpMock.clientRequest;
             https.request = httpMock.request;
             https.clientRequest = httpMock.clientRequest;
-            requestOptions = {};
 
             callback();
         },
 
-        tearDown: function(callback) {
+        tearDown(callback) {
             http.request = realHttpRequest;
             http.clientRequest = realHttpClientRequest;
             https.request = realHttpsRequest;
@@ -167,201 +166,201 @@ module.exports = {
             callback();
         },
 
-        testRequestOptions: function(test) {
+        testRequestOptions(test) {
             test.expect(4);
             httpUtil.request('GET', 'http://www.example.com')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(http.lastRequest.protocol, 'http:');
                     test.strictEqual(http.lastRequest.hostname, 'www.example.com');
                     test.strictEqual(http.lastRequest.method, 'GET');
                     test.strictEqual(http.lastRequest.path, '/');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testRequestOptionsWithPath: function(test) {
+        testRequestOptionsWithPath(test) {
             test.expect(1);
             httpUtil.request('GET', 'http://www.example.com/foo/bar')
-                .then(function() {
+                .then(() => {
                     test.strictEqual(http.lastRequest.path, '/foo/bar');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testRequestOptionsWithQuery: function(test) {
-            var query = '?hello=world&alpha=beta';
+        testRequestOptionsWithQuery(test) {
+            const query = '?hello=world&alpha=beta';
             test.expect(1);
-            httpUtil.request('GET', 'http://www.example.com/foo/bar' + query)
-                .then(function() {
-                    test.strictEqual(http.lastRequest.path, '/foo/bar' + query);
+            httpUtil.request('GET', `http://www.example.com/foo/bar${query}`)
+                .then(() => {
+                    test.strictEqual(http.lastRequest.path, `/foo/bar${query}`);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testHttps: function(test) {
+        testHttps(test) {
             test.expect(1);
             httpUtil.request('GET', 'https://www.example.com')
-            .then(function() {
-                test.strictEqual(https.lastRequest.protocol, 'https:');
-            })
-            .catch(function(err) {
-                test.ok(false, err);
-            })
-            .finally(function() {
-                test.done();
-            });
-        },
-
-        testBadProtocol: function(test) {
-            test.expect(1);
-            httpUtil.request('GET', 'file:///tmp/foo')
-                .then(function() {
-                    test.ok(false, 'Should have thrown bad protocol');
+                .then(() => {
+                    test.strictEqual(https.lastRequest.protocol, 'https:');
                 })
-                .catch(function(err) {
-                    test.notStrictEqual(err.message.indexOf('supported'), -1);
+                .catch((err) => {
+                    test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testTextBody: function(test) {
-            var body = "hello, world";
-            var options = {
-                body: body,
+        testBadProtocol(test) {
+            test.expect(1);
+            httpUtil.request('GET', 'file:///tmp/foo')
+                .then(() => {
+                    test.ok(false, 'Should have thrown bad protocol');
+                })
+                .catch((err) => {
+                    test.notStrictEqual(err.message.indexOf('supported'), -1);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testTextBody(test) {
+            const body = 'hello, world';
+            const options = {
+                body,
             };
 
             test.expect(1);
             httpUtil.request('GET', 'http://www.example.com', options)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(httpMock.clientRequest.data, body);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testJSONBody: function(test) {
-            var body = {
+        testJSONBody(test) {
+            const body = {
                 hello: 'world'
             };
 
-            var options = {
-                body: body,
+            const options = {
+                body,
                 headers: {
                     'Content-Type': 'application/json'
                 }
             };
             test.expect(1);
             httpUtil.request('GET', 'http://www.example.com', options)
-                .then(function() {
+                .then(() => {
                     test.strictEqual(httpMock.clientRequest.data, JSON.stringify(body));
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testStringResponse: function(test) {
+        testStringResponse(test) {
             httpMock.setResponse('hello world');
             httpUtil.request('GET', 'http://www.example.com')
-                .then(function(data) {
+                .then((data) => {
                     test.strictEqual(data, 'hello world');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testJSONResponse: function(test) {
-            httpMock.setResponse({hello: 'world'}, {'content-type': 'application/json'});
+        testJSONResponse(test) {
+            httpMock.setResponse({ hello: 'world' }, { 'content-type': 'application/json' });
 
             test.expect(1);
             httpUtil.request('GET', 'http://www.example.com')
-                .then(function(data) {
-                    test.deepEqual(data, {hello: 'world'});
+                .then((data) => {
+                    test.deepEqual(data, { hello: 'world' });
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testBadStatus: function(test) {
+        testBadStatus(test) {
             httpMock.setResponse(null, null, 300);
 
             test.expect(1);
             httpUtil.request('GET', 'http://www.example.com')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown with bad status');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.notStrictEqual(err.message.indexOf('300'), -1);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testError: function(test) {
+        testError(test) {
             const message = 'foo bar';
             httpMock.setError(message);
 
             test.expect(1);
             httpUtil.request('GET', 'http://www.example.com')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testHttpThrows: function(test) {
+        testHttpThrows(test) {
             const message = 'http threw';
-            http.request = function() {
+            http.request = () => {
                 throw new Error(message);
             };
 
             test.expect(1);
             httpUtil.request('GET', 'http://www.example.com')
-                .then(function() {
+                .then(() => {
                     test.ok(false, 'should have thrown error');
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.strictEqual(err.message, message);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
