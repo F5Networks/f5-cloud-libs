@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var dnsProviderFactory = require('../../../f5-cloud-libs').dnsProviderFactory;
+const dnsProviderFactory = require('../../../f5-cloud-libs').dnsProviderFactory;
 
 module.exports = {
-    testSupported: function(test) {
+    testSupported(test) {
         test.expect(1);
-        test.doesNotThrow(function () {
+        test.doesNotThrow(() => {
             dnsProviderFactory.getDnsProvider('gtm');
         });
         test.done();
     },
 
-    testNotSupported: function(test) {
+    testNotSupported(test) {
         test.expect(1);
-        test.throws(function () {
+        test.throws(() => {
             dnsProviderFactory.getDnsProvider('foo');
         });
         test.done();
