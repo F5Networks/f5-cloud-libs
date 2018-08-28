@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const q = require('q');
@@ -20,21 +21,22 @@ const q = require('q');
 const poolName = 'myLicensePool';
 const LICENSE_PATH = '/cm/device/tasks/licensing/pool/member-management/';
 
-var BigIqProvider;
-var provider;
-var icontrolMock;
-var BigIq53ProviderMock;
-var bigIq53RevokeCalled;
+let BigIqProvider;
+let provider;
+let icontrolMock;
+let BigIq53ProviderMock;
+let bigIq53RevokeCalled;
 
 module.exports = {
-    setUp: function(callback) {
+    setUp(callback) {
+        /* eslint-disable global-require */
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
 
         bigIq53RevokeCalled = false;
 
         BigIq53ProviderMock = require('../../lib/bigIq53LicenseProvider');
-        BigIq53ProviderMock.prototype.revoke = function() {
+        BigIq53ProviderMock.prototype.revoke = () => {
             bigIq53RevokeCalled = true;
             return q(true);
         };
@@ -49,39 +51,40 @@ module.exports = {
     },
 
     testConstructor: {
-        testSetLogger: function(test) {
+        testSetLogger(test) {
             const logger = {
                 a: 1,
                 b: 2
             };
 
-            provider = new BigIqProvider({}, {logger: logger});
+            provider = new BigIqProvider({}, { logger });
             test.deepEqual(provider.logger, logger);
             test.done();
         },
 
-        testLoggerOptions: function(test) {
+        testLoggerOptions(test) {
             const loggerOptions = {
                 a: 1,
                 b: 2
             };
 
-            test.doesNotThrow(function() {
-                new BigIqProvider({loggerOptions: loggerOptions});
+            test.doesNotThrow(() => {
+                // eslint-disable-next-line no-new
+                new BigIqProvider({ loggerOptions });
             });
             test.done();
         }
     },
 
     testRevokeLicense: {
-        testBasic: function(test) {
+        testBasic(test) {
             test.expect(1);
             const macAddress = '1234';
             const ipAddress = '1.2.3.4';
 
-            provider.revoke(icontrolMock, poolName, {macAddress: macAddress, mgmtIp: ipAddress})
-                .then(function() {
-                    let deleteReq = icontrolMock.getRequest('create', LICENSE_PATH);
+            provider.revoke(icontrolMock, poolName, { macAddress, mgmtIp: ipAddress })
+                .then(() => {
+                    const deleteReq = icontrolMock.getRequest('create', LICENSE_PATH);
                     test.deepEqual(
                         deleteReq,
                         {
@@ -89,38 +92,40 @@ module.exports = {
                             licensePoolName: poolName,
                             address: ipAddress,
                             assignmentType: 'UNREACHABLE',
-                            macAddress: macAddress
+                            macAddress
                         }
                     );
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         },
 
-        testNoUnreachable: function(test) {
+        testNoUnreachable(test) {
             test.expect(1);
             const macAddress = '1234';
             const ipAddress = '1.2.3.4';
 
-            provider.revoke(icontrolMock, poolName, {macAddress: macAddress, mgmtIp: ipAddress}, {noUnreachable: true})
-                .then(function() {
+            provider.revoke(
+                icontrolMock, poolName, { macAddress, mgmtIp: ipAddress }, { noUnreachable: true }
+            )
+                .then(() => {
                     test.ok(bigIq53RevokeCalled);
                 })
-                .catch(function(err) {
+                .catch((err) => {
                     test.ok(false, err);
                 })
-                .finally(function() {
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
-    testGetLicenseTimeout: function(test) {
-        test.deepEqual(provider.getLicenseTimeout(), {maxRetries: 40, retryIntervalMs: 5000});
+    testGetLicenseTimeout(test) {
+        test.deepEqual(provider.getLicenseTimeout(), { maxRetries: 40, retryIntervalMs: 5000 });
         test.done();
     }
 };
