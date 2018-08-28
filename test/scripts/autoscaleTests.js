@@ -1,68 +1,71 @@
 /**
  * Copyright 2016-2018 F5 Networks, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var deviceGroup = 'testDeviceGroup';
-var util = require('util');
-var q = require('q');
-var CloudProvider = require('../../lib/cloudProvider');
-var AutoscaleInstance = require('../../lib/autoscaleInstance');
-var autoscale;
-var fsMock;
-var BigIp;
-var authnMock;
-var icontrolMock;
-var cloudUtilMock;
-var cryptoUtilMock;
-var ipcMock;
-var dnsProviderFactoryMock;
-var gtmDnsProviderMock;
-var childProcessMock;
-var argv;
-var providerMock;
-var bigIpMock;
-var testOptions;
-var instances;
-var instanceId;
-var exitCode;
-var exitMessage;
-var messages;
-var credentials;
-var functionsCalled;
-var cloudPrivateKeyPath;
-var privateKeyMetadata;
+const deviceGroup = 'testDeviceGroup';
+const util = require('util');
+const q = require('q');
+const CloudProvider = require('../../lib/cloudProvider');
+const AutoscaleInstance = require('../../lib/autoscaleInstance');
 
-var existsSync;
-var unlinkSync;
-var writeFile;
-var createWriteStream;
-var readdir;
-var stat;
-var rename;
+let autoscale;
+let fsMock;
+let BigIp;
+let authnMock;
+let icontrolMock;
+let cloudUtilMock;
+let cryptoUtilMock;
+let ipcMock;
+let dnsProviderFactoryMock;
+let gtmDnsProviderMock;
+let childProcessMock;
+let argv;
+let providerMock;
+let bigIpMock;
+let testOptions;
+let instances;
+let instanceId;
+let exitCode;
+let exitMessage;
+let messages;
+let credentials;
+let functionsCalled;
+let cloudPrivateKeyPath;
+let privateKeyMetadata;
 
-var execFile;
+let existsSync;
+let unlinkSync;
+let writeFile;
+let createWriteStream;
+let readdir;
+let stat;
+let rename;
 
-var unlinkedFiles;
-var renamedFiles;
-var missingFilePrefix;
+let execFile;
 
-var ucsBackupName;
+let unlinkedFiles;
+let renamedFiles;
+let missingFilePrefix;
+
+let ucsBackupName;
 
 // Our tests cause too many event listeners. Turn off the check.
-var options = require('commander');
+const options = require('commander');
+
 options.setMaxListeners(0);
 process.setMaxListeners(0);
 
@@ -72,33 +75,33 @@ function ProviderMock() {
     this.functionCalls = {};
 }
 
-ProviderMock.prototype.init = function () {
-    this.functionCalls.init = arguments;
+ProviderMock.prototype.init = function init(...args) {
+    this.functionCalls.init = args;
     return q();
 };
 
-ProviderMock.prototype.putInstance = function () {
-    this.functionCalls.putInstance = arguments;
+ProviderMock.prototype.putInstance = function putInstance(...args) {
+    this.functionCalls.putInstance = args;
     return q();
 };
 
-ProviderMock.prototype.getInstances = function () {
-    this.functionCalls.getInstances = true;
+ProviderMock.prototype.getInstances = function getInstances(...args) {
+    this.functionCalls.getInstances = args;
     return q(instances);
 };
 
-ProviderMock.prototype.getInstanceId = function () {
+ProviderMock.prototype.getInstanceId = function getInstanceId() {
     this.functionCalls.getInstanceId = true;
     return q(instanceId);
 };
 
-ProviderMock.prototype.isValidMaster = function () {
+ProviderMock.prototype.isValidMaster = function isValidMaster() {
     this.functionCalls.isValidMaster = true;
     return q(true);
 };
 
-ProviderMock.prototype.electMaster = function (instances) {
-    this.functionCalls.instancesSent = instances;
+ProviderMock.prototype.electMaster = function isValidMaster(instancesToElect) {
+    this.functionCalls.instancesSent = instancesToElect;
     this.functionCalls.electMaster = true;
     return q();
 };
@@ -110,49 +113,50 @@ ProviderMock.prototype.tagMasterInstance = function tagMasterInstance(masterIid,
     return q();
 };
 
-ProviderMock.prototype.instancesRemoved = function (instances) {
-    this.functionCalls.instancesRemoved = instances;
+ProviderMock.prototype.instancesRemoved = function instancesRemoved(instancesToRemove) {
+    this.functionCalls.instancesRemoved = instancesToRemove;
     return q();
 };
 
-ProviderMock.prototype.getStoredUcs = function () {
+ProviderMock.prototype.getStoredUcs = function getStoredUcs() {
     return q();
 };
 
-ProviderMock.prototype.putPublicKey = function () {
+ProviderMock.prototype.putPublicKey = function putPublicKey() {
     return q();
 };
 
-ProviderMock.prototype.getMessages = function () {
-    this.functionCalls.getMessages = arguments;
+ProviderMock.prototype.getMessages = function getMessages(...args) {
+    this.functionCalls.getMessages = args;
     return q(messages);
 };
 
-ProviderMock.prototype.sendMessage = function () {
-    this.functionCalls.sendMessage = arguments;
+ProviderMock.prototype.sendMessage = function sendMessage(...args) {
+    this.functionCalls.sendMessage = args;
     return q(messages);
 };
 
-ProviderMock.prototype.getMasterCredentials = function () {
-    this.functionCalls.getMasterCredentials = arguments;
+ProviderMock.prototype.getMasterCredentials = function getMasterCredentials(...args) {
+    this.functionCalls.getMasterCredentials = args;
     return q(credentials);
 };
 
-ProviderMock.prototype.putMasterCredentials = function () {
-    this.functionCalls.putMasterCredentials = arguments;
+ProviderMock.prototype.putMasterCredentials = function putMasterCredentials(...args) {
+    this.functionCalls.putMasterCredentials = args;
     return q();
 };
 
-ProviderMock.prototype.storeUcs = function () {
-    this.functionCalls.storeUcs = arguments;
+ProviderMock.prototype.storeUcs = function storeUcs(...args) {
+    this.functionCalls.storeUcs = args;
     return q();
 };
 
 module.exports = {
-    setUp: function (callback) {
-        argv = ['node', 'autoscale', '--password', 'foobar', '--device-group', deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
+    setUp(callback) {
+        argv = ['node', 'autoscale', '--password', 'foobar', '--device-group',
+            deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
 
-        instanceId = "two";
+        instanceId = 'two';
         const instance1 = new AutoscaleInstance()
             .setHostname('host1')
             .setPrivateIp('1.2.3.4')
@@ -164,10 +168,11 @@ module.exports = {
             .setMgmtIp('5.6.7.8');
 
         instances = {
-            "one": instance1,
-            "two": instance2
+            one: instance1,
+            two: instance2
         };
 
+        /* eslint-disable global-require */
         fsMock = require('fs');
         childProcessMock = require('child_process');
         dnsProviderFactoryMock = require('../../lib/dnsProviderFactory');
@@ -180,14 +185,14 @@ module.exports = {
 
         exitCode = 0;
         exitMessage = undefined;
-        cloudUtilMock.logAndExit = function (message, level, code) {
+        cloudUtilMock.logAndExit = function logAndExit(message, level, code) {
             exitMessage = message;
             if (code) {
                 exitCode = code;
-                throw new Error('exit with code ' + exitCode);
+                throw new Error(`exit with code ${exitCode}`);
             }
         };
-        cloudUtilMock.saveArgs = function () {
+        cloudUtilMock.saveArgs = function saveArgs() {
             return q();
         };
 
@@ -203,52 +208,52 @@ module.exports = {
 
         unlinkedFiles = [];
         renamedFiles = [];
-        fsMock.unlinkSync = function (file) {
+        fsMock.unlinkSync = (file) => {
             unlinkedFiles.push(file);
         };
-        fsMock.rename = function (file, cb) {
+        fsMock.rename = (file, cb) => {
             renamedFiles.push(file);
             cb();
-        }
-        fsMock.writeFile = function (path, data, cb) {
+        };
+        fsMock.writeFile = (path, data, cb) => {
             cb();
         };
 
         providerMock = new ProviderMock();
 
         // Just resolve right away, otherwise these tests never exit
-        ipcMock.once = function () {
-            functionsCalled.ipc.once = arguments;
+        ipcMock.once = function once(...args) {
+            functionsCalled.ipc.once = args;
             return q();
         };
 
         cryptoUtilMock.functionCalls = {};
-        cryptoUtilMock.generateRandomBytes = function () {
+        cryptoUtilMock.generateRandomBytes = () => {
             return q();
         };
-        cryptoUtilMock.generateKeyPair = function () {
+        cryptoUtilMock.generateKeyPair = () => {
             return q();
         };
-        cryptoUtilMock.decrypt = function () {
-            cryptoUtilMock.functionCalls.decrypt = arguments;
+        cryptoUtilMock.decrypt = function decrypt(...args) {
+            cryptoUtilMock.functionCalls.decrypt = args;
             return q();
         };
-        cryptoUtilMock.encrypt = function () {
-            cryptoUtilMock.functionCalls.encrypt = arguments;
+        cryptoUtilMock.encrypt = function encrypt(...args) {
+            cryptoUtilMock.functionCalls.encrypt = args;
             return q();
         };
 
-        dnsProviderFactoryMock.getDnsProvider = function () {
+        dnsProviderFactoryMock.getDnsProvider = () => {
             return gtmDnsProviderMock;
         };
 
         gtmDnsProviderMock.functionCalls = {};
-        gtmDnsProviderMock.init = function () {
-            gtmDnsProviderMock.functionCalls.init = arguments;
+        gtmDnsProviderMock.init = function init(...args) {
+            gtmDnsProviderMock.functionCalls.init = args;
             return q();
         };
-        gtmDnsProviderMock.update = function () {
-            gtmDnsProviderMock.functionCalls.update = arguments;
+        gtmDnsProviderMock.update = function update(...args) {
+            gtmDnsProviderMock.functionCalls.update = args;
         };
 
         functionsCalled = {
@@ -256,13 +261,13 @@ module.exports = {
         };
 
         authnMock = require('../../../f5-cloud-libs').authn;
-        authnMock.authenticate = function (host, user, password) {
+        authnMock.authenticate = (host, user, password) => {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
         };
 
         bigIpMock = new BigIp();
-        bigIpMock.ready = function () {
+        bigIpMock.ready = () => {
             return q();
         };
         icontrolMock.when(
@@ -273,7 +278,7 @@ module.exports = {
             }
         );
         bigIpMock.init('localhost', 'admin', 'admin')
-            .then(function () {
+            .then(() => {
                 bigIpMock.icontrol = icontrolMock;
 
                 icontrolMock.reset();
@@ -285,50 +290,50 @@ module.exports = {
 
                 bigIpMock.functionCalls = {};
 
-                bigIpMock.ready = function () {
+                bigIpMock.ready = () => {
                     return q();
                 };
 
-                bigIpMock.save = function () {
+                bigIpMock.save = () => {
                     return q();
                 };
 
-                bigIpMock.loadUcs = function () {
-                    bigIpMock.functionCalls.loadUcs = arguments;
+                bigIpMock.loadUcs = function loadUcs(...args) {
+                    bigIpMock.functionCalls.loadUcs = args;
                     return q();
                 };
 
-                bigIpMock.installPrivateKey = function () {
-                    bigIpMock.functionCalls.installPrivateKey = arguments;
+                bigIpMock.installPrivateKey = function installPrivateKey(...args) {
+                    bigIpMock.functionCalls.installPrivateKey = args;
                     return q();
                 };
 
-                bigIpMock.getPrivateKeyFilePath = function () {
+                bigIpMock.getPrivateKeyFilePath = () => {
                     return q(cloudPrivateKeyPath);
                 };
 
-                bigIpMock.getPrivateKeyMetadata = function () {
-                    bigIpMock.functionCalls.getPrivateKeyMetadata = arguments;
+                bigIpMock.getPrivateKeyMetadata = function getPrivateKeyMetadata(...args) {
+                    bigIpMock.functionCalls.getPrivateKeyMetadata = args;
                     return q(privateKeyMetadata);
                 };
 
                 bigIpMock.cluster = {
-                    configSyncIp: function () {
-                        bigIpMock.functionCalls.configSyncIp = arguments;
+                    configSyncIp(...args) {
+                        bigIpMock.functionCalls.configSyncIp = args;
                         return q();
                     },
-                    createDeviceGroup: function () {
-                        bigIpMock.functionCalls.createDeviceGroup = arguments;
+                    createDeviceGroup(...args) {
+                        bigIpMock.functionCalls.createDeviceGroup = args;
                         return q();
                     },
-                    deleteDeviceGroup: function () {
+                    deleteDeviceGroup() {
                         return q();
                     },
-                    joinCluster: function () {
-                        bigIpMock.functionCalls.joinCluster = arguments;
+                    joinCluster(...args) {
+                        bigIpMock.functionCalls.joinCluster = args;
                         return q();
                     },
-                    resetTrust: function () {
+                    resetTrust() {
                         return q();
                     }
                 };
@@ -339,7 +344,7 @@ module.exports = {
         autoscale = require('../../scripts/autoscale');
     },
 
-    tearDown: function (callback) {
+    tearDown(callback) {
         fsMock.existsSync = existsSync;
         fsMock.unlinkSync = unlinkSync;
         fsMock.writeFile = writeFile;
@@ -351,86 +356,87 @@ module.exports = {
         childProcessMock.execFile = execFile;
 
         cloudUtilMock.removeDirectorySync(ipcMock.signalBasePath);
-        Object.keys(require.cache).forEach(function (key) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
         callback();
     },
 
     commonTests: {
-        setUp: function (callback) {
-            fsMock.writeFile = function (path, data, cb) {
+        setUp(callback) {
+            fsMock.writeFile = (path, data, cb) => {
                 cb();
             };
             callback();
         },
 
-        testNoPassword: function (test) {
-            argv = ['node', 'autoscale', '--device-group', deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
+        testNoPassword(test) {
+            argv = ['node', 'autoscale', '--device-group',
+                deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
 
             test.expect(2);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(exitCode, 1);
                 test.notStrictEqual(exitMessage.indexOf('is required'), -1);
                 test.done();
             });
         },
 
-        testWaitFor: function (test) {
+        testWaitFor(test) {
             argv.push('--wait-for', 'foo');
 
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.ipc.once[0], 'foo');
                 test.done();
             });
         },
 
-        testBackground: function (test) {
-            var runInBackgroundCalled = false;
-            cloudUtilMock.runInBackgroundAndExit = function () {
+        testBackground(test) {
+            let runInBackgroundCalled = false;
+            cloudUtilMock.runInBackgroundAndExit = () => {
                 runInBackgroundCalled = true;
             };
 
             argv.push('--background');
 
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.ok(runInBackgroundCalled);
                 test.done();
             });
         },
 
-        testInitCalled: function (test) {
+        testInitCalled(test) {
             argv.push('--provider-options', 'key1:value1,key2:value2');
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.deepEqual(providerMock.functionCalls.init[0], { key1: 'value1', key2: 'value2' });
                 test.done();
             });
         },
 
-        testGetInstancesCalled: function (test) {
+        testGetInstancesCalled(test) {
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
-                test.ok(providerMock.functionCalls.getInstances, "getInstances not called");
+            autoscale.run(argv, testOptions, () => {
+                test.ok(providerMock.functionCalls.getInstances, 'getInstances not called');
                 test.done();
             });
         },
 
-        testNoInstances: function (test) {
+        testNoInstances(test) {
             instances = {};
             test.expect(2);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(exitCode, 1);
                 test.notStrictEqual(exitMessage.indexOf('list is empty'), -1);
                 test.done();
             });
         },
 
-        testMissingOurInstance: function (test) {
+        testMissingOurInstance(test) {
             instances = {
-                "one": {
+                one: {
                     isMaster: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
@@ -439,16 +445,16 @@ module.exports = {
             };
 
             test.expect(2);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(exitCode, 1);
                 test.notStrictEqual(exitMessage.indexOf('Our instance ID'), -1);
                 test.done();
             });
         },
 
-        testBecomingMaster: function (test) {
+        testBecomingMaster(test) {
             instances = {
-                "two": {
+                two: {
                     isMaster: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
@@ -458,23 +464,23 @@ module.exports = {
             };
 
             test.expect(2);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(exitCode, 0);
                 test.notStrictEqual(exitMessage.indexOf('becoming master'), -1);
                 test.done();
             });
         },
 
-        testBadVersion: function (test) {
+        testBadVersion(test) {
             instances = {
-                "one": {
+                one: {
                     isMaster: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true,
                     version: '2'
                 },
-                "two": {
+                two: {
                     isMaster: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
@@ -482,29 +488,30 @@ module.exports = {
                 }
             };
 
-            bigIpMock.deviceInfo = function () {
+            bigIpMock.deviceInfo = () => {
                 return {
                     version: '1'
                 };
             };
 
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, CloudProvider.STATUS_VERSION_NOT_UP_TO_DATE);
+            autoscale.run(argv, testOptions, () => {
+                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status,
+                    CloudProvider.STATUS_VERSION_NOT_UP_TO_DATE);
                 test.done();
             });
         },
 
-        testNotExternal: function (test) {
+        testNotExternal(test) {
             instances = {
-                "one": {
+                one: {
                     isMaster: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true,
                     external: true
                 },
-                "two": {
+                two: {
                     isMaster: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
@@ -514,21 +521,22 @@ module.exports = {
             };
 
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, CloudProvider.STATUS_NOT_EXTERNAL);
+            autoscale.run(argv, testOptions, () => {
+                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status,
+                    CloudProvider.STATUS_NOT_EXTERNAL);
                 test.done();
             });
         },
 
-        testNotProviderVisible: function (test) {
+        testNotProviderVisible(test) {
             instances = {
-                "one": {
+                one: {
                     isMaster: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true
                 },
-                "two": {
+                two: {
                     isMaster: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
@@ -537,40 +545,41 @@ module.exports = {
             };
 
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status, CloudProvider.STATUS_NOT_IN_CLOUD_LIST);
+            autoscale.run(argv, testOptions, () => {
+                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status,
+                    CloudProvider.STATUS_NOT_IN_CLOUD_LIST);
                 test.done();
             });
         },
 
-        testIsValidMasterCalledWithInstances: function (test) {
+        testIsValidMasterCalledWithInstances(test) {
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.ok(providerMock.functionCalls.isValidMaster);
                 test.done();
             });
         },
 
-        testElectCalledWithVersionsMarked: function (test) {
-            providerMock.isValidMaster = function () {
+        testElectCalledWithVersionsMarked(test) {
+            providerMock.isValidMaster = () => {
                 return q(false);
             };
 
-            bigIpMock.deviceInfo = function () {
+            bigIpMock.deviceInfo = () => {
                 return {
                     version: '4.5.6'
                 };
             };
 
             instances = {
-                "one": {
+                one: {
                     isMaster: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true,
                     version: '1.2.3'
                 },
-                "two": {
+                two: {
                     isMaster: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
@@ -579,128 +588,126 @@ module.exports = {
             };
 
             test.expect(2);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(providerMock.functionCalls.instancesSent.one.versionOk, false);
                 test.strictEqual(providerMock.functionCalls.instancesSent.two.versionOk, true);
                 test.done();
             });
         },
 
-        testElectMasterCalledWithInvalidMaster: function (test) {
-            providerMock.isValidMaster = function () {
+        testElectMasterCalledWithInvalidMaster(test) {
+            providerMock.isValidMaster = () => {
                 return q(false);
             };
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.ok(providerMock.functionCalls.electMaster);
                 test.done();
             });
         },
 
-        testElectNotCalledWithValidMaster: function (test) {
-            providerMock.isValidMaster = function () {
+        testElectNotCalledWithValidMaster(test) {
+            providerMock.isValidMaster = () => {
                 return q(true);
             };
             test.expect(1);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.ifError(providerMock.functionCalls.electMaster);
                 test.done();
             });
         },
 
         testBecomeMaster: {
-            setUp: function (callback) {
-                childProcessMock.execFile = function (file, args, cb) {
+            setUp(callback) {
+                childProcessMock.execFile = (file, args, cb) => {
                     cb();
                 };
                 callback();
             },
 
-
-
             testLoadUcs: {
-                setUp: function (callback) {
+                setUp(callback) {
                     missingFilePrefix = undefined;
-                    fsMock.existsSync = function (file) {
+                    fsMock.existsSync = (file) => {
                         if (file.startsWith(missingFilePrefix)) {
                             return false;
                         }
                         return true;
                     };
-                    providerMock.getStoredUcs = function () {
+                    providerMock.getStoredUcs = () => {
                         return q({});
                     };
-                    cloudUtilMock.runShellCommand = function () {
+                    cloudUtilMock.runShellCommand = () => {
                         return q();
-                    }
-                    cloudUtilMock.runTmshCommand = function () {
+                    };
+                    cloudUtilMock.runTmshCommand = () => {
                         return q();
-                    }
+                    };
 
                     callback();
                 },
 
-                testUpdateScriptFailure: function (test) {
+                testUpdateScriptFailure(test) {
                     const errorMessage = 'bad script';
-                    childProcessMock.execFile = function (file, args, cb) {
+                    childProcessMock.execFile = (file, args, cb) => {
                         cb(new Error(errorMessage));
                     };
                     test.expect(2);
-                    autoscale.run(argv, testOptions, function (err) {
+                    autoscale.run(argv, testOptions, (err) => {
                         test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
                         test.notStrictEqual(err.message.indexOf(errorMessage), -1);
                         test.done();
                     });
                 },
 
-                testMissingFile: function (test) {
+                testMissingFile(test) {
                     missingFilePrefix = '/config/ucsUpdated_';
                     test.expect(2);
-                    autoscale.run(argv, testOptions, function (err) {
+                    autoscale.run(argv, testOptions, (err) => {
                         test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
                         test.notStrictEqual(err.message.indexOf('updated ucs not found'), -1);
                         test.done();
                     });
                 },
 
-                testLoadUcsFailure: function (test) {
-                    bigIpMock.loadUcs = function () {
+                testLoadUcsFailure(test) {
+                    bigIpMock.loadUcs = () => {
                         return q.reject('foo');
                     };
                     test.expect(1);
-                    autoscale.run(argv, testOptions, function () {
+                    autoscale.run(argv, testOptions, () => {
                         test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
                         test.done();
                     });
                 },
 
-                testBuffer: function (test) {
+                testBuffer(test) {
                     test.expect(1);
-                    autoscale.run(argv, testOptions, function () {
+                    autoscale.run(argv, testOptions, () => {
                         test.notStrictEqual(bigIpMock.functionCalls.loadUcs, undefined);
                         test.done();
                     });
                 },
 
-                testPipe: function (test) {
-                    providerMock.getStoredUcs = function () {
+                testPipe(test) {
+                    providerMock.getStoredUcs = () => {
                         return q({
-                            pipe: function () { },
-                            on: function () { }
+                            pipe() { },
+                            on() { }
                         });
                     };
-                    fsMock.createWriteStream = function () {
+                    fsMock.createWriteStream = () => {
                         return {
-                            on: function (event, cb) {
+                            on(event, cb) {
                                 cb();
                             },
-                            close: function (cb) {
+                            close(cb) {
                                 cb();
                             }
                         };
                     };
                     test.expect(1);
-                    autoscale.run(argv, testOptions, function () {
+                    autoscale.run(argv, testOptions, () => {
                         test.notStrictEqual(bigIpMock.functionCalls.loadUcs, undefined);
                         test.done();
                     });
@@ -708,18 +715,18 @@ module.exports = {
             },
 
             testCreateDeviceGroup: {
-                testGetHostname: function (test) {
-                    var hostname = 'myNewHostname';
+                testGetHostname(test) {
+                    const hostname = 'myNewHostname';
 
                     instances = {
-                        "one": {
+                        one: {
                             isMaster: false,
                             hostname: 'host1',
                             privateIp: '1.2.3.4',
                             mgmtIp: '1.2.3.4',
                             providerVisible: true
                         },
-                        "two": {
+                        two: {
                             isMaster: true,
                             privateIp: '5.6.7.8',
                             mgmtIp: '5.6.7.8',
@@ -731,82 +738,82 @@ module.exports = {
                         'list',
                         '/tm/sys/global-settings',
                         {
-                            hostname: hostname
+                            hostname
                         }
                     );
 
                     test.expect(1);
-                    autoscale.run(argv, testOptions, function () {
+                    autoscale.run(argv, testOptions, () => {
                         test.deepEqual(bigIpMock.functionCalls.createDeviceGroup[2], [hostname]);
                         test.done();
                     });
                 },
 
-                testAsmProvisioned: function (test) {
+                testAsmProvisioned(test) {
                     icontrolMock.when(
                         'list',
                         '/tm/sys/provision',
                         [
                             {
-                                "kind": "tm:sys:provision:provisionstate",
-                                "name": "am",
-                                "fullPath": "am",
-                                "level": "none",
+                                kind: 'tm:sys:provision:provisionstate',
+                                name: 'am',
+                                fullPath: 'am',
+                                level: 'none',
 
                             },
                             {
-                                "kind": "tm:sys:provision:provisionstate",
-                                "name": "apm",
-                                "fullPath": "apm",
-                                "level": "none",
+                                kind: 'tm:sys:provision:provisionstate',
+                                name: 'apm',
+                                fullPath: 'apm',
+                                level: 'none',
 
                             },
                             {
-                                "kind": "tm:sys:provision:provisionstate",
-                                "name": "asm",
-                                "fullPath": "asm",
-                                "level": "nominal",
+                                kind: 'tm:sys:provision:provisionstate',
+                                name: 'asm',
+                                fullPath: 'asm',
+                                level: 'nominal',
                             }
                         ]
                     );
 
                     test.expect(1);
-                    autoscale.run(argv, testOptions, function () {
+                    autoscale.run(argv, testOptions, () => {
                         test.ok(bigIpMock.functionCalls.createDeviceGroup[3].asmSync);
                         test.done();
                     });
                 },
 
-                testAsmNotProvisioned: function (test) {
+                testAsmNotProvisioned(test) {
                     icontrolMock.when(
                         'list',
                         '/tm/sys/provision',
                         [
                             {
-                                "kind": "tm:sys:provision:provisionstate",
-                                "name": "am",
-                                "fullPath": "am",
-                                "level": "none",
+                                kind: 'tm:sys:provision:provisionstate',
+                                name: 'am',
+                                fullPath: 'am',
+                                level: 'none',
 
                             },
                             {
-                                "kind": "tm:sys:provision:provisionstate",
-                                "name": "apm",
-                                "fullPath": "apm",
-                                "level": "none",
+                                kind: 'tm:sys:provision:provisionstate',
+                                name: 'apm',
+                                fullPath: 'apm',
+                                level: 'none',
 
                             },
                             {
-                                "kind": "tm:sys:provision:provisionstate",
-                                "name": "asm",
-                                "fullPath": "asm",
-                                "level": "none",
+                                kind: 'tm:sys:provision:provisionstate',
+                                name: 'asm',
+                                fullPath: 'asm',
+                                level: 'none',
                             }
                         ]
                     );
 
                     test.expect(1);
-                    autoscale.run(argv, testOptions, function () {
+                    autoscale.run(argv, testOptions, () => {
                         test.ok(!bigIpMock.functionCalls.createDeviceGroup[3].asmSync);
                         test.done();
                     });
@@ -816,18 +823,18 @@ module.exports = {
         },
 
         testDns: {
-            setUp: function (callback) {
+            setUp(callback) {
                 argv.push('--dns', 'gtm', '--dns-app-port', '1234', '--cluster-action', 'update');
 
                 icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
-                bigIpMock.cluster.getCmSyncStatus = function () {
+                bigIpMock.cluster.getCmSyncStatus = () => {
                     return q({
                         disconnected: []
                     });
                 };
 
                 instances = {
-                    "one": {
+                    one: {
                         isMaster: false,
                         hostname: 'host1',
                         privateIp: '1.2.3.4',
@@ -835,7 +842,7 @@ module.exports = {
                         mgmtIp: '1.2.3.4',
                         providerVisible: true
                     },
-                    "two": {
+                    two: {
                         isMaster: true,
                         hostname: 'host2',
                         privateIp: '5.6.7.8',
@@ -849,10 +856,10 @@ module.exports = {
                 callback();
             },
 
-            testInitCall: function (test) {
+            testInitCall(test) {
                 test.expect(1);
                 argv.push('--dns-provider-options', 'key1:value1,key2:value2');
-                autoscale.run(argv, testOptions, function () {
+                autoscale.run(argv, testOptions, () => {
                     test.deepEqual(
                         gtmDnsProviderMock.functionCalls.init[0],
                         {
@@ -864,11 +871,11 @@ module.exports = {
                 });
             },
 
-            testPrivate: function (test) {
+            testPrivate(test) {
                 argv.push('--dns-ip-type', 'private');
 
-                autoscale.run(argv, testOptions, function () {
-                    var updatedServers = gtmDnsProviderMock.functionCalls.update[0];
+                autoscale.run(argv, testOptions, () => {
+                    const updatedServers = gtmDnsProviderMock.functionCalls.update[0];
                     test.strictEqual(updatedServers.length, 2);
                     test.deepEqual(updatedServers[0], {
                         name: instances.one.hostname,
@@ -884,10 +891,10 @@ module.exports = {
                 });
             },
 
-            testPublic: function (test) {
+            testPublic(test) {
                 argv.push('--dns-ip-type', 'public');
-                autoscale.run(argv, testOptions, function () {
-                    var updatedServers = gtmDnsProviderMock.functionCalls.update[0];
+                autoscale.run(argv, testOptions, () => {
+                    const updatedServers = gtmDnsProviderMock.functionCalls.update[0];
                     test.strictEqual(updatedServers.length, 2);
                     test.deepEqual(updatedServers[0], {
                         name: instances.one.hostname,
@@ -906,9 +913,9 @@ module.exports = {
     },
 
     updateTests: {
-        setUp: function (callback) {
+        setUp(callback) {
             argv.push('--cluster-action', 'update');
-            bigIpMock.cluster.getCmSyncStatus = function () {
+            bigIpMock.cluster.getCmSyncStatus = () => {
                 return q({
                     disconnected: []
                 });
@@ -925,27 +932,27 @@ module.exports = {
                 .setMgmtIp('5.6.7.8');
 
             instance2.masterStatus = {
-                instanceId: "two"
+                instanceId: 'two'
             };
 
             instances = {
-                "one": instance1,
-                "two": instance2
+                one: instance1,
+                two: instance2
             };
 
             callback();
         },
 
         testIsMaster: {
-            testDisconnected: function (test) {
-                var devicesRemoved = [];
-                icontrolMock.when('list', '/tm/sys/global-settings', { hostname: "host2" })
-                bigIpMock.cluster.getCmSyncStatus = function () {
+            testDisconnected(test) {
+                let devicesRemoved = [];
+                icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
+                bigIpMock.cluster.getCmSyncStatus = () => {
                     return q({
-                        disconnected: ["host1", "host2", "host3", "host4"]
+                        disconnected: ['host1', 'host2', 'host3', 'host4']
                     });
                 };
-                bigIpMock.cluster.removeFromCluster = function (devices) {
+                bigIpMock.cluster.removeFromCluster = (devices) => {
                     devicesRemoved = devices;
                     return q();
                 };
@@ -954,7 +961,7 @@ module.exports = {
 
                 // We expect that host3 and host4 will be removed. host1 will not because the cloud provider
                 // says it is still in the list of known instances
-                autoscale.run(argv, testOptions, function () {
+                autoscale.run(argv, testOptions, () => {
                     test.strictEqual(devicesRemoved.length, 2);
                     test.notStrictEqual(devicesRemoved.indexOf('host3'), -1);
                     test.notStrictEqual(devicesRemoved.indexOf('host4'), -1);
@@ -964,17 +971,17 @@ module.exports = {
         },
 
         testIsNotMaster: {
-            setUp: function (callback) {
-                instanceId = "one";
+            setUp(callback) {
+                instanceId = 'one';
                 callback();
             },
 
-            testMasterFileRemoved: function (test) {
-                fsMock.existsSync = function () {
+            testMasterFileRemoved(test) {
+                fsMock.existsSync = () => {
                     return true;
                 };
 
-                autoscale.run(argv, testOptions, function () {
+                autoscale.run(argv, testOptions, () => {
                     test.notStrictEqual(unlinkedFiles.indexOf('/config/cloud/master'), -1);
                     test.done();
                 });
@@ -983,12 +990,12 @@ module.exports = {
     },
 
     joinTests: {
-        setUp: function (callback) {
+        setUp(callback) {
             argv.push('--cluster-action', 'join');
             callback();
         },
 
-        testConfigSyncCalled: function (test) {
+        testConfigSyncCalled(test) {
             icontrolMock.when(
                 'list',
                 '/shared/identified-devices/config/device-info',
@@ -997,40 +1004,38 @@ module.exports = {
                 }
             );
 
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(bigIpMock.functionCalls.configSyncIp[0], instances[instanceId].privateIp);
                 test.done();
             });
         },
 
-        testCreateGroupWhenMaster: function (test) {
-            autoscale.run(argv, testOptions, function () {
+        testCreateGroupWhenMaster(test) {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(bigIpMock.functionCalls.createDeviceGroup[0], deviceGroup);
                 test.done();
             });
         },
 
-        testCreateGroupOptionsDefaults: function (test) {
-            autoscale.run(argv, testOptions, function () {
-                var createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
+        testCreateGroupOptionsDefaults(test) {
+            autoscale.run(argv, testOptions, () => {
+                const createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
 
                 test.expect(5);
                 test.strictEqual(createGroupOptions.autoSync, true);
                 test.strictEqual(createGroupOptions.asmSync, undefined);
-                test.strictEqual(createGroupOptions.networkFailover, undefined
-                );
-                test.strictEqual(createGroupOptions.fullLoadOnSync, undefined
-                );
+                test.strictEqual(createGroupOptions.networkFailover, undefined);
+                test.strictEqual(createGroupOptions.fullLoadOnSync, undefined);
                 test.strictEqual(createGroupOptions.saveOnAutoSync, true);
                 test.done();
             });
         },
 
-        testCreateGroupOptionsNonDefaults: function (test) {
+        testCreateGroupOptionsNonDefaults(test) {
             argv.push('--no-auto-sync', '--asm-sync', '--network-failover', '--full-load-on-sync');
 
-            autoscale.run(argv, testOptions, function () {
-                var createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
+            autoscale.run(argv, testOptions, () => {
+                const createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
 
                 test.expect(4);
                 test.strictEqual(createGroupOptions.autoSync, false);
@@ -1041,12 +1046,12 @@ module.exports = {
             });
         },
 
-        testCreateGroupOptionsNoSaveOnAutoSync: function (test) {
+        testCreateGroupOptionsNoSaveOnAutoSync(test) {
             argv.push('--no-save-on-auto-sync');
 
             test.expect(2);
-            autoscale.run(argv, testOptions, function () {
-                var createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
+            autoscale.run(argv, testOptions, () => {
+                const createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
                 test.strictEqual(createGroupOptions.autoSync, true);
                 test.strictEqual(createGroupOptions.saveOnAutoSync, false);
                 test.done();
@@ -1054,18 +1059,18 @@ module.exports = {
         },
 
         testEncryption: {
-            setUp: function (callback) {
+            setUp(callback) {
                 providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
                 callback();
             },
 
-            tearDown: function (callback) {
+            tearDown(callback) {
                 callback();
             },
 
-            testBasic: function (test) {
+            testBasic(test) {
                 test.expect(1);
-                autoscale.run(argv, testOptions, function () {
+                autoscale.run(argv, testOptions, () => {
                     test.notStrictEqual(bigIpMock.functionCalls.installPrivateKey, undefined);
                     test.done();
                 });
@@ -1074,7 +1079,7 @@ module.exports = {
     },
 
     unblockSyncTests: {
-        setUp: function (callback) {
+        setUp(callback) {
             argv.push('--cluster-action', 'unblock-sync');
             icontrolMock.when(
                 'list',
@@ -1087,8 +1092,8 @@ module.exports = {
             callback();
         },
 
-        testBasic: function (test) {
-            autoscale.run(argv, testOptions, function () {
+        testBasic(test) {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(bigIpMock.functionCalls.configSyncIp[0], instances[instanceId].privateIp);
                 test.done();
             });
@@ -1096,54 +1101,53 @@ module.exports = {
     },
 
     backupUcsTests: {
-        setUp: function (callback) {
+        setUp(callback) {
             argv.push('--cluster-action', 'backup-ucs');
 
             ucsBackupName = undefined;
-            bigIpMock.deviceInfo = function () {
+            bigIpMock.deviceInfo = () => {
                 return q({ version: '13.1.0' });
             };
-            bigIpMock.saveUcs = function (ucsName) {
+            bigIpMock.saveUcs = (ucsName) => {
                 ucsBackupName = ucsName;
                 return q();
             };
-            fsMock.readdir = function (directory, cb) {
+            fsMock.readdir = (directory, cb) => {
                 cb(null, ['file1.ucs', 'ucsAutosave_1234.ucs']);
             };
             callback();
         },
 
-        testBasic: function (test) {
-            autoscale.run(argv, testOptions, function () {
+        testBasic(test) {
+            autoscale.run(argv, testOptions, () => {
                 test.ok(ucsBackupName.startsWith('ucsAutosave_'));
                 test.done();
             });
         },
 
-        testOldFilesDeleted: function (test) {
+        testOldFilesDeleted(test) {
             test.expect(2);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(unlinkedFiles.length, 1);
                 test.strictEqual(unlinkedFiles[0], '/var/local/ucs/ucsAutosave_1234.ucs');
                 test.done();
             });
         },
 
-        testAjvCleanup: function (test) {
-            bigIpMock.deviceInfo = function () {
+        testAjvCleanup(test) {
+            bigIpMock.deviceInfo = () => {
                 return q({ version: '13.0.0' });
             };
-            fsMock.stat = function (file, cb) {
+            fsMock.stat = (file, cb) => {
                 if (file.endsWith('/ajv/lib/$data.js')) {
                     cb(new Error());
-                }
-                else {
+                } else {
                     cb(null);
                 }
             };
 
             test.expect(2);
-            autoscale.run(argv, testOptions, function () {
+            autoscale.run(argv, testOptions, () => {
                 test.strictEqual(renamedFiles.length, 1);
                 test.ok(renamedFiles[0].endsWith('ajv/lib/refs/$data.json'));
                 test.done();
@@ -1152,26 +1156,27 @@ module.exports = {
     },
 
     messagingTests: {
-        setUp: function (callback) {
+        setUp(callback) {
             providerMock.features[CloudProvider.FEATURE_MESSAGING] = true;
             argv.push('--cluster-action', 'join');
             callback();
         },
 
         testIsMaster: {
-            testActions: function (test) {
-                autoscale.run(argv, testOptions, function () {
-                    test.deepEqual(providerMock.functionCalls.getMessages[0], [CloudProvider.MESSAGE_ADD_TO_CLUSTER]);
+            testActions(test) {
+                autoscale.run(argv, testOptions, () => {
+                    test.deepEqual(providerMock.functionCalls.getMessages[0],
+                        [CloudProvider.MESSAGE_ADD_TO_CLUSTER]);
                     test.done();
                 });
             },
 
-            testAddToCluster: function (test) {
+            testAddToCluster(test) {
                 const deviceGroupToAdd = 'addDeviceGroup';
                 const hostToAdd = 'addHost';
                 const usernameToAdd = 'addUserName';
                 const passwordToAdd = 'addPassword';
-                providerMock.getMessages = function () {
+                providerMock.getMessages = () => {
                     const messageData = JSON.stringify(
                         {
                             deviceGroup: deviceGroupToAdd,
@@ -1180,7 +1185,7 @@ module.exports = {
                             password: passwordToAdd
                         }
                     );
-                    const messages = [
+                    messages = [
                         {
                             action: CloudProvider.MESSAGE_ADD_TO_CLUSTER,
                             data: messageData
@@ -1190,7 +1195,7 @@ module.exports = {
                 };
 
                 test.expect(4);
-                autoscale.run(argv, testOptions, function () {
+                autoscale.run(argv, testOptions, () => {
                     test.strictEqual(bigIpMock.functionCalls.joinCluster[0], deviceGroupToAdd);
                     test.strictEqual(bigIpMock.functionCalls.joinCluster[1], hostToAdd);
                     test.strictEqual(bigIpMock.functionCalls.joinCluster[2], usernameToAdd);
@@ -1201,25 +1206,26 @@ module.exports = {
         },
 
         testIsNotMaster: {
-            setUp: function (callback) {
-                instanceId = "one";
+            setUp(callback) {
+                instanceId = 'one';
                 callback();
             },
 
-            testActions: function (test) {
-                autoscale.run(argv, testOptions, function () {
-                    test.deepEqual(providerMock.functionCalls.getMessages[0], [CloudProvider.MESSAGE_SYNC_COMPLETE]);
+            testActions(test) {
+                autoscale.run(argv, testOptions, () => {
+                    test.deepEqual(providerMock.functionCalls.getMessages[0],
+                        [CloudProvider.MESSAGE_SYNC_COMPLETE]);
                     test.done();
                 });
             },
 
-            testPrepareEncryptedMessageData: function (test) {
+            testPrepareEncryptedMessageData(test) {
                 const publicKey = 'myPubKey';
                 providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
-                providerMock.getPublicKey = function () {
+                providerMock.getPublicKey = () => {
                     return q(publicKey);
                 };
-                autoscale.run(argv, testOptions, function () {
+                autoscale.run(argv, testOptions, () => {
                     test.deepEqual(cryptoUtilMock.functionCalls.encrypt[0], publicKey);
                     test.done();
                 });
@@ -1227,10 +1233,10 @@ module.exports = {
         },
 
         testEncrypted: {
-            setUp: function (callback) {
+            setUp(callback) {
                 providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
-                providerMock.getMessages = function () {
-                    const messages = [
+                providerMock.getMessages = () => {
+                    messages = [
                         {
                             action: CloudProvider.MESSAGE_ADD_TO_CLUSTER,
                             data: {}
@@ -1244,10 +1250,10 @@ module.exports = {
                 callback();
             },
 
-            testHasKey: function (test) {
+            testHasKey(test) {
                 autoscale.cloudPrivateKeyPath = 'foo';
                 test.expect(2);
-                autoscale.run(argv, testOptions, function () {
+                autoscale.run(argv, testOptions, () => {
                     test.deepEqual(cryptoUtilMock.functionCalls.decrypt[0], autoscale.cloudPrivateKeyPath);
                     test.deepEqual(
                         cryptoUtilMock.functionCalls.decrypt[2],
@@ -1260,10 +1266,10 @@ module.exports = {
                 });
             },
 
-            testDoesNotHaveKey: function (test) {
+            testDoesNotHaveKey(test) {
                 cloudPrivateKeyPath = 'bar';
                 test.expect(2);
-                autoscale.run(argv, testOptions, function () {
+                autoscale.run(argv, testOptions, () => {
                     test.deepEqual(cryptoUtilMock.functionCalls.decrypt[0], cloudPrivateKeyPath);
                     test.deepEqual(
                         cryptoUtilMock.functionCalls.decrypt[2],
@@ -1279,25 +1285,25 @@ module.exports = {
     },
 
     testNonMessagingTests: {
-        setUp: function (callback) {
+        setUp(callback) {
             providerMock.features[CloudProvider.FEATURE_MESSAGING] = false;
             argv.push('--cluster-action', 'join');
             callback();
         },
 
-        tearDown: function (callback) {
+        tearDown(callback) {
             callback();
         },
 
-        testIsNotMaster: function (test) {
-            instanceId = "one";
+        testIsNotMaster(test) {
+            instanceId = 'one';
             credentials = {
                 username: 'myUser',
                 password: 'myPassword'
             };
             test.expect(4);
-            autoscale.run(argv, testOptions, function () {
-                var joinClusterCall = bigIpMock.functionCalls.joinCluster;
+            autoscale.run(argv, testOptions, () => {
+                const joinClusterCall = bigIpMock.functionCalls.joinCluster;
                 test.strictEqual(joinClusterCall[0], deviceGroup);
                 test.strictEqual(joinClusterCall[1], instances.two.mgmtIp);
                 test.strictEqual(joinClusterCall[2], credentials.username);
@@ -1306,16 +1312,16 @@ module.exports = {
             });
         }
     },
-    testTagMasterCalled: function (test) {
+    testTagMasterCalled(test) {
         instances = {
-            "one": {
+            one: {
                 isMaster: false,
                 hostname: 'host1',
                 privateIp: '1.2.3.4',
                 mgmtIp: '1.2.3.4',
                 providerVisible: true
             },
-            "two": {
+            two: {
                 isMaster: true,
                 privateIp: '5.6.7.8',
                 mgmtIp: '5.6.7.8',
@@ -1324,12 +1330,12 @@ module.exports = {
         };
 
         test.expect(4);
-        autoscale.run(argv, testOptions, function () {
+        autoscale.run(argv, testOptions, () => {
             test.strictEqual(providerMock.functionCalls.taggedMasterInstances.one.isMaster, false);
             test.strictEqual(providerMock.functionCalls.taggedMasterIid, 'two');
             test.notStrictEqual(providerMock.functionCalls.taggedMasterIid, 'one');
             test.ok(providerMock.functionCalls.tagMasterInstance);
             test.done();
-        })
+        });
     },
 };
