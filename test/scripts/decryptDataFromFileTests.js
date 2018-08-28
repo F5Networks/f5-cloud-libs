@@ -13,32 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 const q = require('q');
 
 const realConsoleLog = console.log;
 
-var localCrytpoUtilMock;
+let localCrytpoUtilMock;
 
-var argv;
-var decryptData;
+let argv;
+let decryptData;
 
-var fileSent;
-var optionsSent;
-var decryptedData;
+let fileSent;
+let optionsSent;
+let decryptedData;
 
 module.exports = {
-    setUp: function(callback) {
-        console.log = function() {};
-
+    setUp(callback) {
+        console.log = function log() {};
+        /* eslint-disable global-require */
         decryptData = require('../../scripts/decryptDataFromFile');
 
         localCrytpoUtilMock = require('../../lib/localCryptoUtil');
 
         optionsSent = undefined;
 
-        localCrytpoUtilMock.decryptDataFromFile = function(file, options) {
+        localCrytpoUtilMock.decryptDataFromFile = (file, options) => {
             fileSent = file;
             optionsSent = options;
             return q(decryptedData);
@@ -48,8 +49,8 @@ module.exports = {
         callback();
     },
 
-    tearDown: function(callback) {
-        Object.keys(require.cache).forEach(function(key) {
+    tearDown(callback) {
+        Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
 
@@ -58,39 +59,39 @@ module.exports = {
         callback();
     },
 
-    testNoFile: function(test) {
+    testNoFile(test) {
         test.expect(1);
-        decryptData.run(argv, function(err) {
+        decryptData.run(argv, (err) => {
             test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             test.done();
         });
     },
 
-    testDecryptDataFromFile: function(test) {
-        var fileToDecrypt = '/foo/bar';
+    testDecryptDataFromFile(test) {
+        const fileToDecrypt = '/foo/bar';
 
-        decryptedData = "hello, world";
+        decryptedData = 'hello, world';
 
         argv.push('--data-file', fileToDecrypt);
 
         test.expect(2);
-        decryptData.run(argv, function(data) {
+        decryptData.run(argv, (data) => {
             test.strictEqual(fileSent, fileToDecrypt);
             test.strictEqual(data, decryptedData);
             test.done();
         });
     },
 
-    testSymmetricDecryptDataFromFile: function(test) {
-        var fileToDecrypt = '/foo/bar';
+    testSymmetricDecryptDataFromFile(test) {
+        const fileToDecrypt = '/foo/bar';
 
-        decryptedData = "hello, world";
+        decryptedData = 'hello, world';
 
         argv.push('--data-file', fileToDecrypt);
         argv.push('--symmetric');
 
         test.expect(3);
-        decryptData.run(argv, function(data) {
+        decryptData.run(argv, (data) => {
             test.strictEqual(fileSent, fileToDecrypt);
             test.strictEqual(data, decryptedData);
             test.strictEqual(optionsSent.symmetric, true);
@@ -98,16 +99,16 @@ module.exports = {
         });
     },
 
-    testDecryptionError: function(test) {
+    testDecryptionError(test) {
         const errorMessage = 'decryption error';
-        localCrytpoUtilMock.decryptDataFromFile = function() {
+        localCrytpoUtilMock.decryptDataFromFile = () => {
             return q.reject(new Error(errorMessage));
         };
 
         argv.push('--data-file', 'fileToDecrypt');
 
         test.expect(1);
-        decryptData.run(argv, function(err) {
+        decryptData.run(argv, (err) => {
             test.strictEqual(err.message, errorMessage);
             test.done();
         });
