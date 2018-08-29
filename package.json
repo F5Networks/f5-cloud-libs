@@ -35,7 +35,7 @@
     "coverage": "istanbul cover --print detail nodeunit test/lib test/scripts",
     "coveralls": "istanbul cover nodeunit test/lib test/scripts; cat coverage/lcov.info | node_modules/coveralls/bin/coveralls.js",
     "doc": "./generateUsageDoc.sh; node node_modules/jsdoc/jsdoc.js -c jsdoc.conf",
-    "lint": "eslint lib scripts",
+    "lint": "eslint lib scripts test",
     "package": "./package.sh",
     "postinstall": "./scripts/npmPostInstall.sh",
     "test": "nodeunit --reporter eclipse test/lib test/scripts",
