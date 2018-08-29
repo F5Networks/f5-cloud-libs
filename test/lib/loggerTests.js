@@ -13,55 +13,57 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var Logger = require('../../../f5-cloud-libs').logger;
-var fs = require('fs');
-var logger;
+const Logger = require('../../../f5-cloud-libs').logger;
+const fs = require('fs');
+
+let logger;
 
 const fsWrite = fs.write;
 
 const LOGFILE = 'foo';
 
-var loggedMessage;
+let loggedMessage;
 
 module.exports = {
-    testConsole: function(test) {
-        var logger = Logger.getLogger();
+    testConsole(test) {
+        logger = Logger.getLogger();
         test.ok(logger.transports.console, 'No conosle logger found.');
         test.done();
     },
 
-    testNoConsole: function(test) {
-        var logger = Logger.getLogger({console: false});
+    testNoConsole(test) {
+        logger = Logger.getLogger({ console: false });
         test.ifError(logger.transports.console);
         test.done();
     },
 
-    testLogfile: function(test) {
-        var logger = Logger.getLogger({fileName: 'foo'});
+    testLogfile(test) {
+        logger = Logger.getLogger({ fileName: 'foo' });
         test.ok(logger.transports.file, 'No file logger found.');
         test.done();
     },
 
-    testNoLogFile: function(test) {
-        var logger = Logger.getLogger();
+    testNoLogFile(test) {
+        logger = Logger.getLogger();
         test.ifError(logger.transports.file);
         test.done();
     },
 
     testLogMessages: {
-        setUp: function(callback) {
-            logger = Logger.getLogger({console: false, fileName: LOGFILE});
+        setUp(callback) {
+            logger = Logger.getLogger({ console: false, fileName: LOGFILE });
             loggedMessage = null;
-            fs.write = function(fd, message, offset, length, position, cb) {
+            fs.write = (fd, message, offset, length, position, cb) => {
                 loggedMessage = message.toString();
                 cb();
             };
             callback();
         },
 
-        tearDown: function(callback) {
+        tearDown(callback) {
             fs.write = fsWrite;
 
             if (fs.existsSync(LOGFILE)) {
@@ -70,10 +72,10 @@ module.exports = {
             callback();
         },
 
-        testPasswordMask: function(test) {
-            logger.warn('password=1234', {Password: '5678'});
+        testPasswordMask(test) {
+            logger.warn('password=1234', { Password: '5678' });
 
-            logger.transports.file.on('logged', function() {
+            logger.transports.file.on('logged', () => {
                 test.notStrictEqual(loggedMessage.indexOf('password='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"Password":'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
@@ -82,10 +84,10 @@ module.exports = {
             });
         },
 
-        testPassphraseMask: function(test) {
-            logger.warn('passphrase=1234', {passphrase: '5678'});
+        testPassphraseMask(test) {
+            logger.warn('passphrase=1234', { passphrase: '5678' });
 
-            logger.transports.file.on('logged', function() {
+            logger.transports.file.on('logged', () => {
                 test.notStrictEqual(loggedMessage.indexOf('passphrase='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"passphrase":'), -1);
                 test.strictEqual(loggedMessage.indexOf('1234'), -1);
@@ -94,11 +96,11 @@ module.exports = {
             });
         },
 
-        testWholeWordMask:function(test) {
+        testWholeWordMask(test) {
             // these should be logged in full
-            logger.warn('passwordUrl=file:///tmp/foo', {passwordUrl: 'file:///tmp/bar'});
+            logger.warn('passwordUrl=file:///tmp/foo', { passwordUrl: 'file:///tmp/bar' });
 
-            logger.transports.file.on('logged', function() {
+            logger.transports.file.on('logged', () => {
                 test.notStrictEqual(loggedMessage.indexOf('passwordUrl='), -1);
                 test.notStrictEqual(loggedMessage.indexOf('"passwordUrl":'), -1);
                 test.notStrictEqual(loggedMessage.indexOf('file:///tmp/foo'), -1);
@@ -107,11 +109,18 @@ module.exports = {
             });
         },
 
-        testLabel: function(test) {
-            logger = Logger.getLogger({console: false, fileName: LOGFILE, logLevel: 'debug', module: module});
+        testLabel(test) {
+            logger = Logger.getLogger(
+                {
+                    console: false,
+                    fileName: LOGFILE,
+                    logLevel: 'debug',
+                    module
+                }
+            );
             logger.debug('hello, world');
 
-            logger.transports.file.on('logged', function() {
+            logger.transports.file.on('logged', () => {
                 test.notStrictEqual(loggedMessage.indexOf('[lib/loggerTests.js]'), -1);
                 test.done();
             });

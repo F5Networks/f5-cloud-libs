@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
 module.exports = {
@@ -22,22 +23,21 @@ module.exports = {
             eventMap: {},
             headers: {},
             statusCode: 200,
-            setEncoding: function() {},
-            on: function(event, cb) {
+            setEncoding() {},
+            on(event, cb) {
                 this.eventMap[event] = cb;
             },
-            emit: function(event, args) {
+            emit(event, args) {
                 if (this.eventMap[event]) {
                     this.eventMap[event](args);
                 }
             },
-            resume: function() {}
+            resume() {}
         },
-        end: function() {
+        end() {
             if (this.errorToEmit) {
                 this.emit('error', this.errorToEmit);
-            }
-            else {
+            } else {
                 if (this.cb) {
                     this.cb(this.incomingMessage);
                 }
@@ -45,34 +45,34 @@ module.exports = {
                 this.incomingMessage.emit('end');
             }
         },
-        on: function(event, cb) {
+        on(event, cb) {
             this.eventMap[event] = cb;
             return this;
         },
-        emit: function(event, args) {
+        emit(event, args) {
             if (this.eventMap[event]) {
                 this.eventMap[event](args);
             }
         },
-        setTimeout: function(timeout) {
+        setTimeout(timeout) {
             this.timeout = timeout;
         },
-        write: function(data) {
+        write(data) {
             this.data = data;
         },
-        emitError: function(err) {
+        emitError(err) {
             this.errorToEmit = err;
         }
     },
 
-    request: function(options, cb) {
+    request(options, cb) {
         this.lastRequest = options;
         this.clientRequest.cb = cb;
         return this.clientRequest;
     },
 
-    get: function(optionsOrPath, cb) {
-        var clientRequest;
+    get(optionsOrPath, cb) {
+        let clientRequest;
 
         if (typeof optionsOrPath === 'string') {
             clientRequest = this.request(
@@ -82,8 +82,7 @@ module.exports = {
                 },
                 cb
             );
-        }
-        else {
+        } else {
             clientRequest = this.request(
                 {
                     method: 'GET',
@@ -94,21 +93,21 @@ module.exports = {
             );
         }
 
-        setImmediate(function() {
+        setImmediate(() => {
             clientRequest.end();
         });
 
         return clientRequest;
     },
 
-    setResponse: function(response, headers, statusCode) {
-        var key;
-        var lowerCaseHeaders = {};
+    setResponse(response, headers, statusCode) {
+        const lowerCaseHeaders = {};
 
-        headers = headers || {};
         this.clientRequest.response = typeof response === 'object' ? JSON.stringify(response) : response;
-        for (key in headers) {
-            lowerCaseHeaders[key.toLowerCase()] = headers[key];
+        if (headers) {
+            Object.keys(headers).forEach((key) => {
+                lowerCaseHeaders[key.toLowerCase()] = headers[key];
+            });
         }
         this.clientRequest.incomingMessage.headers = lowerCaseHeaders;
 
@@ -117,11 +116,11 @@ module.exports = {
         }
     },
 
-    setError: function(message) {
+    setError(message) {
         this.clientRequest.emitError(new Error(message));
     },
 
-    reset: function() {
+    reset() {
         delete this.clientRequest.cb;
         delete this.clientRequest.data;
         delete this.clientRequest.response;

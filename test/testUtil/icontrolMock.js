@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 F5 Networks, Inc.
+ * Copyright 2016-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,43 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
 
-var q = require('q');
+const q = require('q');
 
-var FAIL_REQUEST = "FAIL_REQUEST";
+const FAIL_REQUEST = 'FAIL_REQUEST';
 
 module.exports = {
-    list: function(path, opts) {
+    list(path, opts) {
         this.recordRequest('list', path, null, opts);
         return this.respond('list', path);
     },
 
-    create: function(path, body, opts) {
+    create(path, body, opts) {
         this.recordRequest('create', path, body, opts);
         return this.respond('create', path);
     },
 
-    modify: function(path, body, opts) {
+    modify(path, body, opts) {
         this.recordRequest('modify', path, body, opts);
         return this.respond('modify', path);
     },
 
-    replace: function(path, body, opts) {
+    replace(path, body, opts) {
         this.recordRequest('replace', path, body, opts);
         return this.respond('replace', path);
     },
 
-    delete: function(path, body, opts) {
+    delete(path, body, opts) {
         this.recordRequest('delete', path, body, opts);
         return this.respond('delete', path);
     },
 
-    setAuthToken: function(token) {
+    setAuthToken(token) {
         this.authToken = token;
     },
 
-    setRefreshToken: function(refreshToken) {
+    setRefreshToken(refreshToken) {
         this.refreshToken = refreshToken;
     },
 
@@ -60,12 +61,12 @@ module.exports = {
     errorMap: {},
     lastCall: {},
 
-    when: function(method, path, response) {
-        this.responseMap[method + '_' + path] = response;
+    when(method, path, response) {
+        this.responseMap[`${method}_${path}`] = response;
     },
 
-    whenNext: function(method, path, response) {
-        const key = method + '_' + path;
+    whenNext(method, path, response) {
+        const key = `${method}_${path}`;
         if (!this.nextResponseMap[key]) {
             this.nextResponseMap[key] = [];
         }
@@ -79,12 +80,12 @@ module.exports = {
      * @param {String} path   - Path for request
      * @param {Object} [err]  - Specific error for request. Default generic error.
      */
-    fail: function(method, path, err) {
-        this.responseMap[method + '_' + path] = FAIL_REQUEST;
-        this.errorMap[method + '_' + path] = err;
+    fail(method, path, err) {
+        this.responseMap[`${method}_${path}`] = FAIL_REQUEST;
+        this.errorMap[`${method}_${path}`] = err;
     },
 
-    reset: function() {
+    reset() {
         this.numRequests = {};
         this.responseMap = {};
         this.nextResponseMap = {};
@@ -96,16 +97,16 @@ module.exports = {
         this.defaultResponse = true;
     },
 
-    setDefaultResponse: function(defaultResponse) {
+    setDefaultResponse(defaultResponse) {
         this.defaultResponse = defaultResponse;
     },
 
-    recordRequest: function(method, path, body, opts) {
-        var key = method + '_' + path;
+    recordRequest(method, path, body, opts) {
+        const key = `${method}_${path}`;
         if (typeof this.numRequests[key] === 'undefined') {
             this.numRequests[key] = 1;
         } else {
-            this.numRequests[key]++;
+            this.numRequests[key] += 1;
         }
         if (!this.requestMap[key]) {
             this.requestMap[key] = [];
@@ -117,30 +118,31 @@ module.exports = {
         this.lastCall.opts = opts;
     },
 
-    getNumRequests: function(method, path) {
-        var key = method + '_' + path;
+    getNumRequests(method, path) {
+        const key = `${method}_${path}`;
         return this.numRequests[key] || 0;
     },
 
-    getRequest: function(method, path) {
-        var key = method + '_' + path;
+    getRequest(method, path) {
+        const key = `${method}_${path}`;
         if (this.requestMap[key]) {
             return this.requestMap[key].pop();
         }
+        return undefined;
     },
 
-    respond: function(method, path) {
-        const key = method + '_' + path;
-        var response = this.responseMap[key];
+    respond(method, path) {
+        const key = `${method}_${path}`;
+        const response = this.responseMap[key];
 
         if (this.nextResponseMap[key] && this.nextResponseMap[key].length > 0) {
             this.responseMap[key] = this.nextResponseMap[key].shift();
         }
 
         if (response === FAIL_REQUEST) {
-            const error = this.errorMap[key]
+            const error = this.errorMap[key];
             if (error) {
-                return q.reject (error);
+                return q.reject(error);
             }
             return q.reject(new Error('We were told to fail this.'));
         }

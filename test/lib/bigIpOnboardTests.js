@@ -16,9 +16,6 @@
 
 'use strict';
 
-const LICENSE_PATH_5_2 = '/cm/device/licensing/pool/regkey/licenses/';
-const LICENSE_PATH_5_3_and_4 = '/cm/device/tasks/licensing/pool/member-management/';
-
 const q = require('q');
 const icontrolMock = require('../testUtil/icontrolMock');
 
@@ -33,18 +30,11 @@ let authnMock;
 let bigIp;
 let bigIpMgmtAddressSent;
 let bigIpMgmtPortSent;
-let optionsSent; // eslint-disable-line no-unused-vars
 let initCalled;
 
 
 let poolNameSent;
 let instanceSent;
-
-const macAddress = '5678';
-const taskId = '1234';
-const licenseText = 'here is my license';
-const cloud = 'aws';
-
 
 module.exports = {
     setUp(callback) {
@@ -540,10 +530,9 @@ module.exports = {
         testCommon: {
             setUp(callback) {
                 BigIq.prototype.version = '5.0.0';
-                BigIq.prototype.licenseBigIp = (poolName, bigIpMgmtAddress, bigIpMgmtPort, options) => {
+                BigIq.prototype.licenseBigIp = (poolName, bigIpMgmtAddress, bigIpMgmtPort) => {
                     bigIpMgmtAddressSent = bigIpMgmtAddress;
                     bigIpMgmtPortSent = bigIpMgmtPort;
-                    optionsSent = options;
                 };
 
                 icontrolMock.when(
