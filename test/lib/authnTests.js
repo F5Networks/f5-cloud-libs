@@ -27,6 +27,7 @@ let authn;
 let icontrolMock;
 let localCryptoUtilMock;
 let utilMock;
+let LoggerMock;
 
 module.exports = {
     setUp(callback) {
@@ -35,6 +36,7 @@ module.exports = {
         icontrolMock = require('../testUtil/icontrolMock');
         localCryptoUtilMock = require('../../../f5-cloud-libs').localCryptoUtil;
         authn = require('../../../f5-cloud-libs').authn;
+        LoggerMock = require('../../../f5-cloud-libs').logger;
         /* eslint-enable global-require */
 
         authn.icontrol = icontrolMock;
@@ -154,6 +156,38 @@ module.exports = {
             })
             .catch((err) => {
                 test.ok(false, err);
+            })
+            .finally(() => {
+                test.done();
+            });
+    },
+
+    testPasswordArnBucketFail(test) {
+        const host = 'myHost';
+        const user = 'myUser';
+        const passwordUri = 'arn:::foo:bar/password';
+        const loggedMessages = [];
+        const logger = LoggerMock.getLogger();
+        logger.info = (message) => {
+            loggedMessages.push(message);
+        };
+        authn.setLogger(logger);
+        authn.provider = {
+            init: () => {
+                return q();
+            },
+            getDataFromUri: () => {
+                return q.reject('S3 bucket not found');
+            }
+        };
+        test.expect(1);
+        authn.authenticate(host, user, passwordUri, { passwordIsUri: true })
+            .then(() => {
+                test.ok(false, 'Should not have been able to resolve');
+            })
+            .catch(() => {
+                test.strictEqual(loggedMessages[0],
+                    'Could not find BIG-IQ credentials file on the specified S3 bucket');
             })
             .finally(() => {
                 test.done();
