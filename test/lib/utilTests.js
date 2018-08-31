@@ -27,6 +27,11 @@ let httpGet;
 
 let util;
 
+// Logger mock
+let Logger;
+let loggerReceivedOptions;
+let loggerReceivedMessage;
+
 let argv;
 let funcCount;
 
@@ -100,6 +105,8 @@ module.exports = {
 
         httpMock = require('../testUtil/httpMock');
         httpMock.reset();
+
+        Logger = require('../../../f5-cloud-libs').logger;
 
         util = require('../../../f5-cloud-libs').util;
         callback();
@@ -791,6 +798,33 @@ module.exports = {
         test.strictEqual(exitCalled, true);
         test.done();
         setImmediate = setImmediateTemp; // eslint-disable-line no-global-assign
+    },
+
+    testlogError(test) {
+        const loggerOptions = {
+            fileName: '/tmp/network.log',
+            module
+        };
+        const errorMessage = 'utilTests error';
+
+        Logger.getLogger = function getLogger(options) {
+            loggerReceivedOptions = options;
+            return {
+                error(message) {
+                    loggerReceivedMessage = message;
+                }
+            };
+        };
+
+
+        util.logError(errorMessage, loggerOptions);
+
+        test.expect(4);
+        test.strictEqual(loggerReceivedOptions.json, true);
+        test.strictEqual(loggerReceivedOptions.fileName, '/tmp/cloudLibsError.log');
+        test.strictEqual(loggerReceivedOptions.verboseLabel, true);
+        test.strictEqual(errorMessage, loggerReceivedMessage);
+        test.done();
     },
 
     testRunInBackgroundAndExit: {

@@ -266,6 +266,10 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                     loggerOptions.fileName = options.output;
                 }
 
+                if (options.errorFile) {
+                    loggerOptions.errorFile = options.errorFile;
+                }
+
                 logger = Logger.getLogger(loggerOptions);
                 ipc.setLoggerOptions(loggerOptions);
                 util.setLoggerOptions(loggerOptions);
@@ -286,20 +290,22 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
 
                 for (let i = 0; i < REQUIRED_OPTIONS.length; i++) {
                     if (!options[REQUIRED_OPTIONS[i]]) {
-                        util.logAndExit(
-                            `${REQUIRED_OPTIONS[i]} is a required command line option.`,
-                            'error',
-                            1
-                        );
+                        const error = `${REQUIRED_OPTIONS[i]} is a required command line option.`;
+
+                        ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                        util.logError(error, loggerOptions);
+                        util.logAndExit(error, 'error', 1);
                     }
                 }
 
                 if (options.user && !(options.password || options.passwordUrl)) {
-                    util.logAndExit(
-                        'If specifying --user, --password or --password-url is required.',
-                        'error',
-                        1
-                    );
+                    const error = 'If specifying --user, --password or --password-url is required.';
+
+                    ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                    util.logError(error, loggerOptions);
+                    util.logAndExit(error, 'error', 1);
                 }
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
@@ -783,7 +789,12 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                             }
                         }
 
-                        util.logAndExit(`Onboard failed: ${message}`, 'error', 1);
+                        ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                        const error = `Onboard failed: ${message}`;
+                        util.logError(error, loggerOptions);
+                        util.logAndExit(error, 'error', 1);
+
                         exiting = true;
                         return q();
                     })
@@ -795,25 +806,34 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                             util.deleteUser(randomUser);
                         }
 
+                        if ((!rebooting || !options.reboot) && !exiting) {
+                            ipc.send(options.signal || signals.ONBOARD_DONE);
+                        }
+
                         if (cb) {
                             cb();
                         }
 
                         if (!rebooting) {
                             util.deleteArgs(ARGS_FILE_ID);
-                            ipc.send(options.signal || signals.ONBOARD_DONE);
                             if (!exiting) {
                                 util.logAndExit('Onboard finished.');
                             }
                         } else if (!options.reboot) {
                             // If we are rebooting, but we were called with --no-reboot, send signal
-                            ipc.send(options.signal || signals.ONBOARD_DONE);
                             if (!exiting) {
                                 util.logAndExit('Onboard finished. Reboot required but not rebooting.');
                             }
                         } else {
                             util.logAndExit('Onboard finished. Reboot required.');
                         }
+                    });
+
+                // If another script has signaled an error, exit, marking ourselves as DONE
+                ipc.once(signals.CLOUD_LIBS_ERROR)
+                    .then(() => {
+                        ipc.send(options.signal || signals.ONBOARD_DONE);
+                        util.logAndExit('ERROR signaled from other script. Exiting');
                     });
 
                 // If we reboot due to some other script, exit - otherwise cloud

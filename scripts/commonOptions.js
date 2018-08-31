@@ -83,6 +83,10 @@ module.exports = {
                 `Log to file as well as console. This is the default if background process is spawned. Default is ${defaultLogFile}`
             )
             .option(
+                '-e, --error-file <file>',
+                'Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory'
+            )
+            .option(
                 '--no-console',
                 'Do not log to console. Default false (log to console).'
             );

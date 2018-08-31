@@ -44,6 +44,7 @@ const util = require('../lib/util');
             let logger;
             let logFileName;
             let clArgIndex;
+            let exiting;
 
             try {
                 /* eslint-disable max-len */
@@ -91,6 +92,10 @@ const util = require('../lib/util');
                         `Log to file as well as console. This is the default if background process is spawned. Default is ${DEFAULT_LOG_FILE}`
                     )
                     .option(
+                        '-e, --error-file <file>',
+                        'Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory'
+                    )
+                    .option(
                         '--no-console',
                         'Do not log to console. Default false (log to console).'
                     )
@@ -103,6 +108,10 @@ const util = require('../lib/util');
 
                 if (options.output) {
                     loggerOptions.fileName = options.output;
+                }
+
+                if (options.errorFile) {
+                    loggerOptions.errorFile = options.errorFile;
                 }
 
                 logger = Logger.getLogger(loggerOptions);
@@ -235,19 +244,35 @@ const util = require('../lib/util');
                         return deferred.promise;
                     })
                     .catch((err) => {
-                        logger.error('Running custom script failed', err);
+                        ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                        const error = `Running custom script failed: ${err}`;
+                        util.logError(error, loggerOptions);
+                        util.logAndExit(error, 'error', 1);
+                        exiting = true;
                     })
                     .done((response) => {
                         logger.debug(response);
 
                         util.deleteArgs(ARGS_FILE_ID);
-                        ipc.send(options.signal || signals.SCRIPT_DONE);
+                        if (!exiting) {
+                            ipc.send(options.signal || signals.SCRIPT_DONE);
+                        }
 
                         if (cb) {
                             cb();
                         }
 
-                        util.logAndExit('Custom script finished.');
+                        if (!exiting) {
+                            util.logAndExit('Custom script finished.');
+                        }
+                    });
+
+                // If another script has signaled an error, exit, marking ourselves as DONE
+                ipc.once(signals.CLOUD_LIBS_ERROR)
+                    .then(() => {
+                        ipc.send(options.signal || signals.SCRIPT_DONE);
+                        util.logAndExit('ERROR signaled from other script. Exiting');
                     });
             } catch (err) {
                 if (logger) {

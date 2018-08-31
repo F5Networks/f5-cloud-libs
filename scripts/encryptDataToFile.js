@@ -47,6 +47,8 @@ const KEYS = require('../lib/sharedConstants').KEYS;
             let logFileName;
             let waitPromise;
 
+            let exiting;
+
             const DEFAULT_LOG_FILE = '/tmp/encryptDataToFile.log';
             const KEYS_TO_MASK = ['--data'];
 
@@ -75,6 +77,10 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                     .option(
                         '-o, --output <file>',
                         `Log to file as well as console. This is the default if background process is spawned. Default is ${DEFAULT_LOG_FILE}`
+                    )
+                    .option(
+                        '-e, --error-file <file>',
+                        'Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory'
                     )
                     .option(
                         '--data <data>',
@@ -128,6 +134,10 @@ const KEYS = require('../lib/sharedConstants').KEYS;
 
                 if (options.output) {
                     loggerOptions.fileName = options.output;
+                }
+
+                if (options.errorFile) {
+                    loggerOptions.errorFile = options.errorFile;
                 }
 
                 logger = Logger.getLogger(loggerOptions);
@@ -226,16 +236,32 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                         return util.writeDataToFile(dataToWrite, options.outFile);
                     })
                     .catch((err) => {
-                        logger.error('Encryption failed:', err.message);
+                        ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                        const error = `Encryption failed: ${err.message}`;
+                        util.logError(error, loggerOptions);
+                        util.logAndExit(error, 'error', 1);
+
+                        exiting = true;
                     })
                     .done(() => {
-                        ipc.send(options.signal || signals.ENCRYPTION_DONE);
+                        if (!exiting) {
+                            ipc.send(options.signal || signals.ENCRYPTION_DONE);
+                        }
 
                         if (cb) {
                             cb();
                         }
+                        if (!exiting) {
+                            util.logAndExit('Encryption done.');
+                        }
+                    });
 
-                        util.logAndExit('Encryption done.');
+                // If another script has signaled an error, exit, marking ourselves as DONE
+                ipc.once(signals.CLOUD_LIBS_ERROR)
+                    .then(() => {
+                        ipc.send(options.signal || signals.ENCRYPTION_DONE);
+                        util.logAndExit('ERROR signaled from other script. Exiting');
                     });
             } catch (err) {
                 if (logger) {

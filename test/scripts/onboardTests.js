@@ -23,6 +23,7 @@ const q = require('q');
 const util = require('util');
 const ActiveError = require('../../../f5-cloud-libs').activeError;
 const CloudProvider = require('../../lib/cloudProvider');
+const signals = require('../../../f5-cloud-libs').signals;
 
 let metricsCollectorMock;
 
@@ -34,6 +35,8 @@ let ipcMock;
 let utilMock;
 let exitMessage;
 let exitCode;
+let logErrorMessage;
+let logErrorOptions;
 
 let bigIpMock;
 let providerMock;
@@ -218,6 +221,10 @@ module.exports = {
             exitMessage = message;
             exitCode = code;
         };
+        utilMock.logError = (msg, opts) => {
+            logErrorMessage = msg;
+            logErrorOptions = opts;
+        };
         exitMessage = '';
         exitCode = undefined;
 
@@ -242,9 +249,11 @@ module.exports = {
         testNoHost(test) {
             argv = ['node', 'onboard', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
 
-            test.expect(2);
+            test.expect(4);
             onboard.run(argv, testOptions, () => {
                 test.notStrictEqual(exitMessage.indexOf('host'), -1);
+                test.notStrictEqual(logErrorMessage.indexOf('host'), -1);
+                test.strictEqual(logErrorOptions.logLevel, 'none');
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
@@ -253,9 +262,11 @@ module.exports = {
         testNoPassword(test) {
             argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '--log-level', 'none'];
 
-            test.expect(2);
+            test.expect(4);
             onboard.run(argv, testOptions, () => {
                 test.notStrictEqual(exitMessage.indexOf('password'), -1);
+                test.notStrictEqual(logErrorMessage.indexOf('password'), -1);
+                test.strictEqual(logErrorOptions.logLevel, 'none');
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
@@ -288,6 +299,61 @@ module.exports = {
         test.expect(1);
         onboard.run(argv, testOptions, () => {
             test.ok(runInBackgroundCalled);
+            test.done();
+        });
+    },
+
+    testExceptionSignalsError(test) {
+        const sentSignals = [];
+
+        utilMock.createRandomUser = () => {
+            return q.reject('err');
+        };
+
+        argv = ['node', 'onboard', '--host', '1.2.3.4', '--log-level', 'none'];
+
+        ipcMock.send = (signal) => {
+            sentSignals.push(signal);
+        };
+
+        ipcMock.once = (signal) => {
+            const deferred = q.defer();
+            setInterval(() => {
+                if (sentSignals.includes(signal)) {
+                    deferred.resolve();
+                }
+            }, 100);
+            return deferred.promise;
+        };
+        test.expect(1);
+        onboard.run(argv, testOptions, () => {
+            test.deepEqual(sentSignals, [signals.ONBOARD_RUNNING, signals.CLOUD_LIBS_ERROR]);
+            test.done();
+        });
+    },
+
+    testSignalDone(test) {
+        const sentSignals = [];
+
+        argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
+
+        ipcMock.send = (signal) => {
+            sentSignals.push(signal);
+        };
+
+        ipcMock.once = (signal) => {
+            const deferred = q.defer();
+            setInterval(() => {
+                if (sentSignals.includes(signal)) {
+                    deferred.resolve();
+                }
+            }, 100);
+            return deferred.promise;
+        };
+        test.expect(2);
+        onboard.run(argv, testOptions, () => {
+            test.deepEqual(sentSignals, [signals.ONBOARD_RUNNING, signals.ONBOARD_DONE]);
+            test.ok(!sentSignals.includes(signals.CLOUD_LIBS_ERROR), 'Done should not include error');
             test.done();
         });
     },

@@ -19,6 +19,7 @@
 /* eslint-disable no-console */
 
 const q = require('q');
+const signals = require('../../lib/signals');
 
 let fsMock;
 let localKeyUtilMock;
@@ -43,6 +44,7 @@ module.exports = {
         cryptoUtilMock = require('../../lib/cryptoUtil');
 
         utilMock.logAndExit = () => {};
+        utilMock.logError = () => {};
 
         cryptoUtilMock.encrypt = () => {
             return q();
@@ -66,12 +68,14 @@ module.exports = {
 
         // Just resolve right away, otherwise these tests never exit
         ipcMock.once = function once(...args) {
-            functionsCalled.ipc.once = args;
+            functionsCalled.ipc.once.push(args[0]);
             return q();
         };
 
         functionsCalled = {
-            ipc: {}
+            ipc: {
+                once: []
+            }
         };
 
         encryptData = require('../../scripts/encryptDataToFile');
@@ -94,9 +98,40 @@ module.exports = {
     testWaitFor(test) {
         argv.push('--wait-for', 'foo', '--data', 'dataToEncrypt', '--out-file', 'foo');
 
-        test.expect(1);
+        test.expect(2);
         encryptData.run(argv, () => {
-            test.strictEqual(functionsCalled.ipc.once[0], 'foo');
+            test.strictEqual(functionsCalled.ipc.once.includes('foo'), true);
+            test.strictEqual(functionsCalled.ipc.once.includes(signals.CLOUD_LIBS_ERROR), true);
+            test.done();
+        });
+    },
+
+    testExceptionSignalsError(test) {
+        const sentSignals = [];
+        localKeyUtilMock.generateAndInstallKeyPair = () => {
+            return q.reject('err');
+        };
+
+        ipcMock.send = (signal) => {
+            sentSignals.push(signal);
+        };
+
+        ipcMock.once = (signal) => {
+            const deferred = q.defer();
+            setInterval(() => {
+                if (sentSignals.includes(signal)) {
+                    deferred.resolve();
+                }
+            }, 200);
+            return deferred.promise;
+        };
+
+        argv.push('--wait-for', 'foo', '--data', 'dataToEncrypt', '--out-file', 'foo');
+        ipcMock.send('foo');
+        test.expect(2);
+        encryptData.run(argv, () => {
+            test.ok(sentSignals.includes(signals.CLOUD_LIBS_ERROR));
+            test.ok(!sentSignals.includes(signals.ENCRYPTION_DONE, 'Encryption should not complete'));
             test.done();
         });
     },

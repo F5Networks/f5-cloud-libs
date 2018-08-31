@@ -1,5 +1,11 @@
 # Release notes
 
+## Version NEXT
+* Support for enabling ASM sync in DeviceGroup if ASM module is provisioned
+* Add option for signaling CloudFormation when a BIG-IP or BIG-IQ has been onboarded
+* Scripts now signal if they were unsuccessful, log their exceptions, and exit if another script encounters an exception
+    * Added --error-file option to specify filename to log script exceptions
+
 ## Version 4.3.0
 * Support for onboarding a BIG-IQ
 * Support for symmetric encryption of credentials (to handle large credentials)

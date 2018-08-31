@@ -19,6 +19,7 @@
 const q = require('q');
 const BigIp = require('../../../f5-cloud-libs').bigIp;
 const icontrolMock = require('../testUtil/icontrolMock');
+const signals = require('../../../f5-cloud-libs').signals;
 
 let bigIp;
 let testOptions;
@@ -32,6 +33,8 @@ let network;
 let functionsCalled;
 let exitMessage;
 let exitCode;
+let logErrorMessage;
+let logErrorOptions;
 
 module.exports = {
     setUp(callback) {
@@ -57,6 +60,10 @@ module.exports = {
         utilMock.logAndExit = (message, level, code) => {
             exitMessage = message;
             exitCode = code;
+        };
+        utilMock.logError = (message, options) => {
+            logErrorMessage = message;
+            logErrorOptions = options;
         };
         exitCode = undefined;
 
@@ -100,9 +107,11 @@ module.exports = {
         testNoHost(test) {
             argv = ['node', 'onboard', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
 
-            test.expect(2);
+            test.expect(4);
             network.run(argv, testOptions, () => {
                 test.notStrictEqual(exitMessage.indexOf('host'), -1);
+                test.notStrictEqual(logErrorMessage.indexOf('host'), -1);
+                test.strictEqual(logErrorOptions.logLevel, 'none');
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
@@ -111,9 +120,11 @@ module.exports = {
         testNoPassword(test) {
             argv = ['node', 'network', '--host', '1.2.3.4', '-u', 'foo', '--log-level', 'none'];
 
-            test.expect(2);
+            test.expect(4);
             network.run(argv, testOptions, () => {
                 test.notStrictEqual(exitMessage.indexOf('password'), -1);
+                test.notStrictEqual(logErrorMessage.indexOf('password'), -1);
+                test.strictEqual(logErrorOptions.logLevel, 'none');
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
@@ -156,6 +167,61 @@ module.exports = {
         test.expect(1);
         network.run(argv, testOptions, () => {
             test.ok(runInBackgroundCalled);
+            test.done();
+        });
+    },
+
+    testExceptionSignalsError(test) {
+        const sentSignals = [];
+
+        utilMock.createRandomUser = () => {
+            return q.reject('err');
+        };
+
+        argv = ['node', 'network', '--host', '1.2.3.4', '--log-level', 'none'];
+
+        ipcMock.send = (signal) => {
+            sentSignals.push(signal);
+        };
+
+        ipcMock.once = (signal) => {
+            const deferred = q.defer();
+            setInterval(() => {
+                if (sentSignals.includes(signal)) {
+                    deferred.resolve();
+                }
+            }, 100);
+            return deferred.promise;
+        };
+        test.expect(1);
+        network.run(argv, testOptions, () => {
+            test.deepEqual(sentSignals, [signals.NETWORK_RUNNING, signals.CLOUD_LIBS_ERROR]);
+            test.done();
+        });
+    },
+
+    testSignalDone(test) {
+        const sentSignals = [];
+
+        argv = ['node', 'network', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
+
+        ipcMock.send = (signal) => {
+            sentSignals.push(signal);
+        };
+
+        ipcMock.once = (signal) => {
+            const deferred = q.defer();
+            setInterval(() => {
+                if (sentSignals.includes(signal)) {
+                    deferred.resolve();
+                }
+            }, 100);
+            return deferred.promise;
+        };
+        test.expect(2);
+        network.run(argv, testOptions, () => {
+            test.deepEqual(sentSignals, [signals.NETWORK_RUNNING, signals.NETWORK_DONE]);
+            test.ok(!sentSignals.includes(signals.CLOUD_LIBS_ERROR), 'Done should not include error');
             test.done();
         });
     },

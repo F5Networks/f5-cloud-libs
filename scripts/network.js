@@ -54,6 +54,7 @@ const util = require('../lib/util');
             let logFileName;
             let bigIp;
             let randomUser;
+            let exiting;
 
             Object.assign(optionsForTest, testOpts);
 
@@ -114,6 +115,10 @@ const util = require('../lib/util');
                         `Log to file as well as console. This is the default if background process is spawned. Default is ${DEFAULT_LOG_FILE}`
                     )
                     .option(
+                        '-e, --error-file <file>',
+                        'Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory'
+                    )
+                    .option(
                         '--no-console',
                         'Do not log to console. Default false (log to console).'
                     )
@@ -172,26 +177,32 @@ const util = require('../lib/util');
                     loggerOptions.fileName = options.output;
                 }
 
+                if (options.errorFile) {
+                    loggerOptions.errorFile = options.errorFile;
+                }
+
                 logger = Logger.getLogger(loggerOptions);
                 ipc.setLoggerOptions(loggerOptions);
                 util.setLoggerOptions(loggerOptions);
 
                 for (let i = 0; i < REQUIRED_OPTIONS.length; i++) {
                     if (!options[REQUIRED_OPTIONS[i]]) {
-                        util.logAndExit(
-                            `${REQUIRED_OPTIONS[i]} is a required command line option.`,
-                            'error',
-                            1
-                        );
+                        const error = `${REQUIRED_OPTIONS[i]} is a required command line option.`;
+
+                        ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                        util.logError(error, loggerOptions);
+                        util.logAndExit(error, 'error', 1);
                     }
                 }
 
                 if (options.user && !(options.password || options.passwordUrl)) {
-                    util.logAndExit(
-                        'If specifying --user, --password or --password-url is required.',
-                        'error',
-                        1
-                    );
+                    const error = 'If specifying --user, --password or --password-url is required.';
+
+                    ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                    util.logError(error, loggerOptions);
+                    util.logAndExit(error, 'error', 1);
                 }
 
                 // When running in cloud init, we need to exit so that cloud init can complete and
@@ -212,7 +223,12 @@ const util = require('../lib/util');
                 logger.info(`${loggableArgs[1]} called with`, loggableArgs.join(' '));
 
                 if (options.singleNic && options.multiNic) {
-                    util.logAndExit('Only one of single-nic or multi-nic can be specified.', 'error', 1);
+                    const error = 'Only one of single-nic or multi-nic can be specified.';
+
+                    ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                    util.logError(error, loggerOptions);
+                    util.logAndExit(error, 'error', 1);
                 }
 
                 // Save args in restart script in case we need to reboot to recover from an error
@@ -616,7 +632,13 @@ const util = require('../lib/util');
                             message = err.message;
                         }
 
-                        util.logAndExit(`Network setup failed: ${message}`, 'error', 1);
+                        ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                        const error = `Network setup failed: ${message}`;
+                        util.logError(error, loggerOptions);
+                        util.logAndExit(error, 'error', 1);
+
+                        exiting = true;
                         return q();
                     })
                     .done((response) => {
@@ -630,17 +652,27 @@ const util = require('../lib/util');
                         if (!options.forceReboot) {
                             util.deleteArgs(ARGS_FILE_ID);
 
-                            logger.info('BIG-IP network setup complete.');
-                            ipc.send(options.signal || signals.NETWORK_DONE);
+                            if (!exiting) {
+                                logger.info('BIG-IP network setup complete.');
+                                ipc.send(options.signal || signals.NETWORK_DONE);
+                            }
 
                             if (cb) {
                                 cb();
                             }
-
-                            util.logAndExit('Network setup finished.');
+                            if (!exiting) {
+                                util.logAndExit('Network setup finished.');
+                            }
                         } else if (cb) {
                             cb();
                         }
+                    });
+
+                // If another script has signaled an error, exit, marking ourselves as DONE
+                ipc.once(signals.CLOUD_LIBS_ERROR)
+                    .then(() => {
+                        ipc.send(options.signal || signals.NETWORK_DONE);
+                        util.logAndExit('ERROR signaled from other script. Exiting');
                     });
 
                 // If we reboot, exit - otherwise cloud providers won't know we're done.

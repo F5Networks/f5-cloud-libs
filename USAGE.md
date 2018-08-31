@@ -6,7 +6,6 @@ Does initial configuration and provisioning of a BIG-IP.
     
     Usage: onboard [options]
     
-    
     Options:
     
       -V, --version                                                                                                                                                                                                                            output the version number
@@ -22,6 +21,7 @@ Does initial configuration and provisioning of a BIG-IP.
       --wait-for <signal>                                                                                                                                                                                                                      Wait for the named signal before running.
       --log-level <level>                                                                                                                                                                                                                      Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
       -o, --output <file>                                                                                                                                                                                                                      Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log
+      -e, --error-file <file>                                                                                                                                                                                                                  Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
       --no-console                                                                                                                                                                                                                             Do not log to console. Default false (log to console).
       --ntp <ntp_server>                                                                                                                                                                                                                       Set NTP server. For multiple NTP servers, use multiple --ntp entries. (default: )
       --tz <timezone>                                                                                                                                                                                                                          Set timezone for NTP setting.
@@ -65,7 +65,6 @@ Sets up BIG-IPs in a cluster.
     
     Usage: cluster [options]
     
-    
     Options:
     
       -V, --version                                    output the version number
@@ -81,6 +80,7 @@ Sets up BIG-IPs in a cluster.
       --wait-for <signal>                              Wait for the named signal before running.
       --log-level <level>                              Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
       -o, --output <file>                              Log to file as well as console. This is the default if background process is spawned. Default is /tmp/cluster.log
+      -e, --error-file <file>                          Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
       --no-console                                     Do not log to console. Default false (log to console).
       --config-sync-ip <config_sync_ip>                IP address for config sync.
       --cloud <provider>                               Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of cloudProvider must exist at the correct location.
@@ -113,7 +113,6 @@ Runs autoscale code to elect master and cluster
     
     Usage: autoscale [options]
     
-    
     Options:
     
       -V, --version                                      output the version number
@@ -129,6 +128,7 @@ Runs autoscale code to elect master and cluster
       --wait-for <signal>                                Wait for the named signal before running.
       --log-level <level>                                Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
       -o, --output <file>                                Log to file as well as console. This is the default if background process is spawned. Default is /tmp/autoscale.log
+      -e, --error-file <file>                            Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
       --no-console                                       Do not log to console. Default false (log to console).
       --cloud <cloud_provider>                           Cloud provider (aws | azure | etc.)
       --provider-options <cloud_options>                 Options specific to cloud_provider. Ex: param1:value1,param2:value2 (default: [object Object])
@@ -164,7 +164,6 @@ Sets up default gateway, VLANs and self IPs
     
     Usage: network [options]
     
-    
     Options:
     
       -V, --version                                                                                                                        output the version number
@@ -180,6 +179,7 @@ Sets up default gateway, VLANs and self IPs
       --wait-for <signal>                                                                                                                  Wait for the named signal before running.
       --log-level <level>                                                                                                                  Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
       -o, --output <file>                                                                                                                  Log to file as well as console. This is the default if background process is spawned. Default is /tmp/network.log
+      -e, --error-file <file>                                                                                                              Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
       --no-console                                                                                                                         Do not log to console. Default false (log to console).
       --single-nic                                                                                                                         Set db variables for single NIC configuration.
       --multi-nic                                                                                                                          Set db variables for multi NIC configuration.
@@ -197,7 +197,6 @@ Runs an arbitrary script.
     
     Usage: runScript [options]
     
-    
     Options:
     
       -V, --version                  output the version number
@@ -211,6 +210,7 @@ Runs an arbitrary script.
       --cwd <directory>              Current working directory for the script to run in.
       --log-level <level>            Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
       -o, --output <file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log
+      -e, --error-file <file>        Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
       --no-console                   Do not log to console. Default false (log to console).
       -h, --help                     output usage information
 ## Standalone licensing

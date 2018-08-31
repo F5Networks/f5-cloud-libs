@@ -52,6 +52,25 @@ module.exports = {
         test.done();
     },
 
+    testSetJsonFormat(test) {
+        logger = Logger.getLogger({
+            console: true,
+            json: true
+        });
+        test.expect(1);
+        test.strictEqual(logger.transports.console.json, true);
+        test.done();
+    },
+
+    testDefaultJsonFormat(test) {
+        logger = Logger.getLogger({
+            console: true
+        });
+        test.expect(1);
+        test.strictEqual(logger.transports.console.json, false);
+        test.done();
+    },
+
     testLogMessages: {
         setUp(callback) {
             logger = Logger.getLogger({ console: false, fileName: LOGFILE });
