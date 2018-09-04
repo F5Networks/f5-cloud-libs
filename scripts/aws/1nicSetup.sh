@@ -76,7 +76,13 @@ fi
 echo MGMT_ADDR: "$MGMT_ADDR"
 
 # Get the Gateway info
-GATEWAY_MAC=$(ifconfig eth0 | egrep HWaddr | awk '{print tolower($5)}')
+# Centos 7 updated ifconfig format
+OS_MAJOR_VERSION=$(get_os_major_version)
+if [ $OS_MAJOR_VERSION -ge "7" ]; then
+    GATEWAY_MAC=$(ifconfig eth0 | egrep ether | awk '{print tolower($2)}')
+else
+    GATEWAY_MAC=$(ifconfig eth0 | egrep HWaddr | awk '{print tolower($5)}')
+fi
 echo GATEWAY_MAC: "$GATEWAY_MAC"
 
 wait_for_cidr_block

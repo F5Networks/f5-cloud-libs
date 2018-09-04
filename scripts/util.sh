@@ -59,6 +59,10 @@ function get_software_version() {
     echo $(tmsh show sys version | grep Version | sed -n 2p | awk '{print $2}')
 }
 
+function get_os_major_version() {
+    echo $(rpm -q --queryformat '%{VERSION}' centos-release)
+}
+
 # usage: get_private_key_path folder_containing_private_key name_of_key
 function get_private_key_path() {
     PRIVATE_KEY_DIR=/config/filestore/files_d/${1}_d/certificate_key_d/
@@ -194,7 +198,13 @@ function wait_for_management_ip() {
 
     while true; do
         MGMT_ADDR_TMSH=$(tmsh list sys management-ip | awk '/management-ip/ {print $3}' | awk -F "/" '{print $1}')
-        MGMT_ADDR_ETH0=$(ifconfig $NIC | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}')
+        # Centos 7 updated ifconfig format
+        OS_MAJOR_VERSION=$(get_os_major_version)
+        if [ $OS_MAJOR_VERSION -ge "7" ]; then
+            MGMT_ADDR_ETH0=$(ifconfig $NIC | egrep "inet" | awk 'BEGIN { FS = " "}; { print $2}')
+        else
+            MGMT_ADDR_ETH0=$(ifconfig $NIC | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}')
+        fi
 
         if [[ $MGMT_ADDR_TMSH != $MGMT_ADDR_ETH0 ]]; then
             echo "Management IP and $NIC not yet in sync."
