@@ -25,7 +25,13 @@ if ! wait_for_management_ip; then
 fi
 
 INTERFACE=$1
-INTERFACE_MAC=`ifconfig ${INTERFACE} | egrep HWaddr | awk '{print tolower($5)}'`
+# Centos 7 updated ifconfig format
+OS_MAJOR_VERSION=$(get_os_major_version)
+if [ $OS_MAJOR_VERSION -ge "7" ]; then
+    INTERFACE_MAC=$(ifconfig ${INTERFACE} | egrep ether | awk '{print tolower($2)}')
+else
+    INTERFACE_MAC=`ifconfig ${INTERFACE} | egrep HWaddr | awk '{print tolower($5)}'`
+fi
 VPC_CIDR_BLOCK=`curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/${INTERFACE_MAC}/vpc-ipv4-cidr-block`
 VPC_NET=${VPC_CIDR_BLOCK%/*}
 NAME_SERVER=`echo ${VPC_NET} | awk -F. '{ printf "%d.%d.%d.%d", $1, $2, $3, $4+2 }'`
