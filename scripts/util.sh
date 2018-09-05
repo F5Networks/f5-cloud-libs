@@ -201,7 +201,7 @@ function wait_for_management_ip() {
         # Centos 7 updated ifconfig format
         OS_MAJOR_VERSION=$(get_os_major_version)
         if [ $OS_MAJOR_VERSION -ge "7" ]; then
-            MGMT_ADDR_ETH0=$(ifconfig $NIC | egrep "inet" | awk 'BEGIN { FS = " "}; { print $2}')
+            MGMT_ADDR_ETH0=$(ifconfig $NIC | egrep "inet" | egrep -v "inet6" | awk 'BEGIN { FS = " "}; { print $2}')
         else
             MGMT_ADDR_ETH0=$(ifconfig $NIC | egrep "inet addr" | awk -F: '{print $2}' | awk '{print $1}')
         fi
