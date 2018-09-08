@@ -23,15 +23,15 @@ const existsSync = fs.existsSync;
 const closeSync = fs.closeSync;
 const readdirSync = fs.readdirSync;
 
-var checkSignaled = function(expected, test) {
-    test.strictEqual(signaled, expected);
+const checkCounter = function(expected, test) {
+    test.strictEqual(counter, expected);
     test.done();
 };
-var signaled;
+let counter;
 
 module.exports = {
     setUp: function(callback) {
-        signaled = 0;
+        counter = 0;
         callback();
     },
 
@@ -48,51 +48,59 @@ module.exports = {
         testBasic: function(test) {
             ipc.once('foo')
                 .then(function() {
-                    signaled++;
+                    counter++;
                 });
 
             test.expect(2);
-            test.strictEqual(signaled, 0);
+            test.strictEqual(counter, 0);
             ipc.send('foo');
             ipc.send('foo');
-            setTimeout(checkSignaled, 1100, 1, test);
+            setTimeout(checkCounter, 1100, 1, test);
         },
 
         testTwice: function(test) {
             ipc.once('foo')
                 .then(function() {
-                    signaled++;
+                    counter++;
                 });
             ipc.once('foo')
                 .then(function() {
-                    signaled++;
+                    counter++;
                 });
 
             test.expect(2);
-            test.strictEqual(signaled, 0);
+            test.strictEqual(counter, 0);
             ipc.send('foo');
             ipc.send('foo');
-            setTimeout(checkSignaled, 1100, 2, test);
+            setTimeout(checkCounter, 1100, 2, test);
         },
 
         testError: function(test) {
             const message = 'existsSync error';
-            fs.existsSync = function() {
+            fs.existsSync = () => {
                 throw new Error(message);
             };
 
-            test.expect(1);
+            // We have to both try/catch and then/catch because we see different
+            // behavior in different environments
             try {
-                ipc.once('foo');
-                test.ok(false, 'once should have thrown');
-            }
-            catch (err) {
+                ipc.once('foo')
+                    .then(() => {
+                        test.ok(false, 'once should have thrown');
+                    })
+                    .catch((err) => {
+                        counter += 1;
+                        test.strictEqual(err.message, message);
+                    });
+            } catch (err) {
+                counter += 1;
                 test.strictEqual(err.message, message);
             }
-            finally {
-                test.done();
-            }
+
+            test.expect(2);
+            setTimeout(checkCounter, 1100, 1, test);
         }
+
     },
 
     testSend: {

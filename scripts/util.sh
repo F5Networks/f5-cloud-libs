@@ -27,6 +27,8 @@ RMDIR=/bin/rmdir
 UMOUNT=/bin/umount
 NODE=/usr/bin/f5-rest-node
 SHA512SUM=/usr/bin/sha512sum
+BASE64=/usr/bin/base64
+CRACKLIB=/usr/sbin/cracklib-check
 
 # need to get absolute location when being sourced
 SCRIPTS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -97,11 +99,23 @@ function encrypt_secret() {
     tmp_file='/mnt/cloudTmp/.tmp'
     tmp_dir=$(dirname $tmp_file)
     no_console=""
+    counter=0
 
     create_temp_dir $tmp_dir
     if [ -n "$scramble" ]; then
-        secret=$(echo $secret | $SHA512SUM | cut -d ' ' -f 1)
+        secret=$(echo ${secret} | $SHA512SUM | cut -d ' ' -f 1 | $BASE64 -w0)
+        test_secret=$(echo ${secret} | $CRACKLIB | cut -d ' ' -f2)
+        while [ "${test_secret}" != "OK" ]; do
+            counter=$((counter + 1))
+            secret=$(echo ${secret}${counter} | $SHA512SUM | cut -d ' ' -f 1 | $BASE64 -w0)
+            test_secret=$(echo ${secret} | $CRACKLIB | cut -d ' ' -f2)
+            if [ ${counter} == 30 ]; then
+                echo "30 attempts tried but failed to generate a safe password"
+                return 1
+            fi
+        done
     fi
+
     echo -n $secret > $tmp_file
 
     # call encrypt data to file
