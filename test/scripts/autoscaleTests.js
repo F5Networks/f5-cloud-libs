@@ -340,7 +340,6 @@ module.exports = {
                         return q();
                     }
                 };
-
                 callback();
             });
 
@@ -363,6 +362,34 @@ module.exports = {
             delete require.cache[key];
         });
         callback();
+    },
+
+    testUndefinedOptions: {
+        testNoPassword(test) {
+            const passwordUrl = 'https://password';
+            argv = ['node', 'autoscale', '--host', '1.2.3.4', '-u', 'foo',
+                '--password-url', passwordUrl, '--password', '--log-level', 'none'];
+
+            autoscale.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(autoscale.options.passwordUrl, passwordUrl);
+                test.strictEqual(autoscale.options.password, undefined);
+                test.done();
+            });
+        },
+
+        testNoPasswordUrl(test) {
+            const password = 'password';
+            argv = ['node', 'autoscale', '--host', '1.2.3.4', '-u', 'foo',
+                '--password-url', '--password', password, '--log-level', 'none'];
+
+            autoscale.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(autoscale.options.passwordUrl, undefined);
+                test.strictEqual(autoscale.options.password, password);
+                test.done();
+            });
+        }
     },
 
     commonTests: {

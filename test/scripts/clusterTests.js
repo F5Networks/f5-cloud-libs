@@ -47,6 +47,8 @@ module.exports = {
             return q();
         };
 
+        sentSignals = [];
+
         ipcMock.send = (signal) => {
             sentSignals.push(signal);
         };
@@ -159,9 +161,63 @@ module.exports = {
         callback();
     },
 
-    testWaitFor(test) {
-        sentSignals = [];
+    testUndefinedOptions: {
+        testNoPassword(test) {
+            const passwordUrl = 'https://password';
+            argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', passwordUrl,
+                '-u', 'user', '--password', '--host', 'localhost', '--output', 'cluster.log'];
 
+            cluster.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(cluster.options.passwordUrl, passwordUrl);
+                test.strictEqual(cluster.options.password, undefined);
+                test.done();
+            });
+        },
+
+        testNoPasswordUrl(test) {
+            const password = 'password';
+            argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', '-u', 'user',
+                '--password', password, '--host', 'localhost', '--output', 'cluster.log'];
+
+            cluster.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(cluster.options.passwordUrl, undefined);
+                test.strictEqual(cluster.options.password, password);
+                test.done();
+            });
+        },
+
+        testNoRemotePassword(test) {
+            const remotePasswordUrl = 'https://password';
+            argv = ['node', 'cluster.js', '--log-level', 'none', '--password', 'password',
+                '-u', 'user', '--password', '--host', 'localhost', '--output', 'cluster.log',
+                '--remote-password-url', remotePasswordUrl, '--remote-password'];
+
+            cluster.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(cluster.options.remotePasswordUrl, remotePasswordUrl);
+                test.strictEqual(cluster.options.remotePassword, undefined);
+                test.done();
+            });
+        },
+
+        testNoRemotePasswordUrl(test) {
+            const remotePassword = 'password';
+            argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', '-u', 'user',
+                '--password', 'password', '--host', 'localhost', '--output', 'cluster.log',
+                '--remote-password-url', '--remote-password', remotePassword];
+
+            cluster.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(cluster.options.remotePasswordUrl, undefined);
+                test.strictEqual(cluster.options.remotePassword, remotePassword);
+                test.done();
+            });
+        }
+    },
+
+    testWaitFor(test) {
         ipcMock.send('foo');
 
         test.expect(2);
@@ -173,8 +229,6 @@ module.exports = {
     },
 
     testExceptionSignalsError(test) {
-        sentSignals = [];
-
         bigIpMock.ready = () => {
             return q.reject('err');
         };

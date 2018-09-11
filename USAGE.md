@@ -11,8 +11,8 @@ Does initial configuration and provisioning of a BIG-IP.
       -V, --version                                                                                                                                                                                                                            output the version number
       --host <ip_address>                                                                                                                                                                                                                      Device management IP to which to send commands.
       -u, --user <user>                                                                                                                                                                                                                        Device admin user name. Default is to create a temporary user (this only works when running on the device).
-      -p, --password <password>                                                                                                                                                                                                                Device admin user password. Use this or --password-url. One of these is required when specifying the user.
-      --password-url <password_url>                                                                                                                                                                                                            URL (file, http(s)) to location that contains device admin user password. Use this or --password. One of these is required when specifying the user.
+      -p, --password [password]                                                                                                                                                                                                                Device admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url [password_url]                                                                                                                                                                                                            URL (file, http(s)) to location that contains device admin user password. Use this or --password. One of these is required when specifying the user.
       --password-encrypted                                                                                                                                                                                                                     Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                                                                                                                                                                                                            device management SSL port to connect to. Default 443.
       --no-reboot                                                                                                                                                                                                                              Skip reboot even if it is recommended.
@@ -33,8 +33,8 @@ Does initial configuration and provisioning of a BIG-IP.
       --cloud <provider>                                                                                                                                                                                                                       Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, or signalling resource provisioned.
           --big-iq-host <ip_address or FQDN>                                                                                                                                                                                                       IP address or FQDN of BIG-IQ
           --big-iq-user <user>                                                                                                                                                                                                                     BIG-IQ admin user name
-          --big-iq-password <password>                                                                                                                                                                                                             BIG-IQ admin user password.
-          --big-iq-password-uri <password_uri>                                                                                                                                                                                                     URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
+          --big-iq-password [password]                                                                                                                                                                                                             BIG-IQ admin user password.
+          --big-iq-password-uri [password_uri]                                                                                                                                                                                                     URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
           --big-iq-password-encrypted                                                                                                                                                                                                              Indicates that the BIG-IQ password is encrypted.
           --license-pool-name <pool_name>                                                                                                                                                                                                          Name of BIG-IQ license pool.
           --sku-keyword-1 <sku_keyword_1>                                                                                                                                                                                                          skuKeyword1 parameter for CLPv2 licensing. Default none.
@@ -57,9 +57,8 @@ Does initial configuration and provisioning of a BIG-IP.
       --modules <name:level>                                                                                                                                                                                                                   Provision module(s) <name> to <level> (comma-separated list of module:level pairs). (default: [object Object])
       --ping [address]                                                                                                                                                                                                                         Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
       --update-sigs                                                                                                                                                                                                                            Update ASM signatures
-      --metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:<aws | azure | gce | etc.>, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]  Optional usage metrics to collect. Customer ID should not identify a specific customer. (default: [object Object])
+      --metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:[aws | azure | gce | etc.], region:region, bigIpVersion:big_ip_version, licenseType:[byol | payg]]  Optional usage metrics to collect. Customer ID should not identify a specific customer. (default: [object Object])
       -h, --help                                                                                                                                                                                                                               output usage information
-    
 ## cluster.js
 
 Sets up BIG-IPs in a cluster.
@@ -71,8 +70,8 @@ Sets up BIG-IPs in a cluster.
       -V, --version                                    output the version number
       --host <ip_address>                              Device management IP to which to send commands.
       -u, --user <user>                                Device admin user name. Default is to create a temporary user (this only works when running on the device).
-      -p, --password <password>                        Device admin user password. Use this or --password-url. One of these is required when specifying the user.
-      --password-url <password_url>                    URL (file, http(s)) to location that contains device admin user password. Use this or --password. One of these is required when specifying the user.
+      -p, --password [password]                        Device admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url [password_url]                    URL (file, http(s)) to location that contains device admin user password. Use this or --password. One of these is required when specifying the user.
       --password-encrypted                             Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                    device management SSL port to connect to. Default 443.
       --no-reboot                                      Skip reboot even if it is recommended.
@@ -98,9 +97,9 @@ Sets up BIG-IPs in a cluster.
           --network-failover                               Enable network failover.
       --join-group                                     Join a remote device group with the options:
           --remote-host <remote_ip_address>                Managemnt IP for the BIG-IP on which the group exists.
-          --remote-user <remote_user                       Remote BIG-IP admin user name.
-          --remote-password <remote_password>              Remote BIG-IP admin user password. Use this or --remote-password-url
-          --remote-password-url <remote_password_url>      URL (file, http(s)) that contains. Use this or --remote-password
+          --remote-user <remote_user>                      Remote BIG-IP admin user name.
+          --remote-password [remote_password]              Remote BIG-IP admin user password. Use this or --remote-password-url
+          --remote-password-url [remote_password_url]      URL (file, http(s)) that contains. Use this or --remote-password
           --remote-port <remote_port>                      Remote BIG-IP port to connect to. Default is port of this BIG-IP.
           --device-group <remote_device_group_name>        Name of existing device group on remote BIG-IP to join.
           --sync                                           Tell the remote to sync to us after joining the group.
@@ -108,7 +107,6 @@ Sets up BIG-IPs in a cluster.
           --device-group <device_group>                    Name of the device group.
           --device <device_name>                           Device name to remove.
       -h, --help                                       output usage information
-    
 ## autoscale.js
 
 Runs autoscale code to elect master and cluster
@@ -120,8 +118,8 @@ Runs autoscale code to elect master and cluster
       -V, --version                                      output the version number
       --host <ip_address>                                Device management IP to which to send commands.
       -u, --user <user>                                  Device admin user name. Default is to create a temporary user (this only works when running on the device).
-      -p, --password <password>                          Device admin user password. Use this or --password-url. One of these is required when specifying the user.
-      --password-url <password_url>                      URL (file, http(s)) to location that contains device admin user password. Use this or --password. One of these is required when specifying the user.
+      -p, --password [password]                          Device admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url [password_url]                      URL (file, http(s)) to location that contains device admin user password. Use this or --password. One of these is required when specifying the user.
       --password-encrypted                               Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                      device management SSL port to connect to. Default 443.
       --no-reboot                                        Skip reboot even if it is recommended.
@@ -147,8 +145,8 @@ Runs autoscale code to elect master and cluster
       --license-pool                                     BIG-IP was licensed from a BIG-IQ license pool. This is so licenses can be revoked when BIG-IPs are scaled in. Supply the following:
           --big-iq-host <ip_address or FQDN>                 IP address or FQDN of BIG-IQ
           --big-iq-user <user>                               BIG-IQ admin user name
-          --big-iq-password <password>                       BIG-IQ admin user password.
-          --big-iq-password-uri <password_uri>               URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
+          --big-iq-password [password]                       BIG-IQ admin user password.
+          --big-iq-password-uri [password_uri]               URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.
           --big-iq-password-encrypted                        Indicates that the BIG-IQ password is encrypted.
           --license-pool-name <pool_name>                    Name of BIG-IQ license pool.
           --big-ip-mgmt-address <big_ip_address>             IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.
@@ -160,7 +158,6 @@ Runs autoscale code to elect master and cluster
           --dns-provider-options <dns_provider_options>      Options specific to dns_provider. Ex: param1:value1,param2:value2 (default: [object Object])
       --max-ucs-files <max_ucs_files_to_save>            When running cluster action backup-ucs, maximum number of backup files to keep. (default: 7)
       -h, --help                                         output usage information
-    
 ## network.js
 
 Sets up default gateway, VLANs and self IPs
@@ -172,8 +169,8 @@ Sets up default gateway, VLANs and self IPs
       -V, --version                                                                                                                        output the version number
       --host <ip_address>                                                                                                                  BIG-IP management IP to which to send commands.
       -u, --user <user>                                                                                                                    BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
-      -p, --password <password>                                                                                                            BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.
-      --password-url <password_url>                                                                                                        URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.
+      -p, --password [password]                                                                                                            BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.
+      --password-url [password_url]                                                                                                        URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.
       --password-encrypted                                                                                                                 Indicates that the password is encrypted (either with encryptDataToFile or generatePassword)
       --port <port>                                                                                                                        BIG-IP management SSL port to connect to. Default 443.
       --no-reboot                                                                                                                          Skip reboot even if it is recommended.
@@ -194,7 +191,6 @@ Sets up default gateway, VLANs and self IPs
       --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2], [trafficGroup:traffic_group_name]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified. (default: )
       --force-reboot                                                                                                                       Force a reboot at the end. This is necessary for some 2+ NIC configurations.
       -h, --help                                                                                                                           output usage information
-    
 ## runScript.js
 
 Runs an arbitrary script.
@@ -217,7 +213,6 @@ Runs an arbitrary script.
       -e, --error-file <file>        Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
       --no-console                   Do not log to console. Default false (log to console).
       -h, --help                     output usage information
-    
 ## Standalone licensing
 
 ### Install

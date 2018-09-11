@@ -245,6 +245,81 @@ module.exports = {
         callback();
     },
 
+    testUndefinedOptions: {
+        testNoBigIqPassword(test) {
+            const uri = 'uri-path';
+            argv.push(
+                '--license-pool',
+                '--big-iq-host', '1.2.3.4',
+                '--big-iq-user', 'user',
+                '--big-iq-password',
+                '--license-pool-name', 'pool1',
+                '--big-iq-password-uri', uri
+            );
+
+            onboard.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], uri);
+                test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[5].passwordIsUri, true);
+                test.done();
+            });
+        },
+
+        testNoBigIqPasswordUri(test) {
+            const password = 'password';
+            argv.push(
+                '--license-pool',
+                '--big-iq-host', '1.2.3.4',
+                '--big-iq-user', 'user',
+                '--big-iq-password', password,
+                '--license-pool-name', 'pool1',
+                '--big-iq-password-uri'
+            );
+
+            onboard.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], password);
+                test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[5].passwordIsUri, false);
+                test.done();
+            });
+        },
+
+        testNoMetrics(test) {
+            argv.push('--metrics');
+            onboard.run(argv, testOptions, () => {
+                test.expect(1);
+                test.strictEqual(functionsCalled.metrics.upload, undefined);
+                test.done();
+            });
+        },
+
+        testNoPassword(test) {
+            const passwordUrl = 'https://password';
+            argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo',
+                '--password-url', passwordUrl, '--password', '--log-level', 'none'];
+
+            onboard.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(functionsCalled.bigIp.init[2], passwordUrl);
+                test.strictEqual(functionsCalled.bigIp.init[3].passwordIsUrl, true);
+                test.done();
+            });
+        },
+
+        testNoPasswordUrl(test) {
+            const password = 'password';
+            argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo',
+                '--password-url', '--password', password, '--log-level', 'none'];
+
+            onboard.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(functionsCalled.bigIp.init[2], password);
+                test.strictEqual(functionsCalled.bigIp.init[3].passwordIsUrl, false);
+                test.done();
+            });
+        }
+    },
+
     testRequiredOptions: {
         testNoHost(test) {
             argv = ['node', 'onboard', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];

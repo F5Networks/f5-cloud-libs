@@ -65,6 +65,9 @@ module.exports = {
             logErrorMessage = message;
             logErrorOptions = options;
         };
+        utilMock.getProductString = function getProductString() {
+            return q('BIG-IP');
+        };
         exitCode = undefined;
 
         network = require('../../scripts/network');
@@ -136,6 +139,34 @@ module.exports = {
             test.expect(1);
             network.run(argv, testOptions, () => {
                 test.strictEqual(exitCode, 1);
+                test.done();
+            });
+        }
+    },
+
+    testUndefinedOptions: {
+        testNoPassword(test) {
+            const passwordUrl = 'https://password';
+            argv = ['node', 'network', '--log-level', 'none', '--password-url', passwordUrl,
+                '-u', 'user', '--password', '--host', 'localhost'];
+
+            network.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(network.options.passwordUrl, passwordUrl);
+                test.strictEqual(network.options.password, undefined);
+                test.done();
+            });
+        },
+
+        testNoPasswordUrl(test) {
+            const password = 'password';
+            argv = ['node', 'network', '--log-level', 'none', '--password-url', '-u', 'user',
+                '--password', password, '--host', 'localhost'];
+
+            network.run(argv, testOptions, () => {
+                test.expect(2);
+                test.strictEqual(network.options.passwordUrl, undefined);
+                test.strictEqual(network.options.password, password);
                 test.done();
             });
         }

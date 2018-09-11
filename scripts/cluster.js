@@ -42,6 +42,13 @@ const commonOptions = require('./commonOptions');
             const KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
             const REQUIRED_OPTIONS = ['host', 'user'];
 
+            const OPTIONS_TO_UNDEFINE = [
+                'remotePassword',
+                'remotePasswordUrl',
+                'password',
+                'passwordUrl'
+            ];
+
             const providerOptions = [];
             const loggerOptions = {};
             const optionsForTest = {};
@@ -124,15 +131,15 @@ const commonOptions = require('./commonOptions');
                         '    Managemnt IP for the BIG-IP on which the group exists.'
                     )
                     .option(
-                        '    --remote-user <remote_user',
+                        '    --remote-user <remote_user>',
                         '    Remote BIG-IP admin user name.'
                     )
                     .option(
-                        '    --remote-password <remote_password>',
+                        '    --remote-password [remote_password]',
                         '    Remote BIG-IP admin user password. Use this or --remote-password-url'
                     )
                     .option(
-                        '    --remote-password-url <remote_password_url>',
+                        '    --remote-password-url [remote_password_url]',
                         '    URL (file, http(s)) that contains. Use this or --remote-password'
                     )
                     .option(
@@ -180,6 +187,17 @@ const commonOptions = require('./commonOptions');
                 logger = Logger.getLogger(loggerOptions);
                 ipc.setLoggerOptions(loggerOptions);
                 util.setLoggerOptions(loggerOptions);
+
+                // Remove specific options with no provided value
+                OPTIONS_TO_UNDEFINE.forEach((opt) => {
+                    if (typeof options[opt] === 'boolean') {
+                        logger.debug(`No value set for option ${opt}. Removing option.`);
+                        options[opt] = undefined;
+                    }
+                });
+
+                // Expose options for test code
+                this.options = options;
 
                 // Log the input, but don't log passwords
                 loggableArgs = argv.slice();
