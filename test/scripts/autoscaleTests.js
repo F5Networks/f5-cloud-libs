@@ -195,6 +195,9 @@ module.exports = {
         cloudUtilMock.saveArgs = function saveArgs() {
             return q();
         };
+        cloudUtilMock.getProductString = function getProductString() {
+            return q('BIG-IP');
+        };
 
         existsSync = fsMock.existsSync;
         unlinkSync = fsMock.unlinkSync;
