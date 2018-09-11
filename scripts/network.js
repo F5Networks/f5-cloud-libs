@@ -42,6 +42,11 @@ const util = require('../lib/util');
             const REQUIRED_OPTIONS = ['host'];
             const DEFAULT_CIDR = '/24';
 
+            const OPTIONS_TO_UNDEFINE = [
+                'password',
+                'passwordUrl'
+            ];
+
             const optionsForTest = {};
             const vlans = [];
             const selfIps = [];
@@ -74,11 +79,11 @@ const util = require('../lib/util');
                         'BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).'
                     )
                     .option(
-                        '-p, --password <password>',
+                        '-p, --password [password]',
                         'BIG-IP admin user password. Use this or --password-url. One of these is required when specifying the user.'
                     )
                     .option(
-                        '--password-url <password_url>',
+                        '--password-url [password_url]',
                         'URL (file, http(s)) to location that contains BIG-IP admin user password. Use this or --password. One of these is required when specifying the user.'
                     )
                     .option(
@@ -184,6 +189,17 @@ const util = require('../lib/util');
                 logger = Logger.getLogger(loggerOptions);
                 ipc.setLoggerOptions(loggerOptions);
                 util.setLoggerOptions(loggerOptions);
+
+                // Remove specific options with no provided value
+                OPTIONS_TO_UNDEFINE.forEach((opt) => {
+                    if (typeof options[opt] === 'boolean') {
+                        logger.debug(`No value set for option ${opt}. Removing option.`);
+                        options[opt] = undefined;
+                    }
+                });
+
+                // Expose options for test code
+                this.options = options;
 
                 for (let i = 0; i < REQUIRED_OPTIONS.length; i++) {
                     if (!options[REQUIRED_OPTIONS[i]]) {

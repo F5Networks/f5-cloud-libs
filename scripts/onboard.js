@@ -48,6 +48,13 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                 '--set-root-password',
                 '--big-iq-password'
             ];
+            const OPTIONS_TO_UNDEFINE = [
+                'bigIqPasswordUri',
+                'bigIqPassword',
+                'metrics',
+                'password',
+                'passwordUrl'
+            ];
             const REQUIRED_OPTIONS = ['host'];
             const globalSettings = {};
             const dbVars = {};
@@ -139,11 +146,11 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                         '    BIG-IQ admin user name'
                     )
                     .option(
-                        '    --big-iq-password <password>',
+                        '    --big-iq-password [password]',
                         '    BIG-IQ admin user password.'
                     )
                     .option(
-                        '    --big-iq-password-uri <password_uri>',
+                        '    --big-iq-password-uri [password_uri]',
                         '    URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.'
                     )
                     .option(
@@ -250,7 +257,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                         'Update ASM signatures'
                     )
                     .option(
-                        '--metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:<aws | azure | gce | etc.>, region:region, bigIpVersion:big_ip_version, licenseType:<byol | payg>]',
+                        '--metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:[aws | azure | gce | etc.], region:region, bigIpVersion:big_ip_version, licenseType:[byol | payg]]',
                         'Optional usage metrics to collect. Customer ID should not identify a specific customer.',
                         util.map,
                         metrics
@@ -274,6 +281,14 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                 ipc.setLoggerOptions(loggerOptions);
                 util.setLoggerOptions(loggerOptions);
                 metricsCollector.setLoggerOptions(loggerOptions);
+
+                // Remove specific options with no provided value
+                OPTIONS_TO_UNDEFINE.forEach((opt) => {
+                    if (typeof options[opt] === 'boolean') {
+                        logger.debug(`No value set for option ${opt}. Removing option.`);
+                        options[opt] = undefined;
+                    }
+                });
 
                 // Log the input, but don't log passwords
                 loggableArgs = argv.slice();

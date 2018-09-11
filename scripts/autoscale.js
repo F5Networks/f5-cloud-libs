@@ -66,6 +66,13 @@ const commonOptions = require('./commonOptions');
             const ARGS_FILE_ID = `autoscale_${Date.now()}`;
             const KEYS_TO_MASK = ['-p', '--password', '--big-iq-password'];
 
+            const OPTIONS_TO_UNDEFINE = [
+                'bigIqPasswordUri',
+                'bigIqPassword',
+                'password',
+                'passwordUrl'
+            ];
+
             const loggerOptions = {};
             const providerOptions = {};
             const dnsProviderOptions = {};
@@ -151,11 +158,11 @@ const commonOptions = require('./commonOptions');
                         '    BIG-IQ admin user name'
                     )
                     .option(
-                        '    --big-iq-password <password>',
+                        '    --big-iq-password [password]',
                         '    BIG-IQ admin user password.'
                     )
                     .option(
-                        '    --big-iq-password-uri <password_uri>',
+                        '    --big-iq-password-uri [password_uri]',
                         '    URI (file, http(s), arn) to location that contains BIG-IQ admin user password. Use this or --big-iq-password.'
                     )
                     .option(
@@ -215,6 +222,17 @@ const commonOptions = require('./commonOptions');
                 logger = Logger.getLogger(loggerOptions);
                 util.setLoggerOptions(loggerOptions);
                 cryptoUtil.setLoggerOptions(loggerOptions);
+
+                // Remove specific options with no provided value
+                OPTIONS_TO_UNDEFINE.forEach((opt) => {
+                    if (typeof options[opt] === 'boolean') {
+                        logger.debug(`No value set for option ${opt}. Removing option.`);
+                        options[opt] = undefined;
+                    }
+                });
+
+                // Expose options for test code
+                this.options = options;
 
                 if (!options.password && !options.passwordUrl) {
                     util.logAndExit('One of --password or --password-url is required.', 'error', 1);
