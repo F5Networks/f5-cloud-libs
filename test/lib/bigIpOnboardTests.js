@@ -21,20 +21,18 @@ const icontrolMock = require('../testUtil/icontrolMock');
 
 let BigIp;
 let BigIq;
-let BigIq50; // eslint-disable-line no-unused-vars
-let BigIq52; // eslint-disable-line no-unused-vars
-let BigIq53; // eslint-disable-line no-unused-vars
-let BigIq54; // eslint-disable-line no-unused-vars
 let util;
 let authnMock;
 let bigIp;
 let bigIpMgmtAddressSent;
 let bigIpMgmtPortSent;
 let initCalled;
-
+let bigIpInit;
 
 let poolNameSent;
 let instanceSent;
+let passwordSent;
+let optionsSent;
 
 module.exports = {
     setUp(callback) {
@@ -42,10 +40,6 @@ module.exports = {
         util = require('../../../f5-cloud-libs').util;
         BigIp = require('../../../f5-cloud-libs').bigIp;
         BigIq = require('../../../f5-cloud-libs').bigIq;
-        BigIq50 = require('../../lib/bigIq50LicenseProvider');
-        BigIq52 = require('../../lib/bigIq52LicenseProvider');
-        BigIq53 = require('../../lib/bigIq53LicenseProvider');
-        BigIq54 = require('../../lib/bigIq54LicenseProvider');
         /* eslint-disable global-require */
 
         bigIp = new BigIp();
@@ -990,6 +984,25 @@ module.exports = {
     },
 
     testUpdateUser: {
+        setUp(callback) {
+            bigIpInit = BigIp.prototype.init;
+
+            // Overwrite init because otherwise the real init creates
+            // a new iControl and we lose our icontrolMock
+            BigIp.prototype.init = (host, user, password, options) => {
+                passwordSent = password;
+                optionsSent = options;
+                return q();
+            };
+
+            callback();
+        },
+
+        tearDown(callback) {
+            BigIp.prototype.init = bigIpInit;
+            callback();
+        },
+
         testCreate(test) {
             icontrolMock.when(
                 'list',
@@ -1069,12 +1082,13 @@ module.exports = {
                     }
                 ]
             );
-            bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
+            bigIp.onboard.updateUser('myUser', 'myPass', 'myRole', 'bash')
                 .then(() => {
                     const userParams = icontrolMock.getRequest('modify', '/tm/auth/user/myUser');
                     test.strictEqual(userParams.name, undefined);
                     test.strictEqual(userParams.password, 'myPass');
                     test.strictEqual(userParams['partition-access'], undefined);
+                    test.strictEqual(userParams.shell, 'bash');
                 })
                 .catch((err) => {
                     test.ok(false, err.message);
@@ -1086,14 +1100,6 @@ module.exports = {
 
         testUpdateCurrent(test) {
             const init = BigIp.prototype.init;
-            let newPassword;
-
-            // Overwrite init because otherwise the real init creates
-            // a new iControl and we lose our icontrolMock
-            BigIp.prototype.init = (host, user, password) => {
-                newPassword = password;
-                return q();
-            };
 
             icontrolMock.when(
                 'list',
@@ -1106,7 +1112,8 @@ module.exports = {
             );
             bigIp.onboard.updateUser('user', 'myPass')
                 .then(() => {
-                    test.strictEqual(newPassword, 'myPass');
+                    test.strictEqual(passwordSent, 'myPass');
+                    test.strictEqual(optionsSent.port, 443);
                 })
                 .catch((err) => {
                     test.ok(false, err.message);
