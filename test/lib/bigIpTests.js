@@ -35,6 +35,7 @@ let authnMock;
 let bigIp;
 let realReady;
 
+let getProductCalled;
 let removedFile;
 
 const UCS_TASK_PATH = '/tm/task/sys/ucs';
@@ -303,6 +304,47 @@ module.exports = {
                 .finally(() => {
                     test.done();
                 });
+        },
+
+        testGetProductOption: {
+            setUp(callback) {
+                bigIp.product = null;
+                getProductCalled = false;
+                utilMock.getProduct = () => {
+                    getProductCalled = true;
+                    return q('BIG-IP');
+                };
+
+                callback();
+            },
+
+            testProductSpecified(test) {
+                test.expect(1);
+                bigIp.init('host', 'user', 'password', { product: 'foo' })
+                    .then(() => {
+                        test.strictEqual(getProductCalled, false);
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            },
+
+            testProductNotSpecified(test) {
+                test.expect(1);
+                bigIp.init('host', 'user', 'password')
+                    .then(() => {
+                        test.strictEqual(getProductCalled, true);
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            }
         }
     },
 
