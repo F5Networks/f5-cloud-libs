@@ -166,6 +166,15 @@ module.exports = {
                     return q();
                 },
 
+                isMasterKeySet() {
+                    return q(true);
+                },
+
+                setMasterPassphrase(...args) {
+                    functionsCalled.bigIp.onboard.setMasterPassphrase = args;
+                    return q();
+                },
+
                 updateUser(user, password, role, shell, ...args) {
                     functionsCalled.bigIp.onboard.updateUser = args;
                     this.updatedUsers = this.updatedUsers || [];
@@ -501,6 +510,56 @@ module.exports = {
                         isAdminPasswordChanged: true
                     }
                 );
+                test.done();
+            });
+        }
+    },
+
+    testMasterKey: {
+        setUp(callback) {
+            ProviderMock.prototype.getDataFromUri = function getDataFromUri(...args) {
+                this.functionCalls.getDataFromUri = args;
+                return q('dataFromUri');
+            };
+
+            providerMock = new ProviderMock();
+            testOptions.cloudProvider = providerMock;
+
+            bigIpMock.isBigIq = () => {
+                return true;
+            };
+            bigIpMock.isBigIp = () => {
+                return false;
+            };
+
+            callback();
+        },
+
+        testSetMasterKeyFromURI(test) {
+            bigIpMock.onboard.isMasterKeySet = () => {
+                functionsCalled.bigIp.onboard.isMasterKeySet = false;
+                return q(false);
+            };
+            const s3Arn = 'arn:::foo:bar/password';
+            argv.push('--master-key-uri', s3Arn, '--cloud', 'aws');
+
+            test.expect(2);
+            onboard.run(argv, testOptions, () => {
+                test.deepEqual(providerMock.functionCalls.getDataFromUri, [s3Arn]);
+                test.deepEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, ['dataFromUri']);
+                test.done();
+            });
+        },
+
+        testMasterKeySet(test) {
+            bigIpMock.onboard.isMasterKeySet = () => {
+                functionsCalled.bigIp.onboard.isMasterKeySet = true;
+                return q(true);
+            };
+
+            test.expect(1);
+            onboard.run(argv, testOptions, () => {
+                test.deepEqual(functionsCalled.bigIp.onboard, { isMasterKeySet: true });
                 test.done();
             });
         }

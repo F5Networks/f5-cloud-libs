@@ -135,7 +135,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                     )
                     .option(
                         '--cloud <provider>',
-                        'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, or signalling resource provisioned.'
+                        'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, signalling resource provisioned, or providing a master key via --master-key-uri'
                     )
                     .option(
                         '    --big-iq-host <ip_address or FQDN>',
@@ -192,6 +192,10 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                     .option(
                         '   --signal-resource',
                         '   Signal cloud provider when BIG-IP has been provisioned.'
+                    )
+                    .option(
+                        '   --master-key-uri <key_uri>',
+                        '   URI (arn) to location that contains BIG-IQ master key.'
                     )
                     .option(
                         '-n, --hostname <hostname>',
@@ -340,7 +344,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                     }
                 }
 
-                if (options.cloud && options.signalResource) {
+                if (options.cloud) {
                     provider = optionsForTest.cloudProvider;
                     if (!provider) {
                         provider = cloudProviderFactory.getCloudProvider(
@@ -418,14 +422,17 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
 
                         const deferred = q.defer();
 
-                        if (options.setMasterKey && bigIp.isBigIq()) {
+                        // Set the MasterKey if it's not set, using either a random passphrase or
+                        // a passphrase provided via --master-key-uri
+                        if (bigIp.isBigIq()) {
                             bigIp.onboard.isMasterKeySet()
                                 .then((isSet) => {
                                     if (isSet) {
                                         logger.info('Master key is already set.');
                                         deferred.resolve();
-                                    } else {
+                                    } else if (options.setMasterKey) {
                                         logger.info('Setting master key.');
+
                                         bigIp.onboard.setRandomMasterPassphrase()
                                             .then(() => {
                                                 deferred.resolve();
@@ -433,6 +440,30 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                                             .catch((err) => {
                                                 this.logger.info(
                                                     'Unable to set master key',
+                                                    err && err.message ? err.message : err
+                                                );
+                                                deferred.reject(err);
+                                            });
+                                    } else if (options.masterKeyUri) {
+                                        logger.info('Setting master key from master key URI');
+
+                                        provider.getDataFromUri(options.masterKeyUri)
+                                            .then((passphrase) => {
+                                                bigIp.onboard.setMasterPassphrase(passphrase)
+                                                    .then(() => {
+                                                        deferred.resolve();
+                                                    })
+                                                    .catch((err) => {
+                                                        this.logger.info(
+                                                            'Unable to set master key from master key URI',
+                                                            err && err.message ? err.message : err
+                                                        );
+                                                        deferred.reject(err);
+                                                    });
+                                            })
+                                            .catch((err) => {
+                                                this.logger.info(
+                                                    'Could not find BIG-IQ master key file at specified URI',
                                                     err && err.message ? err.message : err
                                                 );
                                                 deferred.reject(err);
@@ -781,7 +812,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                         return q();
                     })
                     .then(() => {
-                        if (!rebooting && provider) {
+                        if (!rebooting && provider && options.signalResource) {
                             logger.info('Signalling provider that instance provisioned.');
                             return provider.signalInstanceProvisioned();
                         }
