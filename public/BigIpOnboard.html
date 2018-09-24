@@ -2630,7 +2630,7 @@ old hostname to new.</p>
     
 
     
-    <h4 class="name" id="password"><span class="type-signature"></span>password<span class="signature">(user, newPassword, oldPassword<span class="signature-attributes">opt</span>, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="password"><span class="type-signature"></span>password<span class="signature">(user, newPassword, oldPassword<span class="signature-attributes">opt</span>, retryOptions<span class="signature-attributes">opt</span>, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -2888,6 +2888,101 @@ old hostname to new.</p>
             
 
             <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for setting a user's password</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>enableRoot</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>If changing root's password, optionally set whether to
+                                                  enable root user</p></td>
         </tr>
 
     
@@ -4122,6 +4217,273 @@ old hostname to new.</p>
     
 
     
+    <h4 class="name" id="setRootPassword"><span class="type-signature"></span>setRootPassword<span class="signature">(newPassword, oldPassword, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Sets the root password on the BIG-IP/BIG-IQ. Optionally enables the root user.</p>
+<p>If the oldPassword is not provided, the root password will first be set to a randomly generated
+password, and then the newPassword value.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>newPassword</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Password to set for root user</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>oldPassword</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Old password for root user, if known</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for setting the root password</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>enableRoot</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Enables the root user</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="sslPort"><span class="type-signature"></span>sslPort<span class="signature">(sslPort, retryOptions<span class="signature-attributes">opt</span>, noInit<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
@@ -4812,7 +5174,7 @@ old hostname to new.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-authn.html">authn</a></li><li><a href="module-cryptoUtil.html">cryptoUtil</a></li><li><a href="module-httpUtil.html">httpUtil</a></li><li><a href="module-ipc.html">ipc</a></li><li><a href="module-localCryptoUtil.html">localCryptoUtil</a></li><li><a href="module-localKeyUtil.html">localKeyUtil</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-metricsCollector.html">metricsCollector</a></li><li><a href="module-sharedConstants.html">sharedConstants</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpGtm.html">BigIpGtm</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="BigIq.html">BigIq</a></li><li><a href="BigIq50LicenseProvider.html">BigIq50LicenseProvider</a></li><li><a href="BigIq52LicenseProvider.html">BigIq52LicenseProvider</a></li><li><a href="BigIq53LicenseProvider.html">BigIq53LicenseProvider</a></li><li><a href="BigIq54LicenseProvider.html">BigIq54LicenseProvider</a></li><li><a href="CloudProvider.html">CloudProvider</a></li><li><a href="DnsProvider.html">DnsProvider</a></li><li><a href="GtmDnsProvider.html">GtmDnsProvider</a></li><li><a href="IControl.html">IControl</a></li></ul><h3>Mixins</h3><ul><li><a href="bigIqOnboardMixins.html">bigIqOnboardMixins</a></li></ul><h3>Global</h3><ul><li><a href="global.html#checkTask">checkTask</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-authn.html">authn</a></li><li><a href="module-cryptoUtil.html">cryptoUtil</a></li><li><a href="module-httpUtil.html">httpUtil</a></li><li><a href="module-ipc.html">ipc</a></li><li><a href="module-localCryptoUtil.html">localCryptoUtil</a></li><li><a href="module-localKeyUtil.html">localKeyUtil</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-metricsCollector.html">metricsCollector</a></li><li><a href="module-sharedConstants.html">sharedConstants</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpGtm.html">BigIpGtm</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="BigIq.html">BigIq</a></li><li><a href="BigIq50LicenseProvider.html">BigIq50LicenseProvider</a></li><li><a href="BigIq52LicenseProvider.html">BigIq52LicenseProvider</a></li><li><a href="BigIq53LicenseProvider.html">BigIq53LicenseProvider</a></li><li><a href="BigIq54LicenseProvider.html">BigIq54LicenseProvider</a></li><li><a href="CloudProvider.html">CloudProvider</a></li><li><a href="DnsProvider.html">DnsProvider</a></li><li><a href="GtmDnsProvider.html">GtmDnsProvider</a></li><li><a href="IControl.html">IControl</a></li></ul><h3>Mixins</h3><ul><li><a href="bigIqOnboardMixins.html">bigIqOnboardMixins</a></li></ul><h3>Global</h3><ul><li><a href="global.html#checkTask">checkTask</a></li><li><a href="global.html#forceResetUserPassword">forceResetUserPassword</a></li></ul>
 </nav>
 
 <br class="clear">

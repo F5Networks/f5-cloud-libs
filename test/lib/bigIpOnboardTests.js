@@ -23,6 +23,7 @@ let BigIp;
 let BigIq;
 let util;
 let authnMock;
+let cryptoUtilMock;
 let bigIp;
 let bigIpMgmtAddressSent;
 let bigIpMgmtPortSent;
@@ -34,12 +35,19 @@ let instanceSent;
 let passwordSent;
 let optionsSent;
 
+let shellCommand;
+const sharedAuthnRootResponse = {
+    generation: 0,
+    lastUpdateMicros: 0
+};
+
 module.exports = {
     setUp(callback) {
         /* eslint-disable global-require */
         util = require('../../../f5-cloud-libs').util;
         BigIp = require('../../../f5-cloud-libs').bigIp;
         BigIq = require('../../../f5-cloud-libs').bigIq;
+        cryptoUtilMock = require('../../../f5-cloud-libs').cryptoUtil;
         /* eslint-disable global-require */
 
         bigIp = new BigIp();
@@ -736,12 +744,18 @@ module.exports = {
             const newPassword = 'abc123';
             const oldPassword = 'def456';
 
+            let passedNewPassword;
+            let passedOldPassword;
+
+            bigIp.onboard.setRootPassword = (newPass, oldPass) => {
+                passedNewPassword = newPass;
+                passedOldPassword = oldPass;
+            };
+
             bigIp.onboard.password(user, newPassword, oldPassword)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.strictEqual(icontrolMock.lastCall.path, '/shared/authn/root');
-                    test.strictEqual(icontrolMock.lastCall.body.newPassword, newPassword);
-                    test.strictEqual(icontrolMock.lastCall.body.oldPassword, oldPassword);
+                    test.strictEqual(passedNewPassword, newPassword);
+                    test.strictEqual(passedOldPassword, oldPassword);
                 })
                 .catch((err) => {
                     test.ok(false, err.message);
@@ -779,6 +793,92 @@ module.exports = {
                 })
                 .catch(() => {
                     test.ok(true);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        }
+    },
+
+    testSetRootPassword: {
+        setUp(callback) {
+            util.runShellCommand = function runTmshCommand(...args) {
+                shellCommand = args;
+                return q();
+            };
+            cryptoUtilMock.generateRandomBytes = function generateRandomBytes() {
+                return q('randombytes');
+            };
+
+            icontrolMock.when(
+                'create',
+                '/shared/authn/root',
+                sharedAuthnRootResponse
+            );
+
+            callback();
+        },
+
+        tearDown(callback) {
+            shellCommand = undefined;
+            callback();
+        },
+
+        testNoOldRootPassword(test) {
+            bigIp.onboard.setRootPassword('rootPassword', undefined, { enableRoot: true })
+                .then((response) => {
+                    test.deepEqual(
+                        icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
+                        { value: 'false' }
+                    );
+                    test.strictEqual(
+                        shellCommand[0],
+                        'echo -e "randombytes\nrandombytes" | passwd root'
+                    );
+                    test.deepEqual(
+                        icontrolMock.getRequest('create', '/shared/authn/root'),
+                        { oldPassword: 'randombytes', newPassword: 'rootPassword' }
+                    );
+                    test.deepEqual(response, sharedAuthnRootResponse);
+                }).catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testOldRootPassword(test) {
+            bigIp.onboard.setRootPassword('rootPassword', 'myOldPassword', { enableRoot: true })
+                .then((response) => {
+                    test.deepEqual(
+                        icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
+                        { value: 'false' }
+                    );
+                    test.strictEqual(shellCommand, undefined);
+                    test.deepEqual(
+                        icontrolMock.getRequest('create', '/shared/authn/root'),
+                        { oldPassword: 'myOldPassword', newPassword: 'rootPassword' }
+                    );
+                    test.deepEqual(response, sharedAuthnRootResponse);
+                }).catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testNotEnablingRoot(test) {
+            bigIp.onboard.setRootPassword('rootPassword', undefined, { enableRoot: false })
+                .then(() => {
+                    test.ok(true);
+                    test.strictEqual(
+                        icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
+                        undefined
+                    );
+                }).catch((err) => {
+                    test.ok(false, err);
                 })
                 .finally(() => {
                     test.done();

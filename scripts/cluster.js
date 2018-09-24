@@ -71,8 +71,20 @@ const commonOptions = require('./commonOptions');
                         'IP address for config sync.'
                     )
                     .option(
+                        '--big-iq-failover-primary',
+                        'Indicates that this BIG-IQ is the primary in a high-availability cluster.'
+                    )
+                    .option(
+                        '   --big-iq-failover-peer-ip <peer_ip>',
+                        '   If configuring a BIG-IQ failover primary, this is the management IP address for the secondary'
+                    )
+                    .option(
                         '--cloud <provider>',
                         'Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of cloudProvider must exist at the correct location.'
+                    )
+                    .option(
+                        '   --root-password-uri <root_password_uri>',
+                        '   URI (file, http(s), arn) to location that contains root user password. The root user password will be set to this password. This is only required on a BIG-IQ, when enabling BIG-IQ failover. If specified, this will enable the root user.'
                     )
                     .option(
                         '    --master',
@@ -229,6 +241,19 @@ const commonOptions = require('./commonOptions');
                     util.logAndExit(error, 'error', 1);
                 }
 
+                if (options.bigIqFailoverPrimary && (
+                    !options.bigIqFailoverPeerIp ||
+                    !options.rootPasswordUri)
+                ) {
+                    const error =
+                        '--big-iq-failover-peer-ip and --root-password-uri are required for BIG-IQ failover';
+
+                    ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                    util.logError(error, loggerOptions);
+                    util.logAndExit(error, 'error', 1);
+                }
+
                 // When running in cloud init, we need to exit so that cloud init can complete and
                 // allow the BIG-IP services to start
                 if (options.background) {
@@ -238,14 +263,17 @@ const commonOptions = require('./commonOptions');
                 }
 
                 if (options.cloud) {
-                    // Get the concrete provider instance
-                    provider = cloudProviderFactory.getCloudProvider(
-                        options.cloud,
-                        {
-                            loggerOptions,
-                            clOptions: options
-                        }
-                    );
+                    // Create provider client, allowing provider to be overwritten in test code
+                    provider = optionsForTest.cloudProvider;
+                    if (!provider) {
+                        provider = cloudProviderFactory.getCloudProvider(
+                            options.cloud,
+                            {
+                                loggerOptions,
+                                clOptions: options
+                            }
+                        );
+                    }
                 }
 
                 // Save args in restart script in case we need to reboot to recover from an error
@@ -297,6 +325,29 @@ const commonOptions = require('./commonOptions');
                     .then(() => {
                         if (options.cloud) {
                             return provider.bigIpReady();
+                        }
+                        return q();
+                    })
+                    .then(() => {
+                        if (options.cloud && options.rootPasswordUri) {
+                            logger.info('Setting root password');
+                            return util.tryUntil(
+                                provider,
+                                util.LONG_RETRY,
+                                provider.getDataFromUri,
+                                [options.rootPasswordUri]
+                            )
+                                .then((rootPassword) => {
+                                    return bigIp.onboard.setRootPassword(
+                                        rootPassword,
+                                        undefined,
+                                        { enableRoot: true }
+                                    );
+                                })
+                                .catch((err) => {
+                                    logger.debug('Unable to set root password');
+                                    return q.reject(err);
+                                });
                         }
                         return q();
                     })
@@ -433,25 +484,28 @@ const commonOptions = require('./commonOptions');
                     .done((response) => {
                         logger.debug(response);
 
+                        if ((!rebooting || !options.reboot) && !exiting) {
+                            ipc.send(options.signal || signals.CLUSTER_DONE);
+                        }
+
+                        // Perform callback before final logAndExit
+                        if (cb) {
+                            cb();
+                        }
+
                         if (!rebooting) {
                             util.deleteArgs(ARGS_FILE_ID);
 
                             if (!exiting) {
-                                ipc.send(options.signal || signals.CLUSTER_DONE);
                                 util.logAndExit('Cluster finished.');
                             }
                         } else if (!options.reboot) {
                             // If we are rebooting, but we were called with --no-reboot, send signal
                             if (!exiting) {
-                                ipc.send(options.signal || signals.CLUSTER_DONE);
                                 util.logAndExit('Cluster finished. Reboot required but not rebooting.');
                             }
                         } else {
                             util.logAndExit('Cluster finished. Reboot required.');
-                        }
-
-                        if (cb) {
-                            cb();
                         }
                     });
 

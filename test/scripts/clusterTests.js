@@ -18,6 +18,8 @@
 
 const q = require('q');
 const signals = require('../../lib/signals');
+const util = require('util');
+const CloudProvider = require('../../lib/cloudProvider');
 
 let fsMock;
 let ipcMock;
@@ -28,11 +30,31 @@ let realWriteFile;
 let realReadFile;
 
 let bigIpMock;
+let providerMock;
 
 const testOptions = {};
 
 let functionsCalled;
 let sentSignals;
+
+let exitMessage;
+let exitCode;
+
+util.inherits(ProviderMock, CloudProvider);
+function ProviderMock() {
+    ProviderMock.super_.call(this);
+    this.functionCalls = {};
+}
+
+ProviderMock.prototype.init = function init(...args) {
+    this.functionCalls.init = args;
+    return q();
+};
+
+ProviderMock.prototype.bigIpReady = function init(...args) {
+    this.functionCalls.bigIpReady = args;
+    return q();
+};
 
 module.exports = {
     setUp(callback) {
@@ -41,7 +63,10 @@ module.exports = {
         utilMock = require('../../lib/util');
         ipcMock = require('../../lib/ipc');
 
-        utilMock.logAndExit = () => { };
+        utilMock.logAndExit = (message, level, code) => {
+            exitMessage = message;
+            exitCode = code;
+        };
         utilMock.logError = () => { };
         utilMock.saveArgs = () => {
             return q();
@@ -126,6 +151,12 @@ module.exports = {
             reboot(...args) {
                 functionsCalled.bigIp.reboot = args;
                 return q();
+            },
+            onboard: {
+                setRootPassword(...args) {
+                    functionsCalled.bigIp.onboard.setRootPassword = args;
+                    return q();
+                }
             }
         };
 
@@ -140,12 +171,15 @@ module.exports = {
             ipc: {
                 once: []
             },
-            bigIp: {}
+            bigIp: {
+                onboard: {}
+            },
+            util: {}
         };
 
         cluster = require('../../scripts/cluster');
         argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', 'file:///password',
-            '-u', 'user', '--host', 'localhost', '--output', 'cluster.log', '--wait-for', 'foo'];
+            '-u', 'user', '--host', 'localhost', '--output', 'cluster.log'];
 
         callback();
     },
@@ -218,6 +252,7 @@ module.exports = {
     },
 
     testWaitFor(test) {
+        argv.push('--wait-for', 'foo');
         ipcMock.send('foo');
 
         test.expect(2);
@@ -233,6 +268,7 @@ module.exports = {
             return q.reject('err');
         };
 
+        argv.push('--wait-for', 'foo');
         ipcMock.send('foo');
 
         test.expect(2);
@@ -241,5 +277,45 @@ module.exports = {
             test.ok(!sentSignals.includes(signals.CLUSTER_DONE, 'runScript should not complete'));
             test.done();
         });
+    },
+
+    testBigIqPrimaryRequiredOptions: {
+        testNoRootPasswordURI(test) {
+            argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', 'file:///password',
+                '-u', 'user', '--host', 'localhost', '--output', 'cluster.log', '--big-iq-failover-primary'];
+
+            test.expect(2);
+            cluster.run(argv, testOptions, () => {
+                test.notStrictEqual(exitMessage.indexOf('--root-password-uri'), -1);
+                test.strictEqual(exitCode, 1);
+                test.done();
+            });
+        }
+    },
+
+    testBigIqPasswords: {
+        setUp(callback) {
+            utilMock.tryUntil = (...args) => {
+                functionsCalled.util.tryUntil = args;
+                return q('rootPassword');
+            };
+            providerMock = new ProviderMock();
+            testOptions.cloudProvider = providerMock;
+            callback();
+        },
+
+        testRootPasswordSet(test) {
+            argv.push('--cloud', 'aws', '--root-password-uri', 'arn:::foo:bar/password');
+
+            test.expect(2);
+            cluster.run(argv, testOptions, () => {
+                test.deepEqual(functionsCalled.util.tryUntil[3], ['arn:::foo:bar/password']);
+                test.deepEqual(
+                    functionsCalled.bigIp.onboard.setRootPassword,
+                    ['rootPassword', undefined, { enableRoot: true }]
+                );
+                test.done();
+            });
+        },
     }
 };

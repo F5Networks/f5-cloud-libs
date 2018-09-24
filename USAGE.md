@@ -83,7 +83,10 @@ Sets up BIG-IPs in a cluster.
       -e, --error-file <file>                          Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
       --no-console                                     Do not log to console. Default false (log to console).
       --config-sync-ip <config_sync_ip>                IP address for config sync.
+      --big-iq-failover-primary                        Indicates that this BIG-IQ is the primary in a high-availability cluster.
+         --big-iq-failover-peer-ip <peer_ip>              If configuring a BIG-IQ failover primary, this is the management IP address for the secondary
       --cloud <provider>                               Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of cloudProvider must exist at the correct location.
+         --root-password-uri <root_password_uri>          URI (file, http(s), arn) to location that contains root user password. The root user password will be set to this password. This is only required on a BIG-IQ, when enabling BIG-IQ failover. If specified, this will enable the root user.
           --master                                     If using a cloud provider, indicates that this is the master and credentials should be stored.
           --provider-options <cloud_options>           Any options (JSON stringified) that are required for the specific cloud provider. (default: )
       --create-group                                   Create a device group with the options:

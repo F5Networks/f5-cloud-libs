@@ -276,6 +276,159 @@
 
 
         
+            
+
+    
+
+    
+    <h4 class="name" id="forceResetUserPassword"><span class="type-signature"></span>forceResetUserPassword<span class="signature">(user)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Force resets a user's password, even if the oldPassword is not known.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>user</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>user to reset</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise which is resolved when the operation is complete
+                   or rejected if an error occurs.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
     
 
     
@@ -291,7 +444,7 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-authn.html">authn</a></li><li><a href="module-cryptoUtil.html">cryptoUtil</a></li><li><a href="module-httpUtil.html">httpUtil</a></li><li><a href="module-ipc.html">ipc</a></li><li><a href="module-localCryptoUtil.html">localCryptoUtil</a></li><li><a href="module-localKeyUtil.html">localKeyUtil</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-metricsCollector.html">metricsCollector</a></li><li><a href="module-sharedConstants.html">sharedConstants</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpGtm.html">BigIpGtm</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="BigIq.html">BigIq</a></li><li><a href="BigIq50LicenseProvider.html">BigIq50LicenseProvider</a></li><li><a href="BigIq52LicenseProvider.html">BigIq52LicenseProvider</a></li><li><a href="BigIq53LicenseProvider.html">BigIq53LicenseProvider</a></li><li><a href="BigIq54LicenseProvider.html">BigIq54LicenseProvider</a></li><li><a href="CloudProvider.html">CloudProvider</a></li><li><a href="DnsProvider.html">DnsProvider</a></li><li><a href="GtmDnsProvider.html">GtmDnsProvider</a></li><li><a href="IControl.html">IControl</a></li></ul><h3>Mixins</h3><ul><li><a href="bigIqOnboardMixins.html">bigIqOnboardMixins</a></li></ul><h3>Global</h3><ul><li><a href="global.html#checkTask">checkTask</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-authn.html">authn</a></li><li><a href="module-cryptoUtil.html">cryptoUtil</a></li><li><a href="module-httpUtil.html">httpUtil</a></li><li><a href="module-ipc.html">ipc</a></li><li><a href="module-localCryptoUtil.html">localCryptoUtil</a></li><li><a href="module-localKeyUtil.html">localKeyUtil</a></li><li><a href="module-logger.html">logger</a></li><li><a href="module-metricsCollector.html">metricsCollector</a></li><li><a href="module-sharedConstants.html">sharedConstants</a></li><li><a href="module-signals.html">signals</a></li><li><a href="module-util.html">util</a></li></ul><h3>Classes</h3><ul><li><a href="BigIp.html">BigIp</a></li><li><a href="BigIpCluster.html">BigIpCluster</a></li><li><a href="BigIpGtm.html">BigIpGtm</a></li><li><a href="BigIpOnboard.html">BigIpOnboard</a></li><li><a href="BigIq.html">BigIq</a></li><li><a href="BigIq50LicenseProvider.html">BigIq50LicenseProvider</a></li><li><a href="BigIq52LicenseProvider.html">BigIq52LicenseProvider</a></li><li><a href="BigIq53LicenseProvider.html">BigIq53LicenseProvider</a></li><li><a href="BigIq54LicenseProvider.html">BigIq54LicenseProvider</a></li><li><a href="CloudProvider.html">CloudProvider</a></li><li><a href="DnsProvider.html">DnsProvider</a></li><li><a href="GtmDnsProvider.html">GtmDnsProvider</a></li><li><a href="IControl.html">IControl</a></li></ul><h3>Mixins</h3><ul><li><a href="bigIqOnboardMixins.html">bigIqOnboardMixins</a></li></ul><h3>Global</h3><ul><li><a href="global.html#checkTask">checkTask</a></li><li><a href="global.html#forceResetUserPassword">forceResetUserPassword</a></li></ul>
 </nav>
 
 <br class="clear">
