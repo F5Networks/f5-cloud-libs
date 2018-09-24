@@ -689,6 +689,19 @@ module.exports = {
         }
     },
 
+    testDiscoveryAddressSet(test) {
+        argv.push('--discovery-address', '1.2.3.4');
+
+        test.expect(1);
+        network.run(argv, testOptions, () => {
+            test.deepEqual(
+                icontrolMock.getRequest('replace', '/shared/identified-devices/config/discovery'),
+                { discoveryAddress: '1.2.3.4' }
+            );
+            test.done();
+        });
+    },
+
     testForceReboot(test) {
         let strippedArgs;
         let rebootCalled;

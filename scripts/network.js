@@ -168,6 +168,10 @@ const util = require('../lib/util');
                         selfIps
                     )
                     .option(
+                        '--discovery-address <ip_address>',
+                        'IP address that the BIG-IQ will use for device discovery. This is required for onboarding a BIG-IQ. The IP address must already exist on the BIG-IQ device. For clustering, this should be a Self IP address.'
+                    )
+                    .option(
                         '--force-reboot',
                         'Force a reboot at the end. This is necessary for some 2+ NIC configurations.'
                     )
@@ -484,6 +488,20 @@ const util = require('../lib/util');
                         }
 
                         return promises.length > 0 ? util.callInSerial(bigIp, promises) : q();
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        if (options.discoveryAddress) {
+                            logger.info('Setting BIG-IQ Discovery Address.');
+                            return bigIp.replace(
+                                '/shared/identified-devices/config/discovery',
+                                {
+                                    discoveryAddress: options.discoveryAddress
+                                }
+                            );
+                        }
+                        return q();
                     })
                     .then((response) => {
                         logger.debug(response);
