@@ -219,40 +219,80 @@ module.exports = {
     },
 
     testCreateOrModify: {
-        testDoesNotExist(test) {
-            const error404 = new Error('does not exist');
-            error404.code = 404;
-            icontrolMock.fail(
-                'list',
-                '/tm/sys/foo/bar',
-                error404
-            );
+        testCommonPartition: {
+            testDoesNotExist(test) {
+                const error404 = new Error('does not exist');
+                error404.code = 404;
+                icontrolMock.fail(
+                    'list',
+                    '/tm/sys/foo/~Common~bar',
+                    error404
+                );
 
-            bigIp.createOrModify('/tm/sys/foo', { name: 'bar' })
-                .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo');
-                })
-                .catch((err) => {
-                    test.ok(false, err);
-                })
-                .finally(() => {
-                    test.done();
-                });
+                bigIp.createOrModify('/tm/sys/foo', { name: 'bar' })
+                    .then(() => {
+                        test.strictEqual(icontrolMock.lastCall.method, 'create');
+                        test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo');
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            },
+
+            testExists(test) {
+                bigIp.createOrModify('/tm/sys/foo', { name: 'bar' })
+                    .then(() => {
+                        test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                        test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/~Common~bar');
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            }
         },
 
-        testExists(test) {
-            bigIp.createOrModify('/tm/sys/foo', { name: 'bar' })
-                .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/bar');
-                })
-                .catch((err) => {
-                    test.ok(false, err);
-                })
-                .finally(() => {
-                    test.done();
-                });
+        testOtherPartition: {
+            testDoesNotExist(test) {
+                const error404 = new Error('does not exist');
+                error404.code = 404;
+                icontrolMock.fail(
+                    'list',
+                    '/tm/sys/foo/~myOtherPartition~bar',
+                    error404
+                );
+
+                bigIp.createOrModify('/tm/sys/foo', { name: 'bar', partition: 'myOtherPartition' })
+                    .then(() => {
+                        test.strictEqual(icontrolMock.lastCall.method, 'create');
+                        test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo');
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            },
+
+            testExists(test) {
+                bigIp.createOrModify('/tm/sys/foo', { name: 'bar', partition: 'myOtherPartition' })
+                    .then(() => {
+                        test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                        test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/~myOtherPartition~bar');
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            }
         }
     },
 
