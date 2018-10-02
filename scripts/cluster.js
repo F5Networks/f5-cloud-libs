@@ -71,24 +71,24 @@ const commonOptions = require('./commonOptions');
                         'IP address for config sync.'
                     )
                     .option(
-                        '--big-iq-failover-primary',
-                        'Indicates that this BIG-IQ is the primary in a high-availability cluster.'
-                    )
-                    .option(
-                        '   --big-iq-failover-peer-ip <peer_ip>',
-                        '   If configuring a BIG-IQ failover primary, this is the management IP address for the secondary'
+                        '--big-iq-failover-peer-ip <peer_ip>',
+                        'If configuring a BIG-IQ failover primary, this is the management IP address for the secondary'
                     )
                     .option(
                         '--cloud <provider>',
                         'Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of cloudProvider must exist at the correct location.'
                     )
                     .option(
-                        '   --root-password-uri <root_password_uri>',
-                        '   URI (file, http(s), arn) to location that contains root user password. The root user password will be set to this password. This is only required on a BIG-IQ, when enabling BIG-IQ failover. If specified, this will enable the root user.'
+                        '--set-user-password',
+                        'If specified, set the user (specified in --user) password to the value of --password or --password-url'
+                    )
+                    .option(
+                        '   --password-data-uri <key_uri>',
+                        '   URI (arn) to location that contains the BIG-IQ master passphrase'
                     )
                     .option(
                         '    --master',
-                        'If using a cloud provider, indicates that this is the master and credentials should be stored.'
+                        'If using a cloud provider, indicates that this is the master. If running on a BIG-IP credentials should be stored.'
                     )
                     .option(
                         '    --provider-options <cloud_options>',
@@ -241,12 +241,8 @@ const commonOptions = require('./commonOptions');
                     util.logAndExit(error, 'error', 1);
                 }
 
-                if (options.bigIqFailoverPrimary && (
-                    !options.bigIqFailoverPeerIp ||
-                    !options.rootPasswordUri)
-                ) {
-                    const error =
-                        '--big-iq-failover-peer-ip and --root-password-uri are required for BIG-IQ failover';
+                if (options.bigIqFailoverPeerIp && !options.passwordDataUri) {
+                    const error = '--password-data-uri is required for BIG-IQ failover';
 
                     ipc.send(signals.CLOUD_LIBS_ERROR);
 
@@ -305,7 +301,8 @@ const commonOptions = require('./commonOptions');
                             {
                                 port: options.port,
                                 passwordIsUrl: typeof options.passwordUrl !== 'undefined',
-                                passwordEncrypted: options.passwordEncrypted
+                                passwordEncrypted: options.passwordEncrypted,
+                                setUserPassword: options.setUserPassword
                             }
                         );
                     })
@@ -329,15 +326,23 @@ const commonOptions = require('./commonOptions');
                         return q();
                     })
                     .then(() => {
-                        if (options.cloud && options.rootPasswordUri) {
+                        if (options.cloud && options.passwordDataUri) {
                             logger.info('Setting root password');
-                            return util.tryUntil(
-                                provider,
-                                util.LONG_RETRY,
-                                provider.getDataFromUri,
-                                [options.rootPasswordUri]
-                            )
-                                .then((rootPassword) => {
+                            return util.readData(options.passwordDataUri,
+                                {
+                                    passwordIsUrl: typeof options.passwordDataUri !== 'undefined',
+                                    passwordEncrypted: options.passwordEncrypted
+                                })
+                                .then((response) => {
+                                    let rootPassword;
+                                    try {
+                                        const parsedResponse = util.lowerCaseKeys(
+                                            JSON.parse(response.trim())
+                                        );
+                                        rootPassword = parsedResponse.root;
+                                    } catch (err) {
+                                        rootPassword = response.trim();
+                                    }
                                     return bigIp.onboard.setRootPassword(
                                         rootPassword,
                                         undefined,
@@ -348,6 +353,19 @@ const commonOptions = require('./commonOptions');
                                     logger.debug('Unable to set root password');
                                     return q.reject(err);
                                 });
+                        }
+                        return q();
+                    })
+                    .then(() => {
+                        // Primary BIG-IQ initiates peering with secondary BIG-IQ
+                        if (options.master && options.bigIqFailoverPeerIp && bigIp.isBigIq()) {
+                            logger.info(`Adding ${options.bigIqFailoverPeerIp} as high availability peer.`);
+                            return bigIp.cluster.addSecondary(
+                                options.bigIqFailoverPeerIp,
+                                options.user,
+                                bigIp.password,
+                                bigIp.onboard.rootPassword
+                            );
                         }
                         return q();
                     })
@@ -386,7 +404,7 @@ const commonOptions = require('./commonOptions');
                         logger.debug(response);
 
                         // If we are using cloud storage and are the master, store our credentials
-                        if (options.cloud && options.master) {
+                        if (options.cloud && options.master && bigIp.isBigIp()) {
                             logger.info('Storing credentials.');
                             return util.tryUntil(
                                 provider,
