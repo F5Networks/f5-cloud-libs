@@ -826,7 +826,7 @@ module.exports = {
 
         testNoOldRootPassword(test) {
             bigIp.onboard.setRootPassword('rootPassword', undefined, { enableRoot: true })
-                .then((response) => {
+                .then(() => {
                     test.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         { value: 'false' }
@@ -839,7 +839,6 @@ module.exports = {
                         icontrolMock.getRequest('create', '/shared/authn/root'),
                         { oldPassword: 'randombytes', newPassword: 'rootPassword' }
                     );
-                    test.deepEqual(response, sharedAuthnRootResponse);
                 }).catch((err) => {
                     test.ok(false, err);
                 })
@@ -850,7 +849,7 @@ module.exports = {
 
         testOldRootPassword(test) {
             bigIp.onboard.setRootPassword('rootPassword', 'myOldPassword', { enableRoot: true })
-                .then((response) => {
+                .then(() => {
                     test.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         { value: 'false' }
@@ -860,7 +859,6 @@ module.exports = {
                         icontrolMock.getRequest('create', '/shared/authn/root'),
                         { oldPassword: 'myOldPassword', newPassword: 'rootPassword' }
                     );
-                    test.deepEqual(response, sharedAuthnRootResponse);
                 }).catch((err) => {
                     test.ok(false, err);
                 })

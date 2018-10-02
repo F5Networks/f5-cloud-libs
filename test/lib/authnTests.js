@@ -29,6 +29,8 @@ let localCryptoUtilMock;
 let utilMock;
 let LoggerMock;
 
+let ranTmshCommandCommand;
+
 module.exports = {
     setUp(callback) {
         /* eslint-disable global-require */
@@ -142,10 +144,10 @@ module.exports = {
         authn.provider = {
             init: () => {
                 return q();
-            },
-            getDataFromUri: () => {
-                return q(password);
             }
+        };
+        utilMock.readData = () => {
+            return q(password);
         };
 
         test.expect(1);
@@ -171,13 +173,14 @@ module.exports = {
         logger.info = (message) => {
             loggedMessages.push(message);
         };
+
+        utilMock.readData = () => {
+            return q.reject('S3 bucket not found');
+        };
         authn.setLogger(logger);
         authn.provider = {
             init: () => {
                 return q();
-            },
-            getDataFromUri: () => {
-                return q.reject('S3 bucket not found');
             }
         };
         test.expect(1);
@@ -187,7 +190,72 @@ module.exports = {
             })
             .catch(() => {
                 test.strictEqual(loggedMessages[0],
-                    'Could not find BIG-IQ credentials file on the specified S3 bucket');
+                    'Unable to initialize device');
+            })
+            .finally(() => {
+                test.done();
+            });
+    },
+
+    testPassedSetUserPassword(test) {
+        utilMock.runTmshCommand = (cmd) => {
+            ranTmshCommandCommand = cmd;
+            return q();
+        };
+
+        utilMock.readData = () => {
+            return q('secret');
+        };
+
+        authn.provider = {
+            init: () => {
+                return q();
+            }
+        };
+
+        const host = 'myHost';
+        const user = 'myUser';
+        const passwordUri = 'arn:::foo:bar/password';
+        test.expect(1);
+        authn.authenticate(host, user, passwordUri, { passwordIsUri: true, setUserPassword: true })
+            .then(() => {
+                test.strictEqual(ranTmshCommandCommand, 'modify auth user myUser password secret');
+            })
+            .finally(() => {
+                test.done();
+            });
+    },
+
+    testPasswordAsJSON(test) {
+        authn.provider = {
+            init: () => {
+                return q();
+            }
+        };
+
+        utilMock.readData = () => {
+            return q(JSON.stringify(
+                {
+                    root: 'rootPassword',
+                    myUser: 'adminPassword'
+                }
+            ));
+        };
+
+        const host = 'myHost';
+        const user = 'myUser';
+        const passwordUri = 'arn:::foo:bar/password';
+        test.expect(1);
+        authn.authenticate(host, user, passwordUri, { passwordIsUri: true })
+            .then(() => {
+                const loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
+                test.deepEqual(
+                    loginRequest,
+                    {
+                        password: 'adminPassword',
+                        username: 'myUser'
+                    }
+                );
             })
             .finally(() => {
                 test.done();

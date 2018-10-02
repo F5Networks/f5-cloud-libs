@@ -498,6 +498,12 @@ const util = require('../lib/util');
                                 '/shared/identified-devices/config/discovery',
                                 {
                                     discoveryAddress: options.discoveryAddress
+                                },
+                                undefined,
+                                {
+                                    maxRetries: 60,
+                                    retryIntervalMs: 1000,
+                                    continueOnErrorMessage: 'Address does not match a configured self-ip'
                                 }
                             );
                         }
