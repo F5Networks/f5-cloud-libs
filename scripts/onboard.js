@@ -26,6 +26,7 @@ const util = require('../lib/util');
 const metricsCollector = require('../lib/metricsCollector');
 const commonOptions = require('./commonOptions');
 const cloudProviderFactory = require('../lib/cloudProviderFactory');
+const localCryptoUtil = require('../lib/localCryptoUtil');
 
 (function run() {
     const runner = {
@@ -135,7 +136,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                     )
                     .option(
                         '--cloud <provider>',
-                        'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, signalling resource provisioned, or providing a master key via --master-key-uri'
+                        'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, signalling resource provisioned, or providing a master passphrase'
                     )
                     .option(
                         '    --big-iq-host <ip_address or FQDN>',
@@ -194,8 +195,8 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                         '   Signal cloud provider when BIG-IP has been provisioned.'
                     )
                     .option(
-                        '   --master-key-uri <key_uri>',
-                        '   URI (arn) to location that contains BIG-IQ master key.'
+                        '   --password-data-uri <key_uri>',
+                        '   URI (arn) to location that contains the BIG-IQ master passphrase'
                     )
                     .option(
                         '-n, --hostname <hostname>',
@@ -423,7 +424,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                         const deferred = q.defer();
 
                         // Set the MasterKey if it's not set, using either a random passphrase or
-                        // a passphrase provided via --master-key-uri
+                        // a passphrase provided via --password-data-uri
                         if (bigIp.isBigIq()) {
                             bigIp.onboard.isMasterKeySet()
                                 .then((isSet) => {
@@ -444,10 +445,30 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                                                 );
                                                 deferred.reject(err);
                                             });
-                                    } else if (options.masterKeyUri) {
-                                        logger.info('Setting master key from master key URI');
-
-                                        provider.getDataFromUri(options.masterKeyUri)
+                                    } else if (options.passwordDataUri) {
+                                        logger.info('Setting master passphrase from password data uri');
+                                        util.readData(options.passwordDataUri,
+                                            {
+                                                passwordIsUrl: typeof options.passwordDataUri !== 'undefined',
+                                                passwordEncrypted: options.passwordEncrypted
+                                            })
+                                            .then((data) => {
+                                                // check if password needs to be decrypted
+                                                if (options.passwordEncrypted) {
+                                                    return localCryptoUtil.decryptPassword(data);
+                                                }
+                                                return q(data);
+                                            })
+                                            .then((response) => {
+                                                try {
+                                                    const parsedResponse = util.lowerCaseKeys(
+                                                        JSON.parse(response.trim())
+                                                    );
+                                                    return q(parsedResponse.masterpassphrase);
+                                                } catch (err) {
+                                                    return q(response.trim());
+                                                }
+                                            })
                                             .then((passphrase) => {
                                                 bigIp.onboard.setMasterPassphrase(passphrase)
                                                     .then(() => {
@@ -455,7 +476,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                                                     })
                                                     .catch((err) => {
                                                         this.logger.info(
-                                                            'Unable to set master key from master key URI',
+                                                            'Unable to set master passphrase',
                                                             err && err.message ? err.message : err
                                                         );
                                                         deferred.reject(err);
@@ -463,7 +484,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
                                             })
                                             .catch((err) => {
                                                 this.logger.info(
-                                                    'Could not find BIG-IQ master key file at specified URI',
+                                                    'Could not find BIG-IQ password data at specified URI',
                                                     err && err.message ? err.message : err
                                                 );
                                                 deferred.reject(err);

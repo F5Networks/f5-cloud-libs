@@ -27,6 +27,11 @@ let httpGet;
 
 let util;
 
+// Provider mock
+let providerMock;
+let cloudProviderFactoryMock;
+let functionsCalled;
+
 // Logger mock
 let Logger;
 let loggerReceivedOptions;
@@ -109,6 +114,20 @@ module.exports = {
         Logger = require('../../../f5-cloud-libs').logger;
 
         util = require('../../../f5-cloud-libs').util;
+
+        providerMock = require('../../lib/cloudProvider');
+        cloudProviderFactoryMock = require('../../lib/cloudProviderFactory');
+
+        cloudProviderFactoryMock.getCloudProvider = (...args) => {
+            functionsCalled.cloudProviderFactoryMock.getCloudProvider = args[0];
+            return providerMock;
+        };
+
+        functionsCalled = {
+            cloudProviderFactoryMock: {},
+            providerMock: {}
+        };
+
         callback();
     },
 
@@ -198,6 +217,35 @@ module.exports = {
             test.strictEqual(container.hello, 'world');
             test.done();
         }
+    },
+
+    testLowerCaseKeys(test) {
+        const nestedObject = {
+            First: 'vaLUe',
+            secOND: 'Another',
+            Level1: {
+                item: 'item',
+                Level2: {
+                    Level2Key: 'level2val'
+                }
+            }
+        };
+        const asString = 'a string, not object';
+
+        test.expect(2);
+        test.deepEqual(util.lowerCaseKeys(nestedObject),
+            {
+                first: 'vaLUe',
+                second: 'Another',
+                level1: {
+                    item: 'item',
+                    level2: {
+                        level2key: 'level2val'
+                    }
+                }
+            });
+        test.strictEqual(util.lowerCaseKeys(asString), asString);
+        test.done();
     },
 
     testDeleteArgs(test) {
@@ -447,7 +495,7 @@ module.exports = {
             http.get = function get(url, cb) {
                 cb(incomingMessageHandler);
                 return {
-                    on() {}
+                    on() { }
                 };
             };
 
@@ -536,7 +584,7 @@ module.exports = {
             fs.existsSync = function existsSync() {
                 return true;
             };
-            fs.unlink = function unlink() {};
+            fs.unlink = function unlink() { };
 
             test.expect(1);
             util.download('http://www.example.com/foo')
@@ -568,6 +616,69 @@ module.exports = {
         util.removeDirectorySync(tmpDir);
         test.strictEqual(fs.existsSync(tmpDir), false);
         test.done();
+    },
+
+    testReadData: {
+        testAWSReadUriData(test) {
+            providerMock.init = () => {
+                return q();
+            };
+            providerMock.getDataFromUri = (...args) => {
+                functionsCalled.providerMock.getDataFromUri = args;
+                return q('password');
+            };
+            const s3Arn = 'arn:::foo:bar/password';
+
+            test.expect(3);
+            util.readData(s3Arn, true)
+                .then((readPassword) => {
+                    test.deepEqual(functionsCalled.providerMock.getDataFromUri, [s3Arn]);
+                    test.strictEqual(readPassword, 'password');
+                    test.strictEqual(functionsCalled.cloudProviderFactoryMock.getCloudProvider, 'aws');
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testCallsGetDataFromUrl(test) {
+            const password = 'foobar';
+            const passwordFile = '/tmp/mypass';
+
+            fs.writeFileSync(passwordFile, password, { encoding: 'ascii' });
+
+            test.expect(1);
+            util.readData(`file://${passwordFile}`, true)
+                .then((readPassword) => {
+                    test.strictEqual(readPassword, password);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    fs.unlinkSync(passwordFile);
+                    test.done();
+                });
+        },
+
+        testReadsPlainData(test) {
+            const password = 'foobar';
+
+            test.expect(1);
+            util.readData(password, false)
+                .then((readPassword) => {
+                    test.strictEqual(readPassword, password);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        }
     },
 
     testGetDataFromUrl: {
@@ -929,9 +1040,9 @@ module.exports = {
             fs.readdirSync = function readdirSync() {
                 return startupScripts;
             };
-            fs.mkdirSync = function mkdirSync() {};
-            fs.closeSync = function closeSync() {};
-            fs.openSync = function openSync() {};
+            fs.mkdirSync = function mkdirSync() { };
+            fs.closeSync = function closeSync() { };
+            fs.openSync = function openSync() { };
 
             bigIpMock.reboot = function reboot() {
                 bigIpMock.rebootCalled = true;

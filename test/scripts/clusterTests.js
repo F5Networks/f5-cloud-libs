@@ -51,7 +51,7 @@ ProviderMock.prototype.init = function init(...args) {
     return q();
 };
 
-ProviderMock.prototype.bigIpReady = function init(...args) {
+ProviderMock.prototype.bigIpReady = function bigIpReady(...args) {
     this.functionCalls.bigIpReady = args;
     return q();
 };
@@ -157,6 +157,12 @@ module.exports = {
                     functionsCalled.bigIp.onboard.setRootPassword = args;
                     return q();
                 }
+            },
+            cluster: {
+                addSecondary(...args) {
+                    functionsCalled.bigIp.cluster.addSecondary = args;
+                    return q();
+                }
             }
         };
 
@@ -172,7 +178,8 @@ module.exports = {
                 once: []
             },
             bigIp: {
-                onboard: {}
+                onboard: {},
+                cluster: {}
             },
             util: {}
         };
@@ -281,12 +288,11 @@ module.exports = {
 
     testBigIqPrimaryRequiredOptions: {
         testNoRootPasswordURI(test) {
-            argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', 'file:///password',
-                '-u', 'user', '--host', 'localhost', '--output', 'cluster.log', '--big-iq-failover-primary'];
+            argv.push('--master', '--big-iq-failover-peer-ip', '1.2.3.4');
 
             test.expect(2);
             cluster.run(argv, testOptions, () => {
-                test.notStrictEqual(exitMessage.indexOf('--root-password-uri'), -1);
+                test.notStrictEqual(exitMessage.indexOf('--password-data-uri'), -1);
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
@@ -295,21 +301,26 @@ module.exports = {
 
     testBigIqPasswords: {
         setUp(callback) {
-            utilMock.tryUntil = (...args) => {
-                functionsCalled.util.tryUntil = args;
-                return q('rootPassword');
-            };
             providerMock = new ProviderMock();
             testOptions.cloudProvider = providerMock;
             callback();
         },
 
-        testRootPasswordSet(test) {
-            argv.push('--cloud', 'aws', '--root-password-uri', 'arn:::foo:bar/password');
+        testRootPasswordSetAsJSON(test) {
+            utilMock.readData = (...args) => {
+                functionsCalled.util.readData = args;
+                return q(JSON.stringify(
+                    {
+                        rOOt: 'rootPassword'
+                    }
+                ));
+            };
+
+            argv.push('--cloud', 'aws', '--password-data-uri', 'arn:::foo:bar/password');
 
             test.expect(2);
             cluster.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.util.tryUntil[3], ['arn:::foo:bar/password']);
+                test.deepEqual(functionsCalled.util.readData[0], 'arn:::foo:bar/password');
                 test.deepEqual(
                     functionsCalled.bigIp.onboard.setRootPassword,
                     ['rootPassword', undefined, { enableRoot: true }]
@@ -317,5 +328,81 @@ module.exports = {
                 test.done();
             });
         },
+
+        testRootPasswordSetAsText(test) {
+            utilMock.readData = (...args) => {
+                functionsCalled.util.readData = args;
+                return q('rootPassword');
+            };
+
+            argv.push('--cloud', 'aws', '--password-data-uri', 'arn:::foo:bar/password');
+
+            test.expect(2);
+            cluster.run(argv, testOptions, () => {
+                test.deepEqual(functionsCalled.util.readData[0], 'arn:::foo:bar/password');
+                test.deepEqual(
+                    functionsCalled.bigIp.onboard.setRootPassword,
+                    ['rootPassword', undefined, { enableRoot: true }]
+                );
+                test.done();
+            });
+        },
+    },
+
+    testBigIqCluster: {
+        setUp(callback) {
+            utilMock.readData = () => {
+                return q(JSON.stringify(
+                    {
+                        rOOt: 'rootPassword'
+                    }
+                ));
+            };
+            bigIpMock.isBigIq = () => {
+                return true;
+            };
+            providerMock = new ProviderMock();
+            testOptions.cloudProvider = providerMock;
+
+            callback();
+        },
+
+        testBigIpClusterAddSeconaryCalled(test) {
+            argv.push('--cloud', 'aws', '--password-data-uri', 'arn:::foo:bar/password',
+                '--master', '--big-iq-failover-peer-ip', '1.2.3.4');
+
+            bigIpMock.onboard.rootPassword = 'rootpass';
+            bigIpMock.password = 'adminpass';
+
+            test.expect(1);
+            cluster.run(argv, testOptions, () => {
+                test.deepEqual(
+                    functionsCalled.bigIp.cluster.addSecondary,
+                    ['1.2.3.4', 'user', 'adminpass', 'rootpass']
+                );
+                test.done();
+            });
+        },
+    },
+
+    testCommon: {
+        setUp(callback) {
+            callback();
+        },
+
+        testSetUserPassword(test) {
+            argv.push('--set-user-password');
+
+            test.expect(1);
+            cluster.run(argv, testOptions, () => {
+                test.deepEqual(functionsCalled.bigIp.init[3], {
+                    port: 443,
+                    passwordIsUrl: true,
+                    passwordEncrypted: undefined,
+                    setUserPassword: true
+                });
+                test.done();
+            });
+        }
     }
 };

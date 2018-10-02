@@ -223,7 +223,8 @@ module.exports = {
                 onboard: {}
             },
             ipc: {},
-            metrics: {}
+            metrics: {},
+            utilMock: {}
         };
 
         utilMock.logAndExit = (message, level, code) => {
@@ -517,11 +518,6 @@ module.exports = {
 
     testMasterKey: {
         setUp(callback) {
-            ProviderMock.prototype.getDataFromUri = function getDataFromUri(...args) {
-                this.functionCalls.getDataFromUri = args;
-                return q('dataFromUri');
-            };
-
             providerMock = new ProviderMock();
             testOptions.cloudProvider = providerMock;
 
@@ -535,18 +531,55 @@ module.exports = {
             callback();
         },
 
-        testSetMasterKeyFromURI(test) {
+        testSetMasterKeyFromURIAsJSON(test) {
+            bigIpMock.onboard.isMasterKeySet = () => {
+                functionsCalled.bigIp.onboard.isMasterKeySet = false;
+                return q(false);
+            };
+
+            utilMock.readData = (...args) => {
+                functionsCalled.utilMock.readData = args;
+                return q(JSON.stringify(
+                    {
+                        masterPassphrase: 'keykeykey'
+                    }
+                ));
+            };
+
+            const s3Arn = 'arn:::foo:bar/password';
+            argv.push('--password-data-uri', s3Arn, '--cloud', 'aws');
+
+            test.expect(2);
+            onboard.run(argv, testOptions, () => {
+                test.deepEqual(
+                    functionsCalled.utilMock.readData,
+                    [s3Arn, { passwordIsUrl: true, passwordEncrypted: undefined }]
+                );
+                test.deepEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, ['keykeykey']);
+                test.done();
+            });
+        },
+
+        testSetMasterKeyFromURIAsText(test) {
+            utilMock.readData = (...args) => {
+                functionsCalled.utilMock.readData = args;
+                return q('textkey');
+            };
+
             bigIpMock.onboard.isMasterKeySet = () => {
                 functionsCalled.bigIp.onboard.isMasterKeySet = false;
                 return q(false);
             };
             const s3Arn = 'arn:::foo:bar/password';
-            argv.push('--master-key-uri', s3Arn, '--cloud', 'aws');
+            argv.push('--password-data-uri', s3Arn, '--cloud', 'aws');
 
             test.expect(2);
             onboard.run(argv, testOptions, () => {
-                test.deepEqual(providerMock.functionCalls.getDataFromUri, [s3Arn]);
-                test.deepEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, ['dataFromUri']);
+                test.deepEqual(
+                    functionsCalled.utilMock.readData,
+                    [s3Arn, { passwordIsUrl: true, passwordEncrypted: undefined }]
+                );
+                test.deepEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, ['textkey']);
                 test.done();
             });
         },
