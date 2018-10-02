@@ -124,9 +124,10 @@ def replace(source_file_path, pattern, substring):
     shutil.move(target_file_path, source_file_path)
 
 def removeFiles(dir, pattern):
-    for f in os.listdir(dir):
-        if re.search(pattern, f):
-            os.remove(os.path.join(dir, f))
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            if re.search(pattern, f):
+                os.remove(os.path.join(dir, f))
 
 def main():
 
