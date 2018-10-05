@@ -50,17 +50,10 @@ fi
 
 . ../util.sh
 
-function wait_for_cidr_block() {
-    RETRY_INTERVAL=2
-    MAX_TRIES=60
-    failed=0
-
-    GATEWAY_CIDR_BLOCK=$(curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block)
-    while [ -z "$GATEWAY_CIDR_BLOCK" ] && [[ $failed -lt $MAX_TRIES ]]; do
-        sleep $RETRY_INTERVAL
-        ((failed=failed+1))
-        GATEWAY_CIDR_BLOCK=$(curl http://169.254.169.254/latest/meta-data/network/interfaces/macs/${GATEWAY_MAC}/subnet-ipv4-cidr-block)
-    done
+function get_cidr_block() {
+    SUBNET_MASK=$(grep subnet-mask /var/lib/dhclient/dhclient.leases | tail -1 | awk '{print $3}' | sed -r 's/(.*);/\1/')
+    eval $(ipcalc -np $MGMT_ADDR $SUBNET_MASK)
+    GATEWAY_CIDR_BLOCK=$NETWORK/$PREFIX
 }
 
 if ! wait_mcp_running; then
@@ -85,7 +78,7 @@ else
 fi
 echo GATEWAY_MAC: "$GATEWAY_MAC"
 
-wait_for_cidr_block
+get_cidr_block
 echo GATEWAY_CIDR_BLOCK: "$GATEWAY_CIDR_BLOCK"
 
 GATEWAY_NET=${GATEWAY_CIDR_BLOCK%/*}
