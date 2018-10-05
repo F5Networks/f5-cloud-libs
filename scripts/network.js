@@ -642,18 +642,8 @@ const util = require('../lib/util');
                         if (options.forceReboot) {
                             // After reboot, we just want to send our done signal,
                             // in case any other scripts are waiting on us. So, modify
-                            // the saved args for that.
-                            const ARGS_TO_STRIP = [
-                                '--wait-for',
-                                '--single-nic',
-                                '--multi-nic',
-                                '--default-gw',
-                                '--local-only',
-                                '--vlan',
-                                '--self-ip',
-                                '--route',
-                                '--mgmt-route',
-                                '--force-reboot'];
+                            // the saved args for that
+                            const ARGS_TO_STRIP = util.getArgsToStrip(options);
                             return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP)
                                 .then(() => {
                                     logger.info('Rebooting and exiting. Will continue after reboot.');

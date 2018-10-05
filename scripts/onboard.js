@@ -267,6 +267,10 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         util.map,
                         metrics
                     )
+                    .option(
+                        '--force-reboot',
+                        'Force a reboot at the end. This is necessary configurations.'
+                    )
                     .parse(argv);
                 /* eslint-enable max-len */
 
@@ -827,9 +831,23 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         if (response === true) {
                             logger.warn('Reboot required.');
                             rebooting = true;
-                            return util.reboot(bigIp, { signalOnly: !options.reboot });
+                        }
+                        if (options.forceReboot) {
+                            rebooting = true;
+                            // After reboot, we just want to send our done signal,
+                            // in case any other scripts are waiting on us. So, modify
+                            // the saved args for that
+                            const ARGS_TO_STRIP = util.getArgsToStrip(options);
+                            return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP);
                         }
 
+                        return q();
+                    })
+                    .then(() => {
+                        if (rebooting) {
+                            logger.info('Rebooting and exiting. Will continue after reboot.');
+                            return util.reboot(bigIp, { signalOnly: !options.reboot });
+                        }
                         return q();
                     })
                     .then(() => {

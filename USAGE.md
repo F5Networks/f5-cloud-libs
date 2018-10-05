@@ -58,6 +58,7 @@ Does initial configuration and provisioning of a BIG-IP.
     --ping [address]                                                                                                                                                                                                                         Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
     --update-sigs                                                                                                                                                                                                                            Update ASM signatures
     --metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:[aws | azure | gce | etc.], region:region, bigIpVersion:big_ip_version, licenseType:[byol | payg]]  Optional usage metrics to collect. Customer ID should not identify a specific customer. (default: [object Object])
+    --force-reboot                                                                                                                                                                                                                           Force a reboot at the end. This is necessary configurations.
     -h, --help                                                                                                                                                                                                                               output usage information
 ## cluster.js
 
