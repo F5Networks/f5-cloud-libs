@@ -19,6 +19,7 @@
 const fs = require('fs');
 const childProcess = require('child_process');
 const q = require('q');
+const commander = require('commander');
 
 const UTIL_ARGS_TEST_FILE = 'UTIL_ARGS_TEST_FILE';
 
@@ -48,11 +49,13 @@ const LOGFILE = 'foo';
 // process mock
 const processExit = process.exit;
 let exitCalled;
+let execCalled;
 let spawnCalled;
 let calledArgs;
 
 // child_process mock
 let childProcessSpawn;
+let childProcessExecFile;
 let unrefCalled;
 const childMock = {
     unref() {
@@ -902,6 +905,56 @@ module.exports = {
         }
     },
 
+    testLocalReady: {
+        setUp(callback) {
+            childProcessExecFile = childProcess.execFile;
+            execCalled = false;
+
+            callback();
+        },
+
+        tearDown(callback) {
+            execCalled = false;
+            childProcess.execFile = childProcessExecFile;
+            callback();
+        },
+
+        testBasic(test) {
+            childProcess.execFile = function execFile(file, cb) {
+                if (file.endsWith('.sh')) {
+                    execCalled = true;
+                    cb();
+                }
+            };
+
+            util.localReady();
+            test.strictEqual(execCalled, true);
+            test.done();
+        },
+
+        testError(test) {
+            const message = 'process exec error';
+
+            childProcess.execFile = function execFile(file, cb) {
+                if (file.endsWith('.sh')) {
+                    cb(new Error(message));
+                }
+            };
+
+            test.expect(1);
+            util.localReady()
+                .then(() => {
+                    test.ok(false, 'should have thrown process exec error');
+                })
+                .catch((err) => {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        }
+    },
+
     testLogAndExit: {
         setUp(callback) {
             // eslint-disable-next-line no-global-assign
@@ -915,6 +968,10 @@ module.exports = {
         },
 
         tearDown(callback) {
+            if (fs.existsSync(LOGFILE)) {
+                fs.unlinkSync(LOGFILE);
+            }
+
             setTimeout = realSetTimeout; // eslint-disable-line no-global-assign
             callback();
         },
@@ -1187,6 +1244,29 @@ module.exports = {
                     test.done();
                 });
         }
+    },
+
+    testGetArgsToStripDuringForcedReboot: {
+
+        testBasic(test) {
+            const options = commander
+                .version('1.0')
+                .option(
+                    '--host <ip_address>'
+                )
+                .option(
+                    '-d, --db <value>'
+                );
+
+            const ARGS_TO_STRIP = util.getArgsToStripDuringForcedReboot(options);
+            // check --host not in args to strip
+            test.strictEqual(ARGS_TO_STRIP.indexOf('--host'), -1);
+            // check --db|-d in args to strip
+            test.notStrictEqual(ARGS_TO_STRIP.indexOf('--db'), -1);
+            test.notStrictEqual(ARGS_TO_STRIP.indexOf('-d'), -1);
+            test.done();
+        }
+
     },
 
     testSaveArgs: {
