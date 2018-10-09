@@ -269,7 +269,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     )
                     .option(
                         '--force-reboot',
-                        'Force a reboot at the end. This is necessary configurations.'
+                        'Force a reboot at the end. This may be necessary for certain configurations. Option --force-reboot and --no-reboot cannot be specified simultaneously.'
                     )
                     .parse(argv);
                 /* eslint-enable max-len */
@@ -321,6 +321,15 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         util.logError(error, loggerOptions);
                         util.logAndExit(error, 'error', 1);
                     }
+                }
+
+                if (options.forceReboot && !options.reboot) {
+                    const error = 'Option --force-reboot and --no-reboot cannot be specified simultaneously.';
+
+                    ipc.send(signals.CLOUD_LIBS_ERROR);
+
+                    util.logError(error, loggerOptions);
+                    util.logAndExit(error, 'error', 1);
                 }
 
                 if (options.user && !(options.password || options.passwordUrl)) {
@@ -837,7 +846,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                             // After reboot, we just want to send our done signal,
                             // in case any other scripts are waiting on us. So, modify
                             // the saved args for that
-                            const ARGS_TO_STRIP = util.getArgsToStrip(options);
+                            const ARGS_TO_STRIP = util.getArgsToStripDuringForcedReboot(options);
                             return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP);
                         }
 

@@ -96,16 +96,12 @@ const util = require('../lib/util');
                         parseInt
                     )
                     .option(
-                        '--no-reboot',
-                        'Skip reboot even if it is recommended.'
-                    )
-                    .option(
                         '--background',
                         'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.'
                     )
                     .option(
                         '--signal <signal>',
-                        'Signal to send when done. Default ONBOARD_DONE.'
+                        'Signal to send when done. Default NETWORK_DONE.'
                     )
                     .option(
                         '--wait-for <signal>',
@@ -173,7 +169,7 @@ const util = require('../lib/util');
                     )
                     .option(
                         '--force-reboot',
-                        'Force a reboot at the end. This is necessary for some 2+ NIC configurations.'
+                        'Force a reboot at the end. This may be necessary for certain configurations.'
                     )
                     .parse(argv);
                 /* eslint-enable max-len */
@@ -643,7 +639,7 @@ const util = require('../lib/util');
                             // After reboot, we just want to send our done signal,
                             // in case any other scripts are waiting on us. So, modify
                             // the saved args for that
-                            const ARGS_TO_STRIP = util.getArgsToStrip(options);
+                            const ARGS_TO_STRIP = util.getArgsToStripDuringForcedReboot(options);
                             return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP)
                                 .then(() => {
                                     logger.info('Rebooting and exiting. Will continue after reboot.');

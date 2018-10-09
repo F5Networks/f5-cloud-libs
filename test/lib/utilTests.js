@@ -22,6 +22,8 @@ const q = require('q');
 
 const UTIL_ARGS_TEST_FILE = 'UTIL_ARGS_TEST_FILE';
 
+const realSetTimeout = setTimeout;
+
 let http;
 let httpGet;
 
@@ -39,6 +41,9 @@ let loggerReceivedMessage;
 
 let argv;
 let funcCount;
+
+let logger;
+const LOGFILE = 'foo';
 
 // process mock
 const processExit = process.exit;
@@ -897,18 +902,41 @@ module.exports = {
         }
     },
 
-    testLogAndExit(test) {
-        const setImmediateTemp = setImmediate;
+    testLogAndExit: {
+        setUp(callback) {
+            // eslint-disable-next-line no-global-assign
+            setTimeout = function (cb) {
+                cb();
+            };
+            process.exit = function exit() {
+                exitCalled = true;
+            };
+            callback();
+        },
 
-        setImmediate = function (cb) { cb(); }; // eslint-disable-line no-global-assign
-        process.exit = function exit() {
-            exitCalled = true;
-        };
+        tearDown(callback) {
+            setTimeout = realSetTimeout; // eslint-disable-line no-global-assign
+            callback();
+        },
 
-        util.logAndExit();
-        test.strictEqual(exitCalled, true);
-        test.done();
-        setImmediate = setImmediateTemp; // eslint-disable-line no-global-assign
+        testBasic(test) {
+            logger = Logger.getLogger({ console: true });
+
+            util.logAndExit();
+            test.strictEqual(exitCalled, true);
+            test.done();
+        },
+
+        testLogToFile(test) {
+            logger = Logger.getLogger({ console: false, fileName: LOGFILE });
+            logger.transports.file.on('flush', () => {
+                return q();
+            });
+
+            util.logAndExit();
+            test.strictEqual(exitCalled, true);
+            test.done();
+        }
     },
 
     testlogError(test) {
