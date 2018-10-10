@@ -644,6 +644,39 @@ module.exports = {
                 });
         },
 
+        testAzureReadUriData(test) {
+            let initArgs;
+            providerMock.init = (...args) => {
+                initArgs = args;
+                return q();
+            };
+            providerMock.getDataFromUri = (...args) => {
+                functionsCalled.providerMock.getDataFromUri = args;
+                return q('password');
+            };
+            const fileUri = 'https://testing.blob.core.windows.net/container/file.text';
+            const options = {
+                clOptions: {
+                    azCredentialsUrl: 'file:///azCreds'
+                }
+            };
+
+            test.expect(4);
+            util.readData(fileUri, true, options)
+                .then((readPassword) => {
+                    test.deepEqual(functionsCalled.providerMock.getDataFromUri, [fileUri]);
+                    test.strictEqual(readPassword, 'password');
+                    test.strictEqual(functionsCalled.cloudProviderFactoryMock.getCloudProvider, 'azure');
+                    test.deepEqual(initArgs, [{ azCredentialsUrl: 'file:///azCreds' }]);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
         testCallsGetDataFromUrl(test) {
             const password = 'foobar';
             const passwordFile = '/tmp/mypass';

@@ -24,6 +24,7 @@ const CloudProvider = require('../../lib/cloudProvider');
 let fsMock;
 let ipcMock;
 let utilMock;
+let localCryptoUtilMock;
 let argv;
 let cluster;
 let realWriteFile;
@@ -62,6 +63,7 @@ module.exports = {
         fsMock = require('fs');
         utilMock = require('../../lib/util');
         ipcMock = require('../../lib/ipc');
+        localCryptoUtilMock = require('../../lib/localCryptoUtil');
 
         utilMock.logAndExit = (message, level, code) => {
             exitMessage = message;
@@ -181,7 +183,8 @@ module.exports = {
                 onboard: {},
                 cluster: {}
             },
-            util: {}
+            utilMock: {},
+            localCryptoUtilMock: {}
         };
 
         cluster = require('../../scripts/cluster');
@@ -292,61 +295,11 @@ module.exports = {
 
             test.expect(2);
             cluster.run(argv, testOptions, () => {
-                test.notStrictEqual(exitMessage.indexOf('--password-data-uri'), -1);
+                test.notStrictEqual(exitMessage.indexOf('--big-iq-password-data-uri'), -1);
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
         }
-    },
-
-    testBigIqPasswords: {
-        setUp(callback) {
-            providerMock = new ProviderMock();
-            testOptions.cloudProvider = providerMock;
-            callback();
-        },
-
-        testRootPasswordSetAsJSON(test) {
-            utilMock.readData = (...args) => {
-                functionsCalled.util.readData = args;
-                return q(JSON.stringify(
-                    {
-                        rOOt: 'rootPassword'
-                    }
-                ));
-            };
-
-            argv.push('--cloud', 'aws', '--password-data-uri', 'arn:::foo:bar/password');
-
-            test.expect(2);
-            cluster.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.util.readData[0], 'arn:::foo:bar/password');
-                test.deepEqual(
-                    functionsCalled.bigIp.onboard.setRootPassword,
-                    ['rootPassword', undefined, { enableRoot: true }]
-                );
-                test.done();
-            });
-        },
-
-        testRootPasswordSetAsText(test) {
-            utilMock.readData = (...args) => {
-                functionsCalled.util.readData = args;
-                return q('rootPassword');
-            };
-
-            argv.push('--cloud', 'aws', '--password-data-uri', 'arn:::foo:bar/password');
-
-            test.expect(2);
-            cluster.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.util.readData[0], 'arn:::foo:bar/password');
-                test.deepEqual(
-                    functionsCalled.bigIp.onboard.setRootPassword,
-                    ['rootPassword', undefined, { enableRoot: true }]
-                );
-                test.done();
-            });
-        },
     },
 
     testBigIqCluster: {
@@ -354,53 +307,60 @@ module.exports = {
             utilMock.readData = () => {
                 return q(JSON.stringify(
                     {
-                        rOOt: 'rootPassword'
+                        rOOt: 'rootPassword',
+                        admin: 'adminpass'
                     }
                 ));
             };
-            bigIpMock.isBigIq = () => {
-                return true;
-            };
             providerMock = new ProviderMock();
             testOptions.cloudProvider = providerMock;
+            testOptions.bigIp.isBigIq = function isBigIq() {
+                return true;
+            };
+
+            argv = ['node', 'cluster.js', '--log-level', 'none', '--host', 'localhost', '-u', 'admin',
+                '--output', 'cluster.log', '--cloud', 'aws', '--big-iq-password-data-uri',
+                'arn:::foo:bar/password', '--master', '--big-iq-failover-peer-ip', '1.2.3.4'];
 
             callback();
         },
 
         testBigIpClusterAddSeconaryCalled(test) {
-            argv.push('--cloud', 'aws', '--password-data-uri', 'arn:::foo:bar/password',
-                '--master', '--big-iq-failover-peer-ip', '1.2.3.4');
-
-            bigIpMock.onboard.rootPassword = 'rootpass';
-            bigIpMock.password = 'adminpass';
-
+            testOptions.bigIp.password = 'adminpass';
             test.expect(1);
             cluster.run(argv, testOptions, () => {
                 test.deepEqual(
                     functionsCalled.bigIp.cluster.addSecondary,
-                    ['1.2.3.4', 'user', 'adminpass', 'rootpass']
+                    ['1.2.3.4', 'admin', 'adminpass', 'rootPassword']
                 );
                 test.done();
             });
         },
-    },
 
-    testCommon: {
-        setUp(callback) {
-            callback();
-        },
+        testBigIqPasswordDecrypted(test) {
+            const encryptedData = 'dke9cxk';
 
-        testSetUserPassword(test) {
-            argv.push('--set-user-password');
+            utilMock.readData = (...args) => {
+                functionsCalled.utilMock.readData = args;
+                return q(encryptedData);
+            };
 
-            test.expect(1);
+            localCryptoUtilMock.decryptPassword = (...args) => {
+                functionsCalled.localCryptoUtilMock.decryptPassword = args;
+                return q(JSON.stringify(
+                    {
+                        masterPassphrase: 'keykeykey',
+                        root: 'rootpazz',
+                        admin: 'AdPass'
+                    }
+                ));
+            };
+
+            argv.push('--big-iq-password-data-encrypted');
+            test.expect(2);
             cluster.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.bigIp.init[3], {
-                    port: 443,
-                    passwordIsUrl: true,
-                    passwordEncrypted: undefined,
-                    setUserPassword: true
-                });
+                test.deepEqual(functionsCalled.localCryptoUtilMock.decryptPassword, [encryptedData]);
+                test.strictEqual(functionsCalled.utilMock.readData[0], 'arn:::foo:bar/password');
                 test.done();
             });
         }

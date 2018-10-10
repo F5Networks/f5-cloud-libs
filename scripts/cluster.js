@@ -25,6 +25,7 @@ const ipc = require('../lib/ipc');
 const signals = require('../lib/signals');
 const util = require('../lib/util');
 const commonOptions = require('./commonOptions');
+const localCryptoUtil = require('../lib/localCryptoUtil');
 
 (function run() {
     const runner = {
@@ -49,7 +50,7 @@ const commonOptions = require('./commonOptions');
                 'passwordUrl'
             ];
 
-            const providerOptions = [];
+            const providerOptions = {};
             const loggerOptions = {};
             const optionsForTest = {};
 
@@ -60,6 +61,8 @@ const commonOptions = require('./commonOptions');
             let bigIp;
             let rebooting;
             let exiting;
+
+            let bigIqPasswordData = {};
 
             Object.assign(optionsForTest, testOpts);
 
@@ -79,21 +82,21 @@ const commonOptions = require('./commonOptions');
                         'Cloud provider (aws | azure | etc.). Optionally use this if passwords are stored in cloud storage. This replaces the need for --remote-user/--remote-password(-url). An implemetation of cloudProvider must exist at the correct location.'
                     )
                     .option(
-                        '--set-user-password',
-                        'If specified, set the user (specified in --user) password to the value of --password or --password-url'
+                        '   --big-iq-password-data-uri <key_uri>',
+                        '   URI (arn, url, etc.) to a JSON file containing the BIG-IQ passwords (required keys: admin, root)'
                     )
                     .option(
-                        '   --password-data-uri <key_uri>',
-                        '   URI (arn) to location that contains the BIG-IQ master passphrase'
+                        '   --big-iq-password-data-encrypted',
+                        '   Indicates that the BIG-IQ password data is encrypted (either with encryptDataToFile or generatePassword)'
                     )
                     .option(
                         '    --master',
-                        'If using a cloud provider, indicates that this is the master. If running on a BIG-IP credentials should be stored.'
+                        'If using a cloud provider, indicates that this is the master. If running on a BIG-IP credentials should be stored. If running on a BIG-IQ, --create-group and --join-group options are not needed.'
                     )
                     .option(
                         '    --provider-options <cloud_options>',
                         'Any options (JSON stringified) that are required for the specific cloud provider.',
-                        util.mapArray,
+                        util.map,
                         providerOptions
                     )
                     .option(
@@ -232,8 +235,9 @@ const commonOptions = require('./commonOptions');
                     }
                 }
 
-                if (!options.password && !options.passwordUrl) {
-                    const error = 'One of --password or --password-url is required.';
+                if (!options.password && !options.passwordUrl && !options.bigIqPasswordDataUri) {
+                    const error =
+                        'One of --password, --password-url or --big-iq-password-data-uri is required.';
 
                     ipc.send(signals.CLOUD_LIBS_ERROR);
 
@@ -241,8 +245,8 @@ const commonOptions = require('./commonOptions');
                     util.logAndExit(error, 'error', 1);
                 }
 
-                if (options.bigIqFailoverPeerIp && !options.passwordDataUri) {
-                    const error = '--password-data-uri is required for BIG-IQ failover';
+                if (options.bigIqFailoverPeerIp && !options.bigIqPasswordDataUri) {
+                    const error = '--big-iq-password-data-uri is required for BIG-IQ failover';
 
                     ipc.send(signals.CLOUD_LIBS_ERROR);
 
@@ -290,19 +294,56 @@ const commonOptions = require('./commonOptions');
                         logger.info('Cluster starting.');
                         ipc.send(signals.CLUSTER_RUNNING);
 
+                        // Retrieve, and save, stored password data
+                        if (options.bigIqPasswordDataUri) {
+                            return util.readData(options.bigIqPasswordDataUri,
+                                true,
+                                {
+                                    clOptions: providerOptions,
+                                    logger,
+                                    loggerOptions
+                                })
+                                .then((uriData) => {
+                                    if (options.bigIqPasswordDataEncrypted) {
+                                        return localCryptoUtil.decryptPassword(uriData);
+                                    }
+                                    return q(uriData);
+                                })
+                                .then((uriData) => {
+                                    bigIqPasswordData = util.lowerCaseKeys(
+                                        JSON.parse(uriData.trim())
+                                    );
+                                })
+                                .then(() => {
+                                    if (!bigIqPasswordData.admin || !bigIqPasswordData.root) {
+                                        const msg =
+                                            'Required passwords missing from --biq-iq-password-data-uri';
+                                        logger.info(msg);
+                                        return q.reject(msg);
+                                    }
+                                    return q();
+                                })
+                                .catch((err) => {
+                                    logger.info('Unable to retrieve JSON from --big-iq-password-data-uri');
+                                    return q.reject(err);
+                                });
+                        }
+                        return q();
+                    })
+                    .then(() => {
                         // Create the bigIp client object
                         bigIp = optionsForTest.bigIp || new BigIp({ loggerOptions });
 
                         logger.info('Initializing BIG-IP.');
                         return bigIp.init(
                             options.host,
-                            options.user,
-                            options.password || options.passwordUrl,
+                            options.user || 'admin',
+                            options.password || options.passwordUrl || bigIqPasswordData.admin,
                             {
                                 port: options.port,
                                 passwordIsUrl: typeof options.passwordUrl !== 'undefined',
                                 passwordEncrypted: options.passwordEncrypted,
-                                setUserPassword: options.setUserPassword
+                                clOptions: providerOptions
                             }
                         );
                     })
@@ -315,7 +356,7 @@ const commonOptions = require('./commonOptions');
 
                         if (options.cloud) {
                             logger.info('Initializing cloud provider.');
-                            return provider.init(providerOptions[0]);
+                            return provider.init(providerOptions);
                         }
                         return q();
                     })
@@ -326,45 +367,17 @@ const commonOptions = require('./commonOptions');
                         return q();
                     })
                     .then(() => {
-                        if (options.cloud && options.passwordDataUri) {
-                            logger.info('Setting root password');
-                            return util.readData(options.passwordDataUri,
-                                {
-                                    passwordIsUrl: typeof options.passwordDataUri !== 'undefined',
-                                    passwordEncrypted: options.passwordEncrypted
-                                })
-                                .then((response) => {
-                                    let rootPassword;
-                                    try {
-                                        const parsedResponse = util.lowerCaseKeys(
-                                            JSON.parse(response.trim())
-                                        );
-                                        rootPassword = parsedResponse.root;
-                                    } catch (err) {
-                                        rootPassword = response.trim();
-                                    }
-                                    return bigIp.onboard.setRootPassword(
-                                        rootPassword,
-                                        undefined,
-                                        { enableRoot: true }
-                                    );
-                                })
-                                .catch((err) => {
-                                    logger.debug('Unable to set root password');
-                                    return q.reject(err);
-                                });
-                        }
-                        return q();
-                    })
-                    .then(() => {
                         // Primary BIG-IQ initiates peering with secondary BIG-IQ
-                        if (options.master && options.bigIqFailoverPeerIp && bigIp.isBigIq()) {
+                        if (options.master
+                            && options.bigIqFailoverPeerIp
+                            && bigIp.isBigIq()
+                        ) {
                             logger.info(`Adding ${options.bigIqFailoverPeerIp} as high availability peer.`);
                             return bigIp.cluster.addSecondary(
                                 options.bigIqFailoverPeerIp,
-                                options.user,
+                                options.user || 'admin',
                                 bigIp.password,
-                                bigIp.onboard.rootPassword
+                                bigIqPasswordData.root
                             );
                         }
                         return q();
@@ -377,7 +390,7 @@ const commonOptions = require('./commonOptions');
                         return q();
                     })
                     .then(() => {
-                        if (options.createGroup) {
+                        if (options.createGroup && bigIp.isBigIp()) {
                             if (!options.deviceGroup || !options.syncType) {
                                 throw new Error('Create device group: device-group and sync-type required.');
                             }
@@ -419,7 +432,7 @@ const commonOptions = require('./commonOptions');
 
                         // options.cloud set indicates that the provider must use some storage
                         // for its master credentials
-                        if (options.cloud && options.joinGroup) {
+                        if (options.cloud && options.joinGroup && bigIp.isBigIp()) {
                             logger.info('Getting master credentials.');
                             return util.tryUntil(
                                 provider,
@@ -432,7 +445,7 @@ const commonOptions = require('./commonOptions');
                     })
                     .then((response) => {
                         // Don't log the response here - it has the credentials in it
-                        if (options.cloud && options.joinGroup) {
+                        if (options.cloud && options.joinGroup && bigIp.isBigIp()) {
                             logger.info('Got master credentials.');
 
                             options.remoteUser = response.username;
@@ -440,7 +453,7 @@ const commonOptions = require('./commonOptions');
                             options.passwordEncrypted = false;
                         }
 
-                        if (options.joinGroup) {
+                        if (options.joinGroup && bigIp.isBigIp()) {
                             logger.info('Joining group.');
 
                             return bigIp.cluster.joinCluster(

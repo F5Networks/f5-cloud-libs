@@ -69,6 +69,8 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
             const createLicensePool = {};
             const optionsForTest = {};
 
+            const providerOptions = {};
+
             let loggableArgs;
             let logger;
             let logFileName;
@@ -79,6 +81,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
             let randomUser;
 
             let provider;
+            let bigIqPasswordData;
 
             Object.assign(optionsForTest, testOpts);
 
@@ -139,6 +142,12 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, signalling resource provisioned, or providing a master passphrase'
                     )
                     .option(
+                        '--provider-options <cloud_options>',
+                        'Options specific to cloud_provider. Ex: param1:value1,param2:value2',
+                        util.map,
+                        providerOptions
+                    )
+                    .option(
                         '    --big-iq-host <ip_address or FQDN>',
                         '    IP address or FQDN of BIG-IQ'
                     )
@@ -195,8 +204,12 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         '   Signal cloud provider when BIG-IP has been provisioned.'
                     )
                     .option(
-                        '   --password-data-uri <key_uri>',
-                        '   URI (arn) to location that contains the BIG-IQ master passphrase'
+                        '   --big-iq-password-data-uri <key_uri>',
+                        '   URI (arn, url, etc.) to a JSON file containing the BIG-IQ passwords (required keys: admin, root, masterpassphrase)'
+                    )
+                    .option(
+                        '   --big-iq-password-data-encrypted',
+                        '   Indicates that the BIG-IQ password data is encrypted (either with encryptDataToFile or generatePassword)'
                     )
                     .option(
                         '-n, --hostname <hostname>',
@@ -376,7 +389,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     .then(() => {
                         if (provider) {
                             logger.info('Initializing cloud provider');
-                            return provider.init();
+                            return provider.init(providerOptions);
                         }
                         return q();
                     })
@@ -384,6 +397,46 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         logger.info('Onboard starting.');
                         ipc.send(signals.ONBOARD_RUNNING);
 
+                        // Retrieve, and save, stored password data
+                        if (options.bigIqPasswordDataUri) {
+                            return util.readData(options.bigIqPasswordDataUri,
+                                true,
+                                {
+                                    clOptions: providerOptions,
+                                    logger,
+                                    loggerOptions
+                                })
+                                .then((uriData) => {
+                                    if (options.bigIqPasswordDataEncrypted) {
+                                        return localCryptoUtil.decryptPassword(uriData);
+                                    }
+                                    return q(uriData);
+                                })
+                                .then((uriData) => {
+                                    bigIqPasswordData = util.lowerCaseKeys(
+                                        JSON.parse(uriData.trim())
+                                    );
+                                })
+                                .then(() => {
+                                    if (!bigIqPasswordData.admin
+                                        || !bigIqPasswordData.root
+                                        || !bigIqPasswordData.masterpassphrase
+                                    ) {
+                                        const msg =
+                                            'Required passwords missing from --biq-iq-password-data-uri';
+                                        logger.info(msg);
+                                        return q.reject(msg);
+                                    }
+                                    return q();
+                                })
+                                .catch((err) => {
+                                    logger.info('Unable to retrieve JSON from --big-iq-password-data-uri');
+                                    return q.reject(err);
+                                });
+                        }
+                        return q();
+                    })
+                    .then(() => {
                         if (!options.user) {
                             logger.info('Generating temporary user.');
                             return util.createRandomUser();
@@ -410,7 +463,8 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                             {
                                 port: options.port,
                                 passwordIsUrl: typeof options.passwordUrl !== 'undefined',
-                                passwordEncrypted: options.passwordEncrypted
+                                passwordEncrypted: options.passwordEncrypted,
+                                clOptions: providerOptions
                             }
                         );
                     })
@@ -420,9 +474,14 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     })
                     .then(() => {
                         logger.info('Device is ready.');
-
+                        // Set admin password
+                        if (options.bigIqPasswordDataUri) {
+                            return bigIp.onboard.updateUser('admin', bigIqPasswordData.admin);
+                        }
+                        return q();
+                    })
+                    .then(() => {
                         const deferred = q.defer();
-
                         // Set the MasterKey if it's not set, using either a random passphrase or
                         // a passphrase provided via --password-data-uri
                         if (bigIp.isBigIq()) {
@@ -439,52 +498,23 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                                                 deferred.resolve();
                                             })
                                             .catch((err) => {
-                                                this.logger.info(
+                                                logger.info(
                                                     'Unable to set master key',
                                                     err && err.message ? err.message : err
                                                 );
                                                 deferred.reject(err);
                                             });
-                                    } else if (options.passwordDataUri) {
+                                    } else if (bigIqPasswordData) {
                                         logger.info('Setting master passphrase from password data uri');
-                                        util.readData(options.passwordDataUri,
-                                            {
-                                                passwordIsUrl: typeof options.passwordDataUri !== 'undefined',
-                                                passwordEncrypted: options.passwordEncrypted
-                                            })
-                                            .then((data) => {
-                                                // check if password needs to be decrypted
-                                                if (options.passwordEncrypted) {
-                                                    return localCryptoUtil.decryptPassword(data);
-                                                }
-                                                return q(data);
-                                            })
-                                            .then((response) => {
-                                                try {
-                                                    const parsedResponse = util.lowerCaseKeys(
-                                                        JSON.parse(response.trim())
-                                                    );
-                                                    return q(parsedResponse.masterpassphrase);
-                                                } catch (err) {
-                                                    return q(response.trim());
-                                                }
-                                            })
-                                            .then((passphrase) => {
-                                                bigIp.onboard.setMasterPassphrase(passphrase)
-                                                    .then(() => {
-                                                        deferred.resolve();
-                                                    })
-                                                    .catch((err) => {
-                                                        this.logger.info(
-                                                            'Unable to set master passphrase',
-                                                            err && err.message ? err.message : err
-                                                        );
-                                                        deferred.reject(err);
-                                                    });
+                                        bigIp.onboard.setMasterPassphrase(
+                                            bigIqPasswordData.masterpassphrase
+                                        )
+                                            .then(() => {
+                                                deferred.resolve();
                                             })
                                             .catch((err) => {
-                                                this.logger.info(
-                                                    'Could not find BIG-IQ password data at specified URI',
+                                                logger.info(
+                                                    'Unable to set master passphrase',
                                                     err && err.message ? err.message : err
                                                 );
                                                 deferred.reject(err);
@@ -492,7 +522,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                                     }
                                 })
                                 .catch((err) => {
-                                    this.logger.info(
+                                    logger.info(
                                         'Unable to check master key', err && err.message ? err.message : err
                                     );
                                     deferred.reject(err);
@@ -544,6 +574,19 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                             return bigIp.onboard.password('root', rootPasswords.new, rootPasswords.old);
                         }
 
+                        return q();
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        if (options.cloud && options.bigIqPasswordDataUri) {
+                            logger.info('Setting root password');
+                            return bigIp.onboard.setRootPassword(
+                                bigIqPasswordData.root,
+                                undefined,
+                                { enableRoot: true }
+                            );
+                        }
                         return q();
                     })
                     .then((response) => {

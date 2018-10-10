@@ -1126,6 +1126,34 @@ module.exports = {
                 });
         },
 
+        testCreateOnBigIq(test) {
+            icontrolMock.when(
+                'list',
+                '/shared/authz/users',
+                [
+                    {
+                        name: 'admin'
+                    }
+                ]
+            );
+
+            bigIp.product = 'BIG-IQ';
+
+            bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
+                .then(() => {
+                    const userParams = icontrolMock.getRequest('create', '/shared/authz/users');
+                    test.strictEqual(userParams.name, 'myUser');
+                    test.strictEqual(userParams.password, 'myPass');
+                    test.strictEqual(userParams['partition-access']['all-partitions'].role, 'myRole');
+                })
+                .catch((err) => {
+                    test.ok(false, err.message);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
         testCreateNoExistingUsers(test) {
             icontrolMock.when(
                 'list',

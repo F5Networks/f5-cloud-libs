@@ -173,8 +173,11 @@ module.exports = {
 
         testWaitForPeerReady(test) {
             const listResponse = {
-                name: 'systemauth.disablerootlogin',
-                value: 'false'
+                discoveryAddress: '1.2.3.4',
+                generation: 2,
+                lastUpdateMicros: 1538757916491067,
+                kind: 'shared:identified-devices:config:discovery:discoveryconfigworkerstate',
+                selfLink: 'https://localhost/mgmt/shared/identified-devices/config/discovery'
             };
             bigIp.list = () => {
                 return q(listResponse);

@@ -40,6 +40,7 @@ let logErrorOptions;
 
 let bigIpMock;
 let providerMock;
+let localCryptoUtilMock;
 
 const testOptions = {};
 
@@ -214,6 +215,7 @@ module.exports = {
 
         utilMock = require('../../lib/util');
         onboard = require('../../scripts/onboard');
+        localCryptoUtilMock = require('../../lib/localCryptoUtil');
         metricsCollectorMock = require('../../../f5-cloud-libs').metricsCollector;
 
         argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
@@ -224,7 +226,8 @@ module.exports = {
             },
             ipc: {},
             metrics: {},
-            utilMock: {}
+            utilMock: {},
+            localCryptoUtilMock: {}
         };
 
         utilMock.logAndExit = (message, level, code) => {
@@ -516,7 +519,7 @@ module.exports = {
         }
     },
 
-    testMasterKey: {
+    testPasswordDataUri: {
         setUp(callback) {
             providerMock = new ProviderMock();
             testOptions.cloudProvider = providerMock;
@@ -528,74 +531,106 @@ module.exports = {
                 return false;
             };
 
-            callback();
-        },
-
-        testSetMasterKeyFromURIAsJSON(test) {
             bigIpMock.onboard.isMasterKeySet = () => {
                 functionsCalled.bigIp.onboard.isMasterKeySet = false;
                 return q(false);
             };
 
+            bigIpMock.onboard.setRootPassword = (...args) => {
+                functionsCalled.bigIp.onboard.setRootPassword = args;
+                return q();
+            };
+
+            callback();
+        },
+
+        testSetPasswordsFromJSON(test) {
             utilMock.readData = (...args) => {
                 functionsCalled.utilMock.readData = args;
                 return q(JSON.stringify(
                     {
-                        masterPassphrase: 'keykeykey'
+                        masterPassphrase: 'keykeykey',
+                        root: 'rootpass',
+                        admin: 'AdPass'
                     }
                 ));
             };
 
             const s3Arn = 'arn:::foo:bar/password';
-            argv.push('--password-data-uri', s3Arn, '--cloud', 'aws');
+            argv.push('--big-iq-password-data-uri', s3Arn, '--cloud', 'aws');
 
-            test.expect(2);
+            test.expect(5);
             onboard.run(argv, testOptions, () => {
+                test.strictEqual(functionsCalled.utilMock.readData[0], s3Arn);
+                test.strictEqual(functionsCalled.utilMock.readData[1], true);
                 test.deepEqual(
-                    functionsCalled.utilMock.readData,
-                    [s3Arn, { passwordIsUrl: true, passwordEncrypted: undefined }]
+                    bigIpMock.onboard.updatedUsers, [{
+                        user: 'admin',
+                        password: 'AdPass',
+                        role: undefined,
+                        shell: undefined
+                    }]
                 );
                 test.deepEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, ['keykeykey']);
+                test.deepEqual(
+                    functionsCalled.bigIp.onboard.setRootPassword,
+                    ['rootpass', undefined, { enableRoot: true }]
+                );
                 test.done();
             });
         },
 
-        testSetMasterKeyFromURIAsText(test) {
+        testBigIqPasswordDecrypted(test) {
+            const encryptedData = 'dke9cxk';
+            const passwordFile = 'file:///tmp/passwords';
+
             utilMock.readData = (...args) => {
                 functionsCalled.utilMock.readData = args;
-                return q('textkey');
+                return q(encryptedData);
             };
 
-            bigIpMock.onboard.isMasterKeySet = () => {
-                functionsCalled.bigIp.onboard.isMasterKeySet = false;
-                return q(false);
+            localCryptoUtilMock.decryptPassword = (...args) => {
+                functionsCalled.localCryptoUtilMock.decryptPassword = args;
+                return q(JSON.stringify(
+                    {
+                        masterPassphrase: 'keykeykey',
+                        root: 'rootpazz',
+                        admin: 'AdPass'
+                    }
+                ));
             };
-            const s3Arn = 'arn:::foo:bar/password';
-            argv.push('--password-data-uri', s3Arn, '--cloud', 'aws');
 
+            argv.push('--big-iq-password-data-uri', passwordFile,
+                '--big-iq-password-data-encrypted', '--cloud', 'aws');
             test.expect(2);
             onboard.run(argv, testOptions, () => {
-                test.deepEqual(
-                    functionsCalled.utilMock.readData,
-                    [s3Arn, { passwordIsUrl: true, passwordEncrypted: undefined }]
-                );
-                test.deepEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, ['textkey']);
-                test.done();
-            });
-        },
-
-        testMasterKeySet(test) {
-            bigIpMock.onboard.isMasterKeySet = () => {
-                functionsCalled.bigIp.onboard.isMasterKeySet = true;
-                return q(true);
-            };
-
-            test.expect(1);
-            onboard.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.bigIp.onboard, { isMasterKeySet: true });
+                test.deepEqual(functionsCalled.localCryptoUtilMock.decryptPassword, [encryptedData]);
+                test.strictEqual(functionsCalled.utilMock.readData[0], passwordFile);
                 test.done();
             });
         }
+    },
+
+    testMasterKeySet(test) {
+        providerMock = new ProviderMock();
+        testOptions.cloudProvider = providerMock;
+
+        bigIpMock.isBigIq = () => {
+            return true;
+        };
+        bigIpMock.isBigIp = () => {
+            return false;
+        };
+        bigIpMock.onboard.isMasterKeySet = () => {
+            functionsCalled.bigIp.onboard.isMasterKeySet = true;
+            return q(true);
+        };
+
+        test.expect(1);
+        onboard.run(argv, testOptions, () => {
+            test.deepEqual(functionsCalled.bigIp.onboard, { isMasterKeySet: true });
+            test.done();
+        });
     },
 
     testReboot(test) {
