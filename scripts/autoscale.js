@@ -545,14 +545,23 @@ const commonOptions = require('./commonOptions');
                                 );
                             case 'update':
                                 logger.info('Cluster action update');
-                                return handleUpdate.call(
-                                    this,
-                                    cloudProvider,
-                                    bigIp,
-                                    masterIid,
-                                    masterBad || newMaster,
-                                    options
-                                );
+                                return bigIp.deviceState(this.instance.hostname)
+                                    .then((response) => {
+                                        if (response && response.configsyncIp !== this.instance.privateIp) {
+                                            return bigIp.cluster.configSyncIp(this.instance.privateIp);
+                                        }
+                                        return q();
+                                    })
+                                    .then(() => {
+                                        return handleUpdate.call(
+                                            this,
+                                            cloudProvider,
+                                            bigIp,
+                                            masterIid,
+                                            masterBad || newMaster,
+                                            options
+                                        );
+                                    });
                             case 'unblock-sync':
                                 logger.info('Cluster action unblock-sync');
                                 return bigIp.cluster.configSyncIp(this.instance.privateIp);

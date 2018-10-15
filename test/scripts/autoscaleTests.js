@@ -973,6 +973,50 @@ module.exports = {
             callback();
         },
 
+        testSetConfigSync(test) {
+            let hostname;
+            let privateIp;
+
+            bigIpMock.deviceState = (passedHostname) => {
+                hostname = passedHostname;
+                return q({ configsyncIp: 'none' });
+            };
+            bigIpMock.cluster.configSyncIp = (passedIp) => {
+                privateIp = passedIp;
+                return q();
+            };
+            icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
+
+            test.expect(2);
+            autoscale.run(argv, testOptions, () => {
+                test.strictEqual(hostname, 'host2');
+                test.strictEqual(privateIp, '5.6.7.8');
+                test.done();
+            });
+        },
+
+        testConfigSyncAlreadySet(test) {
+            let hostname;
+            let configSyncIpCalled = false;
+
+            bigIpMock.deviceState = (passedHostname) => {
+                hostname = passedHostname;
+                return q({ configsyncIp: '5.6.7.8' });
+            };
+            bigIpMock.cluster.configSyncIp = () => {
+                configSyncIpCalled = true;
+                return q();
+            };
+            icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
+
+            test.expect(2);
+            autoscale.run(argv, testOptions, () => {
+                test.strictEqual(hostname, 'host2');
+                test.strictEqual(configSyncIpCalled, false);
+                test.done();
+            });
+        },
+
         testIsMaster: {
             testDisconnected(test) {
                 let devicesRemoved = [];
