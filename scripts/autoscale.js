@@ -1613,6 +1613,8 @@ const commonOptions = require('./commonOptions');
             .then((privateKeyData) => {
                 logger.silly('NEW LOG: privateKeyData in readMessageData()');
                 logger.silly(privateKeyData);
+                logger.silly('NEW LOG: privateKeyData.passphrase in cryptoUtil.decrypt():');
+                logger.silly(privateKeyData.passphrase);
                 return cryptoUtil.decrypt(
                     this.cloudPrivateKeyPath,
                     messageData,
