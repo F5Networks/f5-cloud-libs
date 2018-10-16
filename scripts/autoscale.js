@@ -1611,6 +1611,8 @@ const commonOptions = require('./commonOptions');
                 return bigIp.getPrivateKeyMetadata(AUTOSCALE_PRIVATE_KEY_FOLDER, AUTOSCALE_PRIVATE_KEY);
             })
             .then((privateKeyData) => {
+                logger.silly('NEW LOG: privateKeyData in readMessageData()');
+                logger.silly(privateKeyData);
                 return cryptoUtil.decrypt(
                     this.cloudPrivateKeyPath,
                     messageData,
