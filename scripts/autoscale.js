@@ -1064,7 +1064,7 @@ const commonOptions = require('./commonOptions');
 
                 return bigIp.cluster.createDeviceGroup(
                     options.deviceGroup,
-                    'sync-failover',
+                    'sync-only',
                     [this.instance.hostname],
                     deviceGroupOptions
                 );
