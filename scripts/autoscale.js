@@ -21,6 +21,7 @@ const q = require('q');
 const CloudProvider = require('../lib/cloudProvider');
 const util = require('../lib/util');
 const cryptoUtil = require('../lib/cryptoUtil');
+const localCryptoUtil = require('../lib/localCryptoUtil');
 const childProcess = require('child_process');
 
 const BigIp = require('../lib/bigIp');
@@ -1070,6 +1071,13 @@ const commonOptions = require('./commonOptions');
                 );
             })
             .then(() => {
+                return bigIp.deviceInfo()
+                    .then((deviceInfo) => {
+                        logger.info('NEW LOG: device info version');
+                        logger.info(deviceInfo.version);
+                    });
+            })
+            .then(() => {
                 logger.info('Writing master file.');
                 return writeMasterFile(hasUcs);
             });
@@ -1591,12 +1599,13 @@ const commonOptions = require('./commonOptions');
     }
 
     function readMessageData(provider, bigIp, messageData) {
-        let filePromise;
+        // let filePromise;
 
         if (!provider.hasFeature(CloudProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
 
+        /*
         if (!this.cloudPrivateKeyPath) {
             logger.silly('getting private key path');
             filePromise = bigIp.getPrivateKeyFilePath(AUTOSCALE_PRIVATE_KEY_FOLDER, AUTOSCALE_PRIVATE_KEY);
@@ -1624,6 +1633,8 @@ const commonOptions = require('./commonOptions');
                     }
                 );
             });
+            */
+        return localCryptoUtil.decryptData(messageData, AUTOSCALE_PRIVATE_KEY_FOLDER, AUTOSCALE_PRIVATE_KEY);
     }
 
     function cleanupAjv(bigIp) {
