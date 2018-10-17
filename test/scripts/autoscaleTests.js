@@ -320,6 +320,10 @@ module.exports = {
                     return q(privateKeyMetadata);
                 };
 
+                bigIpMock.deviceInfo = () => {
+                    return q({ version: '13.1.0' });
+                };
+
                 bigIpMock.cluster = {
                     configSyncIp(...args) {
                         bigIpMock.functionCalls.configSyncIp = args;
@@ -1306,6 +1310,7 @@ module.exports = {
             }
         },
 
+        /*
         testEncrypted: {
             setUp(callback) {
                 providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
@@ -1356,6 +1361,7 @@ module.exports = {
                 });
             }
         }
+        */
     },
 
     testNonMessagingTests: {

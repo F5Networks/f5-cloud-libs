@@ -1055,26 +1055,32 @@ const commonOptions = require('./commonOptions');
                 // Make sure device group exists
                 logger.info('Creating device group.');
 
+                const networkFailover = options.networkFailover;
                 const deviceGroupOptions = {
                     autoSync: options.autoSync,
                     saveOnAutoSync: options.saveOnAutoSync,
                     fullLoadOnSync: options.fullLoadOnSync,
                     asmSync: modulesProvisioned.asm || options.asmSync,
-                    networkFailover: options.networkFailover
+                    networkFailover
                 };
 
-                return bigIp.cluster.createDeviceGroup(
-                    options.deviceGroup,
-                    'sync-only',
-                    [this.instance.hostname],
-                    deviceGroupOptions
-                );
-            })
-            .then(() => {
+                let deviceGroupType;
                 return bigIp.deviceInfo()
                     .then((deviceInfo) => {
-                        logger.info('NEW LOG: device info version');
-                        logger.info(deviceInfo.version);
+                        // On 14.1 and later, must use 'sync-only' DG if not using network-failvover
+                        if (util.versionCompare(deviceInfo.version, '14.1.0' || networkFailover) < 0) {
+                            deviceGroupType = 'sync-failover';
+                        } else {
+                            deviceGroupType = 'sync-only';
+                        }
+                    })
+                    .then(() => {
+                        return bigIp.cluster.createDeviceGroup(
+                            options.deviceGroup,
+                            deviceGroupType,
+                            [this.instance.hostname],
+                            deviceGroupOptions
+                        );
                     });
             })
             .then(() => {
@@ -1620,9 +1626,7 @@ const commonOptions = require('./commonOptions');
                 return bigIp.getPrivateKeyMetadata(AUTOSCALE_PRIVATE_KEY_FOLDER, AUTOSCALE_PRIVATE_KEY);
             })
             .then((privateKeyData) => {
-                logger.silly('NEW LOG: privateKeyData in readMessageData()');
                 logger.silly(privateKeyData);
-                logger.silly('NEW LOG: privateKeyData.passphrase in cryptoUtil.decrypt():');
                 logger.silly(privateKeyData.passphrase);
                 return cryptoUtil.decrypt(
                     this.cloudPrivateKeyPath,
