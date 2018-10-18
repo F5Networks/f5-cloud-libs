@@ -1,5 +1,16 @@
 # Release notes
 
+## Version 4.5.0
+* Support for clustering BIG-IQ in AWS and Azure
+* Fix for tagging instance in single instance AWS Auto Scale Group
+* Support for retrieving SSL certificates in nested AWS S3 folders
+* Support for specifying Discovery Address when onboarding a BIQ-IQ
+* Support for updating objects in partitions other than Common
+* Fix 1nicSetup.sh to retrieve Gateway CIDR from dhcp lease
+* Add --force-reboot option in onboard.js and network.js
+* Fix path in getNameServer.sh script
+* Autoscale.js ensures ConfigSync IP address is set when cluster is updated
+
 ## Version 4.4.0
 * Support for enabling ASM sync in DeviceGroup if ASM module is provisioned
 * Add option for signaling CloudFormation when a BIG-IP or BIG-IQ has been onboarded
