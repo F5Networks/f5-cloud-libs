@@ -55,7 +55,7 @@ let calledArgs;
 
 // child_process mock
 let childProcessSpawn;
-let childProcessExecFile;
+let childProcessExec;
 let unrefCalled;
 const childMock = {
     unref() {
@@ -940,7 +940,7 @@ module.exports = {
 
     testLocalReady: {
         setUp(callback) {
-            childProcessExecFile = childProcess.execFile;
+            childProcessExec = childProcess.exec;
             execCalled = false;
 
             callback();
@@ -948,13 +948,13 @@ module.exports = {
 
         tearDown(callback) {
             execCalled = false;
-            childProcess.execFile = childProcessExecFile;
+            childProcess.exec = childProcessExec;
             callback();
         },
 
         testBasic(test) {
-            childProcess.execFile = function execFile(file, cb) {
-                if (file.endsWith('.sh')) {
+            childProcess.exec = function exec(command, cb) {
+                if (command.endsWith('.sh')) {
                     execCalled = true;
                     cb();
                 }
@@ -968,8 +968,8 @@ module.exports = {
         testError(test) {
             const message = 'process exec error';
 
-            childProcess.execFile = function execFile(file, cb) {
-                if (file.endsWith('.sh')) {
+            childProcess.exec = function exec(command, cb) {
+                if (command.endsWith('.sh')) {
                     cb(new Error(message));
                 }
             };

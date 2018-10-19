@@ -141,6 +141,8 @@ module.exports = {
                     cb(null, 'ok');
                 } else if (command.startsWith('ls -1t')) {
                     cb(null, `:${privateKeyFolder}:${privateKeyName}.key`);
+                } else {
+                    cb();
                 }
             };
             test.expect(1);
