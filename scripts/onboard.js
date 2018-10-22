@@ -426,8 +426,11 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                                     return q(uriData);
                                 })
                                 .then((uriData) => {
+                                    const parsedData = (typeof uriData === 'string')
+                                        ? JSON.parse(uriData.trim())
+                                        : uriData;
                                     bigIqPasswordData = util.lowerCaseKeys(
-                                        JSON.parse(uriData.trim())
+                                        parsedData
                                     );
                                 })
                                 .then(() => {

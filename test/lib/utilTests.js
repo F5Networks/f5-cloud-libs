@@ -126,11 +126,6 @@ module.exports = {
         providerMock = require('../../lib/cloudProvider');
         cloudProviderFactoryMock = require('../../lib/cloudProviderFactory');
 
-        cloudProviderFactoryMock.getCloudProvider = (...args) => {
-            functionsCalled.cloudProviderFactoryMock.getCloudProvider = args[0];
-            return providerMock;
-        };
-
         functionsCalled = {
             cloudProviderFactoryMock: {},
             providerMock: {}
@@ -627,7 +622,7 @@ module.exports = {
     },
 
     testReadData: {
-        testAWSReadUriData(test) {
+        testReadDataWithCloudProviderURI(test) {
             providerMock.init = () => {
                 return q();
             };
@@ -635,47 +630,17 @@ module.exports = {
                 functionsCalled.providerMock.getDataFromUri = args;
                 return q('password');
             };
+
+            cloudProviderFactoryMock.getCloudProvider = () => {
+                return providerMock;
+            };
             const s3Arn = 'arn:::foo:bar/password';
 
-            test.expect(3);
+            test.expect(2);
             util.readData(s3Arn, true)
                 .then((readPassword) => {
                     test.deepEqual(functionsCalled.providerMock.getDataFromUri, [s3Arn]);
                     test.strictEqual(readPassword, 'password');
-                    test.strictEqual(functionsCalled.cloudProviderFactoryMock.getCloudProvider, 'aws');
-                })
-                .catch((err) => {
-                    test.ok(false, err);
-                })
-                .finally(() => {
-                    test.done();
-                });
-        },
-
-        testAzureReadUriData(test) {
-            let initArgs;
-            providerMock.init = (...args) => {
-                initArgs = args;
-                return q();
-            };
-            providerMock.getDataFromUri = (...args) => {
-                functionsCalled.providerMock.getDataFromUri = args;
-                return q('password');
-            };
-            const fileUri = 'https://testing.blob.core.windows.net/container/file.text';
-            const options = {
-                clOptions: {
-                    azCredentialsUrl: 'file:///azCreds'
-                }
-            };
-
-            test.expect(4);
-            util.readData(fileUri, true, options)
-                .then((readPassword) => {
-                    test.deepEqual(functionsCalled.providerMock.getDataFromUri, [fileUri]);
-                    test.strictEqual(readPassword, 'password');
-                    test.strictEqual(functionsCalled.cloudProviderFactoryMock.getCloudProvider, 'azure');
-                    test.deepEqual(initArgs, [{ azCredentialsUrl: 'file:///azCreds' }]);
                 })
                 .catch((err) => {
                     test.ok(false, err);
@@ -690,6 +655,10 @@ module.exports = {
             const passwordFile = '/tmp/mypass';
 
             fs.writeFileSync(passwordFile, password, { encoding: 'ascii' });
+
+            cloudProviderFactoryMock.getCloudProvider = () => {
+                throw new Error('Unavailable cloud provider');
+            };
 
             test.expect(1);
             util.readData(`file://${passwordFile}`, true)
