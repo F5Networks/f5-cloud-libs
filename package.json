@@ -1,6 +1,6 @@
 {
   "name": "@f5devcentral/f5-cloud-libs",
-  "version": "4.5.0-beta.4",
+  "version": "4.6.0-beta.1",
   "description": "Common library code and scripts for deploying a BIG-IP in a cloud environment",
   "keywords": [
     "f5",
