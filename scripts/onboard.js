@@ -100,6 +100,14 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                 }
             };
 
+            /**
+             * Control whether to load f5-cloud-libs-{provider} library.
+             * There are cases where the cloud name is needed, but a cloud provider is not.
+             */
+            const loadProviderLibrary = function (options) {
+                return (options.signalResource);
+            };
+
             try {
                 /* eslint-disable max-len */
                 const options = commonOptions.getCommonOptions(DEFAULT_LOG_FILE)
@@ -371,7 +379,8 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     }
                 }
 
-                if (options.cloud) {
+                // Check whether a cloud provider is required
+                if (options.cloud && loadProviderLibrary(options)) {
                     provider = optionsForTest.cloudProvider;
                     if (!provider) {
                         provider = cloudProviderFactory.getCloudProvider(
