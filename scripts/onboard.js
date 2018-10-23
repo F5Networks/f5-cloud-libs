@@ -104,8 +104,8 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
              * Control whether to load f5-cloud-libs-{provider} library.
              * There are cases where the cloud name is needed, but a cloud provider is not.
              */
-            const loadProviderLibrary = function (options) {
-                return (options.signalResource);
+            const shouldLoadProviderLibrary = function (options) {
+                return (!!options.signalResource);
             };
 
             try {
@@ -380,7 +380,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                 }
 
                 // Check whether a cloud provider is required
-                if (options.cloud && loadProviderLibrary(options)) {
+                if (options.cloud && shouldLoadProviderLibrary(options)) {
                     provider = optionsForTest.cloudProvider;
                     if (!provider) {
                         provider = cloudProviderFactory.getCloudProvider(
