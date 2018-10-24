@@ -80,6 +80,7 @@ pages:
             - public
 
 publish:
+    image: node:8
     tags:
         - docker-executor
     stage: publish
