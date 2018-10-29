@@ -414,6 +414,23 @@ module.exports = {
                 test.strictEqual(exitCode, 1);
                 test.done();
             });
+        },
+
+        testWithInterface(test) {
+            argv.push('--route', 'name:foo, network:10.1.0.0, interface:int_name');
+            test.expect(1);
+            network.run(argv, testOptions, () => {
+                const request = icontrolMock.getRequest('create', '/tm/net/route');
+                test.deepEqual(
+                    request,
+                    {
+                        name: 'foo',
+                        interface: 'int_name',
+                        network: '10.1.0.0/24'
+                    }
+                );
+                test.done();
+            });
         }
     },
 
