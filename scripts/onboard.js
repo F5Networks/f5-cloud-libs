@@ -27,6 +27,7 @@ const metricsCollector = require('../lib/metricsCollector');
 const commonOptions = require('./commonOptions');
 const cloudProviderFactory = require('../lib/cloudProviderFactory');
 const localCryptoUtil = require('../lib/localCryptoUtil');
+const cryptoUtil = require('../lib/cryptoUtil');
 
 (function run() {
     const runner = {
@@ -464,7 +465,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     .then(() => {
                         if (!options.user) {
                             logger.info('Generating temporary user.');
-                            return util.createRandomUser();
+                            return cryptoUtil.createRandomUser();
                         }
 
                         return q(

@@ -25,6 +25,7 @@ let bigIp;
 let testOptions;
 
 let authnMock;
+let cryptoUtilMock;
 let utilMock;
 let ipcMock;
 let argv;
@@ -56,6 +57,7 @@ module.exports = {
             ipc: {}
         };
 
+        cryptoUtilMock = require('../../../f5-cloud-libs').cryptoUtil;
         utilMock = require('../../../f5-cloud-libs').util;
         utilMock.logAndExit = (message, level, code) => {
             exitMessage = message;
@@ -205,7 +207,7 @@ module.exports = {
     testExceptionSignalsError(test) {
         const sentSignals = [];
 
-        utilMock.createRandomUser = () => {
+        cryptoUtilMock.createRandomUser = () => {
             return q.reject('err');
         };
 
@@ -263,7 +265,7 @@ module.exports = {
         const randomUser = 'my random user';
         let userCreated;
         let userDeleted;
-        utilMock.createRandomUser = () => {
+        cryptoUtilMock.createRandomUser = () => {
             userCreated = true;
             return q({
                 user: randomUser
