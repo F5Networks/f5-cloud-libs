@@ -23,6 +23,7 @@ const Logger = require('../lib/logger');
 const ipc = require('../lib/ipc');
 const signals = require('../lib/signals');
 const util = require('../lib/util');
+const cryptoUtil = require('../lib/cryptoUtil');
 
 (function run() {
     const runner = {
@@ -267,7 +268,7 @@ const util = require('../lib/util');
 
                         if (!options.user) {
                             logger.info('Generating temporary user');
-                            return util.createRandomUser();
+                            return cryptoUtil.createRandomUser();
                         }
 
                         return q(

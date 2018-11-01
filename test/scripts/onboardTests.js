@@ -33,6 +33,7 @@ let functionsCalled;
 let onboard;
 let ipcMock;
 let utilMock;
+let cryptoUtilMock;
 let exitMessage;
 let exitCode;
 let logErrorMessage;
@@ -213,6 +214,7 @@ module.exports = {
             signalsSent.push(signal);
         };
 
+        cryptoUtilMock = require('../../lib/cryptoUtil');
         utilMock = require('../../lib/util');
         onboard = require('../../scripts/onboard');
         localCryptoUtilMock = require('../../lib/localCryptoUtil');
@@ -394,7 +396,7 @@ module.exports = {
     testExceptionSignalsError(test) {
         const sentSignals = [];
 
-        utilMock.createRandomUser = () => {
+        cryptoUtilMock.createRandomUser = () => {
             return q.reject('err');
         };
 
@@ -452,7 +454,7 @@ module.exports = {
         const randomUser = 'my random user';
         let userCreated;
         let userDeleted;
-        utilMock.createRandomUser = () => {
+        cryptoUtilMock.createRandomUser = () => {
             userCreated = true;
             return q({
                 user: randomUser
