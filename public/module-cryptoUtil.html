@@ -64,6 +64,116 @@
     
 
     
+    <h4 class="name" id=".createRandomUser"><span class="type-signature">(static) </span>createRandomUser<span class="signature">()</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Creates a ramdom on BIG-IP/BIG-IQ.</p>
+<p>Only works if running on the device, not remotely.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise which is resolved with user credentials
+                   or rejected if an error occurs. Credentials are in
+                   the form</p>
+<pre class="prettyprint source"><code>{
+    user: user,
+    password: password
+}</code></pre>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id=".decrypt"><span class="type-signature">(static) </span>decrypt<span class="signature">(privateKeyInFile, data, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
@@ -1937,6 +2047,161 @@ key will be returned with the data.</p>
 </dl>
 
     
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~createBufferFrom"><span class="type-signature">(inner) </span>createBufferFrom<span class="signature">(data, encoding)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Create a buffer from a data string.
+Buffer.from() is preferred, and should be used in versions of NodeJS that support it.
+Buffer.from() was introduced in Node 4.5.0 and in 5.10.0</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>data to create a buffer from</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>encoding</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>data encoding. Default is 'utf8'</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

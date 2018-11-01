@@ -18,6 +18,7 @@ sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.?[0-9]?)?'\)/version(
 sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.?[0-9]?)?'\)/version(\'$1\')/" scripts/generatePassword.js
 sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.?[0-9]?)?'\)/version(\'$1\')/" scripts/decryptDataFromFile.js
 sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.?[0-9]?)?'\)/version(\'$1\')/" scripts/encryptDataToFile.js
+sed $SED_ARGS "s/version\('[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.?[0-9]?)?'\)/version(\'$1\')/" scripts/getNodes.js
 
 rm -f package.json.bak
 rm -f scripts/commonOptions.js.bak
@@ -26,3 +27,4 @@ rm -f scripts/runScript.js.bak
 rm -f scripts/generatePassword.js.bak
 rm -f scripts/decryptDataFromFile.js.bak
 rm -f scripts/encryptDataToFile.js.bak
+rm -f scripts/getNodes.js.bak
