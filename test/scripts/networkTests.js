@@ -47,9 +47,9 @@ module.exports = {
         /* eslint-disable global-require */
         ipcMock = require('../../lib/ipc');
 
-        ipcMock.once = function once(...args) {
+        ipcMock.once = function once() {
             const deferred = q.defer();
-            functionsCalled.ipc.once = args;
+            functionsCalled.ipc.once = arguments;
             return deferred.promise;
         };
 
@@ -177,8 +177,8 @@ module.exports = {
     testWaitFor(test) {
         argv.push('--wait-for', 'foo');
 
-        ipcMock.once = function once(...args) {
-            functionsCalled.ipc.once = args;
+        ipcMock.once = function once() {
+            functionsCalled.ipc.once = arguments;
             return q();
         };
 
@@ -220,7 +220,7 @@ module.exports = {
         ipcMock.once = (signal) => {
             const deferred = q.defer();
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 100);
@@ -245,7 +245,7 @@ module.exports = {
         ipcMock.once = (signal) => {
             const deferred = q.defer();
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 100);
@@ -254,7 +254,7 @@ module.exports = {
         test.expect(2);
         network.run(argv, testOptions, () => {
             test.deepEqual(sentSignals, [signals.NETWORK_RUNNING, signals.NETWORK_DONE]);
-            test.ok(!sentSignals.includes(signals.CLOUD_LIBS_ERROR), 'Done should not include error');
+            test.strictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
             test.done();
         });
     },

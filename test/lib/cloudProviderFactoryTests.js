@@ -31,8 +31,8 @@ module.exports = {
         constructorCalled = false;
 
         // eslint-disable-next-line no-underscore-dangle
-        Module._resolveFilename = (...args) => {
-            calledPath = args[0];
+        Module._resolveFilename = function _resolveFilename() {
+            calledPath = arguments[0];
             return calledPath;
         };
         callback();

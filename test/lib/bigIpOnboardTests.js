@@ -802,8 +802,8 @@ module.exports = {
 
     testSetRootPassword: {
         setUp(callback) {
-            util.runShellCommand = function runTmshCommand(...args) {
-                shellCommand = args;
+            util.runShellCommand = function runTmshCommand() {
+                shellCommand = arguments[0];
                 return q();
             };
             cryptoUtilMock.generateRandomBytes = function generateRandomBytes() {
@@ -832,7 +832,7 @@ module.exports = {
                         { value: 'false' }
                     );
                     test.strictEqual(
-                        shellCommand[0],
+                        shellCommand,
                         'echo -e "randombytes\nrandombytes" | passwd root'
                     );
                     test.deepEqual(

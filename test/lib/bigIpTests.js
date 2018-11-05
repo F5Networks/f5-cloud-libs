@@ -69,6 +69,10 @@ module.exports = {
             return q('BIG-IP');
         };
 
+        utilMock.runShellCommand = function runShellCommand() {
+            return q();
+        };
+
         realReady = bigIp.ready; // Store this so we can test the ready function
         bigIp.ready = function ready() {
             return q();
