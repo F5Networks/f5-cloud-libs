@@ -45,8 +45,8 @@ module.exports = {
         bigIp = new BigIp();
         bigIp.isInitialized = true;
         bigIp.icontrol = icontrolMock;
-        bigIp.init = (...args) => {
-            passedInitParams = args;
+        bigIp.init = function init() {
+            passedInitParams = Array.from(arguments);
             return q();
         };
 

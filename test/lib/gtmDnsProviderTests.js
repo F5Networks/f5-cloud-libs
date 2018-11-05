@@ -36,8 +36,8 @@ module.exports = {
         icontrolMock = require('../testUtil/icontrolMock');
 
         bigIpMock = new BigIp();
-        bigIpMock.init = function init(...args) {
-            functionCalls.bigIp.init = args;
+        bigIpMock.init = function init() {
+            functionCalls.bigIp.init = arguments;
             return q();
         };
         bigIpMock.isInitialized = true;
@@ -61,14 +61,14 @@ module.exports = {
         };
 
         bigIpMock.gtm = {
-            updateServer(...args) {
-                functionCalls.bigIp.gtm.updateServer = args;
+            updateServer() {
+                functionCalls.bigIp.gtm.updateServer = arguments;
             },
-            updatePool(...args) {
-                functionCalls.bigIp.gtm.updatePool = args;
+            updatePool() {
+                functionCalls.bigIp.gtm.updatePool = arguments;
             },
-            setPartition(...args) {
-                functionCalls.bigIp.gtm.setPartition = args;
+            setPartition() {
+                functionCalls.bigIp.gtm.setPartition = arguments;
             }
         };
 

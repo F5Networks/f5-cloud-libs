@@ -607,9 +607,16 @@ module.exports = {
         const os = require('os');
         const sep = require('path').sep;
         const tmpDirBase = os.tmpdir();
-        const tmpDir = fs.mkdtempSync(`${tmpDirBase}${sep}`);
         const fileName = 'foo';
-        const subDir = fs.mkdtempSync(`${tmpDir}${sep}`);
+
+        const uniqueTempDir = function uniqueTempDir(basePath) {
+            const dir = `${basePath}${sep}${Math.random().toString(36).substring(2, 8)}`;
+            fs.mkdirSync(dir);
+            return dir;
+        };
+
+        const tmpDir = uniqueTempDir(tmpDirBase);
+        const subDir = uniqueTempDir(tmpDir);
 
         test.expect(1);
 
@@ -626,8 +633,8 @@ module.exports = {
             providerMock.init = () => {
                 return q();
             };
-            providerMock.getDataFromUri = (...args) => {
-                functionsCalled.providerMock.getDataFromUri = args;
+            providerMock.getDataFromUri = (uri) => {
+                functionsCalled.providerMock.getDataFromUri = uri;
                 return q('password');
             };
 
@@ -639,7 +646,7 @@ module.exports = {
             test.expect(2);
             util.readData(s3Arn, true)
                 .then((readPassword) => {
-                    test.deepEqual(functionsCalled.providerMock.getDataFromUri, [s3Arn]);
+                    test.deepEqual(functionsCalled.providerMock.getDataFromUri, s3Arn);
                     test.strictEqual(readPassword, 'password');
                 })
                 .catch((err) => {

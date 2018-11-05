@@ -75,18 +75,18 @@ function ProviderMock() {
     this.functionCalls = {};
 }
 
-ProviderMock.prototype.init = function init(...args) {
-    this.functionCalls.init = args;
+ProviderMock.prototype.init = function init() {
+    this.functionCalls.init = arguments;
     return q();
 };
 
-ProviderMock.prototype.putInstance = function putInstance(...args) {
-    this.functionCalls.putInstance = args;
+ProviderMock.prototype.putInstance = function putInstance() {
+    this.functionCalls.putInstance = arguments;
     return q();
 };
 
-ProviderMock.prototype.getInstances = function getInstances(...args) {
-    this.functionCalls.getInstances = args;
+ProviderMock.prototype.getInstances = function getInstances() {
+    this.functionCalls.getInstances = arguments;
     return q(instances);
 };
 
@@ -126,28 +126,28 @@ ProviderMock.prototype.putPublicKey = function putPublicKey() {
     return q();
 };
 
-ProviderMock.prototype.getMessages = function getMessages(...args) {
-    this.functionCalls.getMessages = args;
+ProviderMock.prototype.getMessages = function getMessages() {
+    this.functionCalls.getMessages = arguments;
     return q(messages);
 };
 
-ProviderMock.prototype.sendMessage = function sendMessage(...args) {
-    this.functionCalls.sendMessage = args;
+ProviderMock.prototype.sendMessage = function sendMessage() {
+    this.functionCalls.sendMessage = arguments;
     return q(messages);
 };
 
-ProviderMock.prototype.getMasterCredentials = function getMasterCredentials(...args) {
-    this.functionCalls.getMasterCredentials = args;
+ProviderMock.prototype.getMasterCredentials = function getMasterCredentials() {
+    this.functionCalls.getMasterCredentials = arguments;
     return q(credentials);
 };
 
-ProviderMock.prototype.putMasterCredentials = function putMasterCredentials(...args) {
-    this.functionCalls.putMasterCredentials = args;
+ProviderMock.prototype.putMasterCredentials = function putMasterCredentials() {
+    this.functionCalls.putMasterCredentials = arguments;
     return q();
 };
 
-ProviderMock.prototype.storeUcs = function storeUcs(...args) {
-    this.functionCalls.storeUcs = args;
+ProviderMock.prototype.storeUcs = function storeUcs() {
+    this.functionCalls.storeUcs = arguments;
     return q();
 };
 
@@ -225,8 +225,8 @@ module.exports = {
         providerMock = new ProviderMock();
 
         // Just resolve right away, otherwise these tests never exit
-        ipcMock.once = function once(...args) {
-            functionsCalled.ipc.once = args;
+        ipcMock.once = function once() {
+            functionsCalled.ipc.once = arguments;
             return q();
         };
 
@@ -237,12 +237,12 @@ module.exports = {
         cryptoUtilMock.generateKeyPair = () => {
             return q();
         };
-        cryptoUtilMock.decrypt = function decrypt(...args) {
-            cryptoUtilMock.functionCalls.decrypt = args;
+        cryptoUtilMock.decrypt = function decrypt() {
+            cryptoUtilMock.functionCalls.decrypt = arguments;
             return q();
         };
-        cryptoUtilMock.encrypt = function encrypt(...args) {
-            cryptoUtilMock.functionCalls.encrypt = args;
+        cryptoUtilMock.encrypt = function encrypt() {
+            cryptoUtilMock.functionCalls.encrypt = arguments;
             return q();
         };
 
@@ -251,12 +251,12 @@ module.exports = {
         };
 
         gtmDnsProviderMock.functionCalls = {};
-        gtmDnsProviderMock.init = function init(...args) {
-            gtmDnsProviderMock.functionCalls.init = args;
+        gtmDnsProviderMock.init = function init() {
+            gtmDnsProviderMock.functionCalls.init = arguments;
             return q();
         };
-        gtmDnsProviderMock.update = function update(...args) {
-            gtmDnsProviderMock.functionCalls.update = args;
+        gtmDnsProviderMock.update = function update() {
+            gtmDnsProviderMock.functionCalls.update = arguments;
         };
 
         functionsCalled = {
@@ -301,13 +301,13 @@ module.exports = {
                     return q();
                 };
 
-                bigIpMock.loadUcs = function loadUcs(...args) {
-                    bigIpMock.functionCalls.loadUcs = args;
+                bigIpMock.loadUcs = function loadUcs() {
+                    bigIpMock.functionCalls.loadUcs = arguments;
                     return q();
                 };
 
-                bigIpMock.installPrivateKey = function installPrivateKey(...args) {
-                    bigIpMock.functionCalls.installPrivateKey = args;
+                bigIpMock.installPrivateKey = function installPrivateKey() {
+                    bigIpMock.functionCalls.installPrivateKey = arguments;
                     return q();
                 };
 
@@ -315,25 +315,25 @@ module.exports = {
                     return q(cloudPrivateKeyPath);
                 };
 
-                bigIpMock.getPrivateKeyMetadata = function getPrivateKeyMetadata(...args) {
-                    bigIpMock.functionCalls.getPrivateKeyMetadata = args;
+                bigIpMock.getPrivateKeyMetadata = function getPrivateKeyMetadata() {
+                    bigIpMock.functionCalls.getPrivateKeyMetadata = arguments;
                     return q(privateKeyMetadata);
                 };
 
                 bigIpMock.cluster = {
-                    configSyncIp(...args) {
-                        bigIpMock.functionCalls.configSyncIp = args;
+                    configSyncIp() {
+                        bigIpMock.functionCalls.configSyncIp = arguments;
                         return q();
                     },
-                    createDeviceGroup(...args) {
-                        bigIpMock.functionCalls.createDeviceGroup = args;
+                    createDeviceGroup() {
+                        bigIpMock.functionCalls.createDeviceGroup = arguments;
                         return q();
                     },
                     deleteDeviceGroup() {
                         return q();
                     },
-                    joinCluster(...args) {
-                        bigIpMock.functionCalls.joinCluster = args;
+                    joinCluster() {
+                        bigIpMock.functionCalls.joinCluster = arguments;
                         return q();
                     },
                     resetTrust() {
