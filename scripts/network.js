@@ -23,6 +23,7 @@ const Logger = require('../lib/logger');
 const ipc = require('../lib/ipc');
 const signals = require('../lib/signals');
 const util = require('../lib/util');
+const cryptoUtil = require('../lib/cryptoUtil');
 
 (function run() {
     const runner = {
@@ -69,7 +70,7 @@ const util = require('../lib/util');
 
                 // Can't use getCommonOptions here because of the special reboot handling
                 options
-                    .version('4.5.0')
+                    .version('4.5.1')
                     .option(
                         '--host <ip_address>',
                         'BIG-IP management IP to which to send commands.'
@@ -136,8 +137,8 @@ const util = require('../lib/util');
                         'Set default gateway to gateway_address.'
                     )
                     .option(
-                        '--route <name:name, gw:address, network:network>',
-                        'Create arbitrary route with name for destination network via gateway address.',
+                        '--route <name:name, gw:address, network:network, interface:interface_name>',
+                        'Create arbitrary route with name for destination network via gateway address or interface name',
                         util.mapArray,
                         routes
                     )
@@ -267,7 +268,7 @@ const util = require('../lib/util');
 
                         if (!options.user) {
                             logger.info('Generating temporary user');
-                            return util.createRandomUser();
+                            return cryptoUtil.createRandomUser();
                         }
 
                         return q(
@@ -597,9 +598,16 @@ const util = require('../lib/util');
 
                         for (let i = 0; i < routes.length; i++) {
                             const route = routes[i];
-                            if (!route.name || !route.gw || !route.network) {
-                                const message = 'Bad route params. Name, gateway, network required';
-                                return q.reject(new Error(message));
+                            if (!route.name || !route.network || (!route.gw && !route.interface)) {
+                                return q.reject(new Error(
+                                    'Bad route params. Name, network, and (gateway or interface) required'
+                                ));
+                            }
+
+                            if (route.gw && route.interface) {
+                                return q.reject(new Error(
+                                    'Bad route params. Should provide only 1 of gateway or interface'
+                                ));
                             }
 
                             let network = route.network;
@@ -609,9 +617,18 @@ const util = require('../lib/util');
 
                             routeBody = {
                                 network,
-                                name: route.name,
-                                gw: route.gw
+                                name: route.name
                             };
+
+                            let message = `Creating route ${route.name} with`;
+
+                            if (route.gw) {
+                                routeBody.gw = route.gw;
+                                message = `${message} gateway ${route.gw}`;
+                            } else if (route.interface) {
+                                routeBody.interface = route.interface;
+                                message = `${message} interface ${route.interface}`;
+                            }
 
                             promises.push(
                                 {
@@ -620,7 +637,7 @@ const util = require('../lib/util');
                                         '/tm/net/route',
                                         routeBody
                                     ],
-                                    message: `Creating route ${route.name} with gateway ${route.gw}`
+                                    message
                                 }
                             );
                         }

@@ -53,7 +53,7 @@ module.exports = {
             const deferred = q.defer();
             functionsCalled.ipc.once.push(signal);
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 100);
@@ -116,7 +116,7 @@ module.exports = {
         test.expect(2);
         runScript.run(argv, () => {
             test.deepEqual(sentSignals, [signals.ONBOARD_DONE, signals.SCRIPT_RUNNING, signals.SCRIPT_DONE]);
-            test.ok(functionsCalled.ipc.once.includes(signals.ONBOARD_DONE, 'Should wait for ONBOARD_DONE'));
+            test.notStrictEqual(functionsCalled.ipc.once.indexOf(signals.ONBOARD_DONE), -1);
             test.done();
         });
     },
@@ -132,8 +132,8 @@ module.exports = {
 
         test.expect(2);
         runScript.run(argv, () => {
-            test.ok(sentSignals.includes(signals.CLOUD_LIBS_ERROR));
-            test.ok(!sentSignals.includes(signals.SCRIPT_DONE, 'runScript should not complete'));
+            test.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            test.strictEqual(sentSignals.indexOf(signals.SCRIPT_DONE), -1);
             test.done();
         });
     }

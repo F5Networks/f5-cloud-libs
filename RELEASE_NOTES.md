@@ -1,5 +1,9 @@
 # Release notes
 
+## Version 4.5.1
+* Fix for running f5-cloud-libs on BIG-IP 12.1
+* Fix for autoscale BIG-IP 13.1 in f5-cloud-libs-gce
+
 ## Version 4.5.0
 * Support for clustering BIG-IQ in AWS and Azure
 * Fix for tagging instance in single instance AWS Auto Scale Group

@@ -47,13 +47,13 @@ function ProviderMock() {
     this.functionCalls = {};
 }
 
-ProviderMock.prototype.init = function init(...args) {
-    this.functionCalls.init = args;
+ProviderMock.prototype.init = function init() {
+    this.functionCalls.init = arguments;
     return q();
 };
 
-ProviderMock.prototype.bigIpReady = function bigIpReady(...args) {
-    this.functionCalls.bigIpReady = args;
+ProviderMock.prototype.bigIpReady = function bigIpReady() {
+    this.functionCalls.bigIpReady = arguments;
     return q();
 };
 
@@ -70,7 +70,7 @@ module.exports = {
             exitCode = code;
         };
         utilMock.logError = () => { };
-        utilMock.saveArgs = () => {
+        utilMock.saveArgs = function saveArgs() {
             return q();
         };
 
@@ -84,7 +84,7 @@ module.exports = {
             const deferred = q.defer();
             functionsCalled.ipc.once.push(signal);
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 100);
@@ -92,8 +92,8 @@ module.exports = {
         };
 
         bigIpMock = {
-            init(...args) {
-                functionsCalled.bigIp.init = args;
+            init() {
+                functionsCalled.bigIp.init = arguments;
                 return q();
             },
 
@@ -105,64 +105,64 @@ module.exports = {
                 return false;
             },
 
-            list(...args) {
-                functionsCalled.bigIp.list = args;
+            list() {
+                functionsCalled.bigIp.list = arguments;
                 return q();
             },
 
-            modify(...args) {
-                functionsCalled.bigIp.modify = args;
+            modify() {
+                functionsCalled.bigIp.modify = arguments;
                 return q();
             },
 
-            create(...args) {
-                functionsCalled.bigIp.create = args;
+            create() {
+                functionsCalled.bigIp.create = arguments;
                 return q();
             },
 
-            delete(...args) {
-                functionsCalled.bigIp.delete = args;
+            delete() {
+                functionsCalled.bigIp.delete = arguments;
                 return q();
             },
 
-            ready(...args) {
-                functionsCalled.bigIp.ready = args;
+            ready() {
+                functionsCalled.bigIp.ready = arguments;
                 return q();
             },
 
-            save(...args) {
-                functionsCalled.bigIp.save = args;
+            save() {
+                functionsCalled.bigIp.save = arguments;
                 return q();
             },
 
-            active(...args) {
-                functionsCalled.bigIp.active = args;
+            active() {
+                functionsCalled.bigIp.active = arguments;
                 return q();
             },
 
-            ping(...args) {
-                functionsCalled.bigIp.ping = args;
+            ping() {
+                functionsCalled.bigIp.ping = arguments;
                 return q();
             },
 
-            rebootRequired(...args) {
-                functionsCalled.bigIp.rebootRequired = args;
+            rebootRequired() {
+                functionsCalled.bigIp.rebootRequired = arguments;
                 return q(false);
             },
 
-            reboot(...args) {
-                functionsCalled.bigIp.reboot = args;
+            reboot() {
+                functionsCalled.bigIp.reboot = arguments;
                 return q();
             },
             onboard: {
-                setRootPassword(...args) {
-                    functionsCalled.bigIp.onboard.setRootPassword = args;
+                setRootPassword() {
+                    functionsCalled.bigIp.onboard.setRootPassword = arguments;
                     return q();
                 }
             },
             cluster: {
-                addSecondary(...args) {
-                    functionsCalled.bigIp.cluster.addSecondary = args;
+                addSecondary() {
+                    functionsCalled.bigIp.cluster.addSecondary = Array.from(arguments);
                     return q();
                 }
             }
@@ -181,7 +181,9 @@ module.exports = {
             },
             bigIp: {
                 onboard: {},
-                cluster: {}
+                cluster: {
+                    addSecondary: []
+                }
             },
             utilMock: {},
             localCryptoUtilMock: {}
@@ -268,7 +270,7 @@ module.exports = {
         test.expect(2);
         cluster.run(argv, testOptions, () => {
             test.deepEqual(sentSignals, ['foo', signals.CLUSTER_RUNNING, signals.CLUSTER_DONE]);
-            test.ok(functionsCalled.ipc.once.includes('foo', 'Should wait for foo signal'));
+            test.notStrictEqual(functionsCalled.ipc.once.indexOf('foo'), -1);
             test.done();
         });
     },
@@ -283,8 +285,8 @@ module.exports = {
 
         test.expect(2);
         cluster.run(argv, testOptions, () => {
-            test.ok(sentSignals.includes(signals.CLOUD_LIBS_ERROR));
-            test.ok(!sentSignals.includes(signals.CLUSTER_DONE, 'runScript should not complete'));
+            test.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            test.strictEqual(sentSignals.indexOf(signals.CLUSTER_DONE), -1);
             test.done();
         });
     },
@@ -340,13 +342,13 @@ module.exports = {
         testBigIqPasswordDecrypted(test) {
             const encryptedData = 'dke9cxk';
 
-            utilMock.readData = (...args) => {
-                functionsCalled.utilMock.readData = args;
+            utilMock.readData = function decryptPassword() {
+                functionsCalled.utilMock.readData = arguments;
                 return q(encryptedData);
             };
 
-            localCryptoUtilMock.decryptPassword = (...args) => {
-                functionsCalled.localCryptoUtilMock.decryptPassword = args;
+            localCryptoUtilMock.decryptPassword = function decryptPassword() {
+                functionsCalled.localCryptoUtilMock.decryptPassword = arguments;
                 return q(JSON.stringify(
                     {
                         masterPassphrase: 'keykeykey',
@@ -359,7 +361,7 @@ module.exports = {
             argv.push('--big-iq-password-data-encrypted');
             test.expect(2);
             cluster.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.localCryptoUtilMock.decryptPassword, [encryptedData]);
+                test.deepEqual(functionsCalled.localCryptoUtilMock.decryptPassword[0], encryptedData);
                 test.strictEqual(functionsCalled.utilMock.readData[0], 'arn:::foo:bar/password');
                 test.done();
             });

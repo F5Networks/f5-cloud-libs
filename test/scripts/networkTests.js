@@ -25,6 +25,7 @@ let bigIp;
 let testOptions;
 
 let authnMock;
+let cryptoUtilMock;
 let utilMock;
 let ipcMock;
 let argv;
@@ -46,9 +47,9 @@ module.exports = {
         /* eslint-disable global-require */
         ipcMock = require('../../lib/ipc');
 
-        ipcMock.once = function once(...args) {
+        ipcMock.once = function once() {
             const deferred = q.defer();
-            functionsCalled.ipc.once = args;
+            functionsCalled.ipc.once = arguments;
             return deferred.promise;
         };
 
@@ -56,6 +57,7 @@ module.exports = {
             ipc: {}
         };
 
+        cryptoUtilMock = require('../../../f5-cloud-libs').cryptoUtil;
         utilMock = require('../../../f5-cloud-libs').util;
         utilMock.logAndExit = (message, level, code) => {
             exitMessage = message;
@@ -175,8 +177,8 @@ module.exports = {
     testWaitFor(test) {
         argv.push('--wait-for', 'foo');
 
-        ipcMock.once = function once(...args) {
-            functionsCalled.ipc.once = args;
+        ipcMock.once = function once() {
+            functionsCalled.ipc.once = arguments;
             return q();
         };
 
@@ -205,7 +207,7 @@ module.exports = {
     testExceptionSignalsError(test) {
         const sentSignals = [];
 
-        utilMock.createRandomUser = () => {
+        cryptoUtilMock.createRandomUser = () => {
             return q.reject('err');
         };
 
@@ -218,7 +220,7 @@ module.exports = {
         ipcMock.once = (signal) => {
             const deferred = q.defer();
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 100);
@@ -243,7 +245,7 @@ module.exports = {
         ipcMock.once = (signal) => {
             const deferred = q.defer();
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 100);
@@ -252,7 +254,7 @@ module.exports = {
         test.expect(2);
         network.run(argv, testOptions, () => {
             test.deepEqual(sentSignals, [signals.NETWORK_RUNNING, signals.NETWORK_DONE]);
-            test.ok(!sentSignals.includes(signals.CLOUD_LIBS_ERROR), 'Done should not include error');
+            test.strictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
             test.done();
         });
     },
@@ -263,7 +265,7 @@ module.exports = {
         const randomUser = 'my random user';
         let userCreated;
         let userDeleted;
-        utilMock.createRandomUser = () => {
+        cryptoUtilMock.createRandomUser = () => {
             userCreated = true;
             return q({
                 user: randomUser
@@ -412,6 +414,23 @@ module.exports = {
                 // eslint-disable-next-line no-unused-vars
                 const request = icontrolMock.getRequest('create', '/tm/net/route');
                 test.strictEqual(exitCode, 1);
+                test.done();
+            });
+        },
+
+        testWithInterface(test) {
+            argv.push('--route', 'name:foo, network:10.1.0.0, interface:int_name');
+            test.expect(1);
+            network.run(argv, testOptions, () => {
+                const request = icontrolMock.getRequest('create', '/tm/net/route');
+                test.deepEqual(
+                    request,
+                    {
+                        name: 'foo',
+                        interface: 'int_name',
+                        network: '10.1.0.0/24'
+                    }
+                );
                 test.done();
             });
         }

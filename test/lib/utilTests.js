@@ -55,7 +55,7 @@ let calledArgs;
 
 // child_process mock
 let childProcessSpawn;
-let childProcessExecFile;
+let childProcessExec;
 let unrefCalled;
 const childMock = {
     unref() {
@@ -125,11 +125,6 @@ module.exports = {
 
         providerMock = require('../../lib/cloudProvider');
         cloudProviderFactoryMock = require('../../lib/cloudProviderFactory');
-
-        cloudProviderFactoryMock.getCloudProvider = (...args) => {
-            functionsCalled.cloudProviderFactoryMock.getCloudProvider = args[0];
-            return providerMock;
-        };
 
         functionsCalled = {
             cloudProviderFactoryMock: {},
@@ -612,9 +607,16 @@ module.exports = {
         const os = require('os');
         const sep = require('path').sep;
         const tmpDirBase = os.tmpdir();
-        const tmpDir = fs.mkdtempSync(`${tmpDirBase}${sep}`);
         const fileName = 'foo';
-        const subDir = fs.mkdtempSync(`${tmpDir}${sep}`);
+
+        const uniqueTempDir = function uniqueTempDir(basePath) {
+            const dir = `${basePath}${sep}${Math.random().toString(36).substring(2, 8)}`;
+            fs.mkdirSync(dir);
+            return dir;
+        };
+
+        const tmpDir = uniqueTempDir(tmpDirBase);
+        const subDir = uniqueTempDir(tmpDir);
 
         test.expect(1);
 
@@ -627,55 +629,25 @@ module.exports = {
     },
 
     testReadData: {
-        testAWSReadUriData(test) {
+        testReadDataWithCloudProviderURI(test) {
             providerMock.init = () => {
                 return q();
             };
-            providerMock.getDataFromUri = (...args) => {
-                functionsCalled.providerMock.getDataFromUri = args;
+            providerMock.getDataFromUri = (uri) => {
+                functionsCalled.providerMock.getDataFromUri = uri;
                 return q('password');
+            };
+
+            cloudProviderFactoryMock.getCloudProvider = () => {
+                return providerMock;
             };
             const s3Arn = 'arn:::foo:bar/password';
 
-            test.expect(3);
+            test.expect(2);
             util.readData(s3Arn, true)
                 .then((readPassword) => {
-                    test.deepEqual(functionsCalled.providerMock.getDataFromUri, [s3Arn]);
+                    test.deepEqual(functionsCalled.providerMock.getDataFromUri, s3Arn);
                     test.strictEqual(readPassword, 'password');
-                    test.strictEqual(functionsCalled.cloudProviderFactoryMock.getCloudProvider, 'aws');
-                })
-                .catch((err) => {
-                    test.ok(false, err);
-                })
-                .finally(() => {
-                    test.done();
-                });
-        },
-
-        testAzureReadUriData(test) {
-            let initArgs;
-            providerMock.init = (...args) => {
-                initArgs = args;
-                return q();
-            };
-            providerMock.getDataFromUri = (...args) => {
-                functionsCalled.providerMock.getDataFromUri = args;
-                return q('password');
-            };
-            const fileUri = 'https://testing.blob.core.windows.net/container/file.text';
-            const options = {
-                clOptions: {
-                    azCredentialsUrl: 'file:///azCreds'
-                }
-            };
-
-            test.expect(4);
-            util.readData(fileUri, true, options)
-                .then((readPassword) => {
-                    test.deepEqual(functionsCalled.providerMock.getDataFromUri, [fileUri]);
-                    test.strictEqual(readPassword, 'password');
-                    test.strictEqual(functionsCalled.cloudProviderFactoryMock.getCloudProvider, 'azure');
-                    test.deepEqual(initArgs, [{ azCredentialsUrl: 'file:///azCreds' }]);
                 })
                 .catch((err) => {
                     test.ok(false, err);
@@ -690,6 +662,10 @@ module.exports = {
             const passwordFile = '/tmp/mypass';
 
             fs.writeFileSync(passwordFile, password, { encoding: 'ascii' });
+
+            cloudProviderFactoryMock.getCloudProvider = () => {
+                throw new Error('Unavailable cloud provider');
+            };
 
             test.expect(1);
             util.readData(`file://${passwordFile}`, true)
@@ -940,7 +916,7 @@ module.exports = {
 
     testLocalReady: {
         setUp(callback) {
-            childProcessExecFile = childProcess.execFile;
+            childProcessExec = childProcess.exec;
             execCalled = false;
 
             callback();
@@ -948,13 +924,13 @@ module.exports = {
 
         tearDown(callback) {
             execCalled = false;
-            childProcess.execFile = childProcessExecFile;
+            childProcess.exec = childProcessExec;
             callback();
         },
 
         testBasic(test) {
-            childProcess.execFile = function execFile(file, cb) {
-                if (file.endsWith('.sh')) {
+            childProcess.exec = function exec(command, cb) {
+                if (command.endsWith('.sh')) {
                     execCalled = true;
                     cb();
                 }
@@ -968,8 +944,8 @@ module.exports = {
         testError(test) {
             const message = 'process exec error';
 
-            childProcess.execFile = function execFile(file, cb) {
-                if (file.endsWith('.sh')) {
+            childProcess.exec = function exec(command, cb) {
+                if (command.endsWith('.sh')) {
                     cb(new Error(message));
                 }
             };

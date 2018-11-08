@@ -67,8 +67,8 @@ module.exports = {
         generateAndInstallKeyPairCalled = false;
 
         // Just resolve right away, otherwise these tests never exit
-        ipcMock.once = function once(...args) {
-            functionsCalled.ipc.once.push(args[0]);
+        ipcMock.once = function once() {
+            functionsCalled.ipc.once.push(arguments[0]);
             return q();
         };
 
@@ -100,8 +100,8 @@ module.exports = {
 
         test.expect(2);
         encryptData.run(argv, () => {
-            test.strictEqual(functionsCalled.ipc.once.includes('foo'), true);
-            test.strictEqual(functionsCalled.ipc.once.includes(signals.CLOUD_LIBS_ERROR), true);
+            test.notStrictEqual(functionsCalled.ipc.once.indexOf('foo'), -1);
+            test.notStrictEqual(functionsCalled.ipc.once.indexOf(signals.CLOUD_LIBS_ERROR), -1);
             test.done();
         });
     },
@@ -119,7 +119,7 @@ module.exports = {
         ipcMock.once = (signal) => {
             const deferred = q.defer();
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 200);
@@ -130,8 +130,8 @@ module.exports = {
         ipcMock.send('foo');
         test.expect(2);
         encryptData.run(argv, () => {
-            test.ok(sentSignals.includes(signals.CLOUD_LIBS_ERROR));
-            test.ok(!sentSignals.includes(signals.ENCRYPTION_DONE, 'Encryption should not complete'));
+            test.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            test.strictEqual(sentSignals.indexOf(signals.ENCRYPTION_DONE), -1);
             test.done();
         });
     },

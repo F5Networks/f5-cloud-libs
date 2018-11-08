@@ -12,6 +12,8 @@ rules:
     # Trailing commas look bad
     comma-dangle: off
 
+    prefer-rest-params: off
+
     # ES6 provides names where possible
     func-names:
         - error

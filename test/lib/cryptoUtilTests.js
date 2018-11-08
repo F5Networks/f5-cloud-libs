@@ -24,6 +24,8 @@ let fs;
 let childProcess;
 let crypto;
 let cryptoUtil;
+let util;
+let q;
 
 let fsReadFile;
 
@@ -42,6 +44,8 @@ module.exports = {
         fs = require('fs');
         childProcess = require('child_process');
         crypto = require('crypto');
+        q = require('q');
+        util = require('../../../f5-cloud-libs').util;
         cryptoUtil = require('../../../f5-cloud-libs').cryptoUtil;
 
         fsReadFile = fs.readFile;
@@ -480,6 +484,34 @@ module.exports = {
             test.ok(randomNum <= HIGH_RANGE_5);
         }
         test.done();
+    },
+
+    testCreateRandomUser(test) {
+        util.runTmshCommand = function runTmshCommand() {
+            return q();
+        };
+
+        cryptoUtil.generateRandomBytes = function generateRandomBytes(length) {
+            const lengths = {
+                10: 'user',
+                24: 'password'
+            };
+            return q(lengths[length]);
+        };
+
+        const expectedUser = {
+            user: 'user',
+            password: 'password'
+        };
+
+        test.expect(1);
+        cryptoUtil.createRandomUser()
+            .then((response) => {
+                test.deepEqual(response, expectedUser);
+            })
+            .finally(() => {
+                test.done();
+            });
     },
 
     testSetLogger(test) {

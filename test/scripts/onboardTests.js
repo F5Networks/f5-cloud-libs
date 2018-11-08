@@ -33,6 +33,7 @@ let functionsCalled;
 let onboard;
 let ipcMock;
 let utilMock;
+let cryptoUtilMock;
 let exitMessage;
 let exitCode;
 let logErrorMessage;
@@ -59,8 +60,8 @@ function ProviderMock() {
     this.functionCalls = {};
 }
 
-ProviderMock.prototype.init = function init(...args) {
-    this.functionCalls.init = args;
+ProviderMock.prototype.init = function init() {
+    this.functionCalls.init = arguments;
     return q();
 };
 
@@ -72,8 +73,8 @@ ProviderMock.prototype.signalInstanceProvisioned = () => {
 module.exports = {
     setUp(callback) {
         bigIpMock = {
-            init(...args) {
-                functionsCalled.bigIp.init = args;
+            init() {
+                functionsCalled.bigIp.init = arguments;
                 return q();
             },
 
@@ -85,85 +86,85 @@ module.exports = {
                 return false;
             },
 
-            list(...args) {
-                functionsCalled.bigIp.list = args;
+            list() {
+                functionsCalled.bigIp.list = arguments;
                 return q();
             },
 
-            modify(...args) {
-                functionsCalled.bigIp.modify = args;
+            modify() {
+                functionsCalled.bigIp.modify = arguments;
                 return q();
             },
 
-            create(...args) {
-                functionsCalled.bigIp.create = args;
+            create() {
+                functionsCalled.bigIp.create = arguments;
                 return q();
             },
 
-            delete(...args) {
-                functionsCalled.bigIp.delete = args;
+            delete() {
+                functionsCalled.bigIp.delete = arguments;
                 return q();
             },
 
-            ready(...args) {
-                functionsCalled.bigIp.ready = args;
+            ready() {
+                functionsCalled.bigIp.ready = arguments;
                 return q();
             },
 
-            save(...args) {
-                functionsCalled.bigIp.save = args;
+            save() {
+                functionsCalled.bigIp.save = arguments;
                 return q();
             },
 
-            active(...args) {
-                functionsCalled.bigIp.active = args;
+            active() {
+                functionsCalled.bigIp.active = arguments;
                 return q();
             },
 
-            ping(...args) {
-                functionsCalled.bigIp.ping = args;
+            ping() {
+                functionsCalled.bigIp.ping = arguments;
                 return q();
             },
 
-            rebootRequired(...args) {
-                functionsCalled.bigIp.rebootRequired = args;
+            rebootRequired() {
+                functionsCalled.bigIp.rebootRequired = arguments;
                 return q(false);
             },
 
-            reboot(...args) {
-                functionsCalled.bigIp.reboot = args;
+            reboot() {
+                functionsCalled.bigIp.reboot = arguments;
                 rebootRequested = true;
                 return q();
             },
 
             onboard: {
-                globalSettings(...args) {
-                    functionsCalled.bigIp.onboard.globalSettings = args;
+                globalSettings() {
+                    functionsCalled.bigIp.onboard.globalSettings = arguments;
                     return q();
                 },
 
-                license(...args) {
-                    functionsCalled.bigIp.onboard.license = args;
+                license() {
+                    functionsCalled.bigIp.onboard.license = arguments;
                     return q();
                 },
 
-                licenseViaBigIq(...args) {
-                    functionsCalled.bigIp.onboard.licenseViaBigIq = args;
+                licenseViaBigIq() {
+                    functionsCalled.bigIp.onboard.licenseViaBigIq = arguments;
                     return q();
                 },
 
-                password(...args) {
-                    functionsCalled.bigIp.onboard.password = args;
+                password() {
+                    functionsCalled.bigIp.onboard.password = arguments;
                     return q();
                 },
 
-                provision(...args) {
-                    functionsCalled.bigIp.onboard.provision = args;
+                provision() {
+                    functionsCalled.bigIp.onboard.provision = arguments;
                     return q();
                 },
 
-                setDbVars(...args) {
-                    functionsCalled.bigIp.onboard.setDbVars = args;
+                setDbVars() {
+                    functionsCalled.bigIp.onboard.setDbVars = arguments;
                     return q();
                 },
 
@@ -171,13 +172,13 @@ module.exports = {
                     return q(true);
                 },
 
-                setMasterPassphrase(...args) {
-                    functionsCalled.bigIp.onboard.setMasterPassphrase = args;
+                setMasterPassphrase() {
+                    functionsCalled.bigIp.onboard.setMasterPassphrase = arguments[0];
                     return q();
                 },
 
-                updateUser(user, password, role, shell, ...args) {
-                    functionsCalled.bigIp.onboard.updateUser = args;
+                updateUser(user, password, role, shell) {
+                    functionsCalled.bigIp.onboard.updateUser = arguments;
                     this.updatedUsers = this.updatedUsers || [];
                     this.updatedUsers.push({
                         user,
@@ -189,8 +190,8 @@ module.exports = {
                     return q();
                 },
 
-                sslPort(...args) {
-                    functionsCalled.bigIp.onboard.sslPort = args;
+                sslPort() {
+                    functionsCalled.bigIp.onboard.sslPort = arguments;
                     return q();
                 }
             }
@@ -203,9 +204,9 @@ module.exports = {
         /* eslint-disable global-require */
         ipcMock = require('../../lib/ipc');
 
-        ipcMock.once = function once(...args) {
+        ipcMock.once = function once() {
             const deferred = q.defer();
-            functionsCalled.ipc.once = args;
+            functionsCalled.ipc.once = arguments;
             return deferred.promise;
         };
 
@@ -213,6 +214,7 @@ module.exports = {
             signalsSent.push(signal);
         };
 
+        cryptoUtilMock = require('../../lib/cryptoUtil');
         utilMock = require('../../lib/util');
         onboard = require('../../scripts/onboard');
         localCryptoUtilMock = require('../../lib/localCryptoUtil');
@@ -241,8 +243,8 @@ module.exports = {
         exitMessage = '';
         exitCode = undefined;
 
-        metricsCollectorMock.upload = function upload(...args) {
-            functionsCalled.metrics.upload = args;
+        metricsCollectorMock.upload = function upload() {
+            functionsCalled.metrics.upload = arguments;
             return q();
         };
 
@@ -364,8 +366,8 @@ module.exports = {
     testWaitFor(test) {
         argv.push('--wait-for', 'foo');
 
-        ipcMock.once = function once(...args) {
-            functionsCalled.ipc.once = args;
+        ipcMock.once = function once() {
+            functionsCalled.ipc.once = arguments;
             return q();
         };
 
@@ -394,7 +396,7 @@ module.exports = {
     testExceptionSignalsError(test) {
         const sentSignals = [];
 
-        utilMock.createRandomUser = () => {
+        cryptoUtilMock.createRandomUser = () => {
             return q.reject('err');
         };
 
@@ -407,7 +409,7 @@ module.exports = {
         ipcMock.once = (signal) => {
             const deferred = q.defer();
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 100);
@@ -432,7 +434,7 @@ module.exports = {
         ipcMock.once = (signal) => {
             const deferred = q.defer();
             setInterval(() => {
-                if (sentSignals.includes(signal)) {
+                if (sentSignals.indexOf(signal) > -1) {
                     deferred.resolve();
                 }
             }, 100);
@@ -441,7 +443,7 @@ module.exports = {
         test.expect(2);
         onboard.run(argv, testOptions, () => {
             test.deepEqual(sentSignals, [signals.ONBOARD_RUNNING, signals.ONBOARD_DONE]);
-            test.ok(!sentSignals.includes(signals.CLOUD_LIBS_ERROR), 'Done should not include error');
+            test.strictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
             test.done();
         });
     },
@@ -452,7 +454,7 @@ module.exports = {
         const randomUser = 'my random user';
         let userCreated;
         let userDeleted;
-        utilMock.createRandomUser = () => {
+        cryptoUtilMock.createRandomUser = () => {
             userCreated = true;
             return q({
                 user: randomUser
@@ -536,8 +538,8 @@ module.exports = {
                 return q(false);
             };
 
-            bigIpMock.onboard.setRootPassword = (...args) => {
-                functionsCalled.bigIp.onboard.setRootPassword = args;
+            bigIpMock.onboard.setRootPassword = function setRootPassword() {
+                functionsCalled.bigIp.onboard.setRootPassword = arguments;
                 return q();
             };
 
@@ -545,8 +547,8 @@ module.exports = {
         },
 
         testSetPasswordsFromJSON(test) {
-            utilMock.readData = (...args) => {
-                functionsCalled.utilMock.readData = args;
+            utilMock.readData = function readData() {
+                functionsCalled.utilMock.readData = arguments;
                 return q(JSON.stringify(
                     {
                         masterPassphrase: 'keykeykey',
@@ -559,7 +561,7 @@ module.exports = {
             const s3Arn = 'arn:::foo:bar/password';
             argv.push('--big-iq-password-data-uri', s3Arn, '--cloud', 'aws');
 
-            test.expect(5);
+            test.expect(6);
             onboard.run(argv, testOptions, () => {
                 test.strictEqual(functionsCalled.utilMock.readData[0], s3Arn);
                 test.strictEqual(functionsCalled.utilMock.readData[1], true);
@@ -571,11 +573,9 @@ module.exports = {
                         shell: undefined
                     }]
                 );
-                test.deepEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, ['keykeykey']);
-                test.deepEqual(
-                    functionsCalled.bigIp.onboard.setRootPassword,
-                    ['rootpass', undefined, { enableRoot: true }]
-                );
+                test.strictEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, 'keykeykey');
+                test.strictEqual(functionsCalled.bigIp.onboard.setRootPassword[0], 'rootpass');
+                test.deepEqual(functionsCalled.bigIp.onboard.setRootPassword[2], { enableRoot: true });
                 test.done();
             });
         },
@@ -584,13 +584,13 @@ module.exports = {
             const encryptedData = 'dke9cxk';
             const passwordFile = 'file:///tmp/passwords';
 
-            utilMock.readData = (...args) => {
-                functionsCalled.utilMock.readData = args;
+            utilMock.readData = function readData() {
+                functionsCalled.utilMock.readData = arguments;
                 return q(encryptedData);
             };
 
-            localCryptoUtilMock.decryptPassword = (...args) => {
-                functionsCalled.localCryptoUtilMock.decryptPassword = args;
+            localCryptoUtilMock.decryptPassword = function decryptPassword() {
+                functionsCalled.localCryptoUtilMock.decryptPassword = arguments;
                 return q(JSON.stringify(
                     {
                         masterPassphrase: 'keykeykey',
@@ -604,7 +604,7 @@ module.exports = {
                 '--big-iq-password-data-encrypted', '--cloud', 'aws');
             test.expect(2);
             onboard.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.localCryptoUtilMock.decryptPassword, [encryptedData]);
+                test.strictEqual(functionsCalled.localCryptoUtilMock.decryptPassword[0], encryptedData);
                 test.strictEqual(functionsCalled.utilMock.readData[0], passwordFile);
                 test.done();
             });
@@ -634,8 +634,8 @@ module.exports = {
     },
 
     testReboot(test) {
-        bigIpMock.rebootRequired = function rebootRequired(...args) {
-            functionsCalled.bigIp.rebootRequired = args;
+        bigIpMock.rebootRequired = function rebootRequired() {
+            functionsCalled.bigIp.rebootRequired = arguments;
             return q(true);
         };
 
@@ -649,8 +649,8 @@ module.exports = {
     testNoReboot(test) {
         argv.push('--no-reboot');
 
-        bigIpMock.rebootRequired = function rebootRequired(...args) {
-            functionsCalled.bigIp.rebootRequired = args;
+        bigIpMock.rebootRequired = function rebootRequired() {
+            functionsCalled.bigIp.rebootRequired = arguments;
             return q(true);
         };
 
@@ -694,9 +694,9 @@ module.exports = {
 
     },
 
-    testSslPortArgs: {
+    testSslPortarguments: {
         setUp(callback) {
-            utilMock.deleteArgs = () => { };
+            utilMock.deletearguments = () => { };
             Date.now = () => {
                 return '1234';
             };
@@ -708,8 +708,8 @@ module.exports = {
 
             test.expect(1);
             onboard.run(argv, testOptions, () => {
-                const argsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
-                test.notStrictEqual(argsFile.indexOf('--port 8443'), -1);
+                const argumentsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
+                test.notStrictEqual(argumentsFile.indexOf('--port 8443'), -1);
                 test.done();
             });
         },
@@ -719,9 +719,9 @@ module.exports = {
 
             test.expect(2);
             onboard.run(argv, testOptions, () => {
-                const argsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
-                test.strictEqual(argsFile.indexOf('--port 443'), -1);
-                test.notStrictEqual(argsFile.indexOf('--port 8443'), -1);
+                const argumentsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
+                test.strictEqual(argumentsFile.indexOf('--port 443'), -1);
+                test.notStrictEqual(argumentsFile.indexOf('--port 8443'), -1);
                 test.done();
             });
         }
