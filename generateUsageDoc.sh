@@ -6,11 +6,15 @@ USAGE_FILE=USAGE.md
 
 writeHelp () {
     IFS=''
+    echo "" >> $USAGE_FILE
     node "$1" --help | while read LINE; do
         if [[ -z $LINE ]]; then
             LINE="  "
         fi
         echo "  ""$LINE" >> $USAGE_FILE
+        if [[ $LINE == "Options:" ]]; then
+          echo "" >> $USAGE_FILE
+        fi        
     done
 }
 
