@@ -8,7 +8,6 @@ Does initial configuration and provisioning of a BIG-IP.
     
   Options:
 
-    
     -V, --version                                                                                                                                                                                                                            output the version number
     --host <ip_address>                                                                                                                                                                                                                      Device management IP to which to send commands.
     -u, --user <user>                                                                                                                                                                                                                        Device admin user name. Default is to create a temporary user (this only works when running on the device).
@@ -20,18 +19,18 @@ Does initial configuration and provisioning of a BIG-IP.
     --background                                                                                                                                                                                                                             Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
     --signal <signal>                                                                                                                                                                                                                        Signal to send when done. Default ONBOARD_DONE.
     --wait-for <signal>                                                                                                                                                                                                                      Wait for the named signal before running.
-    --log-level <level>                                                                                                                                                                                                                      Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
+    --log-level <level>                                                                                                                                                                                                                      Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: "info")
     -o, --output <file>                                                                                                                                                                                                                      Log to file as well as console. This is the default if background process is spawned. Default is /tmp/onboard.log
     -e, --error-file <file>                                                                                                                                                                                                                  Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
     --no-console                                                                                                                                                                                                                             Do not log to console. Default false (log to console).
-    --ntp <ntp_server>                                                                                                                                                                                                                       Set NTP server. For multiple NTP servers, use multiple --ntp entries. (default: )
+    --ntp <ntp_server>                                                                                                                                                                                                                       Set NTP server. For multiple NTP servers, use multiple --ntp entries. (default: [])
     --tz <timezone>                                                                                                                                                                                                                          Set timezone for NTP setting.
-    --dns <DNS server>                                                                                                                                                                                                                       Set DNS server. For multiple DNS severs, use multiple --dns entries. (default: )
+    --dns <DNS server>                                                                                                                                                                                                                       Set DNS server. For multiple DNS severs, use multiple --dns entries. (default: [])
     --ssl-port <ssl_port>                                                                                                                                                                                                                    Set the SSL port for the management IP
     -l, --license <license_key>                                                                                                                                                                                                              License device with <license_key>.
-    -a, --add-on <add_on_key>                                                                                                                                                                                                                License device with <add_on_key>. For multiple keys, use multiple -a entries. (default: )
+    -a, --add-on <add_on_key>                                                                                                                                                                                                                License device with <add_on_key>. For multiple keys, use multiple -a entries. (default: [])
     --cloud <provider>                                                                                                                                                                                                                       Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, signalling resource provisioned, or providing a master passphrase
-    --provider-options <cloud_options>                                                                                                                                                                                                       Options specific to cloud_provider. Ex: param1:value1,param2:value2 (default: [object Object])
+    --provider-options <cloud_options>                                                                                                                                                                                                       Options specific to cloud_provider. Ex: param1:value1,param2:value2 (default: {})
     --license-pool                                                                                                                                                                                                                           License BIG-IP from a BIG-IQ license pool. Supply the following:
         --big-iq-host <ip_address or FQDN>                                                                                                                                                                                                       IP address or FQDN of BIG-IQ
         --big-iq-user <user>                                                                                                                                                                                                                     BIG-IQ admin user name
@@ -50,19 +49,19 @@ Does initial configuration and provisioning of a BIG-IP.
     --big-iq-password-data-uri <key_uri>                                                                                                                                                                                                     URI (arn, url, etc.) to a JSON file containing the BIG-IQ passwords (required keys: admin, root, masterpassphrase)
         --big-iq-password-data-encrypted                                                                                                                                                                                                         Indicates that the BIG-IQ password data is encrypted (either with encryptDataToFile or generatePassword)
     -n, --hostname <hostname>                                                                                                                                                                                                                Set device hostname.
-    -g, --global-setting <name:value>                                                                                                                                                                                                        Set global setting <name> to <value>. For multiple settings, use multiple -g entries. (default: [object Object])
-    -d, --db <name:value>                                                                                                                                                                                                                    Set db variable <name> to <value>. For multiple settings, use multiple -d entries. (default: [object Object])
+    -g, --global-setting <name:value>                                                                                                                                                                                                        Set global setting <name> to <value>. For multiple settings, use multiple -g entries. (default: {})
+    -d, --db <name:value>                                                                                                                                                                                                                    Set db variable <name> to <value>. For multiple settings, use multiple -d entries. (default: {})
     --set-root-password <old:old_password,new:new_password>                                                                                                                                                                                  Set the password for the root user from <old_password> to <new_password>.
     --set-master-key                                                                                                                                                                                                                         If running on a BIG-IQ, set the master key with a random passphrase
-    --create-license-pool <name:reg_key>                                                                                                                                                                                                     If running on a BIG-IQ, create a pool-style license (purchased pool, utility, volume, or FPS) with the name and reg key. (default: [object Object])
-    --create-reg-key-pool <name:reg_key_list>                                                                                                                                                                                                If running on a BIG-IQ, create a reg key pool with the given name and reg keys. Reg keys should be comma separated. (default: [object Object])
-    --update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>                                                                                                                                                Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create. (default: )
-    -m, --module <name:level>                                                                                                                                                                                                                Provision module <name> to <level>. For multiple entries, use --modules (default: [object Object])
-    --modules <name:level>                                                                                                                                                                                                                   Provision module(s) <name> to <level> (comma-separated list of module:level pairs). (default: [object Object])
-    --install-ilx-package <package_uri>                                                                                                                                                                                                      URI (file) of an iControl LX/iApps LX package to install. The package must already exist at this location. (default: )
+    --create-license-pool <name:reg_key>                                                                                                                                                                                                     If running on a BIG-IQ, create a pool-style license (purchased pool, utility, volume, or FPS) with the name and reg key. (default: {})
+    --create-reg-key-pool <name:reg_key_list>                                                                                                                                                                                                If running on a BIG-IQ, create a reg key pool with the given name and reg keys. Reg keys should be comma separated. (default: {})
+    --update-user <user:user,password:password,passwordUrl:passwordUrl,role:role,shell:shell>                                                                                                                                                Update user password (or password from passwordUrl), or create user with password, role, and shell. Role and shell are only valid on create. (default: [])
+    -m, --module <name:level>                                                                                                                                                                                                                Provision module <name> to <level>. For multiple entries, use --modules (default: {})
+    --modules <name:level>                                                                                                                                                                                                                   Provision module(s) <name> to <level> (comma-separated list of module:level pairs). (default: {})
+    --install-ilx-package <package_uri>                                                                                                                                                                                                      URI (file) of an iControl LX/iApps LX package to install. The package must already exist at this location. (default: [])
     --ping [address]                                                                                                                                                                                                                         Do a ping at the end of onboarding to verify that the network is up. Default address is f5.com
     --update-sigs                                                                                                                                                                                                                            Update ASM signatures
-    --metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:[aws | azure | gce | etc.], region:region, bigIpVersion:big_ip_version, licenseType:[byol | payg]]  Optional usage metrics to collect. Customer ID should not identify a specific customer. (default: [object Object])
+    --metrics [customerId:unique_id, deploymentId:deployment_id, templateName:template_name, templateVersion:template_version, cloudName:[aws | azure | gce | etc.], region:region, bigIpVersion:big_ip_version, licenseType:[byol | payg]]  Optional usage metrics to collect. Customer ID should not identify a specific customer. (default: {})
     --force-reboot                                                                                                                                                                                                                           Force a reboot at the end. This may be necessary for certain configurations. Option --force-reboot and --no-reboot cannot be specified simultaneously.
     -h, --help                                                                                                                                                                                                                               output usage information
 ## cluster.js
@@ -73,7 +72,6 @@ Sets up BIG-IPs in a cluster.
     
   Options:
 
-    
     -V, --version                                    output the version number
     --host <ip_address>                              Device management IP to which to send commands.
     -u, --user <user>                                Device admin user name. Default is to create a temporary user (this only works when running on the device).
@@ -85,7 +83,7 @@ Sets up BIG-IPs in a cluster.
     --background                                     Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
     --signal <signal>                                Signal to send when done. Default ONBOARD_DONE.
     --wait-for <signal>                              Wait for the named signal before running.
-    --log-level <level>                              Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
+    --log-level <level>                              Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: "info")
     -o, --output <file>                              Log to file as well as console. This is the default if background process is spawned. Default is /tmp/cluster.log
     -e, --error-file <file>                          Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
     --no-console                                     Do not log to console. Default false (log to console).
@@ -95,11 +93,11 @@ Sets up BIG-IPs in a cluster.
        --big-iq-password-data-uri <key_uri>             URI (arn, url, etc.) to a JSON file containing the BIG-IQ passwords (required keys: admin, root)
        --big-iq-password-data-encrypted                 Indicates that the BIG-IQ password data is encrypted (either with encryptDataToFile or generatePassword)
         --master                                     If using a cloud provider, indicates that this is the master. If running on a BIG-IP credentials should be stored. If running on a BIG-IQ, --create-group and --join-group options are not needed.
-        --provider-options <cloud_options>           Any options (JSON stringified) that are required for the specific cloud provider. (default: [object Object])
+        --provider-options <cloud_options>           Any options (JSON stringified) that are required for the specific cloud provider. (default: {})
     --create-group                                   Create a device group with the options:
         --device-group <device_group>                    Name of the device group.
         --sync-type <sync_type>                          Type of sync this cluster is for ("sync-only" | "sync-failover").
-        --device <device_name>                           A device name to add to the group. For multiple devices, use multiple --device entries. (default: )
+        --device <device_name>                           A device name to add to the group. For multiple devices, use multiple --device entries. (default: [])
         --auto-sync                                      Enable auto sync.
         --save-on-auto-sync                              Enable save on sync if auto sync is enabled.
         --full-load-on-sync                              Enable full load on sync.
@@ -125,7 +123,6 @@ Runs autoscale code to elect master and cluster
     
   Options:
 
-    
     -V, --version                                      output the version number
     --host <ip_address>                                Device management IP to which to send commands.
     -u, --user <user>                                  Device admin user name. Default is to create a temporary user (this only works when running on the device).
@@ -137,12 +134,12 @@ Runs autoscale code to elect master and cluster
     --background                                       Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
     --signal <signal>                                  Signal to send when done. Default ONBOARD_DONE.
     --wait-for <signal>                                Wait for the named signal before running.
-    --log-level <level>                                Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
+    --log-level <level>                                Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: "info")
     -o, --output <file>                                Log to file as well as console. This is the default if background process is spawned. Default is /tmp/autoscale.log
     -e, --error-file <file>                            Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
     --no-console                                       Do not log to console. Default false (log to console).
     --cloud <cloud_provider>                           Cloud provider (aws | azure | etc.)
-    --provider-options <cloud_options>                 Options specific to cloud_provider. Ex: param1:value1,param2:value2 (default: [object Object])
+    --provider-options <cloud_options>                 Options specific to cloud_provider. Ex: param1:value1,param2:value2 (default: {})
     -c, --cluster-action <type>                        join (join a cluster) | update (update cluster to match existing instances | unblock-sync (allow other devices to sync to us) | backup-ucs (save a ucs to cloud storage)
     --device-group <device_group>                      Device group name.
         --full-load-on-sync                                Enable full load on sync. Default false.
@@ -152,7 +149,7 @@ Runs autoscale code to elect master and cluster
         --no-save-on-auto-sync                             Enable save on sync if auto sync is enabled. Default false (save on auto sync).
     --block-sync                                       If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.
     --static                                           Indicates that this instance is not autoscaled. Default false (instance is autoscaled)
-    --external-tag <tag>                               If there are instances in the autoscale cluster that are not autoscaled, the cloud tag applied to those instances. Format 'key:<tag_key>,value:<tag_value>' (default: [object Object])
+    --external-tag <tag>                               If there are instances in the autoscale cluster that are not autoscaled, the cloud tag applied to those instances. Format 'key:<tag_key>,value:<tag_value>' (default: {})
     --license-pool                                     BIG-IP was licensed from a BIG-IQ license pool. This is so licenses can be revoked when BIG-IPs are scaled in. Supply the following:
         --big-iq-host <ip_address or FQDN>                 IP address or FQDN of BIG-IQ
         --big-iq-user <user>                               BIG-IQ admin user name
@@ -166,7 +163,7 @@ Runs autoscale code to elect master and cluster
     --dns <dns_provider>                                   Update the specified DNS provider when autoscaling occurs (gtm is the only current provider)
         --dns-ip-type <address_type>                       Type of ip address to use (public | private).
         --dns-app-port <port>                              Port on which application is listening on for health check
-        --dns-provider-options <dns_provider_options>      Options specific to dns_provider. Ex: param1:value1,param2:value2 (default: [object Object])
+        --dns-provider-options <dns_provider_options>      Options specific to dns_provider. Ex: param1:value1,param2:value2 (default: {})
     --max-ucs-files <max_ucs_files_to_save>            When running cluster action backup-ucs, maximum number of backup files to keep. (default: 7)
     -h, --help                                         output usage information
 ## network.js
@@ -177,7 +174,6 @@ Sets up default gateway, VLANs and self IPs
     
   Options:
 
-    
     -V, --version                                                                                                                        output the version number
     --host <ip_address>                                                                                                                  BIG-IP management IP to which to send commands.
     -u, --user <user>                                                                                                                    BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
@@ -188,18 +184,18 @@ Sets up default gateway, VLANs and self IPs
     --background                                                                                                                         Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
     --signal <signal>                                                                                                                    Signal to send when done. Default NETWORK_DONE.
     --wait-for <signal>                                                                                                                  Wait for the named signal before running.
-    --log-level <level>                                                                                                                  Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
+    --log-level <level>                                                                                                                  Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: "info")
     -o, --output <file>                                                                                                                  Log to file as well as console. This is the default if background process is spawned. Default is /tmp/network.log
     -e, --error-file <file>                                                                                                              Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
     --no-console                                                                                                                         Do not log to console. Default false (log to console).
     --single-nic                                                                                                                         Set db variables for single NIC configuration.
     --multi-nic                                                                                                                          Set db variables for multi NIC configuration.
     --default-gw <gateway_address>                                                                                                       Set default gateway to gateway_address.
-    --route <name:name, gw:address, network:network, interface:interface_name>                                                           Create arbitrary route with name for destination network via gateway address or interface name (default: )
-    --mgmt-route <name:name, gw:address, network:network>                                                                                Create management route with name for destination network via gateway address. (default: )
+    --route <name:name, gw:address, network:network, interface:interface_name>                                                           Create arbitrary route with name for destination network via gateway address or interface name (default: [])
+    --mgmt-route <name:name, gw:address, network:network>                                                                                Create management route with name for destination network via gateway address. (default: [])
     --local-only                                                                                                                         Create LOCAL_ONLY partition for gateway and assign to traffic-group-local-only.
-    --vlan <name:name, nic:nic, [mtu:mtu], [tag:tag]>                                                                                    Create vlan with name on nic (for example, 1.1). Optionally specify mtu and tag. For multiple vlans, use multiple --vlan entries. (default: )
-    --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2], [trafficGroup:traffic_group_name]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified. (default: )
+    --vlan <name:name, nic:nic, [mtu:mtu], [tag:tag]>                                                                                    Create vlan with name on nic (for example, 1.1). Optionally specify mtu and tag. For multiple vlans, use multiple --vlan entries. (default: [])
+    --self-ip <name:name, address:ip_address, vlan:vlan_name, [allow:service1:port1 service2:port2], [trafficGroup:traffic_group_name]>  Create self IP with name and ip_address on vlan with optional port lockdown. For multiple self IPs, use multiple --self-ip entries. Default CIDR prefix is 24 if not specified. (default: [])
     --discovery-address <ip_address>                                                                                                     IP address that the BIG-IQ will use for device discovery. This is required for onboarding a BIG-IQ. The IP address must already exist on the BIG-IQ device. For clustering, this should be a Self IP address.
     --force-reboot                                                                                                                       Force a reboot at the end. This may be necessary for certain configurations.
     -h, --help                                                                                                                           output usage information
@@ -211,7 +207,6 @@ Runs an arbitrary script.
     
   Options:
 
-    
     -V, --version                  output the version number
     --background                   Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
     -f, --file <script>            File name of script to run.
@@ -221,7 +216,7 @@ Runs an arbitrary script.
     --signal <signal>              Signal to send when done. Default SCRIPT_DONE.
     --wait-for <signal>            Wait for the named signal before running.
     --cwd <directory>              Current working directory for the script to run in.
-    --log-level <level>            Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: info)
+    --log-level <level>            Log level (none, error, warn, info, verbose, debug, silly). Default is info. (default: "info")
     -o, --output <file>            Log to file as well as console. This is the default if background process is spawned. Default is /tmp/runScript.log
     -e, --error-file <file>        Log exceptions to a specific file. Default is /tmp/cloudLibsError.log, or cloudLibsError.log in --output file directory
     --no-console                   Do not log to console. Default false (log to console).
