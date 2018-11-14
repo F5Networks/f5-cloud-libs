@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: localCryptoUtil</title>
+    <title>JSDoc: Class: GenericNodeProvider</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: localCryptoUtil</h1>
+    <h1 class="page-title">Class: GenericNodeProvider</h1>
 
     
 
@@ -28,8 +28,9 @@
 
 <header>
     
+        <h2><span class="attribs"><span class="type-signature"></span></span>GenericNodeProvider<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
         
-            
+            <div class="class-description"><p>Generic node provider implementation.</p></div>
         
     
 </header>
@@ -38,29 +39,218 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>This routines are utilities for decrypting data from files on disk</p>
-<p>These routines are meant to be used locally on a BIG-IP and operate via tmsh
-rather than iControl REST. This is so that we do not need to take in
-unencrypted passwords as parameters either on the command line or via
-the filesystem.</p>
-<p>Notes:</p>
-<ul>
-<li>Only runs locally on a BIG-IP. Cannot run on a remote BIG-IP.</li>
-<li>Uses tmsh rather than iControl REST so that we do not need to take in a password</li>
-</ul></div>
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="GenericNodeProvider"><span class="type-signature"></span>new GenericNodeProvider<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Constructor</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
         
 
         
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
             
 
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
 
 
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the instance.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>clOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
 
 
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Command line options if called from a script.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>logger</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
 
 
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Logger to use. Or, pass loggerOptions to get your own logger.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>loggerOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
 
 
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the logger.
+                                          See <a href="module-logger.html#.getLogger">module:logger.getLogger</a> for details.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -119,7 +309,6 @@ the filesystem.</p>
 
 
 
-        
     
     </div>
 
@@ -146,7 +335,7 @@ the filesystem.</p>
     
 
     
-    <h4 class="name" id=".decryptConfValue"><span class="type-signature">(static) </span>decryptConfValue<span class="signature">(value)</span><span class="type-signature"> &rarr; {Promse}</span></h4>
+    <h4 class="name" id="getNodesFromUri"><span class="type-signature"></span>getNodesFromUri<span class="signature">(uri, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -154,161 +343,9 @@ the filesystem.</p>
 
 
 <div class="description">
-    <p>Decrypts a BIG-IP configuration value.</p>
-<p>Must be run on a BIG-IP.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>value</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The configuragtion value to decrypt</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>A promise which is resolved with the decrypted configuration
-                  value or rejected if an error occurs.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promse</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id=".decryptData"><span class="type-signature">(static) </span>decryptData<span class="signature">(data, privateKeyFolder, privateKeyName, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Decrypts data</p>
+    <p>Gets nodes from the provided URI. The resource should be in JSON
+format as an array of objects. JSON strings that parse to an array
+of objects are also supported.</p>
 </div>
 
 
@@ -346,7 +383,7 @@ the filesystem.</p>
 
         <tr>
             
-                <td class="name"><code>data</code></td>
+                <td class="name"><code>uri</code></td>
             
 
             <td class="type">
@@ -370,69 +407,7 @@ the filesystem.</p>
 
             
 
-            <td class="description last"><p>Data to decrypt</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>privateKeyFolder</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>BIG-IP folder in which private key is installed</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>privateKeyName</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Name of private key installed on BIG-IP</p></td>
+            <td class="description last"><p>The URI of the resource.</p></td>
         </tr>
 
     
@@ -493,13 +468,13 @@ the filesystem.</p>
 
         <tr>
             
-                <td class="name"><code>encryptedKey</code></td>
+                <td class="name"><code>headers</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">String</span>
+<span class="param-type">Object</span>
 
 
             
@@ -519,45 +494,11 @@ the filesystem.</p>
 
             
 
-            <td class="description last"><p>The encrypted symmetric key. Required if symmetric encryption
-                                         was used.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>iv</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-|
-
-<span class="param-type">Buffer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>The initialization vector that was used for
-                                         encryption. Required if symmetric encryption was used.</p></td>
+            <td class="description last"><p>Map of headers to add to the request. Format:</p>
+<pre class="prettyprint source"><code>{
+    &lt;header1_name>: &lt;header1_value>,
+    &lt;header2_name>: &lt;header2_value>
+}</code></pre></td>
         </tr>
 
     
@@ -627,8 +568,15 @@ the filesystem.</p>
 
         
 <div class="param-desc">
-    <p>A promise which is resolved with the decrypted data or
-                   rejected if an error occurs.</p>
+    <p>A promise which will be resolved with an array of instances.
+                   Each instance value should be:</p>
+<pre class="prettyprint source"><code>{
+    id: Node ID,
+    ip: {
+        public: public IP,
+        private: private IP
+    }
+}</code></pre>
 </div>
 
 
@@ -657,7 +605,7 @@ the filesystem.</p>
     
 
     
-    <h4 class="name" id=".decryptDataFromFile"><span class="type-signature">(static) </span>decryptDataFromFile<span class="signature">(dataFile, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">(providerOptions, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -665,7 +613,10 @@ the filesystem.</p>
 
 
 <div class="description">
-    <p>Decrypts data from a file on disk</p>
+    <p>Initialize class</p>
+<p>Override for implementation specific initialization needs (read info
+from cloud provider, read database, etc.). Called at the start of
+processing.</p>
 </div>
 
 
@@ -703,7 +654,59 @@ the filesystem.</p>
 
         <tr>
             
-                <td class="name"><code>dataFile</code></td>
+                <td class="name"><code>providerOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Provider specific options.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>propertyPathId</code></td>
             
 
             <td class="type">
@@ -727,7 +730,87 @@ the filesystem.</p>
 
             
 
-            <td class="description last"><p>File to decrypt</p></td>
+            <td class="description last"><p>Object property path ('.' separated)
+                                                          that describes how to fetch the ID
+                                                          from the provided resource.</p>
+<pre class="prettyprint source"><code>&quot;example.uuid&quot;,</code></pre></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>propertyPathIpPrivate</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Object property path ('.' separated)
+                                                          that describes how to fetch the private
+                                                          IP from the provided resource.</p>
+<pre class="prettyprint source"><code>&quot;example.address.private&quot;</code></pre></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>propertyPathIpPublic</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Object property path ('.' separated)
+                                                          that describes how to fetch the public
+                                                          IP from the provided resource.</p>
+<pre class="prettyprint source"><code>&quot;example.address.public&quot;</code></pre></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -760,68 +843,7 @@ the filesystem.</p>
 
             
 
-            <td class="description last"><p>Optional parameters</p>
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>symmetric</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Data was symmetrically encrypted</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
+            <td class="description last"><p>Options for this instance.</p></td>
         </tr>
 
     
@@ -884,318 +906,7 @@ the filesystem.</p>
 
         
 <div class="param-desc">
-    <p>A promise which is resolved with the decrypted data or
-                   rejected if an error occurs.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id=".decryptPassword"><span class="type-signature">(static) </span>decryptPassword<span class="signature">(password)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Decrypts a secret, typically a password that was encrypted with our
-local private keys.</p>
-<p>This is just a shortcut for decryptData</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>password</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>secret to decrypt</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>A promise which is resolved with the decrypted
-                   secret or rejected if an error occurs</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id=".symmetricDecryptPassword"><span class="type-signature">(static) </span>symmetricDecryptPassword<span class="signature">(data)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Decrypts a secret that was encrypted symmetrically, typically a large password
-or object (JSON) with multiple values that was encrypted with our local private keys.</p>
-<p>This is just a shortcut for decryptData with symmetric options</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>data</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Object (JSON) created by symmetric encrypt operation</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>A promise which is resolved with the decrypted
-                   secret or rejected if an error occurs</p>
+    <p>A promise which will be resolved when init is complete.</p>
 </div>
 
 
