@@ -829,7 +829,7 @@ module.exports = {
     testLoadUcs: {
         setUp(callback) {
             icontrolMock.when('create', UCS_TASK_PATH, { _taskId: '1234' });
-            icontrolMock.when('list', `${UCS_TASK_PATH}/1234/result`, { _taskState: 'COMPLETED' });
+            icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'COMPLETED' });
 
             // eslint-disable-next-line no-global-assign
             setTimeout = function (cb) {
@@ -921,7 +921,7 @@ module.exports = {
         },
 
         testFailed(test) {
-            icontrolMock.when('list', `${UCS_TASK_PATH}/1234/result`, { _taskState: 'FAILED' });
+            icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'FAILED' });
             test.expect(1);
             bigIp.loadUcs('foo')
                 .then(() => {
@@ -936,7 +936,7 @@ module.exports = {
         },
 
         testNeverComplete(test) {
-            icontrolMock.when('list', `${UCS_TASK_PATH}/1234/result`, { _taskState: 'PENDING' });
+            icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'PENDING' });
             utilMock.DEFAULT_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
             test.expect(1);
             bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
@@ -971,7 +971,7 @@ module.exports = {
         },
 
         testRestjavadRestart(test) {
-            icontrolMock.fail('list', `${UCS_TASK_PATH}/1234/result`);
+            icontrolMock.fail('list', `${UCS_TASK_PATH}/1234`);
             test.expect(1);
             bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
                 .then(() => {
@@ -1438,7 +1438,7 @@ module.exports = {
     testRunTask: {
         setUp(callback) {
             icontrolMock.when('create', DUMMY_TASK_PATH, { _taskId: '1234' });
-            icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234/result`, { _taskState: 'COMPLETED' });
+            icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'COMPLETED' });
 
             // eslint-disable-next-line no-global-assign
             setTimeout = function (cb) {
@@ -1467,8 +1467,27 @@ module.exports = {
                 });
         },
 
+        testOptions(test) {
+            icontrolMock.when('create', DUMMY_TASK_PATH, { id: '1234' });
+            icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { status: 'FINISHED' });
+
+            const commandBody = { foo: 'bar', hello: 'world' };
+            const options = { idAttribute: 'id', validate: false, statusAttribute: 'status' };
+            test.expect(1);
+            bigIp.runTask(DUMMY_TASK_PATH, commandBody, options)
+                .then(() => {
+                    test.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
         testFailed(test) {
-            icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234/result`, { _taskState: 'FAILED' });
+            icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'FAILED' });
             test.expect(1);
             bigIp.runTask(DUMMY_TASK_PATH)
                 .then(() => {
@@ -1523,7 +1542,7 @@ module.exports = {
     testSaveUcs: {
         setUp(callback) {
             icontrolMock.when('create', UCS_TASK_PATH, { _taskId: '1234' });
-            icontrolMock.when('list', `${UCS_TASK_PATH}/1234/result`, { _taskState: 'COMPLETED' });
+            icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'COMPLETED' });
 
             fs.access = function access(file, cb) {
                 cb();
@@ -1555,7 +1574,7 @@ module.exports = {
         },
 
         testFailed(test) {
-            icontrolMock.when('list', `${UCS_TASK_PATH}/1234/result`, { _taskState: 'FAILED' });
+            icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'FAILED' });
             test.expect(1);
             bigIp.saveUcs('foo')
                 .then(() => {

@@ -143,10 +143,6 @@ const cryptoUtil = require('../lib/cryptoUtil');
                         []
                     )
                     .option(
-                        '--license-pool',
-                        'License BIG-IP from a BIG-IQ license pool. Supply the following:'
-                    )
-                    .option(
                         '--cloud <provider>',
                         'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, signalling resource provisioned, or providing a master passphrase'
                     )
@@ -155,6 +151,10 @@ const cryptoUtil = require('../lib/cryptoUtil');
                         'Options specific to cloud_provider. Ex: param1:value1,param2:value2',
                         util.map,
                         providerOptions
+                    )
+                    .option(
+                        '--license-pool',
+                        'License BIG-IP from a BIG-IQ license pool. Supply the following:'
                     )
                     .option(
                         '    --big-iq-host <ip_address or FQDN>',
@@ -209,16 +209,16 @@ const cryptoUtil = require('../lib/cryptoUtil');
                         '    Request BIG-IQ to revoke this units license rather than granting one.'
                     )
                     .option(
-                        '   --signal-resource',
-                        '   Signal cloud provider when BIG-IP has been provisioned.'
+                        '--signal-resource',
+                        'Signal cloud provider when BIG-IP has been provisioned.'
                     )
                     .option(
-                        '   --big-iq-password-data-uri <key_uri>',
-                        '   URI (arn, url, etc.) to a JSON file containing the BIG-IQ passwords (required keys: admin, root, masterpassphrase)'
+                        '--big-iq-password-data-uri <key_uri>',
+                        'URI (arn, url, etc.) to a JSON file containing the BIG-IQ passwords (required keys: admin, root, masterpassphrase)'
                     )
                     .option(
-                        '   --big-iq-password-data-encrypted',
-                        '   Indicates that the BIG-IQ password data is encrypted (either with encryptDataToFile or generatePassword)'
+                        '    --big-iq-password-data-encrypted',
+                        '    Indicates that the BIG-IQ password data is encrypted (either with encryptDataToFile or generatePassword)'
                     )
                     .option(
                         '-n, --hostname <hostname>',
@@ -274,6 +274,12 @@ const cryptoUtil = require('../lib/cryptoUtil');
                         'Provision module(s) <name> to <level> (comma-separated list of module:level pairs).',
                         util.map,
                         provisionModules
+                    )
+                    .option(
+                        '--install-ilx-package <package_uri>',
+                        'URI (file) of an iControl LX/iApps LX package to install. The package must already exist at this location.',
+                        util.collect,
+                        []
                     )
                     .option(
                         '--ping [address]',
@@ -834,6 +840,22 @@ const cryptoUtil = require('../lib/cryptoUtil');
                             const regKeys = regKeyCsv.split(',');
                             logger.info('Creating reg key pool.');
                             return bigIp.onboard.createRegKeyPool(names[0], regKeys);
+                        }
+                        return q();
+                    })
+                    .then((response) => {
+                        logger.debug(response);
+
+                        if (options.installIlxPackage) {
+                            const packages = options.installIlxPackage;
+                            const promises = [];
+
+                            if (packages.length > 0) {
+                                packages.forEach((packagePath) => {
+                                    promises.push(bigIp.onboard.installIlxPackage(packagePath));
+                                });
+                                return q.all(promises);
+                            }
                         }
                         return q();
                     })

@@ -29,6 +29,7 @@ let metricsCollectorMock;
 
 let rebootCalled = false;
 let signalInstanceProvisionedCalled = false;
+const installIlxPackageParams = [];
 let functionsCalled;
 let onboard;
 let ipcMock;
@@ -188,6 +189,10 @@ module.exports = {
                     });
 
                     return q();
+                },
+
+                installIlxPackage(packageUri) {
+                    installIlxPackageParams.push(packageUri);
                 },
 
                 sslPort() {
@@ -1020,6 +1025,20 @@ module.exports = {
         onboard.run(argv, testOptions, () => {
             test.deepEqual(functionsCalled.bigIp.onboard.provision[0],
                 { module1: 'level1', module2: 'level2' });
+            test.done();
+        });
+    },
+
+    testInstallMultipleIlxPackages(test) {
+        const iapp = 'file:///dir/f5-iapp.rpm';
+        const icontrol = 'file:///dir/f5-icontrol.rpm';
+        argv.push('--install-ilx-package', iapp);
+        argv.push('--install-ilx-package', icontrol);
+
+        test.expect(2);
+        onboard.run(argv, testOptions, () => {
+            test.strictEqual(installIlxPackageParams[0], iapp);
+            test.strictEqual(installIlxPackageParams[1], icontrol);
             test.done();
         });
     },
