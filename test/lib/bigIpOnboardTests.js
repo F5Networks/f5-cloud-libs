@@ -17,6 +17,7 @@
 'use strict';
 
 const q = require('q');
+const fs = require('fs');
 const icontrolMock = require('../testUtil/icontrolMock');
 
 let BigIp;
@@ -24,6 +25,7 @@ let BigIq;
 let util;
 let authnMock;
 let cryptoUtilMock;
+let fsExistsSync;
 let bigIp;
 let bigIpMgmtAddressSent;
 let bigIpMgmtPortSent;
@@ -34,6 +36,8 @@ let poolNameSent;
 let instanceSent;
 let passwordSent;
 let optionsSent;
+
+let runTaskParams;
 
 let shellCommand;
 const sharedAuthnRootResponse = {
@@ -68,6 +72,10 @@ module.exports = {
                 product: 'BIG-IP'
             }
         );
+        bigIp.runTask = function runTask() {
+            runTaskParams = arguments;
+            return q();
+        };
         bigIp.ready = () => {
             return q();
         };
@@ -105,6 +113,40 @@ module.exports = {
                 .finally(() => {
                     test.done();
                 });
+        }
+    },
+
+    testInstallIlxPackage: {
+        setUp(callback) {
+            fsExistsSync = fs.existsSync;
+            fs.existsSync = function existsSync() { return true; };
+            callback();
+        },
+
+        testFileUri(test) {
+            const packageUri = 'file:///dir1/dir2/iapp.rpm';
+
+            test.expect(2);
+            bigIp.onboard.installIlxPackage(packageUri)
+                .then(() => {
+                    test.strictEqual(runTaskParams[0], '/shared/iapp/package-management-tasks');
+                    test.deepEqual(runTaskParams[1], {
+                        operation: 'INSTALL',
+                        packageFilePath: '/dir1/dir2/iapp.rpm'
+                    });
+                })
+                .catch((err) => {
+                    test.ok(false, err.message);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        tearDown(callback) {
+            fs.existsSync = fsExistsSync;
+
+            callback();
         }
     },
 
