@@ -20,7 +20,9 @@ const q = require('q');
 
 const poolName = 'myLicensePool';
 const LICENSE_PATH = '/cm/device/tasks/licensing/pool/member-management/';
+const taskId = 1234;
 
+let util;
 let BigIqProvider;
 let provider;
 let icontrolMock;
@@ -30,6 +32,7 @@ let bigIq53RevokeCalled;
 module.exports = {
     setUp(callback) {
         /* eslint-disable global-require */
+        util = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
 
@@ -73,6 +76,117 @@ module.exports = {
                 new BigIqProvider({ loggerOptions });
             });
             test.done();
+        }
+    },
+
+    testGetUnmanagedDeviceLicense: {
+        setUp(callback) {
+            icontrolMock.when(
+                'create',
+                LICENSE_PATH,
+                {
+                    id: taskId
+                }
+            );
+
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + taskId,
+                {
+                    status: 'FINISHED',
+                    licenseText: 'this is your license'
+                }
+            );
+
+            provider.getLicenseTimeout = () => { return util.SHORT_RETRY; };
+            provider.bigIp.onboard = {
+                installLicense() {
+                    return q();
+                }
+            };
+            provider.bigIp.deviceInfo = () => {
+                return q({});
+            };
+
+            callback();
+        },
+
+        testBasic(test) {
+            test.expect(1);
+
+            provider.getUnmanagedDeviceLicense(
+                icontrolMock,
+                'pool1',
+                'bigIpMgmtAddress',
+                '443',
+                { cloud: 'cloud' }
+            )
+                .then(() => {
+                    const licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH);
+                    test.strictEqual(licenseRequest.licensePoolName, 'pool1');
+                })
+                .catch((err) => {
+                    test.ok(false, err.message);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testGetLicenseTextFailure(test) {
+            const failureReason = 'you have no license text';
+            icontrolMock.when(
+                'list',
+                LICENSE_PATH + taskId,
+                {
+                    status: 'FAILED',
+                    errorMessage: failureReason
+                }
+            );
+
+            provider.getUnmanagedDeviceLicense(
+                icontrolMock,
+                'pool1',
+                'bigIpMgmtAddress',
+                '443',
+                { cloud: 'cloud' }
+            )
+                .then(() => {
+                    test.ok(false, 'should have thrown license failure');
+                })
+                .catch((err) => {
+                    test.notStrictEqual(err.message.indexOf(failureReason), -1);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testInstallLicenseFailure(test) {
+            const failureReason = 'bad license text';
+            provider.bigIp.onboard = {
+                installLicense() {
+                    return q.reject(new Error(failureReason));
+                }
+            };
+
+            test.expect(1);
+            provider.getUnmanagedDeviceLicense(
+                icontrolMock,
+                'pool1',
+                'bigIpMgmtAddress',
+                '443',
+                { cloud: 'cloud' }
+            )
+                .then(() => {
+                    test.ok(false, 'should have thrown license failure');
+                })
+                .catch((err) => {
+                    test.notStrictEqual(err.message.indexOf(failureReason), -1);
+                })
+                .finally(() => {
+                    test.done();
+                });
         }
     },
 

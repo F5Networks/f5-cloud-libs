@@ -157,6 +157,7 @@ module.exports = {
         },
 
         testLicenseFailure(test) {
+            const failureReason = 'we failed for no apparent reason';
             provider.getLicenseTimeout = () => { return util.SHORT_RETRY; };
 
             icontrolMock.when(
@@ -164,7 +165,7 @@ module.exports = {
                 LICENSE_PATH + taskId,
                 {
                     status: 'FAILED',
-                    errorMessage: 'foo'
+                    errorMessage: failureReason
                 }
             );
 
@@ -173,7 +174,7 @@ module.exports = {
                     test.ok(false, 'should have thrown license failure');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                    test.notStrictEqual(err.message.indexOf(failureReason), -1);
                 })
                 .finally(() => {
                     test.done();
@@ -181,13 +182,15 @@ module.exports = {
         },
 
         testUnknownStatus(test) {
+            const failureReason = 'we do not know what is happening';
             provider.getLicenseTimeout = () => { return util.SHORT_RETRY; };
 
             icontrolMock.when(
                 'list',
                 LICENSE_PATH + taskId,
                 {
-                    status: 'FOO'
+                    status: 'FOO',
+                    errorMessage: failureReason
                 }
             );
 
@@ -196,7 +199,7 @@ module.exports = {
                     test.ok(false, 'should have thrown license failure');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                    test.notStrictEqual(err.message.indexOf(failureReason), -1);
                 })
                 .finally(() => {
                     test.done();
