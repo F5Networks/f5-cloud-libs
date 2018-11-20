@@ -169,10 +169,6 @@ module.exports = {
 
     testGetNodesFromUri: {
         setUp(callback) {
-            Object.keys(require.cache).forEach((key) => {
-                delete require.cache[key];
-            });
-
             require.cache.util = {
                 exports: utilMock
             };
