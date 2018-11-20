@@ -3,9 +3,11 @@
 ## onboard.js
 
 Does initial configuration and provisioning of a BIG-IP.
+
   Usage: onboard [options]
     
   Options:
+
     -V, --version                                                                                                                                                                                                                            output the version number
     --host <ip_address>                                                                                                                                                                                                                      Device management IP to which to send commands.
     -u, --user <user>                                                                                                                                                                                                                        Device admin user name. Default is to create a temporary user (this only works when running on the device).
@@ -64,9 +66,11 @@ Does initial configuration and provisioning of a BIG-IP.
 ## cluster.js
 
 Sets up BIG-IPs in a cluster.
+
   Usage: cluster [options]
     
   Options:
+
     -V, --version                                    output the version number
     --host <ip_address>                              Device management IP to which to send commands.
     -u, --user <user>                                Device admin user name. Default is to create a temporary user (this only works when running on the device).
@@ -113,9 +117,11 @@ Sets up BIG-IPs in a cluster.
 ## autoscale.js
 
 Runs autoscale code to elect master and cluster
+
   Usage: autoscale [options]
     
   Options:
+
     -V, --version                                      output the version number
     --host <ip_address>                                Device management IP to which to send commands.
     -u, --user <user>                                  Device admin user name. Default is to create a temporary user (this only works when running on the device).
@@ -162,9 +168,11 @@ Runs autoscale code to elect master and cluster
 ## network.js
 
 Sets up default gateway, VLANs and self IPs
+
   Usage: network [options]
     
   Options:
+
     -V, --version                                                                                                                        output the version number
     --host <ip_address>                                                                                                                  BIG-IP management IP to which to send commands.
     -u, --user <user>                                                                                                                    BIG-IP admin user name. Default is to create a temporary user (this only works when running on the device).
@@ -193,9 +201,11 @@ Sets up default gateway, VLANs and self IPs
 ## runScript.js
 
 Runs an arbitrary script.
+
   Usage: runScript [options]
     
   Options:
+
     -V, --version                  output the version number
     --background                   Spawn a background process to do the work. If you are running in cloud init, you probably want this option.
     -f, --file <script>            File name of script to run.
