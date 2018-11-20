@@ -95,6 +95,7 @@ module.exports = {
 
     testInit: {
         testMissingProviderOptions(test) {
+            test.expect(2);
             testProvider.init()
                 .then(() => {
                     test.ok(false, 'should have thrown missing required provider options');
@@ -127,6 +128,7 @@ module.exports = {
         },
 
         testProviderOptions(test) {
+            test.expect(2);
             testProvider.init(providerOptions)
                 .then(() => {
                     test.deepEqual(testProvider.providerOptions, providerOptions);
@@ -142,6 +144,7 @@ module.exports = {
         testPropertyPathNoIpPublic(test) {
             const optsNoPublic = JSON.parse(JSON.stringify(providerOptions));
             delete optsNoPublic.propertyPathIpPublic;
+            test.expect(2);
             testProvider.init(optsNoPublic)
                 .then(() => {
                     test.deepEqual(testProvider.providerOptions, optsNoPublic);
@@ -155,6 +158,7 @@ module.exports = {
         },
 
         testInitOptions(test) {
+            test.expect(1);
             testProvider.init(providerOptions, initOptions)
                 .then(() => {
                     test.deepEqual(testProvider.initOptions, initOptions);
@@ -180,6 +184,7 @@ module.exports = {
         testBadJsonStringResponse(test) {
             urlResponseMock = 'foo';
 
+            test.expect(1);
             testProvider.getNodesFromUri('https://example.com')
                 .then(() => {
                     test.ok(false, 'should have thrown bad response data');
@@ -195,6 +200,7 @@ module.exports = {
         testBadJsonArrayResponse(test) {
             urlResponseMock = {};
 
+            test.expect(1);
             testProvider.getNodesFromUri('https://example.com')
                 .then(() => {
                     test.ok(false, 'should have thrown bad response data');
@@ -210,6 +216,7 @@ module.exports = {
         testNoNodes(test) {
             urlResponseMock = JSON.stringify([{ foo: 'bar' }]);
 
+            test.expect(1);
             testProvider.init(providerOptions)
                 .then(() => {
                     return testProvider.getNodesFromUri('https://example.com')
@@ -223,6 +230,7 @@ module.exports = {
         testJsonStringNodes(test) {
             urlResponseMock = JSON.stringify(responseNodeData);
 
+            test.expect(1);
             testProvider.init(providerOptions)
                 .then(() => {
                     return testProvider.getNodesFromUri('https://example.com')
@@ -251,6 +259,7 @@ module.exports = {
         testJsonArrayNodes(test) {
             urlResponseMock = responseNodeData;
 
+            test.expect(1);
             testProvider.init(providerOptions)
                 .then(() => {
                     return testProvider.getNodesFromUri('https://example.com')
