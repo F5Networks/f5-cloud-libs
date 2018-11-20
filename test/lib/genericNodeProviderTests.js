@@ -21,17 +21,15 @@ const utilMock = require('../../lib/util');
 const q = require('q');
 
 const propertyPaths = {
-    id: 'node.uuid',
-    ipPrivate: 'node.ips.0',
-    ipPublic: 'node.ips.1'
+    propertyPathId: 'node.uuid',
+    propertyPathIpPrivate: 'node.ips.0',
+    propertyPathIpPublic: 'node.ips.1'
 };
 
-const providerOptions = {
+let providerOptions = {
     foo: 'bar',
 };
-Object.keys(propertyPaths).forEach((key) => {
-    providerOptions[`propertyPath${key.charAt(0).toUpperCase()}${key.slice(1)}`] = propertyPaths[key];
-});
+providerOptions = Object.assign(providerOptions, propertyPaths);
 
 const initOptions = {
     bar: 'foo',
@@ -133,9 +131,9 @@ module.exports = {
                 .then(() => {
                     test.deepEqual(testProvider.providerOptions, providerOptions);
                     test.deepEqual(testProvider.propertyPaths, {
-                        id: ['node', 'uuid'],
-                        ipPrivate: ['node', 'ips', '0'],
-                        ipPublic: ['node', 'ips', '1']
+                        propertyPathId: ['node', 'uuid'],
+                        propertyPathIpPrivate: ['node', 'ips', '0'],
+                        propertyPathIpPublic: ['node', 'ips', '1']
                     });
                     test.done();
                 });
@@ -148,9 +146,9 @@ module.exports = {
                 .then(() => {
                     test.deepEqual(testProvider.providerOptions, optsNoPublic);
                     test.deepEqual(testProvider.propertyPaths, {
-                        id: ['node', 'uuid'],
-                        ipPrivate: ['node', 'ips', '0'],
-                        ipPublic: []
+                        propertyPathId: ['node', 'uuid'],
+                        propertyPathIpPrivate: ['node', 'ips', '0'],
+                        propertyPathIpPublic: []
                     });
                     test.done();
                 });
