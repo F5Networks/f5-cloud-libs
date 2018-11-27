@@ -33,6 +33,7 @@ module.exports = {
     cryptoUtil: require('./lib/cryptoUtil'),
     dnsProvider: require('./lib/dnsProvider'),
     dnsProviderFactory: require('./lib/dnsProviderFactory'),
+    genericNodeProvider: require('./lib/genericNodeProvider'),
     gtmDnsProvider: require('./lib/gtmDnsProvider'),
     localCryptoUtil: require('./lib/localCryptoUtil'),
     localKeyUtil: require('./lib/localKeyUtil'),

@@ -36,7 +36,8 @@ const Logger = require('../lib/logger');
     const runner = {
         run(argv, testOpts, cb) {
             const DEFAULT_LOG_FILE = '/var/log/cloudlibs/getNodes.log';
-            const REQUIRED_OPTIONS = ['cloud', 'memberAddressType', 'memberTag'];
+            const REQUIRED_OPTIONS = ['cloud', 'memberAddressType'];
+            const REQUIRED_UNIQUE_OPTIONS = [['memberTag', 'uri']];
             const KEYS_TO_MASK = ['--provider-options'];
 
             const providerOptions = {};
@@ -51,7 +52,7 @@ const Logger = require('../lib/logger');
             try {
                 /* eslint-disable max-len */
                 options
-                    .version('4.6.0-beta.2')
+                    .version('4.6.0-beta.3')
                     .option(
                         '--cloud <cloud_provider>',
                         'Cloud provider (aws | azure | etc.)'
@@ -69,6 +70,10 @@ const Logger = require('../lib/logger');
                         'Options specific to cloud_provider. Ex: param1:value1,param2:value2',
                         util.map,
                         providerOptions
+                    )
+                    .option(
+                        '--uri <uri>',
+                        'Location of JSON data containing nodes.'
                     )
                     .option(
                         '--log-level <level>',
@@ -121,6 +126,22 @@ const Logger = require('../lib/logger');
                     }
                 }
 
+                for (let i = 0; i < REQUIRED_UNIQUE_OPTIONS.length; i++) {
+                    const foundOpts = Object.keys(options).filter((opt) => {
+                        return REQUIRED_UNIQUE_OPTIONS[i].indexOf(opt) > -1;
+                    });
+                    if (foundOpts.length !== 1) {
+                        const opts = (foundOpts.length > 0 ? foundOpts : REQUIRED_UNIQUE_OPTIONS[i]);
+                        util.logAndExit(
+                            `Must include ${foundOpts.length > 1 ? 'only ' : ''}one of the `
+                            + `following command line options: ${opts.join(', ')}`,
+                            'error',
+                            1
+                        );
+                        return;
+                    }
+                }
+
                 provider = optionsForTest.cloudProvider;
                 if (!provider) {
                     provider = cloudProviderFactory.getCloudProvider(
@@ -156,35 +177,47 @@ const Logger = require('../lib/logger');
                         return provider.init(providerOptions);
                     })
                     .then(() => {
-                        this.logger.debug(LOG_ID, 'Getting NICs');
-
-                        const keyValue = options.memberTag.split('=');
                         const promises = [];
-                        let key;
-                        let value;
+                        if (options.memberTag) {
+                            this.logger.debug(LOG_ID, 'Getting NICs');
 
-                        if (keyValue.length > 1) {
-                            key = keyValue[0];
-                            value = keyValue[1];
-                        } else {
-                            value = keyValue[0];
+                            const keyValue = options.memberTag.split('=');
+                            let key;
+                            let value;
+
+                            if (keyValue.length > 1) {
+                                key = keyValue[0];
+                                value = keyValue[1];
+                            } else {
+                                value = keyValue[0];
+                            }
+
+                            this.logger.silly(LOG_ID, 'key', key);
+                            this.logger.silly(LOG_ID, 'value', value);
+
+                            promises.push(provider.getNicsByTag({ key, value }));
+                            promises.push(provider.getVmsByTag({ key, value }));
+                        } else if (options.uri) {
+                            this.logger.debug(LOG_ID, 'Getting Nodes');
+
+                            this.logger.silly(LOG_ID, 'URI', options.uri);
+
+                            promises.push(provider.getNodesFromUri(options.uri));
                         }
-
-                        this.logger.silly(LOG_ID, 'key', key);
-                        this.logger.silly(LOG_ID, 'value', value);
-
-                        promises.push(provider.getNicsByTag({ key, value }));
-                        promises.push(provider.getVmsByTag({ key, value }));
 
                         return Promise.all(promises);
                     })
                     .then((responses) => {
+                        let nodes = [];
                         const nics = responses[0] || [];
                         const vms = responses[1] || [];
-                        let nodes;
 
-                        this.logger.silly(LOG_ID, 'nics', JSON.stringify(nics));
-                        this.logger.silly(LOG_ID, 'vms', JSON.stringify(vms));
+                        if (options.memberTag) {
+                            this.logger.silly(LOG_ID, 'nics', JSON.stringify(nics));
+                            this.logger.silly(LOG_ID, 'vms', JSON.stringify(vms));
+                        } else if (options.uri) {
+                            this.logger.silly(LOG_ID, 'uri nodes', JSON.stringify(nics));
+                        }
 
                         nodes = nics.reduce((result, nic) => {
                             const node = getNode(nic);
@@ -194,7 +227,7 @@ const Logger = require('../lib/logger');
                             return result;
                         }, []);
 
-                        if (nodes.length === 0) {
+                        if (options.memberTag && nodes.length === 0) {
                             this.logger.debug(LOG_ID, 'no valid nics found, trying vms');
                             nodes = vms.reduce((result, vm) => {
                                 const node = getNode(vm);
