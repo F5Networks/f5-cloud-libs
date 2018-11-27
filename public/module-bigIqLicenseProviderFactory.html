@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: DnsProvider</title>
+    <title>JSDoc: Module: bigIqLicenseProviderFactory</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: DnsProvider</h1>
+    <h1 class="page-title">Module: bigIqLicenseProviderFactory</h1>
 
     
 
@@ -28,13 +28,6 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>DnsProvider<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
-        
-            <div class="class-description"><p>Abstract DNS provider implementation.</p>
-<p>This class should be inherited from to implement DNS
-specific implementations. Any method in this class that throws
-must be overridded. Methods that do not throw may be optionally
-overridden.</p></div>
         
     
 </header>
@@ -44,12 +37,34 @@ overridden.</p></div>
     
         
 
+        
     
-    <h2>Constructor</h2>
+    </div>
+
     
 
     
-    <h4 class="name" id="DnsProvider"><span class="type-signature"></span>new DnsProvider<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".getLicenseProviderByType"><span class="type-signature">(static) </span>getLicenseProviderByType<span class="signature">(poolType, {BigIp}, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -57,7 +72,7 @@ overridden.</p></div>
 
 
 <div class="description">
-    <p>Constructor.</p>
+    <p>Creates a BIG-IQ license provider for the given type</p>
 </div>
 
 
@@ -91,6 +106,69 @@ overridden.</p></div>
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>poolType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Type of the API to use
+                                          <a href="module-sharedConstants.html#.LICENSE_API_TYPES">module:sharedConstants.LICENSE_API_TYPES</a></p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>{BigIp}</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>See <a href="BigIp.html">BigIp</a>.</p></td>
+        </tr>
+
     
 
         <tr>
@@ -145,39 +223,6 @@ overridden.</p></div>
     </thead>
 
     <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>clOptions</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Command line options if called from a script.</p></td>
-        </tr>
-
     
 
         <tr>
@@ -313,33 +358,13 @@ overridden.</p></div>
 
 
 
-    
-    </div>
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
         
             
 
     
 
     
-    <h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">(providerOptions)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id=".getLicenseProviderByVersion"><span class="type-signature">(static) </span>getLicenseProviderByVersion<span class="signature">(bigIqVersion, {BigIp}, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -347,10 +372,7 @@ overridden.</p></div>
 
 
 <div class="description">
-    <p>Initialize class</p>
-<p>Override for implementation specific initialization needs (read info
-from cloud provider, read database, etc.). Called at the start of
-processing.</p>
+    <p>Creates a BIG-IQ license provider for the given version</p>
 </div>
 
 
@@ -374,6 +396,8 @@ processing.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -386,7 +410,38 @@ processing.</p>
 
         <tr>
             
-                <td class="name"><code>providerOptions</code></td>
+                <td class="name"><code>bigIqVersion</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Version of BIG-IQ.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>{BigIp}</code></td>
             
 
             <td class="type">
@@ -399,10 +454,146 @@ processing.</p>
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>Provider specific options.</p></td>
+            <td class="description last"><p>See <a href="BigIp.html">BigIp</a>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Ojbect</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the instance.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>logger</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Logger to use. Or, pass loggerOptions to get your own logger.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>loggerOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the logger.
+                                          See <a href="module-logger.html#.getLogger">module:logger.getLogger</a> for details.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -461,186 +652,6 @@ processing.</p>
 
 
 
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>A promise which will be resolved when init is complete.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="update"><span class="type-signature">(abstract) </span>update<span class="signature">(instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Updates DNS records with the given instances</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>instances</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Array of instances, each having the form</p>
-<pre class="prettyprint source"><code>{
-    name: name for instance,
-    ip: ip address,
-    port: port
-}</code></pre></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>A promise which will be resolved with the instance ID of the
-                   elected master.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
 
 
 
