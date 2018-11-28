@@ -49,6 +49,10 @@ module.exports = {
             return q({});
         };
 
+        localKeyUtilMock.getExistingPrivateKeyName = function getExistingPrivateKeyName(folder, name) {
+            return q(name);
+        };
+
         utilMock.readDataFromFile = function readDataFromFile() {
             return q(dataToDecrypt);
         };

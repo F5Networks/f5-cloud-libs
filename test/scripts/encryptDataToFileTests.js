@@ -53,7 +53,14 @@ module.exports = {
             return q();
         };
 
-        localKeyUtilMock.generateAndInstallKeyPair = () => {
+        localKeyUtilMock.generateAndInstallKeyPair = function generateAndInstallKeyPair() {
+            functionsCalled.localKeyUtil.generateAndInstallKeyPair = {
+                publicKeyDirectory: arguments[0],
+                publicKeyOutFile: arguments[1],
+                privateKeyFolder: arguments[2],
+                privateKeyName: arguments[3],
+                options: arguments[4],
+            };
             generateAndInstallKeyPairCalled = true;
             return q();
         };
@@ -75,7 +82,8 @@ module.exports = {
         functionsCalled = {
             ipc: {
                 once: []
-            }
+            },
+            localKeyUtil: { }
         };
 
         encryptData = require('../../scripts/encryptDataToFile');
@@ -263,6 +271,36 @@ module.exports = {
         test.expect(1);
         encryptData.run(argv, () => {
             test.strictEqual(fileWrittenTo, fileToWriteTo);
+            test.done();
+        });
+    },
+
+    testPrivateKeyOption(test) {
+        argv.push('--data', 'data', '--out-file', 'foo.file', '--private-key-name', 'myPrivatekey.key');
+
+        test.expect(2);
+        encryptData.run(argv, () => {
+            const generateAndInstallKeyPair = functionsCalled.localKeyUtil.generateAndInstallKeyPair;
+            test.strictEqual(generateAndInstallKeyPair.privateKeyName, 'myPrivatekey.key');
+            test.strictEqual(
+                generateAndInstallKeyPair.publicKeyOutFile,
+                '/config/cloud/keys/myPrivatekey.pub'
+            );
+            test.done();
+        });
+    },
+
+    testPrivateKeyOptionNoKeySuffix(test) {
+        argv.push('--data', 'data', '--out-file', 'foo.file', '--private-key-name', 'myPrivatekey');
+
+        test.expect(2);
+        encryptData.run(argv, () => {
+            const generateAndInstallKeyPair = functionsCalled.localKeyUtil.generateAndInstallKeyPair;
+            test.strictEqual(generateAndInstallKeyPair.privateKeyName, 'myPrivatekey.key');
+            test.strictEqual(
+                generateAndInstallKeyPair.publicKeyOutFile,
+                '/config/cloud/keys/myPrivatekey.pub'
+            );
             test.done();
         });
     }

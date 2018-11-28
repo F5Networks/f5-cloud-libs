@@ -26,6 +26,7 @@ const signals = require('../lib/signals');
 const util = require('../lib/util');
 const localKeyUtil = require('../lib/localKeyUtil');
 const KEYS = require('../lib/sharedConstants').KEYS;
+const REG_EXPS = require('../lib/sharedConstants').REG_EXPS;
 
 (function run() {
     const runner = {
@@ -175,9 +176,14 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                 let privateKeyName;
 
                 if (options.privateKeyName) {
-                    privateKeyName = options.privateKeyName;
+                    // Force Private Key Name to use .key suffix
+                    privateKeyName = (options.privateKeyName.match(REG_EXPS.KEY_SUFFIX))
+                        ? options.privateKeyName
+                        : `${options.privateKeyName}.key`;
                     privateKeyFolder = options.privateKeyFolder || 'Common';
-                    publicKeyPath = `${KEYS.LOCAL_PUBLIC_KEY_DIR}${privateKeyName}.pub`;
+                    // If a Private Key is specified with .key suffix, replace it with '.pub'.
+                    const publicKeyName = `${privateKeyName.replace(REG_EXPS.KEY_SUFFIX, '')}`;
+                    publicKeyPath = `${KEYS.LOCAL_PUBLIC_KEY_DIR}${publicKeyName}.pub`;
                     generateOptions.installPublic = true;
                 } else {
                     privateKeyName = KEYS.LOCAL_PRIVATE_KEY;

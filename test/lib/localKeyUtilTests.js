@@ -26,7 +26,7 @@ const passphrase = 'abc123';
 const publicKeyDirctory = 'myPublicKeyDir';
 const publicKeyOutFile = 'myPublicKeyOutFile';
 const privateKeyFolder = 'myPrivateKeyFolder';
-const privateKeyName = 'myPrivateKeyName';
+const privateKeyName = 'myPrivateKeyName.key';
 
 let childProcessMock;
 let cryptoUtilMock;
@@ -96,9 +96,7 @@ module.exports = {
     testGenerateAndInstallKeyPair: {
         setUp(callback) {
             childProcessMock.exec = function exec(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                    cb(null, ' Version 13.0.0 ');
-                } else if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
+                if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
                     cb(null, false);
                 } else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(null, {});
@@ -135,9 +133,9 @@ module.exports = {
 
         testPrivateKeyExists(test) {
             childProcessMock.exec = function exec(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                    cb(null, ' Version 13.0.0 ');
-                } else if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
+                if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
+                    cb(null, 'ok');
+                } else if (command.startsWith('/usr/bin/tmsh -a list sys file ssl-key')) {
                     cb(null, 'ok');
                 } else if (command.startsWith('ls -1t')) {
                     cb(null, `:${privateKeyFolder}:${privateKeyName}.key`);
@@ -165,9 +163,7 @@ module.exports = {
 
         testPrivateKeyExistsForce(test) {
             childProcessMock.exec = function exec(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                    cb(null, ' Version 13.0.0 ');
-                } else if (command.startsWith('ls -1t')) {
+                if (command.startsWith('ls -1t')) {
                     cb(null, `:${privateKeyFolder}:${privateKeyName}.key`);
                 } else {
                     cb(null, 'ok');
@@ -269,9 +265,7 @@ module.exports = {
 
         testBigIpFolderCreated(test) {
             childProcessMock.exec = function exec(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                    cb(null, ' Version 13.0.0 ');
-                } else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
+                if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(new Error());
                 } else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
                     bigIpFolderCreated = true;
@@ -301,9 +295,7 @@ module.exports = {
 
         testBigIpFolderExists(test) {
             childProcessMock.exec = function exec(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                    cb(null, ' Version 13.0.0 ');
-                } else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
+                if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(null, null);
                 } else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
                     bigIpFolderCreated = true;
@@ -383,9 +375,7 @@ module.exports = {
         testInstallError(test) {
             const message = 'install failed';
             childProcessMock.exec = function exec(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                    cb(null, ' Version 13.0.0 ');
-                } else if (command.startsWith('/usr/bin/tmsh -a install')) {
+                if (command.startsWith('/usr/bin/tmsh -a install')) {
                     cb(new Error(message));
                 } else {
                     cb(null, null);
@@ -412,18 +402,14 @@ module.exports = {
     },
 
     testGetPrivateKeyFilePath: {
-        test13_0(test) {
+        testWithSuffix(test) {
             const folder = 'hello';
             const name = 'world';
             const suffix = '_1234_1';
 
             childProcessMock.exec = function exec(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                    cb(null, ' Version 13.0.0 ');
-                } else {
-                    const shellOut = `:${folder}:${name}.key${suffix}`;
-                    cb(null, shellOut);
-                }
+                const shellOut = `:${folder}:${name}.key${suffix}`;
+                cb(null, shellOut);
             };
 
             test.expect(1);
@@ -442,18 +428,17 @@ module.exports = {
                 });
         },
 
-        test14_0(test) {
+        testNoSuffix(test) {
             const folder = 'hello';
             const name = 'world';
             const suffix = '_1234_1';
 
             childProcessMock.exec = function exec(command, cb) {
-                if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                    cb(null, ' Version 14.0.0 ');
-                } else {
-                    const shellOut = `:${folder}:${name}${suffix}`;
-                    cb(null, shellOut);
+                const shellOut = `:${folder}:${name}${suffix}`;
+                if (command === '/usr/bin/tmsh -a list sys crypto key /hello/world.key') {
+                    cb(new Error('01020036:3: The requested Certificate Key File was not found'));
                 }
+                cb(null, shellOut);
             };
 
             test.expect(1);
@@ -478,13 +463,9 @@ module.exports = {
         const name = 'world';
 
         childProcessMock.exec = function exec(command, cb) {
-            if (command.startsWith('/usr/bin/tmsh -a show sys version')) {
-                cb(null, ' Version 13.0.0 ');
-            } else {
-                // eslint-disable-next-line max-len
-                const tmshOut = `sys file ssl-key /CloudLibsLocal/cloudLibsLocalPrivate.key { passphrase ${passphrase} security-type password }`;
-                cb(null, tmshOut);
-            }
+            // eslint-disable-next-line max-len
+            const tmshOut = `sys file ssl-key /CloudLibsLocal/cloudLibsLocalPrivate.key { passphrase ${passphrase} security-type password }`;
+            cb(null, tmshOut);
         };
 
         test.expect(1);

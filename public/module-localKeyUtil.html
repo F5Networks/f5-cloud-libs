@@ -429,7 +429,7 @@ the filesystem.</p>
 
             
 
-            <td class="description last"><p>Install the public key as an iFile (so that it is synecd)</p></td>
+            <td class="description last"><p>Install the public key as an iFile (so that it is synced)</p></td>
         </tr>
 
     
@@ -777,6 +777,269 @@ the filesystem.</p>
 <div class="param-desc">
     <p>A promise which is resolved with the key metadata or
                    rejected if an error occurs</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="~listPrivateKey"><span class="type-signature">(inner) </span>listPrivateKey<span class="signature">(keyType, folder, name, noRetry<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>List a private key by folder and name.</p>
+<p>Will first search for a private key with a '.key' suffix, and then without a '.key' suffix</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>keyType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Key Type to list. Examples: 'file ssl-key', crypto key</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>folder</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Folder in which to search for the private key.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Name of the private key to search for</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>noRetry</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Whether or not to retry command with a different private key name.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise which will be resolved with a dictionary containing the name of the
+                     found private key, and the tmsh command response:</p>
+<pre class="prettyprint source"><code>                 {
+                     privateKeyName: &lt;String>,
+                     response: &lt;String>
+                 }</code></pre>
 </div>
 
 

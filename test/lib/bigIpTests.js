@@ -43,10 +43,13 @@ const DUMMY_TASK_PATH = '/foo/task/bar';
 
 const privateKeyFolder = 'aFolder';
 const privateKeyName = 'aKey';
-const privateKeyMetadata = {
-    foo: 'bar',
-    hello: 'world'
-};
+const privateKeyMetadata = [
+    {
+        name: 'default.key',
+        partition: 'Common',
+        fullPath: '/Common/default.key',
+    }
+];
 
 module.exports = {
     setUp(callback) {
@@ -566,6 +569,32 @@ module.exports = {
                 });
         },
 
+        testNoKeySuffix(test) {
+            const folder = 'CloudLibs';
+            const name = 'cloudLibsPrivate.key';
+
+            icontrolMock.when(
+                'create',
+                '/tm/util/bash',
+                {
+                    // eslint-disable-next-line max-len
+                    commandResult: ':CloudLibs:cloudLibsPrivate_1234_1\n:CloudLibs:cloudLibsPrivate.key_5678_1\n:Common:default.key_44648_1\n:Common:default.key_20253_1\n'
+                }
+            );
+
+            bigIp.getPrivateKeyFilePath(folder, name)
+                .then((privateKeyFilePath) => {
+                    // eslint-disable-next-line max-len
+                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:CloudLibs:cloudLibsPrivate_1234_1');
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
         testNotFound(test) {
             const folder = 'CloudLibs';
             const name = 'cloudLibsPrivate';
@@ -703,24 +732,22 @@ module.exports = {
     },
 
     testGetPrivateKeyMetadata: {
-        test13_0(test) {
+        testNoKeySuffix(test) {
+            const sslKey = {
+                name: 'aKey',
+                partition: 'aFolder',
+                fullPath: '/aFolder/aKey',
+            };
+            privateKeyMetadata.push(sslKey);
             icontrolMock.when(
                 'list',
-                '/shared/identified-devices/config/device-info',
-                {
-                    version: '13.1.0'
-                }
-            );
-
-            icontrolMock.when(
-                'list',
-                `/tm/sys/file/ssl-key/~${privateKeyFolder}~${privateKeyName}.key`,
+                '/tm/sys/file/ssl-key',
                 privateKeyMetadata
             );
 
             bigIp.getPrivateKeyMetadata(privateKeyFolder, privateKeyName)
                 .then((response) => {
-                    test.deepEqual(response, privateKeyMetadata);
+                    test.deepEqual(response, sslKey);
                 })
                 .catch((err) => {
                     test.ok(false, err);
@@ -730,24 +757,22 @@ module.exports = {
                 });
         },
 
-        test14_0(test) {
+        testKeySuffix(test) {
+            const sslKey = {
+                name: 'aKey.key',
+                partition: 'aFolder',
+                fullPath: '/aFolder/aKey.key',
+            };
+            privateKeyMetadata.push(sslKey);
             icontrolMock.when(
                 'list',
-                '/shared/identified-devices/config/device-info',
-                {
-                    version: '14.0.0'
-                }
-            );
-
-            icontrolMock.when(
-                'list',
-                `/tm/sys/file/ssl-key/~${privateKeyFolder}~${privateKeyName}`,
+                '/tm/sys/file/ssl-key',
                 privateKeyMetadata
             );
 
-            bigIp.getPrivateKeyMetadata(privateKeyFolder, privateKeyName)
+            bigIp.getPrivateKeyMetadata(privateKeyFolder, `${privateKeyName}.key`)
                 .then((response) => {
-                    test.deepEqual(response, privateKeyMetadata);
+                    test.deepEqual(response, sslKey);
                 })
                 .catch((err) => {
                     test.ok(false, err);

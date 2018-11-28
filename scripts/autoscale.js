@@ -38,7 +38,7 @@ const commonOptions = require('./commonOptions');
 
     const PASSPHRASE_LENGTH = 18;
 
-    const AUTOSCALE_PRIVATE_KEY = 'cloudLibsAutoscalePrivate';
+    const AUTOSCALE_PRIVATE_KEY = 'cloudLibsAutoscalePrivate.key';
     const AUTOSCALE_PRIVATE_KEY_FOLDER = 'CloudLibsAutoscale';
 
     const UCS_BACKUP_PREFIX = 'ucsAutosave_';

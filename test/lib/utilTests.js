@@ -1484,6 +1484,18 @@ module.exports = {
         }
     },
 
+    testParseTmshResponse(test) {
+        const tmshResponse = `sys crypto key garrett.key {
+            key-size 3072
+            key-type rsa-private
+            security-type password
+        }`;
+        test.expect(1);
+        const response = util.parseTmshResponse(tmshResponse);
+        test.strictEqual(response['security-type'], 'password');
+        test.done();
+    },
+
     testGetProduct: {
         testHasProductString(test) {
             util.getProductString = function getProductString() {
