@@ -187,22 +187,44 @@ module.exports = {
             callback();
         },
 
-        testByVersion(test) {
-            test.expect(2);
-            bigIq.init('host', 'user', 'password')
-                .then(() => {
-                    bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
-                        .then(() => {
-                            test.strictEqual(gotByVersion, true);
-                            test.strictEqual(licensingArgs[1], poolName);
-                        })
-                        .catch(() => {
-                            test.ok(false, 'licensing by version failed');
-                        })
-                        .finally(() => {
-                            test.done();
-                        });
-                });
+        testByVersion: {
+            testBasic(test) {
+                test.expect(2);
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
+                            .then(() => {
+                                test.strictEqual(gotByVersion, true);
+                                test.strictEqual(licensingArgs[1], poolName);
+                            })
+                            .catch(() => {
+                                test.ok(false, 'licensing by version failed');
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            },
+
+            testBadVersion(test) {
+                bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
+                    throw new Error('get by version failed');
+                };
+
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
+                            .then(() => {
+                                test.ok(false, 'getByVersion should have thrown');
+                            })
+                            .catch((err) => {
+                                test.strictEqual(err.message, 'get by version failed');
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            }
         },
 
         testByType: {
@@ -246,7 +268,7 @@ module.exports = {
 
                 icontrolMock.when(
                     'list',
-                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
+                    '/cm/device/licensing/pool/utility/licenses?$select=name',
                     [
                         {
                             name: poolName
@@ -283,7 +305,7 @@ module.exports = {
 
                 icontrolMock.when(
                     'list',
-                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
+                    '/cm/device/licensing/pool/utility/licenses?$select=name',
                     []
                 );
 
@@ -418,6 +440,27 @@ module.exports = {
                         })
                         .catch(() => {
                             test.ok(false, 'reovoke failed');
+                        })
+                        .finally(() => {
+                            test.done();
+                        });
+                });
+        },
+
+        testBadVersion(test) {
+            bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
+                throw new Error('get by version failed');
+            };
+
+            test.expect(1);
+            bigIq.init('host', 'user', 'password')
+                .then(() => {
+                    bigIq.revokeLicense()
+                        .then(() => {
+                            test.ok(false, 'getByVersion should have thrown');
+                        })
+                        .catch((err) => {
+                            test.strictEqual(err.message, 'get by version failed');
                         })
                         .finally(() => {
                             test.done();
