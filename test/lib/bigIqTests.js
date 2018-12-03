@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 F5 Networks, Inc.
+ * Copyright 2017-2018 F5 Networks, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 'use strict';
 
 const q = require('q');
+const sharedConstants = require('../../lib/sharedConstants');
 
 const host = 'myHost';
 const user = 'myUser';
@@ -24,15 +25,24 @@ const password = 'myPassword';
 
 const bigIqVersion = '5.2';
 
+const poolName = 'mypool';
+
 let BigIq;
 let bigIq;
+let bigIqLicenseProviderFactoryMock;
 let authnMock;
 let icontrolMock;
 let revokeCalled;
 
+let licensingArgs;
+let apiTypeCalled;
+let gotByVersion;
+
 module.exports = {
     setUp(callback) {
         /* eslint-disable global-require */
+        bigIqLicenseProviderFactoryMock = require('../../lib/bigIqLicenseProviderFactory');
+
         icontrolMock = require('../testUtil/icontrolMock');
 
         icontrolMock.reset();
@@ -150,28 +160,276 @@ module.exports = {
         }
     },
 
+    testLicenseBigIp: {
+        setUp(callback) {
+            gotByVersion = false;
+            licensingArgs = null;
+            bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
+                gotByVersion = true;
+                return q({
+                    getUnmanagedDeviceLicense() {
+                        licensingArgs = arguments;
+                        return q();
+                    }
+                });
+            };
+
+            bigIqLicenseProviderFactoryMock.getLicenseProviderByType = function a() {
+                apiTypeCalled = arguments[0];
+                return q({
+                    getUnmanagedDeviceLicense() {
+                        licensingArgs = arguments;
+                        return q();
+                    }
+                });
+            };
+
+            callback();
+        },
+
+        testByVersion: {
+            testBasic(test) {
+                test.expect(2);
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
+                            .then(() => {
+                                test.strictEqual(gotByVersion, true);
+                                test.strictEqual(licensingArgs[1], poolName);
+                            })
+                            .catch(() => {
+                                test.ok(false, 'licensing by version failed');
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            },
+
+            testBadVersion(test) {
+                bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
+                    throw new Error('get by version failed');
+                };
+
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
+                            .then(() => {
+                                test.ok(false, 'getByVersion should have thrown');
+                            })
+                            .catch((err) => {
+                                test.strictEqual(err.message, 'get by version failed');
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            }
+        },
+
+        testByType: {
+            testPurchased(test) {
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
+                    [
+                        {
+                            name: poolName
+                        }
+                    ]
+                );
+
+                test.expect(2);
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
+                            .then(() => {
+                                test.strictEqual(
+                                    apiTypeCalled,
+                                    sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
+                                );
+                                test.strictEqual(licensingArgs[1], poolName);
+                            })
+                            .catch(() => {
+                                test.ok(false, 'licensing by type failed');
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            },
+
+            testUtility(test) {
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
+                    []
+                );
+
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/utility/licenses?$select=name',
+                    [
+                        {
+                            name: poolName
+                        }
+                    ]
+                );
+
+                test.expect(2);
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
+                            .then(() => {
+                                test.strictEqual(
+                                    apiTypeCalled,
+                                    sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
+                                );
+                                test.strictEqual(licensingArgs[1], poolName);
+                            })
+                            .catch(() => {
+                                test.ok(false, 'licensing by type failed');
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            },
+
+            testRegKey(test) {
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
+                    []
+                );
+
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/utility/licenses?$select=name',
+                    []
+                );
+
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/regkey/licenses?$select=name',
+                    [
+                        {
+                            name: poolName
+                        }
+                    ]
+                );
+
+                test.expect(2);
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
+                            .then(() => {
+                                test.strictEqual(
+                                    apiTypeCalled,
+                                    sharedConstants.LICENSE_API_TYPES.REG_KEY
+                                );
+                                test.strictEqual(licensingArgs[1], poolName);
+                            })
+                            .catch(() => {
+                                test.ok(false, 'licensing by type failed');
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            },
+
+            testReachable(test) {
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
+                    [
+                        {
+                            name: poolName
+                        }
+                    ]
+                );
+
+                test.expect(2);
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(
+                            poolName,
+                            '1.2.3.4',
+                            '8888',
+                            {
+                                noUnreachable: true,
+                                autoApiType: true
+                            }
+                        )
+                            .then(() => {
+                                test.strictEqual(
+                                    apiTypeCalled,
+                                    sharedConstants.LICENSE_API_TYPES.UTILITY
+                                );
+                                test.strictEqual(licensingArgs[1], poolName);
+                            })
+                            .catch(() => {
+                                test.ok(false, 'licensing by type failed');
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            },
+
+            testPoolNotFound(test) {
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
+                    []
+                );
+
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
+                    []
+                );
+
+                icontrolMock.when(
+                    'list',
+                    '/cm/device/licensing/pool/regkey/licenses?$select=name',
+                    []
+                );
+
+                test.expect(1);
+                bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
+                            .then(() => {
+                                test.ok(false, 'should have thrown pool not found');
+                            })
+                            .catch((err) => {
+                                test.notStrictEqual(err.message.indexOf('not found'), -1);
+                            })
+                            .finally(() => {
+                                test.done();
+                            });
+                    });
+            }
+        }
+    },
+
     testRevokeLicense: {
         setUp(callback) {
             revokeCalled = false;
             callback();
         },
 
-        test5_0(test) {
-            const licenseProvider = require('../../lib/bigIq50LicenseProvider');
-
-            licenseProvider.revoke = () => {
-                return q();
-            };
-
-            icontrolMock.when(
-                'list',
-                '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                [
-                    {
-                        version: '5.0.0'
+        testBasic(test) {
+            bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
+                return {
+                    revoke() {
+                        revokeCalled = true;
+                        return q();
                     }
-                ]
-            );
+                };
+            };
 
             test.expect(1);
             bigIq.init('host', 'user', 'password')
@@ -181,7 +439,7 @@ module.exports = {
                             test.strictEqual(revokeCalled, true);
                         })
                         .catch(() => {
-                            test.ok(true);
+                            test.ok(false, 'reovoke failed');
                         })
                         .finally(() => {
                             test.done();
@@ -189,92 +447,20 @@ module.exports = {
                 });
         },
 
-        test5_2(test) {
-            const licenseProvider = require('../../lib/bigIq52LicenseProvider');
-
-            licenseProvider.revoke = () => {
-                return q();
+        testBadVersion(test) {
+            bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
+                throw new Error('get by version failed');
             };
 
-            icontrolMock.when(
-                'list',
-                '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                [
-                    {
-                        version: '5.2.0'
-                    }
-                ]
-            );
-
             test.expect(1);
             bigIq.init('host', 'user', 'password')
                 .then(() => {
                     bigIq.revokeLicense()
                         .then(() => {
-                            test.strictEqual(revokeCalled, true);
-                        })
-                        .catch(() => {
-                            test.ok(true);
-                        })
-                        .finally(() => {
-                            test.done();
-                        });
-                });
-        },
-
-        test5_3(test) {
-            const licenseProvider = require('../../lib/bigIq53LicenseProvider');
-
-            licenseProvider.revoke = () => {
-                return q();
-            };
-
-            icontrolMock.when(
-                'list',
-                '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                [
-                    {
-                        version: '5.3.0'
-                    }
-                ]
-            );
-
-            test.expect(1);
-            bigIq.init('host', 'user', 'password')
-                .then(() => {
-                    bigIq.revokeLicense()
-                        .then(() => {
-                            test.strictEqual(revokeCalled, true);
-                        })
-                        .catch(() => {
-                            test.ok(true);
-                        })
-                        .finally(() => {
-                            test.done();
-                        });
-                });
-        },
-
-        testPre5_0(test) {
-            icontrolMock.when(
-                'list',
-                '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version',
-                [
-                    {
-                        version: '4.9.0'
-                    }
-                ]
-            );
-
-            test.expect(1);
-            bigIq.init('host', 'user', 'password')
-                .then(() => {
-                    bigIq.revokeLicense()
-                        .then(() => {
-                            test.ok(false, 'should have thrown not supported');
+                            test.ok(false, 'getByVersion should have thrown');
                         })
                         .catch((err) => {
-                            test.notStrictEqual(err.message.indexOf('BIG-IQ versions'), -1);
+                            test.strictEqual(err.message, 'get by version failed');
                         })
                         .finally(() => {
                             test.done();
