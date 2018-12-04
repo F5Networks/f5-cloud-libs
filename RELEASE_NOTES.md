@@ -1,5 +1,21 @@
 # Release notes
 
+## Version 4.6.0
+* Add new genericNodeProvider for Service Discovery of services cataloged in a generic JSON document
+* Support for clustering BIG-IQ in Google
+* Add interface as a valid destination when creating BIG-IP routes
+* Fix an issue where Service Discovery could not run on BIG-IP v12.1
+* Support for falling back to HTTP Basic Auth when licensing a BIG-IP from a BIG-IQ
+* Support installation of iLX packages during f5-cloud-libs onboarding
+    * f5-cloud-libs verifyHash can now verify the latest LTS release of AS3
+* Update BIG-IQ licensing failure logging to include failure messages from BIG-IQ
+* Support for installing private keys with consistent key names across BIG-IP and f5-cloud-libs versions
+* Add auto-detection of BIG-IQ license provider by license pool type
+* Support multiple Azure subscriptions in Azure failover
+    * Includes support for User Defined Routes in multiple Azure subscriptions
+* Support BIG-IQ failover in AWS
+* Fix for Google provider to determine instance region
+
 ## Version 4.5.0
 * Support for clustering BIG-IQ in AWS and Azure
 * Fix for tagging instance in single instance AWS Auto Scale Group
