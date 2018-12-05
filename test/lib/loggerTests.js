@@ -41,8 +41,11 @@ module.exports = {
     },
 
     testLogfile(test) {
+        test.expect(3);
         logger = Logger.getLogger({ fileName: 'foo' });
         test.ok(logger.transports.file, 'No file logger found.');
+        test.strictEqual(logger.transports.file.maxFiles, 10);
+        test.strictEqual(logger.transports.file.maxsize, 10485760);
         test.done();
     },
 
