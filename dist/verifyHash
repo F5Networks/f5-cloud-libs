@@ -1,7 +1,7 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) f11c1a7e6257e2a0f329e53b013532e75b27ad7387cc079f9cefddd19bf231bd9ef7626722a26acecb77bbee5ce16927a89b0b160cea87d5f45d188b9c6ef37b
+            set hashes(f5-cloud-libs.tar.gz) db2a6d133e5bf3e35f73d1c79fe011f99664f303abb94324faa94a732a6c95804ddd0fd26511979ba560f31ffddcc4070b084cf9861f560f145a6f92ee15941f
             set hashes(f5-cloud-libs-aws.tar.gz) c919990b3a10b5b328b3a96949629454c604d77a8f6d54794ca46f6646bf9e6c2b8097bee2a4747cff3d1fa76fc3df3bc9688e7aff94f6085da9b19b3ac92866
             set hashes(f5-cloud-libs-azure.tar.gz) 9fb24b60be2d4ac4ba99f4b4f9ca5c0b0adbc074ecd8778e167f5c560f43024d18a81dfce3b8b10c6b89f5f1e13daf0151b4dc9f2754700ca528db6df6357987
             set hashes(f5-cloud-libs-gce.tar.gz) 67e9fef439851ad4f9fbaf3f3574dadb2fceea0b13a77ccde41bcf31c42f87d6c37c64d50d685fc9a90acedc8c80abee9114b9a232809f36746bdc8e1de1b22a
@@ -19,7 +19,7 @@ proc script::run {} {
             set hashes(f5.policy_creator.tmpl) 06539e08d115efafe55aa507ecb4e443e83bdb1f5825a9514954ef6ca56d240ed00c7b5d67bd8f67b815ee9dd46451984701d058c89dae2434c89715d375a620
             set hashes(f5.service_discovery.tmpl) b0b9b2cac52dd80d75278e176d458f517322cfd51ba3ecb1fd38673500579b7b99b4631af3ce20902e91c236ee7fba9bcf368e928a83a899d49e751cd2595603
             set hashes(f5.cloud_logger.v1.0.0.tmpl) a26d5c470e70b821621476bcfd0579dbc0964f6a54158bc6314fa1e2f63b23bf3f3eb43ade5081131c24e08579db2e1e574beb3f8d9789d28acb4f312fad8c3e
-            set hashes(f5-appsvcs-3.5.0-3.noarch.rpm) 81ed2169f1e99b3d25392f345b5c0800e1b7f26c3895f360c04d99fd4f594f04b7b536f7b283b00081311171d905d8fd02037479b85cc5486c10c01b3de070fb
+            set hashes(f5-appsvcs-3.5.1-5.noarch.rpm) ba71c6e1c52d0c7077cdb25a58709b8fb7c37b34418a8338bbf67668339676d208c1a4fef4e5470c152aac84020b4ccb8074ce387de24be339711256c0fa78c8
 
             set file_path [lindex $tmsh::argv 1]
             set file_name [file tail $file_path]
