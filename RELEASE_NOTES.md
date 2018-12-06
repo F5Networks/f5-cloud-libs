@@ -15,6 +15,7 @@
     * Includes support for User Defined Routes in multiple Azure subscriptions
 * Support BIG-IQ failover in AWS
 * Fix for Google provider to determine instance region
+* Fix for enabling f5-cloud-libs log file rotation
 
 ## Version 4.5.0
 * Support for clustering BIG-IQ in AWS and Azure
