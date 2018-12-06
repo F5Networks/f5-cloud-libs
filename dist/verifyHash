@@ -1,7 +1,7 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) ef4494907d7dc147ac80e390a73531ab35e02d6ece77ba52e08dcebbfc694aa363da8a796466f868bbd71500bfe750b58a620331d333b6f67444821fc8994d75
+            set hashes(f5-cloud-libs.tar.gz) 535059811324dbda9783df2c4f7ac8405acf6f198efd5696bc0d90f4f8f645b77c04efd42c3dc94261f0b92d76cbae87613412531968a5e646baf4177807b953
             set hashes(f5-cloud-libs-aws.tar.gz) 076c969cbfff12efacce0879820262b7787c98645f1105667cc4927d4acfe2466ed64c777b6d35957f6df7ae266937dde42fef4c8b1f870020a366f7f910ffb5
             set hashes(f5-cloud-libs-azure.tar.gz) eea34eb9bf1fc86702cc8d3adcd0cd4cd3e8ede0bad5d85ce55b7248aeb5726583b0314bd1ac9383dbfbf97c79d08d27a473539844de6972c9f6f5fea1a7b9aa
             set hashes(f5-cloud-libs-gce.tar.gz) 605c13c0725dcf6ee96d24349aee68be59640c58fef16d42d69fe1b01fb2e59df14f2cd41f0718d21061b8fb52cdce57fcf6541ebc8610e54e0f7fe8e46d94cb
@@ -17,7 +17,7 @@ proc script::run {} {
             set hashes(asm-policy.tar.gz) 2d39ec60d006d05d8a1567a1d8aae722419e8b062ad77d6d9a31652971e5e67bc4043d81671ba2a8b12dd229ea46d205144f75374ed4cae58cefa8f9ab6533e6
             set hashes(deploy_waf.sh) 1a3a3c6274ab08a7dc2cb73aedc8d2b2a23cd9e0eb06a2e1534b3632f250f1d897056f219d5b35d3eed1207026e89989f754840fd92969c515ae4d829214fb74
             set hashes(f5.policy_creator.tmpl) 06539e08d115efafe55aa507ecb4e443e83bdb1f5825a9514954ef6ca56d240ed00c7b5d67bd8f67b815ee9dd46451984701d058c89dae2434c89715d375a620
-            set hashes(f5.service_discovery.tmpl) b0b9b2cac52dd80d75278e176d458f517322cfd51ba3ecb1fd38673500579b7b99b4631af3ce20902e91c236ee7fba9bcf368e928a83a899d49e751cd2595603
+            set hashes(f5.service_discovery.tmpl) 0c43a28d58ff8339891ef324763675c29275170f8984d39298a53f570385eef82bef6d5a273adebb5310fc529faffc9b225358ec8f65100115246915eff706fe
             set hashes(f5.cloud_logger.v1.0.0.tmpl) a26d5c470e70b821621476bcfd0579dbc0964f6a54158bc6314fa1e2f63b23bf3f3eb43ade5081131c24e08579db2e1e574beb3f8d9789d28acb4f312fad8c3e
             set hashes(f5-appsvcs-3.5.1-5.noarch.rpm) ba71c6e1c52d0c7077cdb25a58709b8fb7c37b34418a8338bbf67668339676d208c1a4fef4e5470c152aac84020b4ccb8074ce387de24be339711256c0fa78c8
 
@@ -41,5 +41,6 @@ proc script::run {} {
             exit 1
         }
     }
+    script-signature UYLTyX4M5Jm4TLxR6oYZfBLlVdYqY3k8g/NauWTuad3jk7cF+Guo1s5SebjgnPy60QEmcXMrTc8bOAtwWuTyFMUNMNOsuZQxspFmNbuTWPekE0NO06iUbfVrnm4oqeXznPZ+6KTrV6BRDSLz4TEIBs1RlChVAXr1immR1/UypMq6j3NyCJTfgMzbjjff0dQXWsh/Ck971U06tePKusovWNQsQQ0q98PIiMdglh1pISX/nFfWcEPrhejYwORbM0vGYEbK66cNJzmJEhNWIFg1RTvyeLHwsxZADGNMZBbYy5E3RC2Bq95+8RvmdYthd6C0E8et4qiABxIMN8k5uGSncw==
     signing-key /Common/f5-irule
 }
