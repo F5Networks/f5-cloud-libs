@@ -1,10 +1,10 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) db2a6d133e5bf3e35f73d1c79fe011f99664f303abb94324faa94a732a6c95804ddd0fd26511979ba560f31ffddcc4070b084cf9861f560f145a6f92ee15941f
-            set hashes(f5-cloud-libs-aws.tar.gz) c919990b3a10b5b328b3a96949629454c604d77a8f6d54794ca46f6646bf9e6c2b8097bee2a4747cff3d1fa76fc3df3bc9688e7aff94f6085da9b19b3ac92866
-            set hashes(f5-cloud-libs-azure.tar.gz) 9fb24b60be2d4ac4ba99f4b4f9ca5c0b0adbc074ecd8778e167f5c560f43024d18a81dfce3b8b10c6b89f5f1e13daf0151b4dc9f2754700ca528db6df6357987
-            set hashes(f5-cloud-libs-gce.tar.gz) 67e9fef439851ad4f9fbaf3f3574dadb2fceea0b13a77ccde41bcf31c42f87d6c37c64d50d685fc9a90acedc8c80abee9114b9a232809f36746bdc8e1de1b22a
+            set hashes(f5-cloud-libs.tar.gz) ef4494907d7dc147ac80e390a73531ab35e02d6ece77ba52e08dcebbfc694aa363da8a796466f868bbd71500bfe750b58a620331d333b6f67444821fc8994d75
+            set hashes(f5-cloud-libs-aws.tar.gz) 076c969cbfff12efacce0879820262b7787c98645f1105667cc4927d4acfe2466ed64c777b6d35957f6df7ae266937dde42fef4c8b1f870020a366f7f910ffb5
+            set hashes(f5-cloud-libs-azure.tar.gz) eea34eb9bf1fc86702cc8d3adcd0cd4cd3e8ede0bad5d85ce55b7248aeb5726583b0314bd1ac9383dbfbf97c79d08d27a473539844de6972c9f6f5fea1a7b9aa
+            set hashes(f5-cloud-libs-gce.tar.gz) 605c13c0725dcf6ee96d24349aee68be59640c58fef16d42d69fe1b01fb2e59df14f2cd41f0718d21061b8fb52cdce57fcf6541ebc8610e54e0f7fe8e46d94cb
             set hashes(f5-cloud-libs-openstack.tar.gz) 5c83fe6a93a6fceb5a2e8437b5ed8cc9faf4c1621bfc9e6a0779f6c2137b45eab8ae0e7ed745c8cf821b9371245ca29749ca0b7e5663949d77496b8728f4b0f9
             set hashes(asm-policy-linux.tar.gz) 63b5c2a51ca09c43bd89af3773bbab87c71a6e7f6ad9410b229b4e0a1c483d46f1a9fff39d9944041b02ee9260724027414de592e99f4c2475415323e18a72e0
             set hashes(f5.http.v1.2.0rc4.tmpl) 47c19a83ebfc7bd1e9e9c35f3424945ef8694aa437eedd17b6a387788d4db1396fefe445199b497064d76967b0d50238154190ca0bd73941298fc257df4dc034
