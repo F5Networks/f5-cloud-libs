@@ -72,14 +72,18 @@ if [[ "$PASSWORD_ENCRYPTED" == true ]]; then
 
     BIG_IP_LOCAL_PRIVATE_KEY_FOLDER=CloudLibsLocal
     BIG_IP_LOCAL_PRIVATE_KEY_NAME=cloudLibsLocalPrivate
-
-    # get the key suffix for this BIG-IP version
-    KEY_FILE_SUFFIX=$(get_private_key_suffix)
+    BIG_IP_LOCAL_PRIVATE_KEY_SUFFIXED_NAME=cloudLibsLocalPrivate.key
 
     # get passphrase and decrypt for local private key
     create_temp_dir /mnt/cloudTemp 8k
     PASSPHRASE_FILE=/mnt/cloudTemp/passphrase.out
-    PASSPHRASE=$(/usr/bin/tmsh list sys file ssl-key /${BIG_IP_LOCAL_PRIVATE_KEY_FOLDER}/${BIG_IP_LOCAL_PRIVATE_KEY_NAME}${KEY_FILE_SUFFIX} | /bin/grep passphrase | /bin/awk '{print $2}')
+
+    # Search for ssl-key with .key suffix
+    if [[ -n $(/usr/bin/tmsh list sys file ssl-key /${BIG_IP_LOCAL_PRIVATE_KEY_FOLDER}/${BIG_IP_LOCAL_PRIVATE_KEY_SUFFIXED_NAME}) ]]; then
+        BIG_IP_LOCAL_PRIVATE_KEY_NAME="$BIG_IP_LOCAL_PRIVATE_KEY_SUFFIXED_NAME"
+    fi
+    
+    PASSPHRASE=$(/usr/bin/tmsh list sys file ssl-key /${BIG_IP_LOCAL_PRIVATE_KEY_FOLDER}/${BIG_IP_LOCAL_PRIVATE_KEY_NAME} | /bin/grep passphrase | /bin/awk '{print $2}')
     $(dirname $0)/decryptConfValue "$PASSPHRASE" > "$PASSPHRASE_FILE"
 
     # get path to private key
