@@ -44,6 +44,34 @@ module.exports = {
             });
     },
 
+    testAuthTokenWrongIp(test) {
+        const user = 'admin';
+        const password = 'secret';
+        const badTokenResponse = `Tokens are only valid to be used by the client of which they were issued.
+Token is valid for 1.2.3.4 and received from 6.7.8.9.`;
+
+        iControl = new IControl({ authToken: 'ClientToken', user, password });
+        iControl.https = httpMock;
+        httpMock.setResponse(
+            { message: badTokenResponse },
+            { 'Content-Type': 'application/json' },
+            401
+        );
+
+        iControl.list('/wrong/client/ip')
+            .then((data) => {
+                test.deepEqual(data, { message: 'Success' });
+                test.strictEqual(httpMock.lastRequest.auth, `${user}:${password}`);
+                test.strictEqual(httpMock.lastRequest.headers['X-F5-Auth-Token'], undefined);
+            })
+            .catch((err) => {
+                test.ok(false, err.message);
+            })
+            .finally(() => {
+                test.done();
+            });
+    },
+
     testBadJsonResponse(test) {
         httpMock.setResponse('badjson', { 'Content-Type': 'application/json' });
         iControl.list('somepath')

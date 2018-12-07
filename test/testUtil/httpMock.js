@@ -23,7 +23,7 @@ module.exports = {
             eventMap: {},
             headers: {},
             statusCode: 200,
-            setEncoding() {},
+            setEncoding() { },
             on(event, cb) {
                 this.eventMap[event] = cb;
             },
@@ -32,7 +32,7 @@ module.exports = {
                     this.eventMap[event](args);
                 }
             },
-            resume() {}
+            resume() { }
         },
         end() {
             if (this.errorToEmit) {
@@ -66,6 +66,13 @@ module.exports = {
     },
 
     request(options, cb) {
+        if (
+            options.path === '/mgmt/wrong/client/ip'
+            && options.headers
+            && !options.headers['X-F5-Auth-Token']
+        ) {
+            this.setResponse({ message: 'Success' }, { 'Content-Type': 'application/json' }, 200);
+        }
         this.lastRequest = options;
         this.clientRequest.cb = cb;
         return this.clientRequest;

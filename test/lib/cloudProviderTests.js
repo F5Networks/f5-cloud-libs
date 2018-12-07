@@ -322,6 +322,13 @@ module.exports = {
         test.done();
     },
 
+    testUnimplementedGetNodesByUri(test) {
+        test.doesNotThrow(() => {
+            testCloudProvider.getNodesFromUri();
+        });
+        test.done();
+    },
+
     testIsInstanceExpired: {
         testExpired(test) {
             const instance = {

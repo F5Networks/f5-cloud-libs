@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: logger</title>
+    <title>JSDoc: Module: bigIqLicenseProviderFactory</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: logger</h1>
+    <h1 class="page-title">Module: bigIqLicenseProviderFactory</h1>
 
     
 
@@ -64,7 +64,7 @@
     
 
     
-    <h4 class="name" id=".getLogger"><span class="type-signature">(static) </span>getLogger<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".getLicenseProviderByType"><span class="type-signature">(static) </span>getLicenseProviderByType<span class="signature">(poolType, {BigIp}, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -72,7 +72,7 @@
 
 
 <div class="description">
-    <p>Returns a logger.</p>
+    <p>Creates a BIG-IQ license provider for the given API type</p>
 </div>
 
 
@@ -110,13 +110,76 @@
 
         <tr>
             
-                <td class="name"><code>options</code></td>
+                <td class="name"><code>poolType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Type of the API to use
+                                          <a href="module-sharedConstants.html#.LICENSE_API_TYPES">module:sharedConstants.LICENSE_API_TYPES</a></p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>{BigIp}</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>See <a href="BigIp.html">BigIp</a>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Ojbect</span>
 
 
             
@@ -136,7 +199,7 @@
 
             
 
-            <td class="description last"><p>Options for configuring the logger</p>
+            <td class="description last"><p>Options for the instance.</p>
                 <h6>Properties</h6>
                 
 
@@ -164,108 +227,7 @@
 
         <tr>
             
-                <td class="name"><code>console</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Whether or not to log to the console. Default true.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>logLevel</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>The log level to use.
-                                           (error, warn, info, verbose, debug, silly).
-                                           Defaults to warn.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>fileName</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>File to log to. Defaults to none (console only).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>module</code></td>
+                <td class="name"><code>logger</code></td>
             
 
             <td class="type">
@@ -291,21 +253,20 @@
 
             
 
-            <td class="description last"><p>The module the logger is used from. Used to put the
-                                           file name in the log message.</p></td>
+            <td class="description last"><p>Logger to use. Or, pass loggerOptions to get your own logger.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>json</code></td>
+                <td class="name"><code>loggerOptions</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Boolean</span>
+<span class="param-type">Object</span>
 
 
             
@@ -325,20 +286,21 @@
 
             
 
-            <td class="description last"><p>Whether or not to format message as JSON. Default false.</p></td>
+            <td class="description last"><p>Options for the logger.
+                                          See <a href="module-logger.html#.getLogger">module:logger.getLogger</a> for details.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>verboseLabel</code></td>
+                <td class="name"><code>version</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Boolean</span>
+<span class="param-type">String</span>
 
 
             
@@ -358,8 +320,7 @@
 
             
 
-            <td class="description last"><p>Whether or not to include the verbose label in log.
-                                           Default false.</p></td>
+            <td class="description last"><p>The version of BIG-IQ.</p></td>
         </tr>
 
     
@@ -425,16 +386,305 @@
 
 
 
-<h5>Returns:</h5>
+
+
+
+
 
         
-<div class="param-desc">
-    <p>An instance of a logger</p>
+            
+
+    
+
+    
+    <h4 class="name" id=".getLicenseProviderByVersion"><span class="type-signature">(static) </span>getLicenseProviderByVersion<span class="signature">(bigIqVersion, {BigIp}, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Creates a BIG-IQ license provider for the given version</p>
 </div>
 
 
 
+
+
+
+
+
+
+    <h5>Parameters:</h5>
     
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>bigIqVersion</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Version of BIG-IQ.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>{BigIp}</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>See <a href="BigIp.html">BigIp</a>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Ojbect</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the instance.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>logger</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Logger to use. Or, pass loggerOptions to get your own logger.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>loggerOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the logger.
+                                          See <a href="module-logger.html#.getLogger">module:logger.getLogger</a> for details.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

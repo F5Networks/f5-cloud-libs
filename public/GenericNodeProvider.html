@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Mixin: bigIqClusterMixins</title>
+    <title>JSDoc: Class: GenericNodeProvider</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Mixin: bigIqClusterMixins</h1>
+    <h1 class="page-title">Class: GenericNodeProvider</h1>
 
     
 
@@ -28,7 +28,9 @@
 
 <header>
     
-        <h2>bigIqClusterMixins</h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>GenericNodeProvider<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>Generic node provider implementation.</p></div>
         
     
 </header>
@@ -37,10 +39,222 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Functions that only pertain to BIG-IQ clustering, not BIG-IP</p></div>
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="GenericNodeProvider"><span class="type-signature"></span>new GenericNodeProvider<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Constructor</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
         
 
         
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the instance.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>clOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Command line options if called from a script.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>logger</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Logger to use. Or, pass loggerOptions to get your own logger.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>loggerOptions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Options for the logger.
+                                          See <a href="module-logger.html#.getLogger">module:logger.getLogger</a> for details.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
 
 
 <dl class="details">
@@ -79,7 +293,22 @@
 </dl>
 
 
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     </div>
 
@@ -106,7 +335,7 @@
     
 
     
-    <h4 class="name" id=".addSecondary"><span class="type-signature">(static) </span>addSecondary<span class="signature">(failoverPeerIp, failoverPeerUsername, failoverPeerPassword, rootPassword, testOpts<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="getNodesFromUri"><span class="type-signature"></span>getNodesFromUri<span class="signature">(uri, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -114,7 +343,9 @@
 
 
 <div class="description">
-    <p>Configures the specified failover peer as a secondary in a BIQ-IQ High Availability configuration</p>
+    <p>Gets nodes from the provided URI. The resource should be in JSON
+format as an array of objects. JSON strings that parse to an array
+of objects are also supported.</p>
 </div>
 
 
@@ -152,7 +383,7 @@
 
         <tr>
             
-                <td class="name"><code>failoverPeerIp</code></td>
+                <td class="name"><code>uri</code></td>
             
 
             <td class="type">
@@ -176,107 +407,14 @@
 
             
 
-            <td class="description last"><p>IP address of the failover peer</p></td>
+            <td class="description last"><p>The URI of the resource.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>failoverPeerUsername</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Username of the admin user on the failover peer</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>failoverPeerPassword</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Password of the admin user on the failover peer</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>rootPassword</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Password of the root user on the failover peer</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>testOpts</code></td>
+                <td class="name"><code>options</code></td>
             
 
             <td class="type">
@@ -302,7 +440,7 @@
 
             
 
-            <td class="description last"><p>testOpts - Options used during testing</p>
+            <td class="description last"><p>Optional parameters</p>
                 <h6>Properties</h6>
                 
 
@@ -330,7 +468,7 @@
 
         <tr>
             
-                <td class="name"><code>bigIp</code></td>
+                <td class="name"><code>headers</code></td>
             
 
             <td class="type">
@@ -356,7 +494,11 @@
 
             
 
-            <td class="description last"><p>BigIp object to use for testing</p></td>
+            <td class="description last"><p>Map of headers to add to the request. Format:</p>
+<pre class="prettyprint source"><code>{
+    &lt;header1_name>: &lt;header1_value>,
+    &lt;header2_name>: &lt;header2_value>
+}</code></pre></td>
         </tr>
 
     
@@ -426,7 +568,15 @@
 
         
 <div class="param-desc">
-    <p>A Promise which is resolved with the status of the BIG-IQ peering task</p>
+    <p>A promise which will be resolved with an array of instances.
+                   Each instance value should be:</p>
+<pre class="prettyprint source"><code>{
+    id: Node ID,
+    ip: {
+        public: public IP,
+        private: private IP
+    }
+}</code></pre>
 </div>
 
 
@@ -455,7 +605,7 @@
     
 
     
-    <h4 class="name" id=".waitForPeered"><span class="type-signature">(static) </span>waitForPeered<span class="signature">(task, retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">(providerOptions, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -463,7 +613,10 @@
 
 
 <div class="description">
-    <p>Polls the status of a BIG-IQ high-availability peering task.</p>
+    <p>Initialize class</p>
+<p>Override for implementation specific initialization needs (read info
+from cloud provider, read database, etc.). Called at the start of
+processing.</p>
 </div>
 
 
@@ -501,38 +654,7 @@
 
         <tr>
             
-                <td class="name"><code>task</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Task ID value from BIG-IQ add-peer-task call</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>retryOptions</code></td>
+                <td class="name"><code>providerOptions</code></td>
             
 
             <td class="type">
@@ -547,8 +669,6 @@
             
                 <td class="attributes">
                 
-                    &lt;optional><br>
-                
 
                 
 
@@ -558,7 +678,7 @@
 
             
 
-            <td class="description last"><p>Options for retrying the request.</p>
+            <td class="description last"><p>Provider specific options.</p>
                 <h6>Properties</h6>
                 
 
@@ -586,13 +706,81 @@
 
         <tr>
             
-                <td class="name"><code>maxRetries</code></td>
+                <td class="name"><code>propertyPathId</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Integer</span>
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Object property path ('.' separated)
+                                                          that describes how to fetch the ID
+                                                          from the provided resource.</p>
+<pre class="prettyprint source"><code>&quot;example.uuid&quot;,</code></pre></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>propertyPathIpPrivate</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Object property path ('.' separated)
+                                                          that describes how to fetch the private
+                                                          IP from the provided resource.</p>
+<pre class="prettyprint source"><code>&quot;example.address.private&quot;</code></pre></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>propertyPathIpPublic</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
 
 
             
@@ -612,40 +800,10 @@
 
             
 
-            <td class="description last"><p>Number of times to retry if first</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>retryIntervalMs</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Integer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Milliseconds between retries.</p></td>
+            <td class="description last"><p>Object property path ('.' separated)
+                                                          that describes how to fetch the public
+                                                          IP from the provided resource.</p>
+<pre class="prettyprint source"><code>&quot;example.address.public&quot;</code></pre></td>
         </tr>
 
     
@@ -656,143 +814,10 @@
         </tr>
 
     
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>A Promise which is resolved with the peering task response
-                     or a peering task failure message</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id=".waitForPeerReady"><span class="type-signature">(static) </span>waitForPeerReady<span class="signature">(remoteBigIp, failoverPeerIp, failoverPeerUsername, failoverPeerPassword)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Polls the failover peer BIG-IQ in a high-availabilty configuration to see if the failover peer is
-ready to accept a peering task request.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
 
         <tr>
             
-                <td class="name"><code>remoteBigIp</code></td>
+                <td class="name"><code>options</code></td>
             
 
             <td class="type">
@@ -807,130 +832,6 @@ ready to accept a peering task request.</p>
             
                 <td class="attributes">
                 
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>BIG-IQ instance for the failover peer BIG-IQ</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>failoverPeerIp</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>IP address of the failover peer</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>failoverPeerUsername</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Username of the admin user on the failover peer</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>failoverPeerPassword</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Password of the admin user on the failover peer</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>retryOptions.maxRetries</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Integer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
                     &lt;optional><br>
                 
 
@@ -942,40 +843,7 @@ ready to accept a peering task request.</p>
 
             
 
-            <td class="description last"><p>Number of times to retry if first</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>retryOptions.retryIntervalMs</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Integer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Milliseconds between retries.</p></td>
+            <td class="description last"><p>Options for this instance.</p></td>
         </tr>
 
     
@@ -1038,8 +906,7 @@ ready to accept a peering task request.</p>
 
         
 <div class="param-desc">
-    <p>A Promise which is resolved when the failover peer BIG-IQ is ready, or an error
-                     if the BIG-IQ is not ready within the retry period</p>
+    <p>A promise which will be resolved when init is complete.</p>
 </div>
 
 
