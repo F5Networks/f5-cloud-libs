@@ -16,17 +16,30 @@
 
 'use strict';
 
+const q = require('q');
 const uuid = require('uuid5');
 const httpUtil = require('../../../f5-cloud-libs').httpUtil;
 const metricsCollector = require('../../../f5-cloud-libs').metricsCollector;
 
-let calledBody;
+const eseAnalyticsUrl = 'http://www.example.com/';
+
+let googleAnalyticsCalledBody = '';
+let eseAnalyticsCalledBody = '';
 
 module.exports = {
     setUp(callback) {
-        calledBody = '';
         httpUtil.post = (url, options) => {
-            calledBody = options.body;
+            if (url === eseAnalyticsUrl) {
+                eseAnalyticsCalledBody = JSON.stringify(options.body);
+            } else {
+                googleAnalyticsCalledBody = options.body;
+            }
+        };
+        // eslint-disable-next-line no-unused-vars
+        httpUtil.get = (url, options) => {
+            return q.resolve({
+                primaryEndpoint: eseAnalyticsUrl
+            });
         };
 
         callback();
@@ -52,9 +65,7 @@ module.exports = {
             licenseType: 'myLicenseType',
             cloudLibsVersion: 'myCloudLibsVersion'
         };
-        metricsCollector.upload(metrics);
-
-        test.strictEqual(calledBody, `&v=1\
+        const googleAnalyticsString = `&v=1\
 &t=event&ec=run\
 &tid=UA-47575237-11\
 &cid=${uuid(metrics.customerId)}\
@@ -67,29 +78,35 @@ module.exports = {
 &cm=${metrics.region}\
 &cs=${metrics.bigIpVersion}\
 &ck=${metrics.licenseType}\
-&ds=${metrics.cloudLibsVersion}`);
+&ds=${metrics.cloudLibsVersion}`;
+        const eseAnalyticsString = JSON.stringify({
+            metadata: {
+                service: 'cloud_templates',
+                type: 'JSON'
+            },
+            data:
+                {
+                    customerId: metrics.customerId,
+                    deploymentId: metrics.deploymentId,
+                    solutionName: metrics.templateName,
+                    solutionVersion: metrics.templateVersion,
+                    licenseType: metrics.licenseType,
+                    platformName: metrics.cloudName,
+                    platformRegion: metrics.region,
+                    hostVersion: metrics.bigIpVersion,
+                    cloudLibsVersion: metrics.cloudLibsVersion,
+                    cloudLibsAction: metrics.action,
+                    syntheticTest: false
+                }
+        });
 
-        test.done();
-    },
-
-    testNoCustomerId(test) {
-        const metrics = {
-            action: 'myAction',
-            templateName: 'myTemplateName',
-            deploymentId: 'myDeploymentId',
-            templateVersion: 'myTemplateVersion',
-            cloudName: 'myCloudName',
-            region: 'myRegion',
-            bigIpVersion: 'myBigIpVersion',
-            licenseType: 'myLicenseType',
-            cloudLibsVersion: 'myCloudLibsVersion'
-        };
         metricsCollector.upload(metrics)
             .then(() => {
-                test.ok(false, 'should have rejected no customerId');
+                test.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
+                test.strictEqual(eseAnalyticsCalledBody, eseAnalyticsString);
             })
             .catch((err) => {
-                test.notStictEqual(err.message.indexOf('customer id'), -1);
+                test.ok(false, err);
             })
             .finally(() => {
                 test.done();
@@ -101,15 +118,24 @@ module.exports = {
             customerId: 'myCustomerId',
             region: '012345678901234567890123456789012345678901234567891'
         };
-        metricsCollector.upload(metrics);
-        test.strictEqual(calledBody, `&v=1\
+        const googleAnalyticsString = `&v=1\
 &t=event&ec=run\
 &tid=UA-47575237-11\
 &cid=${uuid(metrics.customerId)}\
 &aiid=${uuid(metrics.customerId)}\
 &ea=unknown\
-&cm=01234567890123456789012345678901234567890123456789`);
-        test.done();
+&cm=01234567890123456789012345678901234567890123456789`;
+
+        metricsCollector.upload(metrics)
+            .then(() => {
+                test.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
+            })
+            .catch((err) => {
+                test.ok(false, err);
+            })
+            .finally(() => {
+                test.done();
+            });
     },
 
     testSetLogger: ((test) => {
