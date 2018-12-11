@@ -82,7 +82,8 @@ module.exports = {
         const eseAnalyticsString = JSON.stringify({
             metadata: {
                 service: 'cloud_templates',
-                type: 'JSON'
+                type: 'JSON',
+                syntheticTest: false
             },
             data:
                 {
@@ -95,8 +96,7 @@ module.exports = {
                     platformRegion: metrics.region,
                     hostVersion: metrics.bigIpVersion,
                     cloudLibsVersion: metrics.cloudLibsVersion,
-                    cloudLibsAction: metrics.action,
-                    syntheticTest: false
+                    cloudLibsAction: metrics.action
                 }
         });
 
