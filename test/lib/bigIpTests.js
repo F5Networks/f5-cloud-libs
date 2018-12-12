@@ -300,6 +300,44 @@ module.exports = {
                         test.done();
                     });
             }
+        },
+
+        testUser: {
+            testDoesNotExist(test) {
+                const error404 = new Error('does not exist');
+                error404.code = 404;
+                icontrolMock.fail(
+                    'list',
+                    '/tm/auth/user/bar',
+                    error404
+                );
+
+                bigIp.createOrModify('/tm/auth/user', { name: 'bar' })
+                    .then(() => {
+                        test.strictEqual(icontrolMock.lastCall.method, 'create');
+                        test.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user');
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            },
+
+            testExists(test) {
+                bigIp.createOrModify('/tm/auth/user', { name: 'bar' })
+                    .then(() => {
+                        test.strictEqual(icontrolMock.lastCall.method, 'modify');
+                        test.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user/bar');
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            }
         }
     },
 
