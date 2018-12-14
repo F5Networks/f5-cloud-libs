@@ -293,6 +293,20 @@ const commonOptions = require('./commonOptions');
                         return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
                     })
                     .then(() => {
+                        if (options.clusterAction === 'join' || options.clusterAction === 'update') {
+                            return getAutoscaleProcessCount();
+                        }
+                        return q();
+                    })
+                    .then((processCount) => {
+                        // Stop processing if there is an other running Autoscale process
+                        // with cluster action of join or update
+                        if (processCount && processCount > 1) {
+                            util.logAndExit('Another autoscale process already running. Exiting.', 'warn', 1);
+                        }
+                        return q();
+                    })
+                    .then(() => {
                         logger.info('Initializing autoscale provider');
                         return cloudProvider.init(providerOptions, { autoscale: true });
                     })
@@ -1204,6 +1218,23 @@ const commonOptions = require('./commonOptions');
                         remotePort: options.port
                     }
                 );
+            });
+    }
+
+    /**
+     * Get the count of running Autoscale process with actions of join or update.
+     */
+    function getAutoscaleProcessCount() {
+        const actions = 'cluster-action update|-c update|cluster-action join|-c join';
+        const grepCommand = `grep autoscale.js | grep -E '${actions}' | grep -v 'grep autoscale.js'`;
+
+        return util.getProcessCount(grepCommand)
+            .then((response) => {
+                return q(response);
+            })
+            .catch((err) => {
+                logger.error('Could not determine if another autoscale script is running');
+                return q.reject(err);
             });
     }
 

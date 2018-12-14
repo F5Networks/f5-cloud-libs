@@ -199,6 +199,10 @@ module.exports = {
             return q('BIG-IP');
         };
 
+        cloudUtilMock.getProcessCount = function getProcessCount() {
+            return q('1');
+        };
+
         existsSync = fsMock.existsSync;
         unlinkSync = fsMock.unlinkSync;
         writeFile = fsMock.writeFile;
@@ -645,6 +649,34 @@ module.exports = {
                 test.ifError(providerMock.functionCalls.electMaster);
                 test.done();
             });
+        },
+
+        testAutoscaleProcessCount: {
+            testOneRunningAutoscale(test) {
+                argv.push('--cluster-action', 'join');
+                cloudUtilMock.getProcessCount = function getProcessCount() {
+                    return q('2');
+                };
+
+                test.expect(1);
+                autoscale.run(argv, testOptions, () => {
+                    test.strictEqual(exitMessage, 'Another autoscale process already running. Exiting.');
+                    test.done();
+                });
+            },
+
+            testOneRunningAutoscaleShortCommand(test) {
+                argv.push('-c', 'update');
+                cloudUtilMock.getProcessCount = function getProcessCount() {
+                    return q('2');
+                };
+
+                test.expect(1);
+                autoscale.run(argv, testOptions, () => {
+                    test.strictEqual(exitMessage, 'Another autoscale process already running. Exiting.');
+                    test.done();
+                });
+            }
         },
 
         testBecomeMaster: {

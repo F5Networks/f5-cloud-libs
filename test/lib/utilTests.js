@@ -1571,6 +1571,41 @@ module.exports = {
         }
     },
 
+    testProcessCount: {
+        testNoCommandProvided(test) {
+            util.getProcessCount()
+                .then((response) => {
+                    test.ok(false, response);
+                })
+                .catch((err) => {
+                    test.strictEqual(err.message, 'grep command is required');
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testShellCommandFormat(test) {
+            let passedCommand;
+            util.runShellCommand = function runShellCommand(shellCommand) {
+                passedCommand = shellCommand;
+                return q(0);
+            };
+
+            const grepCommand = 'grep autoscale.js';
+            util.getProcessCount(grepCommand)
+                .then(() => {
+                    test.strictEqual(passedCommand, `/bin/ps -eo pid,cmd | ${grepCommand} | wc -l`);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        }
+    },
+
     testTryUntil: {
         setUp(callback) {
             funcCount = 0;
