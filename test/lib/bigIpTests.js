@@ -51,6 +51,10 @@ const privateKeyMetadata = [
     }
 ];
 
+const encryptedPassword = 'myEncryptedPassword';
+let dataWritten;
+let tmshCommandCalled;
+
 module.exports = {
     setUp(callback) {
         /* eslint-disable global-require */
@@ -944,43 +948,68 @@ module.exports = {
                 });
         },
 
-        testRestoreUser(test) {
-            const encryptedPassword = 'myEncryptedPassword';
+        testRestoreUser: {
+            setUp(callback) {
+                utilMock.runTmshCommand = function runTmshCommand(command) {
+                    tmshCommandCalled = command;
+                    return q();
+                };
+                utilMock.writeDataToUrl = function writeDataToUrl(data) {
+                    dataWritten = data;
+                };
 
-            let dataWritten;
+                localKeyUtilMock.generateAndInstallKeyPair = function generateAndInstallKeyPair() {
+                    return q();
+                };
 
-            bigIp.initOptions = {
-                passwordIsUrl: true,
-                passwordEncrypted: true
-            };
+                cryptoUtilMock.encrypt = function encrypt() {
+                    return q(encryptedPassword);
+                };
 
-            utilMock.runTmshCommand = function runTmshCommand() {
-                return q();
-            };
-            utilMock.writeDataToUrl = function writeDataToUrl(data) {
-                dataWritten = data;
-            };
+                tmshCommandCalled = undefined;
 
-            localKeyUtilMock.generateAndInstallKeyPair = function generateAndInstallKeyPair() {
-                return q();
-            };
+                callback();
+            },
 
-            cryptoUtilMock.encrypt = function encrypt() {
-                return q(encryptedPassword);
-            };
+            testBasic(test) {
+                bigIp.initOptions = {
+                    passwordIsUrl: true,
+                    passwordEncrypted: true
+                };
 
-            test.expect(1);
-            bigIp.loadUcs('/tmp/foo', undefined, { initLocalKeys: true, restoreUser: true })
-                .then(() => {
-                    test.strictEqual(dataWritten, encryptedPassword);
-                })
-                .catch((err) => {
-                    test.ok(false, err);
-                })
-                .finally(() => {
-                    childProcessMock.execFile = realExecFile;
-                    test.done();
-                });
+                test.expect(2);
+                bigIp.loadUcs('/tmp/foo', undefined, { initLocalKeys: true, restoreUser: true })
+                    .then(() => {
+                        test.strictEqual(tmshCommandCalled.startsWith('modify auth user'), true);
+                        test.strictEqual(dataWritten, encryptedPassword);
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        childProcessMock.execFile = realExecFile;
+                        test.done();
+                    });
+            },
+
+            testAuthToken(test) {
+                bigIp.initOptions = {
+                    passwordIsToken: true
+                };
+
+                test.expect(1);
+                bigIp.loadUcs('/tmp/foo', undefined, { initLocalKeys: true, restoreUser: true })
+                    .then(() => {
+                        test.strictEqual(tmshCommandCalled, undefined);
+                    })
+                    .catch((err) => {
+                        test.ok(false, err);
+                    })
+                    .finally(() => {
+                        childProcessMock.execFile = realExecFile;
+                        test.done();
+                    });
+            }
         },
 
         testFailed(test) {

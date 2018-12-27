@@ -195,6 +195,23 @@ module.exports = {
             });
     },
 
+    testPasswordToken(test) {
+        const host = 'myHost';
+        const user = 'myUser';
+
+        test.expect(1);
+        authn.authenticate(host, user, token, { product: 'BIG-IP', passwordIsToken: true })
+            .then((icontrol) => {
+                test.strictEqual(icontrol.authToken, token);
+            })
+            .catch((err) => {
+                test.ok(false, err);
+            })
+            .finally(() => {
+                test.done();
+            });
+    },
+
     testPasswordEncrypted: {
         setUp(callback) {
             localCryptoUtilMock.decryptPassword = () => {
