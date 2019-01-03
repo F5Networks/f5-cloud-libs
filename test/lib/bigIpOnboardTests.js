@@ -1120,6 +1120,55 @@ module.exports = {
                 .finally(() => {
                     test.done();
                 });
+        },
+
+        testCatchUnknownError8(test) {
+            icontrolMock.fail(
+                'modify',
+                '/tm/net/self-allow',
+                {
+                    code: 400,
+                    message: 'eXtremeDB - unknown error code: 8'
+                }
+            );
+            const portToAdd = 443;
+
+            test.expect(2);
+            bigIp.onboard.sslPort(portToAdd, null, true)
+                .then((response) => {
+                    const httpdRequest = icontrolMock.getRequest('modify', '/tm/sys/httpd');
+                    test.strictEqual(httpdRequest.sslPort, portToAdd);
+                    test.strictEqual(response, `Unable to add port "${portToAdd}" to self allow defaults`);
+                })
+                .catch((err) => {
+                    test.ok(false, err.message);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testRejectErrors(test) {
+            const message = '"defaults" invalid entry "tcp:invalidPort", invalid port';
+            icontrolMock.fail(
+                'modify',
+                '/tm/net/self-allow',
+                {
+                    code: 400,
+                    message
+                }
+            );
+
+            bigIp.onboard.sslPort(443, null, true)
+                .then(() => {
+                    test.ok(false);
+                })
+                .catch((err) => {
+                    test.strictEqual(err.message, message);
+                })
+                .finally(() => {
+                    test.done();
+                });
         }
     },
 
