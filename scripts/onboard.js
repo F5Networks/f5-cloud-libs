@@ -42,6 +42,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
         run(argv, testOpts, cb) {
             const DEFAULT_LOG_FILE = '/tmp/onboard.log';
             const ARGS_FILE_ID = `onboard_${Date.now()}`;
+            const ARGS_TO_STRIP = ['--wait-for'];
 
             const KEYS_TO_MASK = [
                 '-p',
@@ -413,7 +414,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
                     .then(() => {
                         // Whatever we're waiting for is done, so don't wait for
                         // that again in case of a reboot
-                        return util.saveArgs(argv, ARGS_FILE_ID, ['--wait-for']);
+                        return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP);
                     })
                     .then(() => {
                         if (provider) {
@@ -589,7 +590,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
                                 }
                             }
                             argv.push('--port', options.sslPort);
-                            return util.saveArgs(argv, ARGS_FILE_ID);
+                            return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP);
                         }
 
                         return q();
@@ -859,9 +860,12 @@ const cryptoUtil = require('../lib/cryptoUtil');
                         }
                         return q();
                     })
-                    .then((response) => {
-                        logger.debug(response);
-
+                    .then(() => {
+                        // Have installed the ilx package(s); strip out args, including --install-ilx-package
+                        ARGS_TO_STRIP.push('--install-ilx-package');
+                        return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP);
+                    })
+                    .then(() => {
                         if (bigIp.isBigIq()) {
                             // Disable the BIG-IQ setup gui. BIG-IP is done
                             // via global settings and is handled with other global
@@ -924,8 +928,8 @@ const cryptoUtil = require('../lib/cryptoUtil');
                             // After reboot, we just want to send our done signal,
                             // in case any other scripts are waiting on us. So, modify
                             // the saved args for that
-                            const ARGS_TO_STRIP = util.getArgsToStripDuringForcedReboot(options);
-                            return util.saveArgs(argv, ARGS_FILE_ID, ARGS_TO_STRIP);
+                            const forcedRebootArgsToStrip = util.getArgsToStripDuringForcedReboot(options);
+                            return util.saveArgs(argv, ARGS_FILE_ID, forcedRebootArgsToStrip);
                         }
 
                         return q();

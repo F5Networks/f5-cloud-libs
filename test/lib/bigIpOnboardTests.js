@@ -143,6 +143,25 @@ module.exports = {
                 });
         },
 
+        testAlreadyInstalled(test) {
+            bigIp.runTask = function runTask() {
+                return q.reject(new Error('Package f5-appsvcs version 3.5.1-5 is already installed.'));
+            };
+            const packageUri = 'file:///dir1/dir2/iapp.rpm';
+
+            test.expect(1);
+            bigIp.onboard.installIlxPackage(packageUri)
+                .then(() => {
+                    test.ok(true);
+                })
+                .catch((err) => {
+                    test.ok(false, err.message);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
         tearDown(callback) {
             fs.existsSync = fsExistsSync;
 
