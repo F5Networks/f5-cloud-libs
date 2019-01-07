@@ -1,5 +1,13 @@
 # Release notes
 
+## Version 4.6.1
+* Added Service Discovery support for Azure Gov Cloud
+* Support for directly providing a BIG-IP Auth Token during authentication
+* Fix to handle errors when installing an already installed iLX package
+* Fix to handle errors when updating default self-allow ports
+* Fix to ensure multiple cluster-update processes do not run concurrently on the same BIG-IP
+* Fix to ensure Azure autoscale configuration is not overwritten during an autoscale event
+
 ## Version 4.6.0
 * Add new genericNodeProvider for Service Discovery of services cataloged in a generic JSON document
 * Support for clustering BIG-IQ in Google
