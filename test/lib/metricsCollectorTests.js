@@ -30,7 +30,7 @@ module.exports = {
     setUp(callback) {
         httpUtil.post = (url, options) => {
             if (url === eseAnalyticsUrl) {
-                eseAnalyticsCalledBody = JSON.stringify(options.body);
+                eseAnalyticsCalledBody = options.body;
             } else {
                 googleAnalyticsCalledBody = options.body;
             }
@@ -79,31 +79,34 @@ module.exports = {
 &cs=${metrics.bigIpVersion}\
 &ck=${metrics.licenseType}\
 &ds=${metrics.cloudLibsVersion}`;
-        const eseAnalyticsString = JSON.stringify({
+        const eseAnalyticsObject = {
             metadata: {
                 service: 'cloud_templates',
                 type: 'JSON',
+                timestamp: 'foo',
                 syntheticTest: false
             },
-            data:
-                {
-                    customerId: metrics.customerId,
-                    deploymentId: metrics.deploymentId,
-                    solutionName: metrics.templateName,
-                    solutionVersion: metrics.templateVersion,
-                    licenseType: metrics.licenseType,
-                    platformName: metrics.cloudName,
-                    platformRegion: metrics.region,
-                    hostVersion: metrics.bigIpVersion,
-                    cloudLibsVersion: metrics.cloudLibsVersion,
-                    cloudLibsAction: metrics.action
-                }
-        });
+            data: {
+                customerId: metrics.customerId,
+                deploymentId: metrics.deploymentId,
+                solutionName: metrics.templateName,
+                solutionVersion: metrics.templateVersion,
+                licenseType: metrics.licenseType,
+                platformName: metrics.cloudName,
+                platformRegion: metrics.region,
+                hostVersion: metrics.bigIpVersion,
+                cloudLibsVersion: metrics.cloudLibsVersion,
+                cloudLibsAction: metrics.action
+            }
+        };
 
         metricsCollector.upload(metrics)
             .then(() => {
                 test.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
-                test.strictEqual(eseAnalyticsCalledBody, eseAnalyticsString);
+
+                // replace with actual timestamp first
+                eseAnalyticsObject.metadata.timestamp = eseAnalyticsCalledBody.metadata.timestamp;
+                test.deepEqual(eseAnalyticsCalledBody, eseAnalyticsObject);
             })
             .catch((err) => {
                 test.ok(false, err);
