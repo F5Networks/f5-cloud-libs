@@ -1551,6 +1551,39 @@ module.exports = {
                 });
         },
 
+        testContainer(test) {
+            fs.stat = function stat(dir, cb) {
+                cb({ code: 'ENOENT' });
+            };
+
+            util.getProduct()
+                .then((response) => {
+                    test.strictEqual(response, 'CONTAINER');
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testFailToRunFsStat(test) {
+            fs.stat = function stat(dir, cb) {
+                cb({ message: 'failed', code: 'FOO' });
+            };
+            util.getProduct()
+                .then((response) => {
+                    test.ok(false, response);
+                })
+                .catch((err) => {
+                    test.strictEqual(err.message, 'failed');
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
         testFailToRunTmshCommand(test) {
             util.runTmshCommand = function runTmshCommand() {
                 return q.reject('failed');
