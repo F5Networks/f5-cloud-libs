@@ -1,5 +1,11 @@
 # Release notes
 
+## Version 4.7.0
+* Added check if f5-cloud-libs is running in a container
+* Added timestamp to f5-cloud-libs analytics
+* Fix to ensure primary Subscription is used during Azure Failover if subscription list fails in Azure Gov Cloud
+* Fix in Google Provider to ensure UCS backups are cleaned up locally, and in Google Cloud Storage
+
 ## Version 4.6.1
 * Added Service Discovery support for Azure Gov Cloud
 * Support for directly providing a BIG-IP Auth Token during authentication
