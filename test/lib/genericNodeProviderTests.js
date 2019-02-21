@@ -279,6 +279,52 @@ module.exports = {
                             test.done();
                         });
                 });
+        },
+
+        testTopLevelJson(test) {
+            test.expect(1);
+            const provOptsCopy = Object.assign(providerOptions, { propertyPathId: '' });
+            testProvider.init(provOptsCopy)
+                .then(() => {
+                    return testProvider.getNodesFromUri('https://example.com')
+                        .then((results) => {
+                            test.deepEqual(results, [
+                                {
+                                    id: {
+                                        foo: 'bar',
+                                        node: {
+                                            uuid: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
+                                            ips: [
+                                                '192.168.0.140',
+                                                '10.10.0.10'
+                                            ]
+                                        }
+                                    },
+                                    ip: {
+                                        public: '10.10.0.10',
+                                        private: '192.168.0.140'
+                                    }
+                                },
+                                {
+                                    id: {
+                                        hello: 'world',
+                                        node: {
+                                            uuid: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
+                                            ips: [
+                                                '192.168.0.141',
+                                                '11.11.0.11'
+                                            ]
+                                        }
+                                    },
+                                    ip: {
+                                        public: '11.11.0.11',
+                                        private: '192.168.0.141'
+                                    }
+                                }
+                            ]);
+                            test.done();
+                        });
+                });
         }
     }
 };
