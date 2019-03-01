@@ -1,5 +1,12 @@
 # Release notes
 
+## Version 4.8.0
+* Added BIG-IQ LM Cluster Public IP Failover script
+* Added the f5-cloud-libs-consul Cloud Provider
+* Added support for wildcard propertyPaths in genericNodeProvider
+* Fix to allow F5 product to be specified when calling joinCluster
+* Fix dependency in f5-cloud-libs-gce to support Node 4
+
 ## Version 4.7.0
 * Added check if f5-cloud-libs is running in a container
 * Added timestamp to f5-cloud-libs analytics
