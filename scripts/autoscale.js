@@ -1615,7 +1615,7 @@ const commonOptions = require('./commonOptions');
         if (!provider.hasFeature(CloudProvider.FEATURE_ENCRYPTION)) {
             return q(messageData);
         }
-        return util.tryUntil(provider, util.SHORT_RETRY, provider.getPublicKey, [instanceId])
+        return util.tryUntil(provider, util.MEDIUM_RETRY, provider.getPublicKey, [instanceId])
             .then((publicKey) => {
                 return cryptoUtil.encrypt(publicKey, messageData);
             });
