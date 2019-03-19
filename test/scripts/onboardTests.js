@@ -989,6 +989,51 @@ module.exports = {
                 });
             },
 
+            testOptionalSku(test) {
+                const bigIqHost = 'myBigIq';
+                const bigIqUser = 'myBigIqUser';
+                const bigIqPassword = 'myBigIqPassword';
+                const licensePool = 'myLicensePool';
+                const bigIpMgmtAddress = 'myMgmtAddress';
+                const bigIpMgmtPort = '1234';
+                const unitOfMeasure = 'myUnitOfMeasure';
+                const cloud = 'myCloud';
+
+                argv.push(
+                    '--license-pool',
+                    '--big-iq-host', bigIqHost,
+                    '--big-iq-user', bigIqUser,
+                    '--big-iq-password', bigIqPassword,
+                    '--big-iq-password-encrypted',
+                    '--license-pool-name', licensePool,
+                    '--big-ip-mgmt-address', bigIpMgmtAddress,
+                    '--big-ip-mgmt-port', bigIpMgmtPort,
+                    '--sku-keyword-1', '',
+                    '--sku-keyword-2', '',
+                    '--unit-of-measure', unitOfMeasure,
+                    '--cloud', cloud,
+                    '--no-unreachable'
+                );
+
+                test.expect(1);
+                onboard.run(argv, testOptions, () => {
+                    test.deepEqual(
+                        functionsCalled.bigIp.onboard.licenseViaBigIq[5],
+                        {
+                            passwordIsUri: false,
+                            passwordEncrypted: true,
+                            bigIpMgmtAddress,
+                            bigIpMgmtPort,
+                            skuKeyword1: '',
+                            skuKeyword2: '',
+                            unitOfMeasure,
+                            noUnreachable: true
+                        }
+                    );
+                    test.done();
+                });
+            },
+
             testMissingParams(test) {
                 argv.push('--license-pool');
 

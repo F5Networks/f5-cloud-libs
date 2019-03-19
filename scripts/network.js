@@ -489,18 +489,36 @@ const cryptoUtil = require('../lib/cryptoUtil');
                     .then((response) => {
                         logger.debug(response);
 
-                        if (options.discoveryAddress) {
-                            logger.info('Setting BIG-IQ Discovery Address.');
+                        // BIG-IQs must set their Discovery Address
+                        if (bigIp.isBigIq()) {
+                            if (options.discoveryAddress) {
+                                logger.info('Setting BIG-IQ Discovery Address to discovery-address option.');
+                                return q(options.discoveryAddress);
+                            }
+
+                            return bigIp.list('/tm/sys/management-ip')
+                                .then((mgmtIp) => {
+                                    logger.info('Setting BIG-IQ Discovery Address to management-ip address');
+                                    return q(mgmtIp[0].name.split('/')[0]);
+                                });
+                        }
+
+                        return q();
+                    })
+                    .then((response) => {
+                        if (bigIp.isBigIq() && response) {
+                            logger.info(`BIG-IQ Discovery Address: ${response}`);
                             return bigIp.replace(
                                 '/shared/identified-devices/config/discovery',
                                 {
-                                    discoveryAddress: options.discoveryAddress
+                                    discoveryAddress: response
                                 },
                                 undefined,
                                 {
                                     maxRetries: 60,
                                     retryIntervalMs: 1000,
-                                    continueOnErrorMessage: 'Address does not match a configured self-ip'
+                                    continueOnErrorMessage:
+                                        'Address does not match a configured self-ip'
                                 }
                             );
                         }
