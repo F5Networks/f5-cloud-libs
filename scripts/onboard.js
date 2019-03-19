@@ -56,7 +56,10 @@ const cryptoUtil = require('../lib/cryptoUtil');
                 'bigIqPassword',
                 'metrics',
                 'password',
-                'passwordUrl'
+                'passwordUrl',
+                'skuKeyword1',
+                'skuKeyword2',
+                'unitOfMeasure'
             ];
             const REQUIRED_OPTIONS = ['host'];
             const globalSettings = {};
@@ -182,15 +185,15 @@ const cryptoUtil = require('../lib/cryptoUtil');
                         '    Name of BIG-IQ license pool.'
                     )
                     .option(
-                        '    --sku-keyword-1 <sku_keyword_1>',
+                        '    --sku-keyword-1 [sku_keyword_1]',
                         '    skuKeyword1 parameter for CLPv2 licensing. Default none.'
                     )
                     .option(
-                        '    --sku-keyword-2 <sku_keyword_2>',
+                        '    --sku-keyword-2 [sku_keyword_2]',
                         '    skuKeyword2 parameter for CLPv2 licensing. Default none.'
                     )
                     .option(
-                        '    --unit-of-measure <unit_of_measure>',
+                        '    --unit-of-measure [unit_of_measure]',
                         '    unitOfMeasure parameter for CLPv2 licensing. Default none.'
                     )
                     .option(

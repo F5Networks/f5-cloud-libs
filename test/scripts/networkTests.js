@@ -708,17 +708,50 @@ module.exports = {
         }
     },
 
-    testDiscoveryAddressSet(test) {
-        argv.push('--discovery-address', '1.2.3.4');
+    testDiscoveryAddress: {
+        setUp(callback) {
+            bigIp.isBigIq = () => {
+                return true;
+            };
+            bigIp.isBigIp = () => {
+                return false;
+            };
+            callback();
+        },
 
-        test.expect(1);
-        network.run(argv, testOptions, () => {
-            test.deepEqual(
-                icontrolMock.getRequest('replace', '/shared/identified-devices/config/discovery'),
-                { discoveryAddress: '1.2.3.4' }
+        testDiscoveryAddressSet(test) {
+            argv.push('--discovery-address', '1.2.3.4');
+
+            test.expect(1);
+            network.run(argv, testOptions, () => {
+                test.deepEqual(
+                    icontrolMock.getRequest('replace', '/shared/identified-devices/config/discovery'),
+                    { discoveryAddress: '1.2.3.4' }
+                );
+                test.done();
+            });
+        },
+
+        testMgmtDiscoveryAddress(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/sys/management-ip',
+                [
+                    {
+                        name: '10.0.0.204/24'
+                    }
+                ]
             );
-            test.done();
-        });
+
+            test.expect(1);
+            network.run(argv, testOptions, () => {
+                test.deepEqual(
+                    icontrolMock.getRequest('replace', '/shared/identified-devices/config/discovery'),
+                    { discoveryAddress: '10.0.0.204' }
+                );
+                test.done();
+            });
+        },
     },
 
     testForceReboot(test) {
