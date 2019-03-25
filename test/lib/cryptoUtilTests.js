@@ -494,18 +494,22 @@ module.exports = {
         cryptoUtil.generateRandomBytes = function generateRandomBytes(length) {
             const lengths = {
                 10: 'user',
-                24: 'password'
+                24: 'Z+Skz3kmUoLft02zUoguohaR0e1yIO+p'
             };
             return q(lengths[length]);
         };
 
         const expectedUser = {
             user: 'user',
-            password: 'password'
+            password: 'Z+Skz3kmUoLft02zUoguohaR0e1yIO+p'
+        };
+
+        cryptoUtil.checkPasswordAll = function checkPasswordAll() {
+            return q(expectedUser.password);
         };
 
         test.expect(1);
-        cryptoUtil.createRandomUser()
+        cryptoUtil.nextRandomUser()
             .then((response) => {
                 test.deepEqual(response, expectedUser);
             })
