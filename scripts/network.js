@@ -268,7 +268,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
 
                         if (!options.user) {
                             logger.info('Generating temporary user');
-                            return cryptoUtil.createRandomUser();
+                            return cryptoUtil.nextRandomUser();
                         }
 
                         return q(
