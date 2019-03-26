@@ -488,11 +488,6 @@ module.exports = {
 
     testRandomUser: {
         testCreateRandomUserBadPassword(test) {
-            const expectedUser = {
-                user: 'user',
-                password: 'Z+Skz3kmUoLft02zUoguohaR0e1yIO+p'
-            };
-
             cryptoUtil.generateRandomBytes = function generateRandomBytes(length) {
                 const lengths = {
                     10: 'user',
