@@ -511,8 +511,8 @@ module.exports = {
 
             test.expect(1);
             cryptoUtil.nextRandomUser()
-                .then((response) => {
-                    test.deepEqual(response, expectedUser);
+                .then(() => {
+                    test.ok(false, 'Should have thrown an error, please check test.');
                 })
                 .catch((err) => {
                     test.strictEqual(err.message, 'too many tries');
