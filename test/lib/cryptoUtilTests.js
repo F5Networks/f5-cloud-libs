@@ -486,32 +486,68 @@ module.exports = {
         test.done();
     },
 
-    testCreateRandomUser(test) {
-        util.runTmshCommand = function runTmshCommand() {
-            return q();
-        };
-
-        cryptoUtil.generateRandomBytes = function generateRandomBytes(length) {
-            const lengths = {
-                10: 'user',
-                24: 'password'
+    testRandomUser: {
+        testCreateRandomUserBadPassword(test) {
+            cryptoUtil.generateRandomBytes = function generateRandomBytes(length) {
+                const lengths = {
+                    10: 'user',
+                    24: 'password'
+                };
+                return q(lengths[length]);
             };
-            return q(lengths[length]);
-        };
 
-        const expectedUser = {
-            user: 'user',
-            password: 'password'
-        };
+            cryptoUtil.checkPasswordAll = function checkPasswordAll(length, password) {
+                return q.reject(password);
+            };
 
-        test.expect(1);
-        cryptoUtil.createRandomUser()
-            .then((response) => {
-                test.deepEqual(response, expectedUser);
-            })
-            .finally(() => {
-                test.done();
-            });
+            util.runTmshCommand = function runTmshCommand() {
+                return q();
+            };
+
+            test.expect(1);
+            cryptoUtil.nextRandomUser()
+                .then(() => {
+                    test.ok(false, 'Should have thrown an error, please check test.');
+                })
+                .catch((err) => {
+                    test.strictEqual(err.message, 'too many tries');
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testCreateRandomUser(test) {
+            const expectedUser = {
+                user: 'user',
+                password: 'Z+Skz3kmUoLft02zUoguohaR0e1yIO+p'
+            };
+
+            cryptoUtil.generateRandomBytes = function generateRandomBytes(length) {
+                const lengths = {
+                    10: 'user',
+                    24: 'Z+Skz3kmUoLft02zUoguohaR0e1yIO+p'
+                };
+                return q(lengths[length]);
+            };
+
+            cryptoUtil.checkPasswordAll = function checkPasswordAll(length, password) {
+                return q(password);
+            };
+
+            util.runTmshCommand = function runTmshCommand() {
+                return q();
+            };
+
+            test.expect(1);
+            cryptoUtil.nextRandomUser()
+                .then((response) => {
+                    test.deepEqual(response, expectedUser);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
     },
 
     testSetLogger(test) {
