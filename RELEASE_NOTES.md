@@ -1,5 +1,10 @@
 # Release notes
 
+## Version 4.8.1
+* Update cloud-libs password generation to pass new Password Policy
+* Fix for network.js not completing on certain Azure instance sizes with certain licenses
+* Fix for completing BIG-IQ setup during onboarding
+
 ## Version 4.8.0
 * Added BIG-IQ LM Cluster Public IP Failover script
 * Added the f5-cloud-libs-consul Cloud Provider
