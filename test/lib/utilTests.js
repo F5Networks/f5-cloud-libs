@@ -756,15 +756,22 @@ module.exports = {
                     });
             },
 
-            testPathAndHeaders(test) {
+            testPathAndOptions(test) {
                 const path = '/foo/bar';
-                const headers = { headerName: 'headerValue' };
+                const options = {
+                    headers: { headerName: 'headerValue' },
+                    rejectUnauthorized: false
+                };
 
-                test.expect(2);
-                util.getDataFromUrl(`http://www.example.com${path}`, { headers })
+                test.expect(3);
+                util.getDataFromUrl(`http://www.example.com${path}`, options)
                     .then(() => {
                         test.strictEqual(httpMock.lastRequest.path, path);
-                        test.deepEqual(httpMock.lastRequest.headers, headers);
+                        test.deepEqual(httpMock.lastRequest.headers, options.headers);
+                        test.strictEqual(
+                            httpMock.lastRequest.rejectUnauthorized,
+                            options.rejectUnauthorized
+                        );
                     })
                     .catch((err) => {
                         test.ok(false, err);
