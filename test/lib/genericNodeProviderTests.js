@@ -20,6 +20,8 @@ const GenericNodeProvider = require('../../lib/genericNodeProvider');
 const utilMock = require('../../lib/util');
 const q = require('q');
 
+const origGetDataFromUrl = utilMock.getDataFromUrl;
+
 const propertyPaths = {
     propertyPathId: 'node.uuid',
     propertyPathIpPrivate: 'node.ips.0',
@@ -59,27 +61,36 @@ const responseNodeData = [
     }
 ];
 
+const targetUrl = 'https://example.com';
+const targetOptions = {
+    headers: { headerName: 'headerValue' },
+    rejectUnauthorized: false
+};
+
 let testProvider;
-let urlResponseMock;
+let globalTests;
 
 // Our tests cause too many event listeners. Turn off the check.
 process.setMaxListeners(0);
 
-utilMock.getDataFromUrl = function getDataFromUrl() {
-    return q(urlResponseMock);
-};
+function mockGetDataFromUrl(test, urlResponse) {
+    globalTests += 2;
+    utilMock.getDataFromUrl = function getDataFromUrl(url, options) {
+        test.strictEqual(url, targetUrl);
+        test.deepEqual(options, targetOptions);
+        return q(urlResponse);
+    };
+}
 
 module.exports = {
     setUp(callback) {
         testProvider = new GenericNodeProvider();
+        globalTests = 0;
         callback();
     },
 
     tearDown(callback) {
-        Object.keys(require.cache).forEach((key) => {
-            delete require.cache[key];
-        });
-
+        utilMock.getDataFromUrl = origGetDataFromUrl;
         callback();
     },
 
@@ -123,6 +134,11 @@ module.exports = {
             testProvider.init(providerOptions, initOptions)
                 .then(() => {
                     test.ok(true);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
                     test.done();
                 });
         },
@@ -137,6 +153,11 @@ module.exports = {
                         propertyPathIpPrivate: ['node', 'ips', '0'],
                         propertyPathIpPublic: ['node', 'ips', '1']
                     });
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
                     test.done();
                 });
         },
@@ -153,6 +174,11 @@ module.exports = {
                         propertyPathIpPrivate: ['node', 'ips', '0'],
                         propertyPathIpPublic: []
                     });
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
                     test.done();
                 });
         },
@@ -162,26 +188,22 @@ module.exports = {
             testProvider.init(providerOptions, initOptions)
                 .then(() => {
                     test.deepEqual(testProvider.initOptions, initOptions);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
                     test.done();
                 });
         }
     },
 
     testGetNodesFromUri: {
-        setUp(callback) {
-            require.cache.util = {
-                exports: utilMock
-            };
-
-            testProvider = new GenericNodeProvider();
-            callback();
-        },
-
         testBadJsonStringResponse(test) {
-            urlResponseMock = 'foo';
+            mockGetDataFromUrl(test, 'foo');
 
-            test.expect(1);
-            testProvider.getNodesFromUri('https://example.com')
+            test.expect(globalTests + 1);
+            testProvider.getNodesFromUri(targetUrl, targetOptions)
                 .then(() => {
                     test.ok(false, 'should have thrown bad response data');
                 })
@@ -194,10 +216,10 @@ module.exports = {
         },
 
         testBadJsonArrayResponse(test) {
-            urlResponseMock = {};
+            mockGetDataFromUrl(test, {});
 
-            test.expect(1);
-            testProvider.getNodesFromUri('https://example.com')
+            test.expect(globalTests + 1);
+            testProvider.getNodesFromUri(targetUrl, targetOptions)
                 .then(() => {
                     test.ok(false, 'should have thrown bad response data');
                 })
@@ -210,26 +232,31 @@ module.exports = {
         },
 
         testNoNodes(test) {
-            urlResponseMock = JSON.stringify([{ foo: 'bar' }]);
+            mockGetDataFromUrl(test, JSON.stringify([{ foo: 'bar' }]));
 
-            test.expect(1);
+            test.expect(globalTests + 1);
             testProvider.init(providerOptions)
                 .then(() => {
-                    return testProvider.getNodesFromUri('https://example.com')
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
                         .then((results) => {
                             test.deepEqual(results, []);
-                            test.done();
                         });
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
                 });
         },
 
         testJsonStringNodes(test) {
-            urlResponseMock = JSON.stringify(responseNodeData);
+            mockGetDataFromUrl(test, JSON.stringify(responseNodeData));
 
-            test.expect(1);
+            test.expect(globalTests + 1);
             testProvider.init(providerOptions)
                 .then(() => {
-                    return testProvider.getNodesFromUri('https://example.com')
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
                         .then((results) => {
                             test.deepEqual(results, [
                                 {
@@ -247,18 +274,23 @@ module.exports = {
                                     }
                                 }
                             ]);
-                            test.done();
                         });
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
                 });
         },
 
         testJsonArrayNodes(test) {
-            urlResponseMock = responseNodeData;
+            mockGetDataFromUrl(test, responseNodeData);
 
-            test.expect(1);
+            test.expect(globalTests + 1);
             testProvider.init(providerOptions)
                 .then(() => {
-                    return testProvider.getNodesFromUri('https://example.com')
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
                         .then((results) => {
                             test.deepEqual(results, [
                                 {
@@ -276,17 +308,24 @@ module.exports = {
                                     }
                                 }
                             ]);
-                            test.done();
                         });
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
                 });
         },
 
         testTopLevelJson(test) {
-            test.expect(1);
+            mockGetDataFromUrl(test, responseNodeData);
+
+            test.expect(globalTests + 1);
             const provOptsCopy = Object.assign(providerOptions, { propertyPathId: '' });
             testProvider.init(provOptsCopy)
                 .then(() => {
-                    return testProvider.getNodesFromUri('https://example.com')
+                    return testProvider.getNodesFromUri('https://example.com', targetOptions)
                         .then((results) => {
                             test.deepEqual(results, [
                                 {
@@ -322,8 +361,13 @@ module.exports = {
                                     }
                                 }
                             ]);
-                            test.done();
                         });
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
                 });
         }
     }

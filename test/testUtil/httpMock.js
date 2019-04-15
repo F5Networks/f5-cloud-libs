@@ -90,14 +90,7 @@ module.exports = {
                 cb
             );
         } else {
-            clientRequest = this.request(
-                {
-                    method: 'GET',
-                    path: optionsOrPath.path,
-                    headers: optionsOrPath.headers
-                },
-                cb
-            );
+            clientRequest = this.request(Object.assign(optionsOrPath, { method: 'GET' }), cb);
         }
 
         setImmediate(() => {
