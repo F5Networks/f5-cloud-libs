@@ -1,5 +1,10 @@
 # Release notes
 
+## Version 4.8.2
+* Allow NPM install to run on Windows
+* getDataFromUrl accepts arbitrary HTTP(S) options
+* f5-cloud-libs-consul supports specifying path to a CA Certificate Bundle
+
 ## Version 4.8.1
 * Update cloud-libs password generation to pass new Password Policy
 * Fix for network.js not completing on certain Azure instance sizes with certain licenses
