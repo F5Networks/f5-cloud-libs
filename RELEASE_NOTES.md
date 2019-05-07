@@ -1,5 +1,8 @@
 # Release notes
 
+## Version 4.8.3
+* Updated verifyHash file to include f5.aws_advanced_ha.v1.4.0rc5.tmpl
+
 ## Version 4.8.2
 * Allow NPM install to run on Windows
 * getDataFromUrl accepts arbitrary HTTP(S) options
