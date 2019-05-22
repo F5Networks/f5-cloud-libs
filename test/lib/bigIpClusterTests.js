@@ -671,6 +671,84 @@ module.exports = {
                 .finally(() => {
                     test.done();
                 });
+        },
+
+        testSyncCompleteConnectedDevices(test) {
+            const recommendedGroup = 'device_trust_group';
+
+            /* eslint-disable max-len */
+            icontrolMock.when(
+                'list',
+                '/tm/cm/sync-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/sync-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    color: {
+                                        description: 'red'
+                                    },
+                                    'https://localhost/mgmt/tm/cm/syncStatus/0/details': {
+                                        nestedStats: {
+                                            entries: {
+                                                0: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'device1: connected'
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                1: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'device2: connected'
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                2: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'badHost: disconnected'
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                3: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: `Recommended action: to group ${recommendedGroup}`
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+            /* eslint-enable max-len */
+
+            test.expect(1);
+            bigIp.cluster.syncComplete(util.NO_RETRY, { connectedDevices: ['device1', 'device2'] })
+                .then(() => {
+                    test.ok(true);
+                })
+                .catch(() => {
+                    test.ok(false, 'Should have been resolved due to connectedDevices.');
+                })
+                .finally(() => {
+                    test.done();
+                });
         }
     },
 
@@ -1256,6 +1334,105 @@ module.exports = {
                     test.ok(false, err);
                 })
                 .finally(() => {
+                    test.done();
+                });
+        },
+
+        testSyncCompDevices(test) {
+            const recommendedGroup = 'device_trust_group';
+
+            /* eslint-disable max-len */
+            icontrolMock.when(
+                'list',
+                '/tm/cm/sync-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/sync-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    color: {
+                                        description: 'red'
+                                    },
+                                    'https://localhost/mgmt/tm/cm/syncStatus/0/details': {
+                                        nestedStats: {
+                                            entries: {
+                                                0: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'device1: connected'
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                1: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'device2: connected'
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                2: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: 'badHost: disconnected'
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                3: {
+                                                    nestedStats: {
+                                                        entries: {
+                                                            details: {
+                                                                description: `Recommended action: to group ${recommendedGroup}`
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+            /* eslint-enable max-len */
+
+            icontrolMock.when(
+                'create',
+                '/tm/cm',
+                {}
+            );
+
+            test.expect(3);
+            bigIp.cluster.joinCluster(
+                deviceGroup,
+                'remoteHost',
+                'remoteUser',
+                'remotePassword',
+                false,
+                { syncDelay: 5, syncCompDelay: 5, syncCompDevices: ['device1'] }
+            )
+                .catch(() => {
+                    test.ok(false, 'Should have been resolved due to syncCompDevices.');
+                })
+                .finally(() => {
+                    // check that the last sync request was for the recommendedGroup
+                    let syncRequest = icontrolMock.getRequest('create', '/tm/cm');
+                    let lastSyncRequest;
+
+                    while (syncRequest) {
+                        lastSyncRequest = syncRequest;
+                        syncRequest = icontrolMock.getRequest('create', '/tm/cm');
+                    }
+                    test.strictEqual(lastSyncRequest.command, 'run');
+                    test.notStrictEqual(lastSyncRequest.utilCmdArgs.indexOf('to-group'), -1);
+                    test.notStrictEqual(lastSyncRequest.utilCmdArgs.indexOf(recommendedGroup), -1);
                     test.done();
                 });
         }

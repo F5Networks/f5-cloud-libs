@@ -4090,6 +4090,43 @@ and other bigIp* files:</p>
 
         <tr>
             
+                <td class="name"><code>syncCompDevices</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>List of device names that should be connected.
+                                               If defined, sync complete failures are ignored
+                                               when device trust can not sync due to disconnected
+                                               devices that are not in this list. Default is to
+                                               leave undefined and fail on all sync complete failures.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>passwordIsUrl</code></td>
             
 
@@ -6040,7 +6077,7 @@ and other bigIp* files:</p>
     
 
     
-    <h4 class="name" id="syncComplete"><span class="type-signature"></span>syncComplete<span class="signature">(retryOptions<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="syncComplete"><span class="type-signature"></span>syncComplete<span class="signature">(retryOptions<span class="signature-attributes">opt</span>, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -6201,6 +6238,104 @@ and other bigIp* files:</p>
             
 
             <td class="description last"><p>Milliseconds between retries. Default 10000.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Optional arguments.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>connectedDevices</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>List of device names that should be connected.
+                                                   If defined, sync complete failures are ignored
+                                                   when device trust can not sync due to disconnected
+                                                   devices that are not in this list. Default is to
+                                                   leave undefined and fail on all sync complete failures.</p></td>
         </tr>
 
     
