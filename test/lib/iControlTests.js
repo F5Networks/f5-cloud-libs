@@ -280,5 +280,21 @@ Token is valid for 1.2.3.4 and received from 6.7.8.9.`;
             .finally(() => {
                 test.done();
             });
+    },
+
+    testLocalAuth(test) {
+        iControl = new IControl({ host: 'localhost', port: 8100 });
+        iControl.http = httpMock;
+        iControl.list('somepath')
+            .then(() => {
+                // testing that /mgmt is not prefixed
+                test.strictEqual(httpMock.lastRequest.path, 'somepath');
+            })
+            .catch((err) => {
+                test.ok(false, err.message);
+            })
+            .finally(() => {
+                test.done();
+            });
     }
 };

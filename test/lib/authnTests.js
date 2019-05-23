@@ -273,5 +273,19 @@ module.exports = {
             .finally(() => {
                 test.done();
             });
+    },
+
+    testLocalAuth(test) {
+        test.expect(1);
+        authn.authenticate('localhost', null, null, { port: 8100 })
+            .then(() => {
+                test.strictEqual(icontrolMock.getNumRequests(), 0);
+            })
+            .catch((err) => {
+                test.ok(false, err.message);
+            })
+            .finally(() => {
+                test.done();
+            });
     }
 };

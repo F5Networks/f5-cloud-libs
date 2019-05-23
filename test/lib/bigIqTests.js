@@ -37,6 +37,7 @@ let revokeCalled;
 let licensingArgs;
 let apiTypeCalled;
 let gotByVersion;
+let authnOptionsSent;
 
 module.exports = {
     setUp(callback) {
@@ -78,8 +79,9 @@ module.exports = {
         );
 
         authnMock = require('../../../f5-cloud-libs').authn;
-        authnMock.authenticate = (authHost, authUser, authPassword) => {
+        authnMock.authenticate = (authHost, authUser, authPassword, options) => {
             icontrolMock.password = authPassword;
+            authnOptionsSent = options;
             return q.resolve(icontrolMock);
         };
 
@@ -126,13 +128,15 @@ module.exports = {
 
     testInit: {
         testBasic(test) {
-            test.expect(4);
-            bigIq.init(host, user, password)
+            test.expect(5);
+            const port = 1111;
+            bigIq.init(host, user, password, { port })
                 .then(() => {
                     test.strictEqual(bigIq.host, host);
                     test.strictEqual(bigIq.user, user);
                     test.strictEqual(bigIq.version, bigIqVersion);
                     test.strictEqual(icontrolMock.password, password);
+                    test.strictEqual(authnOptionsSent.port, port);
                 })
                 .catch((err) => {
                     test.ok(false, err);

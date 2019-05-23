@@ -29,6 +29,7 @@ let fsExistsSync;
 let bigIp;
 let bigIpMgmtAddressSent;
 let bigIpMgmtPortSent;
+let bigIqMgmtPortSent;
 let initCalled;
 let bigIpInit;
 
@@ -557,7 +558,8 @@ module.exports = {
                 }
             );
 
-            BigIq.prototype.init = () => {
+            BigIq.prototype.init = (host, user, password, options) => {
+                bigIqMgmtPortSent = options.port;
                 return q();
             };
             BigIq.prototype.icontrol = icontrolMock;
@@ -658,7 +660,25 @@ module.exports = {
                     { bigIpMgmtAddress: 'bigIpMgmtAddress', bigIpMgmtPort: specifiedPort }
                 )
                     .then(() => {
-                        test.strictEqual(bigIpMgmtPortSent, '8787');
+                        test.strictEqual(bigIpMgmtPortSent, specifiedPort);
+                    })
+                    .catch((err) => {
+                        test.ok(false, err.message);
+                    })
+                    .finally(() => {
+                        test.done();
+                    });
+            },
+
+            testGetsBigIqPortFromOptions(test) {
+                const specifiedPort = '9898';
+
+                bigIp.onboard.licenseViaBigIq(
+                    'host', 'user', 'password', 'pool1', null,
+                    { bigIpMgmtAddress: 'bigIpMgmtAddress', bigIqMgmtPort: specifiedPort }
+                )
+                    .then(() => {
+                        test.strictEqual(bigIqMgmtPortSent, specifiedPort);
                     })
                     .catch((err) => {
                         test.ok(false, err.message);
