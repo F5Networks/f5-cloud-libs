@@ -105,7 +105,7 @@ function encrypt_secret() {
     no_console=""
     counter=0
 
-    create_temp_dir $tmp_dir
+    create_temp_dir $tmp_dir 8k
     if [ -n "$scramble" ]; then
         secret=$(echo ${secret} | $SHA512SUM | cut -d ' ' -f 1 | $BASE64 -w0)
         test_secret=$(echo ${secret} | $CRACKLIB | cut -d ' ' -f2)
