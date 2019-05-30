@@ -208,7 +208,8 @@ module.exports = {
                 '/tm/cm/device',
                 [
                     {
-                        name: 'oldHostname'
+                        name: 'oldHostname',
+                        selfDevice: 'true'
                     }
                 ]
             );
@@ -241,7 +242,12 @@ module.exports = {
                 '/tm/cm/device',
                 [
                     {
-                        name: oldHostname
+                        name: 'otherDevice',
+                        selfDevice: 'false'
+                    },
+                    {
+                        name: oldHostname,
+                        selfDevice: 'true'
                     }
                 ]
             );
@@ -282,7 +288,12 @@ module.exports = {
                 '/tm/cm/device',
                 [
                     {
-                        name: oldHostname
+                        name: 'otherDevice',
+                        selfDevice: 'false'
+                    },
+                    {
+                        name: oldHostname,
+                        selfDevice: 'true'
                     }
                 ]
             );
@@ -314,7 +325,8 @@ module.exports = {
                 '/tm/cm/device',
                 [
                     {
-                        name: 'good hostname'
+                        name: 'good hostname',
+                        selfDevice: 'true'
                     }
                 ]
             );
@@ -346,7 +358,30 @@ module.exports = {
                 .finally(() => {
                     test.done();
                 });
-        }
+        },
+
+        testMissingSelfDevice(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device',
+                [
+                    {
+                        name: 'other device'
+                    }
+                ]
+            );
+
+            bigIp.onboard.hostname('foo', util.NO_RETRY)
+                .then(() => {
+                    test.ok(false, 'should have thrown missing self device');
+                })
+                .catch(() => {
+                    test.ok(true);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
     },
 
     testLicense: {
