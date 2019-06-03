@@ -1,5 +1,11 @@
 # Release notes
 
+## Version 4.8.4
+* Support for ignoring device trust sync complete failures due to disconnected device
+* Fix to handle updating hostname when multiple devices exist on BIG-IP
+* Fix to handle updating the httpsPort when adding BIG-IP to license pool on BIG-IQ
+* Support for updating device group settings when group already exists
+
 ## Version 4.8.3
 * Updated verifyHash file to include f5.aws_advanced_ha.v1.4.0rc5.tmpl
 
