@@ -486,7 +486,60 @@ module.exports = {
                 .finally(() => {
                     test.done();
                 });
-        }
+        },
+
+        testUpdateSettings(test) {
+            const type = 'sync-failover';
+            const devices = ['someDevice'];
+            const options = {
+                autoSync: true,
+                saveOnAutoSync: true,
+                networkFailover: true,
+                fullLoadOnSync: true,
+                asmSync: true
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device-group/',
+                [
+                    {
+                        name: deviceGroup
+                    }
+                ]
+            );
+
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: 'someDevice'
+                    }
+                ]
+            );
+
+            test.expect(1);
+            bigIp.cluster.createDeviceGroup(deviceGroup, type, devices, options)
+                .then(() => {
+                    test.deepEqual(
+                        icontrolMock.getRequest('modify', `/tm/cm/device-group/${deviceGroup}`),
+                        {
+                            autoSync: 'enabled',
+                            fullLoadOnSync: true,
+                            asmSync: 'enabled',
+                            saveOnAutoSync: true,
+                            networkFailover: 'enabled'
+                        }
+                    );
+                })
+                .catch((err) => {
+                    test.ok(false, err.message);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
     },
 
     testDeleteDeviceGroup: {
