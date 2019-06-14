@@ -1040,7 +1040,8 @@ module.exports = {
                 '/tm/cm/device',
                 [
                     {
-                        hostname: localHostname
+                        hostname: localHostname,
+                        selfDevice: 'true'
                     }
                 ]
             );
@@ -1215,6 +1216,44 @@ module.exports = {
                             'modify', `/tm/cm/device-group/datasync-global-dg/devices/${localHostname}`
                         );
                     test.deepEqual(syncRequest, { 'set-sync-leader': true });
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testMultipleDevices(test) {
+            icontrolMock.when(
+                'create',
+                '/tm/cm',
+                {}
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/device',
+                [
+                    {
+                        hostname: 'foo',
+                        selfDevice: 'false'
+                    },
+                    {
+                        hostname: localHostname,
+                        selfDevice: 'true'
+                    }
+                ]
+            );
+
+            test.expect(1);
+            bigIp.cluster.joinCluster(
+                deviceGroup, 'remoteHost', 'remoteUser', 'remotePassword', false, { syncDelay: 5 }
+            )
+                .then(() => {
+                    const addToTrustRequest = icontrolMock.getRequest('create', '/tm/cm/add-to-trust');
+                    test.strictEqual(addToTrustRequest.deviceName, localHostname);
                 })
                 .catch((err) => {
                     test.ok(false, err);
