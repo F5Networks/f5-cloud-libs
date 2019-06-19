@@ -1,5 +1,9 @@
 # Release notes
 
+## Version 4.9.1
+* Fix to handle response containing more than 1 device from /cm/device
+* Fix to set required BIG-IP modules for Azure Autoscale solutions
+
 ## Version 4.9.0
 * Support for ignoring device trust sync complete failures due to disconnected device
 * Fix to handle updating hostname when multiple devices exist on BIG-IP
