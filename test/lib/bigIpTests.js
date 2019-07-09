@@ -1578,6 +1578,25 @@ module.exports = {
                 });
         },
 
+        testCreatedTaskStatus(test) {
+            icontrolMock.when('create', DUMMY_TASK_PATH, { _taskId: '1234' });
+            icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'CREATED' });
+            icontrolMock.whenNext('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'FINISHED' });
+
+            const commandBody = { foo: 'bar', hello: 'world' };
+            test.expect(1);
+            bigIp.runTask(DUMMY_TASK_PATH, commandBody)
+                .then(() => {
+                    test.strictEqual(icontrolMock.getNumRequests('list', `${DUMMY_TASK_PATH}/1234`), 2);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
         testFailed(test) {
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'FAILED' });
             test.expect(1);
