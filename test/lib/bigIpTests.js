@@ -1532,10 +1532,7 @@ module.exports = {
             icontrolMock.when('create', DUMMY_TASK_PATH, { _taskId: '1234' });
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'COMPLETED' });
 
-            // eslint-disable-next-line no-global-assign
-            setTimeout = function (cb) {
-                cb();
-            };
+            utilMock.DEFAULT_RETRY = { maxRetries: 10, retryIntervalMs: 10 };
 
             callback();
         },
@@ -1579,9 +1576,6 @@ module.exports = {
         },
 
         testCreatedTaskStatus(test) {
-            setTimeout = realSetTimeout; // eslint-disable-line no-global-assign
-            utilMock.DEFAULT_RETRY = { maxRetries: 1, retryIntervalMs: 10 };
-
             icontrolMock.when('create', DUMMY_TASK_PATH, { _taskId: '1234' });
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'CREATED' });
             icontrolMock.whenNext('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'FINISHED' });
