@@ -1532,10 +1532,7 @@ module.exports = {
             icontrolMock.when('create', DUMMY_TASK_PATH, { _taskId: '1234' });
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'COMPLETED' });
 
-            // eslint-disable-next-line no-global-assign
-            setTimeout = function (cb) {
-                cb();
-            };
+            utilMock.DEFAULT_RETRY = { maxRetries: 10, retryIntervalMs: 10 };
 
             callback();
         },
@@ -1569,6 +1566,25 @@ module.exports = {
             bigIp.runTask(DUMMY_TASK_PATH, commandBody, options)
                 .then(() => {
                     test.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testCreatedTaskStatus(test) {
+            icontrolMock.when('create', DUMMY_TASK_PATH, { _taskId: '1234' });
+            icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'CREATED' });
+            icontrolMock.whenNext('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'FINISHED' });
+
+            const commandBody = { foo: 'bar', hello: 'world' };
+            test.expect(1);
+            bigIp.runTask(DUMMY_TASK_PATH, commandBody)
+                .then(() => {
+                    test.strictEqual(icontrolMock.getNumRequests('list', `${DUMMY_TASK_PATH}/1234`), 2);
                 })
                 .catch((err) => {
                     test.ok(false, err);
