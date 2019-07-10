@@ -1,5 +1,8 @@
 # Release notes
 
+## Version 4.9.2
+* Fix to correctly handle the 'CREATED' BIG-IP async Task Status
+
 ## Version 4.9.1
 * Fix to handle response containing more than 1 device from /cm/device
 * Fix to set required BIG-IP modules for Azure Autoscale solutions
