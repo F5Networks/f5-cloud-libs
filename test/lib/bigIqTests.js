@@ -232,128 +232,7 @@ module.exports = {
         },
 
         testByType: {
-            testPurchased(test) {
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
-                    [
-                        {
-                            name: poolName
-                        }
-                    ]
-                );
-
-                test.expect(2);
-                bigIq.init('host', 'user', 'password')
-                    .then(() => {
-                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
-                            .then(() => {
-                                test.strictEqual(
-                                    apiTypeCalled,
-                                    sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
-                                );
-                                test.strictEqual(licensingArgs[1], poolName);
-                            })
-                            .catch(() => {
-                                test.ok(false, 'licensing by type failed');
-                            })
-                            .finally(() => {
-                                test.done();
-                            });
-                    });
-            },
-
-            testUtility(test) {
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
-                    []
-                );
-
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/utility/licenses?$select=name',
-                    [
-                        {
-                            name: poolName
-                        }
-                    ]
-                );
-
-                test.expect(2);
-                bigIq.init('host', 'user', 'password')
-                    .then(() => {
-                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
-                            .then(() => {
-                                test.strictEqual(
-                                    apiTypeCalled,
-                                    sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
-                                );
-                                test.strictEqual(licensingArgs[1], poolName);
-                            })
-                            .catch(() => {
-                                test.ok(false, 'licensing by type failed');
-                            })
-                            .finally(() => {
-                                test.done();
-                            });
-                    });
-            },
-
-            testRegKey(test) {
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
-                    []
-                );
-
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/utility/licenses?$select=name',
-                    []
-                );
-
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/regkey/licenses?$select=name',
-                    [
-                        {
-                            name: poolName
-                        }
-                    ]
-                );
-
-                test.expect(2);
-                bigIq.init('host', 'user', 'password')
-                    .then(() => {
-                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
-                            .then(() => {
-                                test.strictEqual(
-                                    apiTypeCalled,
-                                    sharedConstants.LICENSE_API_TYPES.REG_KEY
-                                );
-                                test.strictEqual(licensingArgs[1], poolName);
-                            })
-                            .catch(() => {
-                                test.ok(false, 'licensing by type failed');
-                            })
-                            .finally(() => {
-                                test.done();
-                            });
-                    });
-            },
-
             testReachable(test) {
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
-                    [
-                        {
-                            name: poolName
-                        }
-                    ]
-                );
-
                 test.expect(2);
                 bigIq.init('host', 'user', 'password')
                     .then(() => {
@@ -361,10 +240,7 @@ module.exports = {
                             poolName,
                             '1.2.3.4',
                             '8888',
-                            {
-                                noUnreachable: true,
-                                autoApiType: true
-                            }
+                            { autoApiType: true, noUnreachable: true }
                         )
                             .then(() => {
                                 test.strictEqual(
@@ -382,34 +258,20 @@ module.exports = {
                     });
             },
 
-            testPoolNotFound(test) {
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
-                    []
-                );
-
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/purchased-pool/licenses?$select=name',
-                    []
-                );
-
-                icontrolMock.when(
-                    'list',
-                    '/cm/device/licensing/pool/regkey/licenses?$select=name',
-                    []
-                );
-
-                test.expect(1);
+            testUnreachable(test) {
+                test.expect(2);
                 bigIq.init('host', 'user', 'password')
                     .then(() => {
                         bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
                             .then(() => {
-                                test.ok(false, 'should have thrown pool not found');
+                                test.strictEqual(
+                                    apiTypeCalled,
+                                    sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
+                                );
+                                test.strictEqual(licensingArgs[1], poolName);
                             })
-                            .catch((err) => {
-                                test.notStrictEqual(err.message.indexOf('not found'), -1);
+                            .catch(() => {
+                                test.ok(false, 'licensing by type failed');
                             })
                             .finally(() => {
                                 test.done();
