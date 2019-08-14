@@ -80,10 +80,12 @@ package:
             - dist/
 
 pages:
+    image: node:8
     tags:
         - docker-executor
     stage: publish
     only:
+        - docfix
         - develop
     script:
         - npm install --registry ${NPM_REGISTRY}
