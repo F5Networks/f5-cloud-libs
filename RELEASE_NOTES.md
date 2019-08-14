@@ -1,5 +1,8 @@
 # Release notes
 
+## Version 4.10.0
+* Use more recent BIG-IQ licensing APIs for reg key pools
+
 ## Version 4.9.2
 * Fix to correctly handle the 'CREATED' BIG-IP async Task Status
 
