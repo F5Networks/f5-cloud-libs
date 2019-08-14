@@ -64,15 +64,6 @@ module.exports = {
     },
 
     testByType: {
-        testRegKey(test) {
-            test.expect(1);
-            const provider = bigIqLicenseProviderFactory.getLicenseProviderByType(
-                sharedConstants.LICENSE_API_TYPES.REG_KEY
-            );
-            test.strictEqual(provider.constructor.name, 'BigIq52LicenseProvider');
-            test.done();
-        },
-
         testUtility(test) {
             test.expect(1);
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByType(
