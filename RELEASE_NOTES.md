@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.10.1
+* Handle trunks in createOrModify
+
 ## Version 4.10.0
 * Use more recent BIG-IQ licensing APIs for reg key pools
 
