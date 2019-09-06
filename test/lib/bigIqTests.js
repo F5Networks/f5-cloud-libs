@@ -32,6 +32,7 @@ let bigIq;
 let bigIqLicenseProviderFactoryMock;
 let authnMock;
 let icontrolMock;
+let utilMock;
 let revokeCalled;
 
 let licensingArgs;
@@ -77,6 +78,8 @@ module.exports = {
                 }
             }
         );
+
+        utilMock = require('../../../f5-cloud-libs').util;
 
         authnMock = require('../../../f5-cloud-libs').authn;
         authnMock.authenticate = (authHost, authUser, authPassword, options) => {
@@ -150,6 +153,7 @@ module.exports = {
             icontrolMock.fail('list',
                 '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version');
 
+            utilMock.MEDIUM_RETRY = { maxRetries: 1, retryIntervalMs: 10 };
             test.expect(1);
             bigIq.init(host, user, password)
                 .then(() => {

@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.10.2
+* Add retry for BIG-IQ version info
+
 ## Release 4.10.1
 * Handle trunks in createOrModify
 
