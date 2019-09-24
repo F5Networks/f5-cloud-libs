@@ -1364,7 +1364,13 @@ module.exports = {
 
             icontrolMock.when(
                 'list',
-                '/tm/sys/mcp-state/',
+                '/shared/iapp/package-management-tasks/available',
+                {}
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/mcp-state',
                 {
                     entries: {
                         entry: {
@@ -1372,6 +1378,38 @@ module.exports = {
                                 entries: {
                                     phase: {
                                         description: 'running'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    version: '14.1.0'
+                }
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/ready',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/sys/ready/0': {
+                            nestedStats: {
+                                entries: {
+                                    configReady: {
+                                        description: 'yes'
+                                    },
+                                    licenseReady: {
+                                        description: 'yes'
+                                    },
+                                    provisionReady: {
+                                        description: 'yes'
                                     }
                                 }
                             }
@@ -1419,7 +1457,7 @@ module.exports = {
         testMcpNotReady(test) {
             icontrolMock.when(
                 'list',
-                '/tm/sys/mcp-state/',
+                '/tm/sys/mcp-state',
                 {
                     entries: {
                         entry: {
@@ -1449,7 +1487,7 @@ module.exports = {
         },
 
         testMcpCheckReject(test) {
-            icontrolMock.fail('list', '/tm/sys/mcp-state/');
+            icontrolMock.fail('list', '/tm/sys/mcp-state');
 
             test.expect(1);
             bigIp.ready(utilMock.NO_RETRY)
