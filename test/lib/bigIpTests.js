@@ -1364,7 +1364,13 @@ module.exports = {
 
             icontrolMock.when(
                 'list',
-                '/tm/sys/mcp-state/',
+                '/shared/iapp/package-management-tasks/available',
+                {}
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/mcp-state',
                 {
                     entries: {
                         entry: {
@@ -1372,6 +1378,38 @@ module.exports = {
                                 entries: {
                                     phase: {
                                         description: 'running'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    version: '14.1.0'
+                }
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/ready',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/sys/ready/0': {
+                            nestedStats: {
+                                entries: {
+                                    configReady: {
+                                        description: 'yes'
+                                    },
+                                    licenseReady: {
+                                        description: 'yes'
+                                    },
+                                    provisionReady: {
+                                        description: 'yes'
                                     }
                                 }
                             }
@@ -1419,7 +1457,7 @@ module.exports = {
         testMcpNotReady(test) {
             icontrolMock.when(
                 'list',
-                '/tm/sys/mcp-state/',
+                '/tm/sys/mcp-state',
                 {
                     entries: {
                         entry: {
@@ -1449,7 +1487,7 @@ module.exports = {
         },
 
         testMcpCheckReject(test) {
-            icontrolMock.fail('list', '/tm/sys/mcp-state/');
+            icontrolMock.fail('list', '/tm/sys/mcp-state');
 
             test.expect(1);
             bigIp.ready(utilMock.NO_RETRY)
@@ -1458,6 +1496,69 @@ module.exports = {
                 })
                 .catch(() => {
                     test.ok(true);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testSysNotReady(test) {
+            icontrolMock.when(
+                'list',
+                '/tm/sys/ready',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/sys/ready/0': {
+                            nestedStats: {
+                                entries: {
+                                    configReady: {
+                                        description: 'no'
+                                    },
+                                    licenseReady: {
+                                        description: 'yes'
+                                    },
+                                    provisionReady: {
+                                        description: 'yes'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            test.expect(1);
+            bigIp.ready(utilMock.NO_RETRY)
+                .then(() => {
+                    test.ok(false, 'Ready should have failed sys ready check.');
+                })
+                .catch(() => {
+                    test.ok(true);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testSysReady13_0NoOp(test) {
+            icontrolMock.when(
+                'list',
+                '/shared/identified-devices/config/device-info',
+                {
+                    version: '13.0.0'
+                }
+            );
+
+            // fail any call to the sys ready endpoint
+            icontrolMock.fail('list', '/tm/sys/ready');
+
+            test.expect(1);
+            bigIp.ready(utilMock.NO_RETRY)
+                .then(() => {
+                    test.ok(true);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
                 })
                 .finally(() => {
                     test.done();
