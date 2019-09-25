@@ -1,5 +1,12 @@
 # Release notes
 
+## Release 4.10.3
+* Add additional endpoint checks in the BIG-IP ready check, including /mgmt/tm/sys/ready
+* Add retry for ILX package installation
+* Add retry for a /mgmt/tm/sys/config save event
+* Add retry for tmsh command execution, resolves issue during encrypt/decrypt operations
+* Update retry logic for module installation
+
 ## Release 4.10.2
 * Add retry for BIG-IQ version info
 
