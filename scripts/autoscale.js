@@ -45,6 +45,8 @@ const commonOptions = require('./commonOptions');
     const UCS_BACKUP_DEFAULT_MAX_FILES = 7;
     const UCS_BACKUP_DIRECTORY = '/var/local/ucs';
 
+    const UCS_LOCAL_TMP_DIRECTORY = '/shared/tmp';
+
     let logger;
 
     const runner = {
@@ -978,10 +980,9 @@ const commonOptions = require('./commonOptions');
     }
 
     function validateUploadedUcs(provider, ucsFileName) {
-        let ucsFilePath;
+        const ucsFilePath = `${UCS_LOCAL_TMP_DIRECTORY}/${ucsFileName}`;
         return provider.getStoredUcs()
             .then((ucsData) => {
-                ucsFilePath = `/config/${ucsFileName}`;
                 return writeUcsFile(ucsFilePath, ucsData);
             })
             .then(() => {
@@ -1549,8 +1550,8 @@ const commonOptions = require('./commonOptions');
      */
     function loadUcs(provider, bigIp, ucsData, cloudProvider) {
         const timeStamp = Date.now();
-        const originalPath = `/config/ucsOriginal_${timeStamp}.ucs`;
-        const updatedPath = `/config/ucsUpdated_${timeStamp}.ucs`;
+        const originalPath = `${UCS_LOCAL_TMP_DIRECTORY}/ucsOriginal_${timeStamp}.ucs`;
+        const updatedPath = `${UCS_LOCAL_TMP_DIRECTORY}/ucsUpdated_${timeStamp}.ucs`;
         const updateScript = `${__dirname}/updateAutoScaleUcs`;
 
         const deferred = q.defer();
@@ -1585,7 +1586,7 @@ const commonOptions = require('./commonOptions');
                 '--cloud-provider',
                 cloudProvider,
                 '--extract-directory',
-                '/config/cloud/ucsRestore'
+                `${UCS_LOCAL_TMP_DIRECTORY}/ucsRestore`
             ];
             const loadUcsOptions = {
                 initLocalKeys: true

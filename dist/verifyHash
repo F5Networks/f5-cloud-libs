@@ -1,7 +1,7 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) 5561e02b764d7b9acf52ed593a1bfe49203b9ff5e9ea947e18d604fe4044623364cd5f99c39c85d4ef8711ad51fab81ce0107d8c276824aef0314798f738460c
+            set hashes(f5-cloud-libs.tar.gz) dca80e46fa6b7625b954fd669d5d1c36eb268dfb5d440f68519cfda42d36e398c12342ea1fd4cdf8a71140f213e4c79ae62edf4852c3a250bbede90bb9fca674
             set hashes(f5-cloud-libs-aws.tar.gz) 076c969cbfff12efacce0879820262b7787c98645f1105667cc4927d4acfe2466ed64c777b6d35957f6df7ae266937dde42fef4c8b1f870020a366f7f910ffb5
             set hashes(f5-cloud-libs-azure.tar.gz) 9037203b1af31288ba6993204a2abf3bd660f62e7dfb2d5825909dd69133ce5b4f5c725afabd7d2acaa693669c878daa04a6375314d985ba07c8a36dccc61c5a
             set hashes(f5-cloud-libs-gce.tar.gz) 1677835e69967fd9882ead03cbdd24b426627133b8db9e41f6de5a26fef99c2d7b695978ac189f00f61c0737e6dbb638d42dea43a867ef4c01d9507d0ee1fb2f
@@ -44,6 +44,5 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature SbD911EhIdoMLUV5WKf7Jl51wxFyYBKKAolF5ERpRM6aBg17nFleU3GY1aHm82eMkj1qkqgILh96DzmbVEmTCA8xn4sHDKqETZM41XXabaO5DozN+9sf69hGWpk8yw1nOHgVfydXide3fM92x5q/74d2JzsRswsYiz7amvM5sxP2NHsnoxSPRe4/vx+MjbJGSui5JhFWcm43kHUzEz94YENFmSY1ByJfre4ebQQTjwckb//mM23glHTpyoub/e8djVZPOg/1mqmGW63NpcSk6ZTCK0ulK5lv8Hjm8dUtVff9suYZtnnoPSU4aeyI39KDiWNdfwkAWm8ARaCYhs8pOQ==
     signing-key /Common/f5-irule
 }
