@@ -1795,6 +1795,10 @@ module.exports = {
                 cb();
             };
 
+            utilMock.runShellCommand = function runShellCommand() {
+                return q.resolve('OK');
+            };
+
             // eslint-disable-next-line no-global-assign
             setTimeout = function (cb) {
                 cb();
