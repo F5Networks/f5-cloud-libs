@@ -32,7 +32,7 @@ const ipc = require('../lib/ipc');
 const commonOptions = require('./commonOptions');
 
 (function run() {
-    const MAX_DISCONNECTED_MS = 1 * 60000; // 1 minute
+    const MAX_DISCONNECTED_MS = 3 * 60000; // 3 minute
     const MIN_MS_BETWEEN_JOIN_REQUESTS = 5 * 60000; // 5 minutes
     const MASTER_FILE_PATH = '/config/cloud/master';
 
@@ -351,7 +351,8 @@ const commonOptions = require('./commonOptions');
                         this.instance.status = this.instance.status || AutoscaleInstance.INSTANCE_STATUS_OK;
                         logger.silly('Instance status:', this.instance.status);
 
-                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER) {
+                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER
+                            && !isMasterExpired(this.instance)) {
                             util.logAndExit('Currently becoming master. Exiting.', 'info');
                         }
 
