@@ -1105,6 +1105,10 @@ const commonOptions = require('./commonOptions');
             })
             .catch((err) => {
                 logger.info('Error backing up ucs', err);
+                if (fs.existsSync(`${UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`)) {
+                    fs.unlinkSync(`${UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`);
+                }
+                provider.deleteStoredUcs(`${ucsName}.ucs`);
                 return q.reject(err);
             });
     }
