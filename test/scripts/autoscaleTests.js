@@ -723,7 +723,7 @@ module.exports = {
                 },
 
                 testMissingFile(test) {
-                    missingFilePrefix = '/config/ucsUpdated_';
+                    missingFilePrefix = '/shared/tmp/ucsUpdated_';
                     test.expect(2);
                     autoscale.run(argv, testOptions, (err) => {
                         test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
