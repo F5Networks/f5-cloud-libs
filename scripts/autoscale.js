@@ -32,7 +32,7 @@ const ipc = require('../lib/ipc');
 const commonOptions = require('./commonOptions');
 
 (function run() {
-    const MAX_DISCONNECTED_MS = 1 * 60000; // 1 minute
+    const MAX_DISCONNECTED_MS = 3 * 60000; // 3 minute
     const MIN_MS_BETWEEN_JOIN_REQUESTS = 5 * 60000; // 5 minutes
     const MASTER_FILE_PATH = '/config/cloud/master';
 
@@ -44,6 +44,8 @@ const commonOptions = require('./commonOptions');
     const UCS_BACKUP_PREFIX = 'ucsAutosave_';
     const UCS_BACKUP_DEFAULT_MAX_FILES = 7;
     const UCS_BACKUP_DIRECTORY = '/var/local/ucs';
+
+    const UCS_LOCAL_TMP_DIRECTORY = '/shared/tmp';
 
     let logger;
 
@@ -349,7 +351,8 @@ const commonOptions = require('./commonOptions');
                         this.instance.status = this.instance.status || AutoscaleInstance.INSTANCE_STATUS_OK;
                         logger.silly('Instance status:', this.instance.status);
 
-                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER) {
+                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER
+                            && !isMasterExpired(this.instance)) {
                             util.logAndExit('Currently becoming master. Exiting.', 'info');
                         }
 
@@ -977,6 +980,75 @@ const commonOptions = require('./commonOptions');
         return deferred.promise;
     }
 
+    function validateUploadedUcs(provider, ucsFileName) {
+        const ucsFilePath = `${UCS_LOCAL_TMP_DIRECTORY}/${ucsFileName}`;
+        return provider.getStoredUcs()
+            .then((ucsData) => {
+                return writeUcsFile(ucsFilePath, ucsData);
+            })
+            .then(() => {
+                return util.runShellCommand(`gzip -t -v ${ucsFilePath}`);
+            })
+            .then((response) => {
+                if (response.indexOf('NOT OK') !== -1) {
+                    return q.resolve({
+                        status: 'CORRUPTED',
+                        filePath: ucsFilePath
+                    });
+                }
+                logger.silly('Validated integrity of recenetly generated UCS file.');
+                return q.resolve({
+                    status: 'OK',
+                    filePath: ucsFilePath
+                });
+            })
+            .catch((err) => {
+                logger.warn('Error while validating ucs', err);
+                return q.reject(err);
+            });
+    }
+
+    function writeUcsFile(ucsFilePath, ucsData) {
+        const deferred = q.defer();
+        let ucsFile;
+        // If ucsData has a pipe method (is a stream), use it
+        if (ucsData.pipe) {
+            logger.silly('ucsData is a Stream');
+            ucsFile = fs.createWriteStream(ucsFilePath);
+
+            ucsData.pipe(ucsFile);
+
+            ucsFile.on('finish', () => {
+                logger.silly('finished piping ucsData');
+                ucsFile.close(() => {
+                    deferred.resolve();
+                });
+            });
+            ucsFile.on('error', (err) => {
+                logger.warn('Error piping ucsData', err);
+                deferred.reject(err);
+            });
+            ucsData.on('error', (err) => {
+                logger.warn('Error reading ucs data', err);
+                deferred.reject(err);
+            });
+        } else {
+            // Otherwise, assume it's a Buffer
+            logger.silly('ucsData is a Buffer');
+            fs.writeFile(ucsFilePath, ucsData, (err) => {
+                logger.silly('finished writing ucsData');
+                if (err) {
+                    logger.warn('Error writing ucsData', err);
+                    deferred.reject(err);
+                    return;
+                }
+                deferred.resolve();
+            });
+        }
+
+        return deferred.promise;
+    }
+
     function handleBackupUcs(provider, bigIp, options) {
         if (!this.instance.isMaster
             || this.instance.status !== AutoscaleInstance.INSTANCE_STATUS_OK) {
@@ -995,6 +1067,7 @@ const commonOptions = require('./commonOptions');
         // f5-cloud-libs is removed before ucs is loaded, so we don't need to do anything on that end.
 
         this.instance.lastBackup = now;
+        let isUcsFileValid = false;
         return cleanupAjv(bigIp)
             .then(() => {
                 return bigIp.saveUcs(ucsName);
@@ -1009,8 +1082,33 @@ const commonOptions = require('./commonOptions');
             .then(() => {
                 return removeOldUcsFiles(`${ucsName}.ucs`);
             })
+            .then(() => {
+                return validateUploadedUcs(provider, `${ucsName}.ucs`);
+            })
+            .then((results) => {
+                fs.unlinkSync(results.filePath);
+                logger.silly('Removed local UCS file used in validation.');
+                if (results.status !== 'OK') {
+                    provider.deleteStoredUcs(`${ucsName}.ucs`);
+                    return q.resolve();
+                }
+                isUcsFileValid = true;
+                return q.resolve();
+            })
+            .then(() => {
+                if (!isUcsFileValid) {
+                    return q.reject(new Error('Validation of ' +
+                        'generated UCS file failed; ' +
+                        'recently generated UCS file appears to be corrupted.'));
+                }
+                return q.resolve();
+            })
             .catch((err) => {
                 logger.info('Error backing up ucs', err);
+                if (fs.existsSync(`${UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`)) {
+                    fs.unlinkSync(`${UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`);
+                }
+                provider.deleteStoredUcs(`${ucsName}.ucs`);
                 return q.reject(err);
             });
     }
@@ -1457,12 +1555,11 @@ const commonOptions = require('./commonOptions');
      */
     function loadUcs(provider, bigIp, ucsData, cloudProvider) {
         const timeStamp = Date.now();
-        const originalPath = `/config/ucsOriginal_${timeStamp}.ucs`;
-        const updatedPath = `/config/ucsUpdated_${timeStamp}.ucs`;
+        const originalPath = `${UCS_LOCAL_TMP_DIRECTORY}/ucsOriginal_${timeStamp}.ucs`;
+        const updatedPath = `${UCS_LOCAL_TMP_DIRECTORY}/ucsUpdated_${timeStamp}.ucs`;
         const updateScript = `${__dirname}/updateAutoScaleUcs`;
 
         const deferred = q.defer();
-        let originalFile;
 
         const preLoad = function () {
             // eslint-disable-next-line max-len
@@ -1494,7 +1591,7 @@ const commonOptions = require('./commonOptions');
                 '--cloud-provider',
                 cloudProvider,
                 '--extract-directory',
-                '/config/cloud/ucsRestore'
+                `${UCS_LOCAL_TMP_DIRECTORY}/ucsRestore`
             ];
             const loadUcsOptions = {
                 initLocalKeys: true
@@ -1552,43 +1649,14 @@ const commonOptions = require('./commonOptions');
                 });
         };
 
-        // If ucsData has a pipe method (is a stream), use it
-        if (ucsData.pipe) {
-            logger.silly('ucsData is a Stream');
-            originalFile = fs.createWriteStream(originalPath);
-
-            ucsData.pipe(originalFile);
-
-            originalFile.on('finish', () => {
-                logger.silly('finished piping ucsData');
-                originalFile.close(() => {
-                    doLoad();
-                });
-            });
-
-            originalFile.on('error', (err) => {
-                logger.warn('Error piping ucsData', err);
-                deferred.reject(err);
-            });
-
-            ucsData.on('error', (err) => {
+        writeUcsFile(originalPath, ucsData)
+            .then(() => {
+                doLoad();
+            })
+            .catch((err) => {
                 logger.warn('Error reading ucs data', err);
                 deferred.reject(err);
             });
-        } else {
-            // Otherwise, assume it's a Buffer
-            logger.silly('ucsData is a Buffer');
-            fs.writeFile(originalPath, ucsData, (err) => {
-                logger.silly('finished writing ucsData');
-                if (err) {
-                    logger.warn('Error writing ucsData', err);
-                    deferred.reject(err);
-                    return;
-                }
-                doLoad();
-            });
-        }
-
         return deferred.promise;
     }
 

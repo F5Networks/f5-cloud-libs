@@ -1,5 +1,10 @@
 # Release notes
 
+## Release 4.11.0
+* Enable retry logic for TMSH command execution to mitigate problem when TMSH command fails due to MCP un-availability
+* Add validation for generated UCS file to prever corrupted UCS file problem 
+* Update condition for triggering master re-election for autoscale solution; this should prevent the problem when master host is stuck at BECOMING_MASTER state
+
 ## Release 4.10.3
 * Add additional endpoint checks in the BIG-IP ready check, including /mgmt/tm/sys/ready
 * Add retry for ILX package installation
