@@ -30,6 +30,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
 const dnsProviderFactory = require('../lib/dnsProviderFactory');
 const ipc = require('../lib/ipc');
 const commonOptions = require('./commonOptions');
+const BACKUP = require('../lib/sharedConstants').BACKUP;
 
 (function run() {
     const MAX_DISCONNECTED_MS = 3 * 60000; // 3 minute
@@ -44,8 +45,6 @@ const commonOptions = require('./commonOptions');
     const UCS_BACKUP_PREFIX = 'ucsAutosave_';
     const UCS_BACKUP_DEFAULT_MAX_FILES = 7;
     const UCS_BACKUP_DIRECTORY = '/var/local/ucs';
-
-    const UCS_LOCAL_TMP_DIRECTORY = '/shared/tmp';
 
     let logger;
 
@@ -981,10 +980,11 @@ const commonOptions = require('./commonOptions');
     }
 
     function validateUploadedUcs(provider, ucsFileName) {
-        const ucsFilePath = `${UCS_LOCAL_TMP_DIRECTORY}/${ucsFileName}`;
+        const ucsFilePath = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/${ucsFileName}`;
         return provider.getStoredUcs()
             .then((ucsData) => {
-                return writeUcsFile(ucsFilePath, ucsData);
+                logger.silly(`ucsFilePath: ${ucsFilePath}`);
+                return util.writeUcsFile(ucsFilePath, ucsData);
             })
             .then(() => {
                 return util.runShellCommand(`gzip -t -v ${ucsFilePath}`);
@@ -1006,47 +1006,6 @@ const commonOptions = require('./commonOptions');
                 logger.warn('Error while validating ucs', err);
                 return q.reject(err);
             });
-    }
-
-    function writeUcsFile(ucsFilePath, ucsData) {
-        const deferred = q.defer();
-        let ucsFile;
-        // If ucsData has a pipe method (is a stream), use it
-        if (ucsData.pipe) {
-            logger.silly('ucsData is a Stream');
-            ucsFile = fs.createWriteStream(ucsFilePath);
-
-            ucsData.pipe(ucsFile);
-
-            ucsFile.on('finish', () => {
-                logger.silly('finished piping ucsData');
-                ucsFile.close(() => {
-                    deferred.resolve();
-                });
-            });
-            ucsFile.on('error', (err) => {
-                logger.warn('Error piping ucsData', err);
-                deferred.reject(err);
-            });
-            ucsData.on('error', (err) => {
-                logger.warn('Error reading ucs data', err);
-                deferred.reject(err);
-            });
-        } else {
-            // Otherwise, assume it's a Buffer
-            logger.silly('ucsData is a Buffer');
-            fs.writeFile(ucsFilePath, ucsData, (err) => {
-                logger.silly('finished writing ucsData');
-                if (err) {
-                    logger.warn('Error writing ucsData', err);
-                    deferred.reject(err);
-                    return;
-                }
-                deferred.resolve();
-            });
-        }
-
-        return deferred.promise;
     }
 
     function handleBackupUcs(provider, bigIp, options) {
@@ -1080,6 +1039,7 @@ const commonOptions = require('./commonOptions');
                 );
             })
             .then(() => {
+                logger.silly(`lastest ucs file: ${ucsName}.ucs`);
                 return removeOldUcsFiles(`${ucsName}.ucs`);
             })
             .then(() => {
@@ -1105,8 +1065,8 @@ const commonOptions = require('./commonOptions');
             })
             .catch((err) => {
                 logger.info('Error backing up ucs', err);
-                if (fs.existsSync(`${UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`)) {
-                    fs.unlinkSync(`${UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`);
+                if (fs.existsSync(`${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`)) {
+                    fs.unlinkSync(`${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`);
                 }
                 provider.deleteStoredUcs(`${ucsName}.ucs`);
                 return q.reject(err);
@@ -1555,8 +1515,8 @@ const commonOptions = require('./commonOptions');
      */
     function loadUcs(provider, bigIp, ucsData, cloudProvider) {
         const timeStamp = Date.now();
-        const originalPath = `${UCS_LOCAL_TMP_DIRECTORY}/ucsOriginal_${timeStamp}.ucs`;
-        const updatedPath = `${UCS_LOCAL_TMP_DIRECTORY}/ucsUpdated_${timeStamp}.ucs`;
+        const originalPath = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsOriginal_${timeStamp}.ucs`;
+        const updatedPath = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsUpdated_${timeStamp}.ucs`;
         const updateScript = `${__dirname}/updateAutoScaleUcs`;
 
         const deferred = q.defer();
@@ -1591,7 +1551,7 @@ const commonOptions = require('./commonOptions');
                 '--cloud-provider',
                 cloudProvider,
                 '--extract-directory',
-                `${UCS_LOCAL_TMP_DIRECTORY}/ucsRestore`
+                `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsRestore`
             ];
             const loadUcsOptions = {
                 initLocalKeys: true
@@ -1649,7 +1609,7 @@ const commonOptions = require('./commonOptions');
                 });
         };
 
-        writeUcsFile(originalPath, ucsData)
+        util.writeUcsFile(originalPath, ucsData)
             .then(() => {
                 doLoad();
             })

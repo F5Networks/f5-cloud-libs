@@ -706,6 +706,10 @@ module.exports = {
                         return q();
                     };
 
+                    cloudUtilMock.writeUcsFile = () => {
+                        return q();
+                    };
+
                     callback();
                 },
 
@@ -723,7 +727,7 @@ module.exports = {
                 },
 
                 testMissingFile(test) {
-                    missingFilePrefix = '/shared/tmp/ucsUpdated_';
+                    missingFilePrefix = '/shared/tmp/ucs/ucsUpdated_';
                     test.expect(2);
                     autoscale.run(argv, testOptions, (err) => {
                         test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
