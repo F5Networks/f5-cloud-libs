@@ -1611,6 +1611,77 @@ module.exports = {
         }
     },
 
+    testGetProcessExecutionTimeWithPid: {
+        testNoCommandProvided(test) {
+            util.getProcessExecutionTimeWithPid()
+                .then((response) => {
+                    test.ok(false, response);
+                })
+                .catch((err) => {
+                    test.strictEqual(err.message, 'grep command is required');
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testShellCommandFormat(test) {
+            let passedCommand;
+            util.runShellCommand = function runShellCommand(shellCommand) {
+                passedCommand = shellCommand;
+                return q(0);
+            };
+
+            const grepCommand = 'grep autoscale.js';
+            const expected = `/bin/ps -eo pid,etime,cmd | ${grepCommand} | awk '{ print $1"-"$2 }'`;
+            util.getProcessExecutionTimeWithPid(grepCommand)
+                .then(() => {
+                    test.strictEqual(passedCommand, expected);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        }
+    },
+
+    testTerminateProcessById: {
+        testNoCommandProvided(test) {
+            util.terminateProcessById()
+                .then((response) => {
+                    test.ok(false, response);
+                })
+                .catch((err) => {
+                    test.strictEqual(err.message, 'pid is required for process termination');
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testShellCommandFormat(test) {
+            let passedCommand;
+            util.runShellCommand = function runShellCommand(shellCommand) {
+                passedCommand = shellCommand;
+                return q(0);
+            };
+
+            const pid = '111';
+            util.terminateProcessById(pid)
+                .then(() => {
+                    test.strictEqual(passedCommand, `/bin/kill -9 ${pid}`);
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        }
+    },
+
     testProcessCount: {
         testNoCommandProvided(test) {
             util.getProcessCount()
