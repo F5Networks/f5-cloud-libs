@@ -45,6 +45,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
     const UCS_BACKUP_PREFIX = 'ucsAutosave_';
     const UCS_BACKUP_DEFAULT_MAX_FILES = 7;
     const UCS_BACKUP_DIRECTORY = '/var/local/ucs';
+    const DEFAULT_AUTOSCALE_TIMEOUT_IN_MINUTES = 10;
 
     let logger;
 
@@ -209,6 +210,11 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         'When running cluster action backup-ucs, maximum number of backup files to keep.',
                         UCS_BACKUP_DEFAULT_MAX_FILES
                     )
+                    .option(
+                        '--autoscale-timeout <autoscale_timeout>',
+                        'Number of minutes after which autoscale process should be killed',
+                        DEFAULT_AUTOSCALE_TIMEOUT_IN_MINUTES
+                    )
                     .parse(argv);
                 /* eslint-enable max-len */
 
@@ -295,15 +301,25 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                     })
                     .then(() => {
                         if (options.clusterAction === 'join' || options.clusterAction === 'update') {
-                            return getAutoscaleProcessCount();
+                            return getAutoscaleProcessInfo();
                         }
                         return q();
                     })
-                    .then((processCount) => {
+                    .then((results) => {
                         // Stop processing if there is an other running Autoscale process
                         // with cluster action of join or update
-                        if (processCount && processCount > 1) {
-                            util.logAndExit('Another autoscale process already running. Exiting.', 'warn', 1);
+                        if (results && results.processCount && results.processCount > 1) {
+                            if (results.executionTime
+                                && parseInt(results.executionTime, 10) < options.autoscaleTimeout) {
+                                util.logAndExit('Another autoscale process already running. ' +
+                                    'Exiting.', 'warn', 1);
+                            } else {
+                                logger.info('Terminating the autoscale script execution.');
+                                util.terminateProcessById(results.pid);
+                                util.logAndExit(`Autoscale process took longer than
+                                configured timeout value (${options.autoscaleTimeout})
+                                Autoscale (pid:${results.pid}) was killed`, 'error', 1);
+                            }
                         }
                         return q();
                     })
@@ -1280,15 +1296,28 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
     }
 
     /**
-     * Get the count of running Autoscale process with actions of join or update.
+     * Get the count of running Autoscale process,
+     * its pid and current execution time with actions of join or update.
      */
-    function getAutoscaleProcessCount() {
+    function getAutoscaleProcessInfo() {
         const actions = 'cluster-action update|-c update|cluster-action join|-c join';
         const grepCommand = `grep autoscale.js | grep -E '${actions}' | grep -v 'grep autoscale.js'`;
+        const results = {};
+
 
         return util.getProcessCount(grepCommand)
             .then((response) => {
-                return q(response);
+                if (response) {
+                    results.processCount = response;
+                }
+                return util.getProcessExecutionTimeWithPid(grepCommand);
+            })
+            .then((response) => {
+                if (response) {
+                    results.pid = response.split('-')[0];
+                    results.executionTime = response.split('-')[1].split(':')[0];
+                }
+                return q(results);
             })
             .catch((err) => {
                 logger.error('Could not determine if another autoscale script is running');
