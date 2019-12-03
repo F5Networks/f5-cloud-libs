@@ -1,9 +1,9 @@
 # Release notes
 
-## Release 4.11.0
-* Enable retry logic for TMSH command execution to mitigate problem when TMSH command fails due to MCP un-availability
-* Add validation for generated UCS file to prever corrupted UCS file problem 
-* Update condition for triggering master re-election for autoscale solution; this should prevent the problem when master host is stuck at BECOMING_MASTER state
+## Release 4.12.0
+* Added BIG-IP hostname and mgmt address into BIG-IQ 'tenant' field when requesting license from BIG-IQ.
+* Added autoscale timeout for autoscale script execution.
+* Added logic to pass BIG-IP private address to BIG-IQ when BIG-IP is provisioned in Azure cloud.
 
 ## Release 4.10.3
 * Add additional endpoint checks in the BIG-IP ready check, including /mgmt/tm/sys/ready
