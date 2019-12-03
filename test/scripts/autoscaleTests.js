@@ -203,6 +203,10 @@ module.exports = {
             return q('1');
         };
 
+        cloudUtilMock.getProcessExecutionTimeWithPid = function getProcessExecutionTimeWithPid() {
+            return q();
+        };
+
         existsSync = fsMock.existsSync;
         unlinkSync = fsMock.unlinkSync;
         writeFile = fsMock.writeFile;
@@ -658,6 +662,10 @@ module.exports = {
                     return q('2');
                 };
 
+                cloudUtilMock.getProcessExecutionTimeWithPid = function getProcessExecutionTimeWithPid() {
+                    return q('12123-01');
+                };
+
                 test.expect(1);
                 autoscale.run(argv, testOptions, () => {
                     test.strictEqual(exitMessage, 'Another autoscale process already running. Exiting.');
@@ -669,6 +677,10 @@ module.exports = {
                 argv.push('-c', 'update');
                 cloudUtilMock.getProcessCount = function getProcessCount() {
                     return q('2');
+                };
+
+                cloudUtilMock.getProcessExecutionTimeWithPid = function getProcessExecutionTimeWithPid() {
+                    return q('12123-01');
                 };
 
                 test.expect(1);
@@ -706,6 +718,10 @@ module.exports = {
                         return q();
                     };
 
+                    cloudUtilMock.writeUcsFile = () => {
+                        return q();
+                    };
+
                     callback();
                 },
 
@@ -723,7 +739,7 @@ module.exports = {
                 },
 
                 testMissingFile(test) {
-                    missingFilePrefix = '/shared/tmp/ucsUpdated_';
+                    missingFilePrefix = '/shared/tmp/ucs/ucsUpdated_';
                     test.expect(2);
                     autoscale.run(argv, testOptions, (err) => {
                         test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
@@ -919,6 +935,13 @@ module.exports = {
             },
 
             testInitCall(test) {
+                cloudUtilMock.getProcessCount = function getProcessCount() {
+                    return q('0');
+                };
+
+                cloudUtilMock.getProcessExecutionTimeWithPid = function getProcessExecutionTimeWithPid() {
+                    return q();
+                };
                 test.expect(1);
                 argv.push('--dns-provider-options', 'key1:value1,key2:value2');
                 autoscale.run(argv, testOptions, () => {

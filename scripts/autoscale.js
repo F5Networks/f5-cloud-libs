@@ -30,6 +30,7 @@ const cloudProviderFactory = require('../lib/cloudProviderFactory');
 const dnsProviderFactory = require('../lib/dnsProviderFactory');
 const ipc = require('../lib/ipc');
 const commonOptions = require('./commonOptions');
+const BACKUP = require('../lib/sharedConstants').BACKUP;
 
 (function run() {
     const MAX_DISCONNECTED_MS = 3 * 60000; // 3 minute
@@ -44,6 +45,7 @@ const commonOptions = require('./commonOptions');
     const UCS_BACKUP_PREFIX = 'ucsAutosave_';
     const UCS_BACKUP_DEFAULT_MAX_FILES = 7;
     const UCS_BACKUP_DIRECTORY = '/var/local/ucs';
+    const DEFAULT_AUTOSCALE_TIMEOUT_IN_MINUTES = 10;
 
     const UCS_LOCAL_TMP_DIRECTORY = '/shared/tmp';
 
@@ -210,6 +212,11 @@ const commonOptions = require('./commonOptions');
                         'When running cluster action backup-ucs, maximum number of backup files to keep.',
                         UCS_BACKUP_DEFAULT_MAX_FILES
                     )
+                    .option(
+                        '--autoscale-timeout <autoscale_timeout>',
+                        'Number of minutes after which autoscale process should be killed',
+                        DEFAULT_AUTOSCALE_TIMEOUT_IN_MINUTES
+                    )
                     .parse(argv);
                 /* eslint-enable max-len */
 
@@ -296,15 +303,25 @@ const commonOptions = require('./commonOptions');
                     })
                     .then(() => {
                         if (options.clusterAction === 'join' || options.clusterAction === 'update') {
-                            return getAutoscaleProcessCount();
+                            return getAutoscaleProcessInfo();
                         }
                         return q();
                     })
-                    .then((processCount) => {
+                    .then((results) => {
                         // Stop processing if there is an other running Autoscale process
                         // with cluster action of join or update
-                        if (processCount && processCount > 1) {
-                            util.logAndExit('Another autoscale process already running. Exiting.', 'warn', 1);
+                        if (results && results.processCount && results.processCount > 1) {
+                            if (results.executionTime
+                                && parseInt(results.executionTime, 10) < options.autoscaleTimeout) {
+                                util.logAndExit('Another autoscale process already running. ' +
+                                    'Exiting.', 'warn', 1);
+                            } else {
+                                logger.info('Terminating the autoscale script execution.');
+                                util.terminateProcessById(results.pid);
+                                util.logAndExit(`Autoscale process took longer than
+                                configured timeout value (${options.autoscaleTimeout})
+                                Autoscale (pid:${results.pid}) was killed`, 'error', 1);
+                            }
                         }
                         return q();
                     })
@@ -981,10 +998,11 @@ const commonOptions = require('./commonOptions');
     }
 
     function validateUploadedUcs(provider, ucsFileName) {
-        const ucsFilePath = `${UCS_LOCAL_TMP_DIRECTORY}/${ucsFileName}`;
+        const ucsFilePath = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/${ucsFileName}`;
         return provider.getStoredUcs()
             .then((ucsData) => {
-                return writeUcsFile(ucsFilePath, ucsData);
+                logger.silly(`ucsFilePath: ${ucsFilePath}`);
+                return util.writeUcsFile(ucsFilePath, ucsData);
             })
             .then(() => {
                 return util.runShellCommand(`gzip -t -v ${ucsFilePath}`);
@@ -1006,47 +1024,6 @@ const commonOptions = require('./commonOptions');
                 logger.warn('Error while validating ucs', err);
                 return q.reject(err);
             });
-    }
-
-    function writeUcsFile(ucsFilePath, ucsData) {
-        const deferred = q.defer();
-        let ucsFile;
-        // If ucsData has a pipe method (is a stream), use it
-        if (ucsData.pipe) {
-            logger.silly('ucsData is a Stream');
-            ucsFile = fs.createWriteStream(ucsFilePath);
-
-            ucsData.pipe(ucsFile);
-
-            ucsFile.on('finish', () => {
-                logger.silly('finished piping ucsData');
-                ucsFile.close(() => {
-                    deferred.resolve();
-                });
-            });
-            ucsFile.on('error', (err) => {
-                logger.warn('Error piping ucsData', err);
-                deferred.reject(err);
-            });
-            ucsData.on('error', (err) => {
-                logger.warn('Error reading ucs data', err);
-                deferred.reject(err);
-            });
-        } else {
-            // Otherwise, assume it's a Buffer
-            logger.silly('ucsData is a Buffer');
-            fs.writeFile(ucsFilePath, ucsData, (err) => {
-                logger.silly('finished writing ucsData');
-                if (err) {
-                    logger.warn('Error writing ucsData', err);
-                    deferred.reject(err);
-                    return;
-                }
-                deferred.resolve();
-            });
-        }
-
-        return deferred.promise;
     }
 
     function handleBackupUcs(provider, bigIp, options) {
@@ -1080,6 +1057,7 @@ const commonOptions = require('./commonOptions');
                 );
             })
             .then(() => {
+                logger.silly(`lastest ucs file: ${ucsName}.ucs`);
                 return removeOldUcsFiles(`${ucsName}.ucs`);
             })
             .then(() => {
@@ -1105,8 +1083,8 @@ const commonOptions = require('./commonOptions');
             })
             .catch((err) => {
                 logger.info('Error backing up ucs', err);
-                if (fs.existsSync(`${UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`)) {
-                    fs.unlinkSync(`${UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`);
+                if (fs.existsSync(`${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`)) {
+                    fs.unlinkSync(`${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/${ucsName}.ucs`);
                 }
                 provider.deleteStoredUcs(`${ucsName}.ucs`);
                 return q.reject(err);
@@ -1320,15 +1298,28 @@ const commonOptions = require('./commonOptions');
     }
 
     /**
-     * Get the count of running Autoscale process with actions of join or update.
+     * Get the count of running Autoscale process,
+     * its pid and current execution time with actions of join or update.
      */
-    function getAutoscaleProcessCount() {
+    function getAutoscaleProcessInfo() {
         const actions = 'cluster-action update|-c update|cluster-action join|-c join';
         const grepCommand = `grep autoscale.js | grep -E '${actions}' | grep -v 'grep autoscale.js'`;
+        const results = {};
+
 
         return util.getProcessCount(grepCommand)
             .then((response) => {
-                return q(response);
+                if (response) {
+                    results.processCount = response;
+                }
+                return util.getProcessExecutionTimeWithPid(grepCommand);
+            })
+            .then((response) => {
+                if (response) {
+                    results.pid = response.split('-')[0];
+                    results.executionTime = response.split('-')[1].split(':')[0];
+                }
+                return q(results);
             })
             .catch((err) => {
                 logger.error('Could not determine if another autoscale script is running');
@@ -1555,8 +1546,8 @@ const commonOptions = require('./commonOptions');
      */
     function loadUcs(provider, bigIp, ucsData, cloudProvider) {
         const timeStamp = Date.now();
-        const originalPath = `${UCS_LOCAL_TMP_DIRECTORY}/ucsOriginal_${timeStamp}.ucs`;
-        const updatedPath = `${UCS_LOCAL_TMP_DIRECTORY}/ucsUpdated_${timeStamp}.ucs`;
+        const originalPath = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsOriginal_${timeStamp}.ucs`;
+        const updatedPath = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsUpdated_${timeStamp}.ucs`;
         const updateScript = `${__dirname}/updateAutoScaleUcs`;
 
         const deferred = q.defer();
@@ -1591,7 +1582,7 @@ const commonOptions = require('./commonOptions');
                 '--cloud-provider',
                 cloudProvider,
                 '--extract-directory',
-                `${UCS_LOCAL_TMP_DIRECTORY}/ucsRestore`
+                `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsRestore`
             ];
             const loadUcsOptions = {
                 initLocalKeys: true
@@ -1649,7 +1640,7 @@ const commonOptions = require('./commonOptions');
                 });
         };
 
-        writeUcsFile(originalPath, ucsData)
+        util.writeUcsFile(originalPath, ucsData)
             .then(() => {
                 doLoad();
             })
