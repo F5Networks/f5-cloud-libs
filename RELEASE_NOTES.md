@@ -1,5 +1,8 @@
 # Release notes
 
+## 4.13.0
+* Update Azure provider failover script to populate enableAcceleratedNetworking property on Networking Interface
+
 ## Release 4.12.0
 * Added BIG-IP hostname and mgmt address into BIG-IQ 'tenant' field when requesting license from BIG-IQ.
 * Added autoscale timeout for autoscale script execution.
