@@ -1,5 +1,8 @@
 # Release notes
 
+## 4.12.0
+* Update Azure provider failover script to populate enableAcceleratedNetworking property on Networking Interface
+
 ## Release 4.11.0
 * Enable retry logic for TMSH command execution to mitigate problem when TMSH command fails due to MCP un-availability
 * Add validation for generated UCS file to prever corrupted UCS file problem 

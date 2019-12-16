@@ -52,7 +52,7 @@ const Logger = require('../lib/logger');
             try {
                 /* eslint-disable max-len */
                 options
-                    .version('4.10.3')
+                    .version('4.13.0')
                     .option(
                         '--cloud <cloud_provider>',
                         'Cloud provider (aws | azure | etc.)'
