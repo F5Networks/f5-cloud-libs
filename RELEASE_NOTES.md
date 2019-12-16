@@ -1,6 +1,7 @@
 # Release notes
 
-## 4.13.0
+## Release 4.13.2
+* Update verifyHash with new checksum for f5-cloud-libs-azure
 * Update Azure provider failover script to populate enableAcceleratedNetworking property on Networking Interface
 
 ## Release 4.12.0
