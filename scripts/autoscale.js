@@ -47,8 +47,6 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
     const UCS_BACKUP_DIRECTORY = '/var/local/ucs';
     const DEFAULT_AUTOSCALE_TIMEOUT_IN_MINUTES = 10;
 
-    const UCS_LOCAL_TMP_DIRECTORY = '/shared/tmp';
-
     let logger;
 
     const runner = {
