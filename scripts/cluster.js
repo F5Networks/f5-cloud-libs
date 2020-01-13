@@ -74,6 +74,10 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         'IP address for config sync.'
                     )
                     .option(
+                        '--product <product>',
+                        'Explicitly specify the product we are running on (BIG-IP|BIG-IQ)'
+                    )
+                    .option(
                         '--big-iq-failover-peer-ip <peer_ip>',
                         'If configuring a BIG-IQ failover primary, this is the management IP address for the secondary'
                     )
@@ -343,6 +347,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                                 port: options.port,
                                 passwordIsUrl: typeof options.passwordUrl !== 'undefined',
                                 passwordEncrypted: options.passwordEncrypted,
+                                product: options.product,
                                 clOptions: providerOptions
                             }
                         );
