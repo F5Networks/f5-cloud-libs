@@ -1,12 +1,14 @@
 # Release notes
 
-## Release 4.13.2
+## Release 4.13.3
 * Update verifyHash with new checksum for f5-cloud-libs-azure
+* Update Azure provider failover script to populate enableAcceleratedNetworking property on Networking Interface
 
 ## Release 4.12.0
 * Added BIG-IP hostname and mgmt address into BIG-IQ 'tenant' field when requesting license from BIG-IQ.
 * Added autoscale timeout for autoscale script execution.
 * Added logic to pass BIG-IP private address to BIG-IQ when BIG-IP is provisioned in Azure cloud.
+* Fixed "passphrase decryption failure" problem which occurs when new master joins autoscale cluster.
 
 ## Release 4.11.0
 * Enable retry logic for TMSH command execution to mitigate problem when TMSH command fails due to MCP un-availability
