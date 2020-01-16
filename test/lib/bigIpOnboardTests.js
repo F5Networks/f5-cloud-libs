@@ -1108,6 +1108,57 @@ module.exports = {
                 .finally(() => {
                     test.done();
                 });
+        },
+
+        testNoActiveCheck(test) {
+            const provisionSettings = {
+                mod1: 'level2'
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/provision/',
+                [
+                    {
+                        name: 'mod1',
+                        level: 'level1'
+                    }
+                ]
+            );
+
+            icontrolMock.when(
+                'list',
+                '/tm/cm/failover-status',
+                {
+                    entries: {
+                        'https://localhost/mgmt/tm/cm/failover-status/0': {
+                            nestedStats: {
+                                entries: {
+                                    status: {
+                                        description: 'OFFLINE'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            bigIp.onboard.provision(provisionSettings, { checkActive: false })
+                .then(() => {
+                    test.deepEqual(
+                        icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
+                        {
+                            level: 'level2'
+                        }
+                    );
+                })
+                .catch((err) => {
+                    test.ok(false, err.message);
+                })
+                .finally(() => {
+                    test.done();
+                });
         }
     },
 
