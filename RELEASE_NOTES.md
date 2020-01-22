@@ -1,5 +1,9 @@
 # Release notes
 
+## Release 4.14.0
+* Update httpUtil to include logging HTTP body for error message handling
+* Add option to skip active check after provisioning
+
 ## Release 4.13.3
 * Update verifyHash with new checksum for f5-cloud-libs-azure
 * Update Azure provider failover script to populate enableAcceleratedNetworking property on Networking Interface
