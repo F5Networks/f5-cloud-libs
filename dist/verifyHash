@@ -44,5 +44,18 @@ proc script::run {} {
             exit 1
         }
     }
+    script-signature l+ZdBsEto95JMgzSJzZAJ49o8dvujmAogjlY97VR8QX9G2px5ALfhxQAM/EyjLrBduK3ozaGMlIunZxGo4EhWgfVN3+r0nttuAbm4w3buLjyNPj/Gg7SqZ5lNc6NYOHJtCB0i9uqcfgMsWI652UW+jQHYk9o61H9QueM/8LdwNVo/et6UjI1obuPYKFy7bxqiUE/E/XL7Ay2gaBW0cufWGBrdcQBDryw2mREIgS90pP8VDthjrunw1VGxgoz2zNQM9cs0LzwRZQI4eJZIeqduT8t+yjWmHGzzsqzCcRymFtUR0UwoAffryzXQ6qbhbJv+nDvvsccMcTMcnZB5k8MXw==
     signing-key /Common/f5-irule
 }
+############################################################
+# Signing Server:
+# 
+# Sys::Version
+# Main Package
+#   Product  BIG-IP
+#   Version  11.4.0
+#   Build    2384.0
+#   Edition  Final
+#   Date     Thu May 16 18:49:32 PDT 2013
+# 
+############################################################
