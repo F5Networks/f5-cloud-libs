@@ -1753,6 +1753,35 @@ module.exports = {
                 .finally(() => {
                     test.done();
                 });
+        },
+
+        validateSkipAsmGroups(test) {
+            const device1 = 'device1';
+
+            icontrolMock.when(
+                'list',
+                `/tm/cm/device-group/${deviceGroup}/devices`,
+                [
+                    {
+                        name: device1
+                    }
+                ]
+            );
+
+            test.expect(2);
+            bigIp.cluster.removeFromDeviceGroup(device1, 'datasync-foo-dg')
+                .then(() => {
+                    test.notStrictEqual(icontrolMock.lastCall.method, 'list');
+                    test.notStrictEqual(
+                        icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}/devices`
+                    );
+                })
+                .catch((err) => {
+                    test.ok(false, err.message);
+                })
+                .finally(() => {
+                    test.done();
+                });
         }
     },
 

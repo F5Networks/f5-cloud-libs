@@ -1610,7 +1610,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
 
                         bigIp.loadUcs(
                             updatedPath,
-                            { 'no-license': true, 'reset-trust': true },
+                            { 'no-license': true, 'reset-trust': true, 'no-platform-check': true },
                             loadUcsOptions
                         )
                             .then(() => {
@@ -1621,6 +1621,8 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                             .then(() => {
                                 // Attempt to delete the file, but ignore errors
                                 try {
+                                    logger.info(`Ignoring errors: deleting originalPath: ${originalPath}
+                                    deleting updatePath: ${updatedPath}`);
                                     fs.unlinkSync(originalPath);
                                     fs.unlinkSync(updatedPath);
                                 } finally {
