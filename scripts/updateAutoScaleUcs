@@ -250,7 +250,7 @@ def main():
     # remove the dynad private key
     os.system("sed -i '/sys dynad key {/ { N ; /\\n[[:space:]]\+key[[:space:]]*\$M\$[^\\n]*/ { N;   /\\n[[:space:]]*}/ { d } } }' " + extract_ucs_dir + "/config/bigip_base.conf")
 
-    tar_updated.add(extract_ucs_dir, arcname='.')
+    tar_updated.add(extract_ucs_dir, arcname='')
 
     tar_original.close()
     tar_updated.close()
