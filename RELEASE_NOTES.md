@@ -3,6 +3,7 @@
 ## Release 4.15.0
 * Fix updateAutoScaleUcs script to address problem with restoring UCS file on new BIGIP device
 * Introduce optimization for sync cluster termination; devices won't be deleted from ASM specific data sync groups
+* Expose parameter in AWS Clour provider to allow pass number of message consumed in signle autoscale run
 * Fix to pervent failure during UCS temp directory creation 
 
 ## Release 4.14.0
