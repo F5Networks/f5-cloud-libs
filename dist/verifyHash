@@ -1,8 +1,8 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) 260f5c176508674a78f9bffc8b606073324134249642d0118cddafc9c93882acf8bc0b5965c152e158069fb208887a1d4c7efbd7ab6f88e093ea865c00120932
-            set hashes(f5-cloud-libs-aws.tar.gz) 2b934307477faf772e1558ab3636716981215d6b15f2a184750473911d1d38bfbd6a2dc79614b1d1575dce8f3824ed805daa3d9ca48c7e94c6692f03b9e4ed7a
+            set hashes(f5-cloud-libs.tar.gz) faf414b7ab5f530d3b0c88fe25ea658bc776067887096f597fcbda35780faf4c14ee7f7e55f0211c614237fcc6580ed0288680e642e3ad44781ae5a99f8b6b98
+            set hashes(f5-cloud-libs-aws.tar.gz) 2ff4e6269ce74850fc3794045d0a394ecd0b472ba9efa16b34786b38d07088b3a49339b41708973c4bffe55a539471c2f9ec60a009ddd087912c1fca722b48ef
             set hashes(f5-cloud-libs-azure.tar.gz) f6d10347181a101b974478cc7c0d44c9c8cfd7705a6bccc9d48b2e8af175066f52612b28e9a0faa257675b9a979803952a31d9d0cf2cc5ff18231fbb42e786c9
             set hashes(f5-cloud-libs-gce.tar.gz) a5cfaed1fe33da677b3f10dc1a7ca82f5739ff24e45e91b3a8f7b06d6b2e280e5f1eaf5fe2d33009b2cc67c10f2d906aab26f942d591b68fa8a7fddfd54a0efe
             set hashes(f5-cloud-libs-openstack.tar.gz) 5c83fe6a93a6fceb5a2e8437b5ed8cc9faf4c1621bfc9e6a0779f6c2137b45eab8ae0e7ed745c8cf821b9371245ca29749ca0b7e5663949d77496b8728f4b0f9
@@ -44,18 +44,6 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature l+ZdBsEto95JMgzSJzZAJ49o8dvujmAogjlY97VR8QX9G2px5ALfhxQAM/EyjLrBduK3ozaGMlIunZxGo4EhWgfVN3+r0nttuAbm4w3buLjyNPj/Gg7SqZ5lNc6NYOHJtCB0i9uqcfgMsWI652UW+jQHYk9o61H9QueM/8LdwNVo/et6UjI1obuPYKFy7bxqiUE/E/XL7Ay2gaBW0cufWGBrdcQBDryw2mREIgS90pP8VDthjrunw1VGxgoz2zNQM9cs0LzwRZQI4eJZIeqduT8t+yjWmHGzzsqzCcRymFtUR0UwoAffryzXQ6qbhbJv+nDvvsccMcTMcnZB5k8MXw==
+    script-signature KhTJ9mSoHSB24RYs5jKmwKCh0ZuFnRmtaJG2BKtjHNQz1bvFdd/zAV/5q9smuY8elMNJBKwugDu3puicjE4rNXSHbmVvRF3N9Je8I96OcqeQDJJM52Exyz5SSVMzip20NluHQjoW4wHLLL0M/HFfWHhretQoE6RqmFq3w01puuo28ACtyhfCgJn9llW1g0lpMwbozhIZC6COtlXuIVRTxQdm0O8LGgJp57QC/vRmTDRGvUHphjiTJOe0U79ws8E2EjZDvux/EepBgLiNvZO/DJd5355hOtG9ReYUwWyIOrbq//Iy2FcvIz8i7Ekpxp+SCjISvYsjU+VWyIPb8AxMog==
     signing-key /Common/f5-irule
 }
-############################################################
-# Signing Server:
-# 
-# Sys::Version
-# Main Package
-#   Product  BIG-IP
-#   Version  11.4.0
-#   Build    2384.0
-#   Edition  Final
-#   Date     Thu May 16 18:49:32 PDT 2013
-# 
-############################################################
