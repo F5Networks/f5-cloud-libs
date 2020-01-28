@@ -1,5 +1,10 @@
 # Release notes
 
+## Release 4.15.0
+* Fix updateAutoScaleUcs script to address problem with restoring UCS file on new BIGIP device
+* Introduce optimization for sync cluster termination; devices won't be deleted from ASM specific data sync groups
+* Fix to pervent failure during UCS temp directory creation 
+
 ## Release 4.14.0
 * Update httpUtil to include logging HTTP body for error message handling
 * Add option to skip active check after provisioning
