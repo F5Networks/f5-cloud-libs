@@ -789,7 +789,7 @@ module.exports = {
         testBasic(test) {
             const hostname = 'myHostname';
             const machineId = 'myMachineId';
-            const hostMac = 'myMacAddress';
+            const baseMac = 'myMacAddress';
             const poolName = 'myPoolName';
 
             icontrolMock.when(
@@ -798,7 +798,7 @@ module.exports = {
                 {
                     hostname,
                     machineId,
-                    hostMac
+                    baseMac
                 }
             );
 
@@ -808,7 +808,7 @@ module.exports = {
                     test.strictEqual(poolNameSent, poolName);
                     test.strictEqual(instanceSent.hostname, hostname);
                     test.strictEqual(instanceSent.machineId, machineId);
-                    test.strictEqual(instanceSent.macAddress, hostMac);
+                    test.strictEqual(instanceSent.macAddress, baseMac);
                 })
                 .catch((err) => {
                     test.ok(false, err);
