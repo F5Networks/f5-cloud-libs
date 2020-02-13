@@ -1,10 +1,13 @@
 # Release notes
 
+## Release 4.15.1
+* Use baseMac rather than hostMac for determining MAC address when licensing from BIG-IQ
+
 ## Release 4.15.0
 * Fix updateAutoScaleUcs script to address problem with restoring UCS file on new BIGIP device
 * Introduce optimization for sync cluster termination; devices won't be deleted from ASM specific data sync groups
 * Expose parameter in AWS Clour provider to allow pass number of message consumed in signle autoscale run
-* Fix to pervent failure during UCS temp directory creation 
+* Fix to pervent failure during UCS temp directory creation
 
 ## Release 4.14.0
 * Update httpUtil to include logging HTTP body for error message handling
@@ -22,7 +25,7 @@
 
 ## Release 4.11.0
 * Enable retry logic for TMSH command execution to mitigate problem when TMSH command fails due to MCP un-availability
-* Add validation for generated UCS file to prever corrupted UCS file problem 
+* Add validation for generated UCS file to prever corrupted UCS file problem
 * Update condition for triggering master re-election for autoscale solution; this should prevent the problem when master host is stuck at BECOMING_MASTER state
 
 ## Release 4.10.3
