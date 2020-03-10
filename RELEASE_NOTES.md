@@ -1,5 +1,10 @@
 # Release notes
 
+## Release 4.16.0
+* Update verifyHash with new checksum for f5-cloud-libs-azure
+* Modified Azure scripts to minimize amount of API calls
+* Autoscale scripts now make use of Azure bulk API feature
+
 ## Release 4.15.1
 * Use baseMac rather than hostMac for determining MAC address when licensing from BIG-IQ
 

@@ -39,7 +39,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
         run(argv, cb) {
             try {
                 options
-                    .version('4.15.1')
+                    .version('4.16.0')
                     .option(
                         '--data-file <data_file>',
                         'Full path to file with data'
