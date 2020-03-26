@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.17.0
+* Update verifyHash with new checksum for f5-appsvcs-3.18.0
+
 ## Release 4.16.0
 * Update verifyHash with new checksum for f5-cloud-libs-azure
 * Modified Azure scripts to minimize amount of API calls
