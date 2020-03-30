@@ -1,7 +1,7 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) fcc095984fcd3ab1f3bde79408224086ec34981dada9cc24107c2e539e2297856df987dfc4c4795c171c5eec8f121d14429b3e4b72c5ad32fde94e2c6bfda0db
+            set hashes(f5-cloud-libs.tar.gz) d08c999d708dbb3e54d4b38e6f3fad1053ab4795d375d2e04e8c181669f1c4417b1949b5bad2316cdd91ffc5b87474c5e35db1fd4862d2a72c25bf2f19f3eecd
             set hashes(f5-cloud-libs-aws.tar.gz) 2ff4e6269ce74850fc3794045d0a394ecd0b472ba9efa16b34786b38d07088b3a49339b41708973c4bffe55a539471c2f9ec60a009ddd087912c1fca722b48ef
             set hashes(f5-cloud-libs-azure.tar.gz) 6db2878a2c10d98550eded6b66f0474516c1952d3605217164e3b5261c771419201d94c7cdb07744c9d5db894334f93380963217b670d87d3151bfcdb301c295
             set hashes(f5-cloud-libs-gce.tar.gz) a5cfaed1fe33da677b3f10dc1a7ca82f5739ff24e45e91b3a8f7b06d6b2e280e5f1eaf5fe2d33009b2cc67c10f2d906aab26f942d591b68fa8a7fddfd54a0efe
@@ -23,6 +23,7 @@ proc script::run {} {
             set hashes(f5.service_discovery.tmpl) 4811a95372d1dbdbb4f62f8bcc48d4bc919fa492cda012c81e3a2fe63d7966cc36ba8677ed049a814a930473234f300d3f8bced2b0db63176d52ac99640ce81b
             set hashes(f5.cloud_logger.v1.0.0.tmpl) 64a0ed3b5e32a037ba4e71d460385fe8b5e1aecc27dc0e8514b511863952e419a89f4a2a43326abb543bba9bc34376afa114ceda950d2c3bd08dab735ff5ad20
             set hashes(f5-appsvcs-3.5.1-5.noarch.rpm) ba71c6e1c52d0c7077cdb25a58709b8fb7c37b34418a8338bbf67668339676d208c1a4fef4e5470c152aac84020b4ccb8074ce387de24be339711256c0fa78c8
+            set hashes(f5-appsvcs-3.18.0-4.noarch.rpm) e72ee8005a27070ac399ab097e8aa507a72aae4721d7491589cfeb821db3ef86cbc979e796ab319ec727bb51400ccda813c4b9eb4a6b3d1220a396b582f8f400
             set hashes(f5-cloud-failover-1.1.0-0.noarch.rpm) 15a440c299f9e4af86a3d0f5b0d75b0054385b95e47c3ef116d2e0bfb0041a26dcbf549028e2a26d2c718ec61446bd657be38fbbcd9db781efe5414c174ac68c
 
             set file_path [lindex $tmsh::argv 1]
@@ -45,6 +46,6 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature fO1/fdESmfsqMTz8tALRLkkYq3t7sd5iJL7/lEWVtsI0BwVRoU+oLZpGds4cYnssVj3b5hphpZJPaYPDZaIHX6eyDE//GKajfEctLRd5qH4XQDgwDf2+jgTDn3y00RFMYv0yMojypkLxJOpYDnaUFjMhU5cxkzJy+jrK0BzVWgDZO7MF0NoV/O74D+jm5NiI6aB9+GgEmzbzWy6xx30QzgMnQnj/8cFSJ7CZsfFg4ld/fAq7kj2noj+R73ZTwSaYtIDvr3nxwr3OrukmF6ZmDQ/zLDoO8m8+ypxjASYSE60Qn/fSblCVghNHuFmZeF9raZt/glL7rMQIyNlGsPAaBQ==
+    script-signature bxiGJQx3kFHtiUrvT2uH+nU0CG8NFfSwMnqdvqnbUyRa02Jekr6aoUFqLCIL9azhOQLFqU/FpvtuxXWJ14RRZtCSB4ABi1RGGqCrGEh3PobPD10XuyACmZMfBgj6RLH/qLeXRKknwln/26EaHsv35TkCzIkOEJocWwuZ0ED/s68dXI1OF5O/cHEELE4E942bQ05YM0AZNBNYGsFlmEHRSeQbeS7hSPl9G3mple+rO44nAEfZzLn5ghu78UmE8Med6XG9gNWY4fQr1sVQOXJOIE5yTdPcmy7pttHr9N2znSNyK4J9K8iwo4Q6AapT8/qQWWsCbl5PH1uefCBUd6eZ+Q==
     signing-key /Common/f5-irule
 }
