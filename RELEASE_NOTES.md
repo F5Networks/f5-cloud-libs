@@ -1,5 +1,9 @@
 # Release notes
 
+## Release 4.17.1
+* Resolved big-iq onboard error "Public URI path not registered"
+  * Update bigIp.js to only use availability check '/shared/iapp/package-management-tasks/available' when system is a bigip.
+
 ## Release 4.17.0
 * Update verifyHash with new checksum for f5-appsvcs-3.18.0
 
