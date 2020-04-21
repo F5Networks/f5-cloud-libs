@@ -1,5 +1,11 @@
 # Release notes
 
+## Release 4.18.0
+* Improve availability check for BIGIP system
+* Update format for the tenant string used for sending BIGIP host metadata to BIGIQ as part of licensing via BIGIQ system
+    * Old: ```{ "mgmtAddress": "<ip_address>", "hostname": "<hostname>"}```
+    * New: ```"mgmtAddress": "<ip_address>", "hostname": "<hostname>"```
+    
 ## Release 4.17.1
 * Resolved big-iq onboard error "Public URI path not registered"
   * Update bigIp.js to only use availability check '/shared/iapp/package-management-tasks/available' when system is a bigip.
