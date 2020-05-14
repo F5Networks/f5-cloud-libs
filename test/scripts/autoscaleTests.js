@@ -160,7 +160,8 @@ module.exports = {
         const instance1 = new AutoscaleInstance()
             .setHostname('host1')
             .setPrivateIp('1.2.3.4')
-            .setMgmtIp('1.2.3.4');
+            .setMgmtIp('1.2.3.4')
+            .setLastBackup(new Date(1970, 1, 1).getTime());
         const instance2 = new AutoscaleInstance()
             .setIsMaster()
             .setHostname('host2')
@@ -1009,7 +1010,8 @@ module.exports = {
             const instance1 = new AutoscaleInstance()
                 .setHostname('host1')
                 .setPrivateIp('1.2.3.4')
-                .setMgmtIp('1.2.3.4');
+                .setMgmtIp('1.2.3.4')
+                .setLastBackup(new Date(1970, 1, 2).getTime());
             const instance2 = new AutoscaleInstance()
                 .setIsMaster()
                 .setHostname('host2')

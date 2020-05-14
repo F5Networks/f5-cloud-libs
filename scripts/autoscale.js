@@ -597,9 +597,21 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                             case 'unblock-sync':
                                 logger.info('Cluster action unblock-sync');
                                 return bigIp.cluster.configSyncIp(this.instance.privateIp);
-                            case 'backup-ucs':
+                            case 'backup-ucs': {
                                 logger.info('Cluster action backup-ucs');
-                                return handleBackupUcs.call(this, cloudProvider, bigIp, options);
+                                const clusterMetadata = {
+                                    instanceId: this.instanceId,
+                                    instance: this.instance,
+                                    instances: this.instances
+                                };
+                                return handleBackupUcs.call(
+                                    this,
+                                    cloudProvider,
+                                    clusterMetadata,
+                                    bigIp,
+                                    options
+                                );
+                            }
                             default:
                                 message = `Unknown cluster action ${options.clusterAction}`;
                                 logger.warn(message);
@@ -769,7 +781,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         logger.info('Cluster action UPDATE');
 
         if (this.instance.isMaster && !masterBadOrNew) {
-            return checkForDisconnectedDevices.call(this, bigIp);
+            return checkClusteredDevices.call(this, provider, bigIp);
         } else if (!this.instance.isMaster) {
             // We're not the master, make sure the master file is not on our disk
             if (fs.existsSync(MASTER_FILE_PATH)) {
@@ -787,6 +799,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                             logger.info('This instance is not in cluster. Requesting join.');
                             return joinCluster.call(this, provider, bigIp, masterIid, options);
                         }
+
                         return q();
                     })
                     .catch((err) => {
@@ -1024,7 +1037,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
             });
     }
 
-    function handleBackupUcs(provider, bigIp, options) {
+    function handleBackupUcs(provider, clusterMetadata, bigIp, options) {
         if (!this.instance.isMaster
             || this.instance.status !== AutoscaleInstance.INSTANCE_STATUS_OK) {
             logger.debug('not master or not ready, skipping ucs backup');
@@ -1040,7 +1053,6 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         // into a file that starts with a '$'. So, let's just move the file. It's a bit ugly, but
         // there's not really a better place to do this since it's a one-off bug. All of
         // f5-cloud-libs is removed before ucs is loaded, so we don't need to do anything on that end.
-
         this.instance.lastBackup = now;
         let isUcsFileValid = false;
         return cleanupAjv(bigIp)
@@ -1077,7 +1089,14 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         'generated UCS file failed; ' +
                         'recently generated UCS file appears to be corrupted.'));
                 }
-                return q.resolve();
+                logger.debug(`Update instance metadata; lastBackUp to ${this.instance.lastBackup}`);
+                return provider.putInstance(clusterMetadata.instanceId, this.instance);
+            })
+            .then((response) => {
+                if (response) {
+                    return q.resolve();
+                }
+                return q.reject('Problem with updating the lastBackup date in instance metadata');
             })
             .catch((err) => {
                 logger.info('Error backing up ucs', err);
@@ -1096,15 +1115,38 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
      */
     function becomeMaster(provider, bigIp, options) {
         let hasUcs = false;
-
+        const promises = [];
         logger.info('Becoming master.');
-        logger.info('Checking for backup UCS.');
+        logger.info('Checking if need to restore UCS.');
+        let previousMasterLastBackupTime = 0;
+        // Getting lastBackup time for previous master
+        Object.keys(this.instances).forEach((instanceId) => {
+            if (this.instances[instanceId].isMaster) {
+                previousMasterLastBackupTime = this.instances[instanceId].lastBackup;
+            }
+        });
 
-        return provider.getStoredUcs()
+        /*
+             - By default, lastBackup time is set to the begining of epoch (i.e. 2678400000)
+             - When backup created, lastBackup value will be set to time of backup
+             - lastBackup will be updated on each in-sync host to match master lastBackup time
+             - lastBackup will be used to confirm if a host was in-sync with previous master to
+               check if ucs restore is needed to copy over custom configs
+         */
+        if ((this.instance.lastBackup !== previousMasterLastBackupTime &&
+            previousMasterLastBackupTime === new Date(1970, 1, 1).getTime()) ||
+            this.instance.lastBackup === new Date(1970, 1, 1).getTime()) {
+            logger.silly('will attempt to restore ucs; ' +
+                'this instance never was in synced with previous master');
+            promises.push(provider.getStoredUcs());
+        } else {
+            logger.silly('no need to restore ucs; this instance was in sync with previous master');
+        }
+        return Promise.all(promises)
             .then((response) => {
-                if (response) {
+                if (response && response.length === 1 && response[0]) {
                     hasUcs = true;
-                    return loadUcs(provider, bigIp, response, options.cloud);
+                    return loadUcs(provider, bigIp, response[0], options.cloud);
                 }
                 return q();
             })
@@ -1300,7 +1342,9 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
      * its pid and current execution time with actions of join or update.
      */
     function getAutoscaleProcessInfo() {
-        const actions = 'cluster-action update|-c update|cluster-action join|-c join';
+        const actions = 'cluster-action update|' +
+            '-c update|cluster-action join|' +
+            '-c join|cluster-action backup-ucs';
         const grepCommand = `grep autoscale.js | grep -E '${actions}' | grep -v 'grep autoscale.js'`;
         const results = {};
 
@@ -1325,19 +1369,17 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
             });
     }
 
-    /**
-     * Called with this bound to the caller
-     */
-    function checkForDisconnectedDevices(bigIp) {
+    function checkClusteredDevices(provider, bigIp) {
         return bigIp.cluster.getCmSyncStatus()
             .then((response) => {
+                // response is an object of two lists (connected/disconnected) from getCmSyncStatus()
                 logger.silly('cmSyncStatus:', response);
-
+                const promises = [];
                 const disconnected = response ? response.disconnected : [];
+                const connected = response ? response.connected : [];
                 const hostnames = [];
                 const hostnamesToRemove = [];
 
-                // response is an object of two lists (connected/disconnected) from getCmSyncStatus()
                 if (disconnected.length > 0) {
                     logger.info('Possibly disconnected devices:', disconnected);
 
@@ -1358,10 +1400,26 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
 
                     if (hostnamesToRemove.length > 0) {
                         logger.info('Removing devices from cluster:', hostnamesToRemove);
-                        return bigIp.cluster.removeFromCluster(hostnamesToRemove);
+                        promises.push(bigIp.cluster.removeFromCluster(hostnamesToRemove));
                     }
                 }
-                return q();
+
+                if (connected.length > 0) {
+                    connected.forEach((hostaname) => {
+                        Object.keys(this.instances).forEach((instanceId) => {
+                            if (this.instances[instanceId].hostname === hostaname &&
+                                this.instances[instanceId].lastBackup < this.instance.lastBackup) {
+                                this.instances[instanceId].lastBackup = this.instance.lastBackup;
+                                logger.silly(`Update lastBackUp on connected instance: ${instanceId}`);
+                                promises.push(provider.putInstance(
+                                    instanceId,
+                                    this.instances[instanceId]
+                                ));
+                            }
+                        });
+                    });
+                }
+                return Promise.all(promises);
             })
             .catch((err) => {
                 logger.warn('Could not get sync status');
