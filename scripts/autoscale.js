@@ -309,6 +309,8 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         // Stop processing if there is an other running Autoscale process
                         // with cluster action of join or update
                         if (results && results.processCount && results.processCount > 1) {
+                            logger.silly(`Running process count: ${results.processCount}`);
+                            logger.silly(`Execution time in mins: ${parseInt(results.executionTime, 10)}`);
                             if (results.executionTime
                                 && parseInt(results.executionTime, 10) < options.autoscaleTimeout) {
                                 util.logAndExit('Another autoscale process already running. ' +
@@ -316,9 +318,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                             } else {
                                 logger.info('Terminating the autoscale script execution.');
                                 util.terminateProcessById(results.pid);
-                                util.logAndExit(`Autoscale process took longer than
-                                configured timeout value (${options.autoscaleTimeout})
-                                Autoscale (pid:${results.pid}) was killed`, 'error', 1);
+                                util.logAndExit('Long running autoscale processed terminated. Exiting...');
                             }
                         }
                         return q();
@@ -1360,6 +1360,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                 if (response) {
                     results.pid = response.split('-')[0];
                     results.executionTime = response.split('-')[1].split(':')[0];
+                    logger.silly(`Longer running autoscale process id: ${results.pid}`);
                 }
                 return q(results);
             })
