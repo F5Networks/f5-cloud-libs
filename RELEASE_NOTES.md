@@ -1,5 +1,10 @@
 # Release notes
 
+## Release 4.19.0
+
+* Update autoscale script to populate lastBackup date within instance metadata when UCS generated. The lastBackup date will be shared with other hosts when they get in sync with master.
+* Enable logic on autoscale.js script for preventing restoring UCS file when new master elected and new master was in sync with previous master. 
+
 ## Release 4.18.0
 * Improve availability check for BIGIP system
 * Update format for the tenant string used for sending BIGIP host metadata to BIGIQ as part of licensing via BIGIQ system
