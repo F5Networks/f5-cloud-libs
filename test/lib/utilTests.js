@@ -1633,10 +1633,10 @@ module.exports = {
             };
 
             const grepCommand = 'grep autoscale.js';
-            const expected = `/bin/ps -eo pid,etime,cmd | ${grepCommand} | awk '{ print $1"-"$2 }'`;
+            const cmd = `/bin/ps -eo pid,etime,cmd --sort=-time | ${grepCommand} | awk '{ print $1"-"$2 }'`;
             util.getProcessExecutionTimeWithPid(grepCommand)
                 .then(() => {
-                    test.strictEqual(passedCommand, expected);
+                    test.strictEqual(passedCommand, cmd);
                 })
                 .catch((err) => {
                     test.ok(false, err);
