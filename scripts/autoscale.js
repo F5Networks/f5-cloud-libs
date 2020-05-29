@@ -347,7 +347,10 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         if (Object.keys(externalTag).length === 0) {
                             externalTag = undefined;
                         }
-                        return cloudProvider.getInstances({ externalTag });
+                        return cloudProvider.getInstances({
+                            externalTag,
+                            instanceId: response
+                        });
                     })
                     .then((response) => {
                         this.instances = response || {};
