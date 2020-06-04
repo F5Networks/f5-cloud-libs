@@ -1,8 +1,8 @@
 cli script /Common/verifyHash {
 proc script::run {} {
         if {[catch {
-            set hashes(f5-cloud-libs.tar.gz) 5a8cb085bd0f5abc8087ae4b820da206a19973b0e8317a3e9d1bf24fb4e224f22474e9511a3c2b461d459d371d245d975f2e66483e1ddc3c6ac720b995542dcd
-            set hashes(f5-cloud-libs-aws.tar.gz) 2ff4e6269ce74850fc3794045d0a394ecd0b472ba9efa16b34786b38d07088b3a49339b41708973c4bffe55a539471c2f9ec60a009ddd087912c1fca722b48ef
+            set hashes(f5-cloud-libs.tar.gz) a80af438a499418bcfc282784b8787f073bdeb99d8c26c6bc166cd04f0c3190a823bb7e3dcf3305d8d4e9be3e16121af59917da2ba15d4dc39948c4a57809c04
+            set hashes(f5-cloud-libs-aws.tar.gz) 6f2eb0782da68fa1882d48a349f53051138197da39e4591d7ce1df134e31d0e4267894f9aa69b80edad35649b2fadc8aed501889c71e5ffa4fe43715c63402a2
             set hashes(f5-cloud-libs-azure.tar.gz) 6db2878a2c10d98550eded6b66f0474516c1952d3605217164e3b5261c771419201d94c7cdb07744c9d5db894334f93380963217b670d87d3151bfcdb301c295
             set hashes(f5-cloud-libs-gce.tar.gz) a5cfaed1fe33da677b3f10dc1a7ca82f5739ff24e45e91b3a8f7b06d6b2e280e5f1eaf5fe2d33009b2cc67c10f2d906aab26f942d591b68fa8a7fddfd54a0efe
             set hashes(f5-cloud-libs-openstack.tar.gz) 5c83fe6a93a6fceb5a2e8437b5ed8cc9faf4c1621bfc9e6a0779f6c2137b45eab8ae0e7ed745c8cf821b9371245ca29749ca0b7e5663949d77496b8728f4b0f9
@@ -47,6 +47,6 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature jvp0owAfJCtAF952LP/8AGni95WCwAohH08ZJfCjbE9zBWWggAtZXeggjPk+iPivD00XavMVTnuXxSs7NwrRM/2CudxN815JnaVINdAwVo75d0ArKB+lQnUmOv/tb2cnzuv52357l6EmSN3Etkb2yTIk4Y9uyMYZ9T4yRa97vPGFIrybgZyuEKaG/EKzWdYh7SC5kpLr181KFIndLP5V4cAp3wFIp2YrdtxdDN0rBHzl7uIwrbbZpPEAXwsaZgQpKQvbjhAoutKTximtimq3QeCCBwtc50XvpcN0iqHFLS+ab60hhTbxBWWaZNhpcoNsg0Kcf1klNSoTvee2a64Q8Q==
+    script-signature nGD/x6E96VjHsUQ4d38dLegUNDaFSMHAkKVj7p90INfb1WSIl+IafqN3JQ4aF1WPBO7U1a4K5Z9xPfdiKZ9tw6tyYT3RXuZ3j3fvDjl7JKa72eCb4NcNAfiE83OXktxXq5/2b0LfrNW6o7ZvSheoxzd3l6yIlpYjrkgvCVzKmxGkf+8JHwF3PZ3+98LNaLQaIrf2x67iNQuHoGDNl3k8oV1tTqoYok2kVpoh7rkoAwQawn8pD/+uy83+fRwfpCRJF/5uYsGGayfV9hTYxqu2f7m3dDvabwO8iRAc7PuuJM3TP3afNg9bHePoVWbD1FKsacuntApZY9SxZQ93FUXK7A==
     signing-key /Common/f5-irule
 }
