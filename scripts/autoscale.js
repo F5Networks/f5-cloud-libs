@@ -315,11 +315,12 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                                 && parseInt(results.executionTime, 10) < options.autoscaleTimeout) {
                                 util.logAndExit('Another autoscale process already running. ' +
                                     'Exiting.', 'warn', 1);
-                            } else {
-                                logger.info('Terminating the autoscale script execution.');
-                                util.terminateProcessById(results.pid);
-                                util.logAndExit('Long running autoscale processed terminated. Exiting...');
+                                return q.reject('Another autoscale process already running.');
                             }
+                            logger.info('Terminating the autoscale script execution.');
+                            util.terminateProcessById(results.pid);
+                            util.logAndExit('Long running autoscale processed terminated. Exiting...');
+                            return q.reject('Long running autoscale processed terminated. Exiting...');
                         }
                         return q();
                     })
@@ -346,7 +347,10 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         if (Object.keys(externalTag).length === 0) {
                             externalTag = undefined;
                         }
-                        return cloudProvider.getInstances({ externalTag });
+                        return cloudProvider.getInstances({
+                            externalTag,
+                            instanceId: response
+                        });
                     })
                     .then((response) => {
                         this.instances = response || {};
@@ -354,13 +358,13 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
 
                         if (Object.keys(this.instances).length === 0) {
                             util.logAndExit('Instance list is empty. Exiting.', 'error', 1);
-                            return q();
+                            return q.reject('Instance list is empty. Exiting.');
                         }
 
                         this.instance = this.instances[this.instanceId];
                         if (!this.instance) {
                             util.logAndExit('Our instance ID is not in instance list. Exiting', 'error', 1);
-                            return q();
+                            return q.reject('Our instance ID is not in instance list. Exiting');
                         }
 
                         this.instance.status = this.instance.status || AutoscaleInstance.INSTANCE_STATUS_OK;
@@ -369,6 +373,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER
                             && !isMasterExpired(this.instance)) {
                             util.logAndExit('Currently becoming master. Exiting.', 'info');
+                            return q.reject('Currently becoming master. Exiting.');
                         }
 
                         if (optionsForTest.bigIp) {
