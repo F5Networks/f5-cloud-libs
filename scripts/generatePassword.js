@@ -31,9 +31,8 @@ const KEYS = require('../lib/sharedConstants').KEYS;
     const runner = {
         run(argv) {
             let passwordPromise;
-
             options
-                .version('4.19.0')
+                .version('4.20.0')
                 .option(
                     '--length <password_length>',
                     'Length of password. Default 32.',
