@@ -33,7 +33,7 @@ const commonOptions = require('./commonOptions');
 const BACKUP = require('../lib/sharedConstants').BACKUP;
 
 (function run() {
-    const MAX_DISCONNECTED_MS = 3 * 60000; // 3 minute
+    const DEFAULT_MAX_DISCONNECTED_MS = 3 * 60000; // 3 minute
     const MIN_MS_BETWEEN_JOIN_REQUESTS = 5 * 60000; // 5 minutes
     const MASTER_FILE_PATH = '/config/cloud/master';
 
@@ -215,6 +215,11 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         'Number of minutes after which autoscale process should be killed',
                         DEFAULT_AUTOSCALE_TIMEOUT_IN_MINUTES
                     )
+                    .option(
+                        '--master-disconnected-time <master_disconnected_time>',
+                        'Number of minutes after which autoscale process should be killed',
+                        DEFAULT_MAX_DISCONNECTED_MS
+                    )
                     .parse(argv);
                 /* eslint-enable max-len */
 
@@ -371,7 +376,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         logger.silly('Instance status:', this.instance.status);
 
                         if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER
-                            && !isMasterExpired(this.instance)) {
+                            && !isMasterExpired(this.instance, options)) {
                             util.logAndExit('Currently becoming master. Exiting.', 'info');
                             return q.reject('Currently becoming master. Exiting.');
                         }
@@ -452,7 +457,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                     .then(() => {
                         // If the master is not visible, check to see if it's been gone
                         // for a while or if this is a random error
-                        if (masterInstance && !masterBad && isMasterExpired(this.instance)) {
+                        if (masterInstance && !masterBad && isMasterExpired(this.instance, options)) {
                             masterBad = true;
                             masterBadReason = 'master is expired';
                         }
@@ -1097,11 +1102,8 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                 logger.debug(`Update instance metadata; lastBackUp to ${this.instance.lastBackup}`);
                 return provider.putInstance(clusterMetadata.instanceId, this.instance);
             })
-            .then((response) => {
-                if (response) {
-                    return q.resolve();
-                }
-                return q.reject('Problem with updating the lastBackup date in instance metadata');
+            .then(() => {
+                return q.resolve();
             })
             .catch((err) => {
                 logger.info('Error backing up ucs', err);
@@ -1157,8 +1159,12 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
             })
             .then(() => {
                 // If we loaded UCS, re-initialize encryption so our keys
-                // match each other
+                // match each other and update lastBackup
                 if (hasUcs) {
+                    if (this.instance.lastBackup === new Date(1970, 1, 1).getTime()) {
+                        logger.silly('setting lastBackup to current time after loading UCS');
+                        this.instance.lastBackup = new Date().getTime();
+                    }
                     return initEncryption.call(this, provider, bigIp);
                 }
                 return q();
@@ -1566,10 +1572,11 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
      * amount of time.
      *
      * @param {Object} instance - instance as returned by getInstances
+     * @param {Object} options
      *
      * @returns {Boolean} Whether or not the master status has been bad for too long
      */
-    function isMasterExpired(instance) {
+    function isMasterExpired(instance, options) {
         const masterStatus = instance.masterStatus || {};
         let isExpired = false;
         let disconnectedMs;
@@ -1577,7 +1584,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         if (masterStatus.status !== CloudProvider.STATUS_OK) {
             disconnectedMs = new Date() - new Date(masterStatus.lastStatusChange);
             logger.silly('master has been disconnected for', disconnectedMs.toString(), 'ms');
-            if (disconnectedMs > MAX_DISCONNECTED_MS) {
+            if (disconnectedMs > options.masterDisconnectedTime) {
                 logger.info('master has been disconnected for too long (', disconnectedMs.toString(), 'ms )');
                 isExpired = true;
             }
