@@ -41,6 +41,7 @@ Does initial configuration and provisioning of a BIG-IP.
         --sku-keyword-1 [sku_keyword_1]                                                                                                                                                                                                          skuKeyword1 parameter for CLPv2 licensing. Default none.
         --sku-keyword-2 [sku_keyword_2]                                                                                                                                                                                                          skuKeyword2 parameter for CLPv2 licensing. Default none.
         --unit-of-measure [unit_of_measure]                                                                                                                                                                                                      unitOfMeasure parameter for CLPv2 licensing. Default none.
+        --tenant [tenant]
         --big-ip-mgmt-address <big_ip_address>                                                                                                                                                                                                   IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.
         --big-ip-mgmt-port <big_ip_port>                                                                                                                                                                                                         Port for the management address. Use this if the BIG-IP is not reachable from BIG-IQ via the port used in --port
         --no-unreachable                                                                                                                                                                                                                         Do not use the unreachable API even if it is supported by BIG-IQ.
@@ -165,6 +166,8 @@ Runs autoscale code to elect master and cluster
         --dns-app-port <port>                              Port on which application is listening on for health check
         --dns-provider-options <dns_provider_options>      Options specific to dns_provider. Ex: param1:value1,param2:value2 (default: {})
     --max-ucs-files <max_ucs_files_to_save>            When running cluster action backup-ucs, maximum number of backup files to keep. (default: 7)
+    --autoscale-timeout <autoscale_timeout>            Number of minutes after which autoscale process execution should be terminated
+    --master-disconnected-time <master_disconnected_time>  Time (in milliseconds) after which primary host is considered to be expired
     -h, --help                                         output usage information
 ## network.js
 
