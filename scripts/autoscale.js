@@ -1125,14 +1125,6 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         const promises = [];
         logger.info('Becoming master.');
         logger.info('Checking if need to restore UCS.');
-        let previousMasterLastBackupTime = 0;
-        // Getting lastBackup time for previous master
-        Object.keys(this.instances).forEach((instanceId) => {
-            if (this.instances[instanceId].isMaster) {
-                previousMasterLastBackupTime = this.instances[instanceId].lastBackup;
-            }
-        });
-
         /*
              - By default, lastBackup time is set to the begining of epoch (i.e. 2678400000)
              - When backup created, lastBackup value will be set to time of backup
@@ -1140,9 +1132,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
              - lastBackup will be used to confirm if a host was in-sync with previous master to
                check if ucs restore is needed to copy over custom configs
          */
-        if ((this.instance.lastBackup !== previousMasterLastBackupTime &&
-            previousMasterLastBackupTime === new Date(1970, 1, 1).getTime()) ||
-            this.instance.lastBackup === new Date(1970, 1, 1).getTime()) {
+        if (this.instance.lastBackup === new Date(1970, 1, 1).getTime()) {
             logger.silly('will attempt to restore ucs; ' +
                 'this instance never was in synced with previous master');
             promises.push(provider.getStoredUcs());
@@ -1158,13 +1148,12 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                 return q();
             })
             .then(() => {
+                logger.silly('setting lastBackup to current time since this instnace is master now.');
+                // this is done to prefer running config
+                this.instance.lastBackup = new Date().getTime();
                 // If we loaded UCS, re-initialize encryption so our keys
                 // match each other and update lastBackup
                 if (hasUcs) {
-                    if (this.instance.lastBackup === new Date(1970, 1, 1).getTime()) {
-                        logger.silly('setting lastBackup to current time after loading UCS');
-                        this.instance.lastBackup = new Date().getTime();
-                    }
                     return initEncryption.call(this, provider, bigIp);
                 }
                 return q();
