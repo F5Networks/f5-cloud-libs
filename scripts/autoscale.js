@@ -217,7 +217,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                     )
                     .option(
                         '--master-disconnected-time <master_disconnected_time>',
-                        'Number of minutes after which autoscale process should be killed',
+                        'Time (in milliseconds) after which primary host is considered to be expired',
                         DEFAULT_MAX_DISCONNECTED_MS
                     )
                     .parse(argv);
