@@ -59,7 +59,8 @@ const cryptoUtil = require('../lib/cryptoUtil');
                 'passwordUrl',
                 'skuKeyword1',
                 'skuKeyword2',
-                'unitOfMeasure'
+                'unitOfMeasure',
+                'tenant'
             ];
             const REQUIRED_OPTIONS = ['host'];
             const globalSettings = {};
@@ -195,6 +196,10 @@ const cryptoUtil = require('../lib/cryptoUtil');
                     .option(
                         '    --unit-of-measure [unit_of_measure]',
                         '    unitOfMeasure parameter for CLPv2 licensing. Default none.'
+                    )
+                    .option(
+                        '    --tenant [tenant]',
+                        '    tenant parameter for CLPv2 licensing. Default none.'
                     )
                     .option(
                         '    --big-ip-mgmt-address <big_ip_address>',
@@ -784,6 +789,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
                                     skuKeyword1: options.skuKeyword1,
                                     skuKeyword2: options.skuKeyword2,
                                     unitOfMeasure: options.unitOfMeasure,
+                                    tenant: options.tenant,
                                     noUnreachable: !options.unreachable
                                 }
                             );
