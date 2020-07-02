@@ -35,7 +35,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
 (function run() {
     const DEFAULT_MAX_DISCONNECTED_MS = 3 * 60000; // 3 minute
     const MIN_MS_BETWEEN_JOIN_REQUESTS = 5 * 60000; // 5 minutes
-    const MASTER_FILE_PATH = '/config/cloud/master';
+    const PRIMARY_FILE_PATH = '/config/cloud/master';
 
     const PASSPHRASE_LENGTH = 18;
 
@@ -84,11 +84,11 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
             let bigIp;
             let loggableArgs;
             let logFileName;
-            let masterInstance;
-            let masterIid;
-            let masterBad;
-            let masterBadReason;
-            let newMaster;
+            let primaryInstance;
+            let primaryIid;
+            let primaryBad;
+            let primaryBadReason;
+            let newPrimary;
             let cloudProvider;
             let dnsProvider;
 
@@ -137,7 +137,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                     )
                     .option(
                         '--block-sync',
-                        'If this device is master, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.'
+                        'If this device is primary, do not allow other devices to sync to us. This prevents other devices from syncing to it until we are called again with --cluster-action unblock-sync.'
                     )
                     .option(
                         '--static',
@@ -216,7 +216,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         DEFAULT_AUTOSCALE_TIMEOUT_IN_MINUTES
                     )
                     .option(
-                        '--master-disconnected-time <master_disconnected_time>',
+                        '--primary-disconnected-time <primary_disconnected_time>',
                         'Time (in milliseconds) after which primary host is considered to be expired',
                         DEFAULT_MAX_DISCONNECTED_MS
                     )
@@ -375,10 +375,10 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         this.instance.status = this.instance.status || AutoscaleInstance.INSTANCE_STATUS_OK;
                         logger.silly('Instance status:', this.instance.status);
 
-                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER
-                            && !isMasterExpired(this.instance, options)) {
-                            util.logAndExit('Currently becoming master. Exiting.', 'info');
-                            return q.reject('Currently becoming master. Exiting.');
+                        if (this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_PRIMARY
+                            && !isPrimaryExpired(this.instance, options)) {
+                            util.logAndExit('Currently becoming primary. Exiting.', 'info');
+                            return q.reject('Currently becoming primary. Exiting.');
                         }
 
                         if (optionsForTest.bigIp) {
@@ -422,85 +422,86 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                     .then(() => {
                         let status = CloudProvider.STATUS_UNKNOWN;
 
-                        logger.info('Determining master instance id.');
-                        masterInstance = getMasterInstance(this.instances);
+                        logger.info('Determining primary instance id.');
+                        primaryInstance = getPrimaryInstance(this.instances);
 
-                        if (masterInstance) {
-                            if (!masterInstance.instance.versionOk) {
-                                masterBadReason = 'version not most recent in group';
-                                logger.silly(masterBadReason);
+                        if (primaryInstance) {
+                            if (!primaryInstance.instance.versionOk) {
+                                primaryBadReason = 'version not most recent in group';
+                                logger.silly(primaryBadReason);
                                 status = CloudProvider.STATUS_VERSION_NOT_UP_TO_DATE;
-                                masterBad = true;
-                            } else if (!isMasterExternalValueOk(masterInstance.id, this.instances)) {
-                                // if there are external instances in the mix, make sure the master
+                                primaryBad = true;
+                            } else if (!isPrimaryExternalValueOk(primaryInstance.id, this.instances)) {
+                                // if there are external instances in the mix, make sure the primary
                                 // is one of them
-                                masterBadReason = 'master is not external, but there are external instances';
-                                logger.silly(masterBadReason);
+                                primaryBadReason = 'primary is not external, ' +
+                                                   'but there are external instances';
+                                logger.silly(primaryBadReason);
                                 status = CloudProvider.STATUS_NOT_EXTERNAL;
-                                masterBad = true;
-                            } else if (!masterInstance.instance.providerVisible) {
+                                primaryBad = true;
+                            } else if (!primaryInstance.instance.providerVisible) {
                                 // The cloud provider does not currently see this instance
                                 status = CloudProvider.STATUS_NOT_IN_CLOUD_LIST;
                             } else {
-                                masterIid = masterInstance.id;
+                                primaryIid = primaryInstance.id;
 
-                                if (this.instanceId === masterIid) {
-                                    this.instance.isMaster = true;
+                                if (this.instanceId === primaryIid) {
+                                    this.instance.isPrimary = true;
                                 }
 
                                 status = CloudProvider.STATUS_OK;
                             }
                         }
 
-                        return updateMasterStatus.call(this, cloudProvider, status);
+                        return updatePrimaryStatus.call(this, cloudProvider, status);
                     })
                     .then(() => {
-                        // If the master is not visible, check to see if it's been gone
+                        // If the primary is not visible, check to see if it's been gone
                         // for a while or if this is a random error
-                        if (masterInstance && !masterBad && isMasterExpired(this.instance, options)) {
-                            masterBad = true;
-                            masterBadReason = 'master is expired';
+                        if (primaryInstance && !primaryBad && isPrimaryExpired(this.instance, options)) {
+                            primaryBad = true;
+                            primaryBadReason = 'primary is expired';
                         }
 
-                        if (masterIid) {
-                            logger.info('Possible master ID:', masterIid);
-                            return cloudProvider.isValidMaster(masterIid, this.instances);
-                        } else if (masterBad) {
-                            logger.info('Old master no longer valid:', masterBadReason);
+                        if (primaryIid) {
+                            logger.info('Possible primary ID:', primaryIid);
+                            return cloudProvider.isValidPrimary(primaryIid, this.instances);
+                        } else if (primaryBad) {
+                            logger.info('Old primary no longer valid:', primaryBadReason);
                             return q();
                         }
 
-                        logger.info('No master ID found.');
+                        logger.info('No primary ID found.');
                         return q();
                     })
-                    .then((validMaster) => {
+                    .then((validPrimary) => {
                         logger.silly(
-                            'validMaster:',
-                            validMaster,
-                            ', masterInstance: ',
-                            masterInstance,
-                            ', masterBad:',
-                            masterBad
+                            'validPrimary:',
+                            validPrimary,
+                            ', primaryInstance: ',
+                            primaryInstance,
+                            ', primaryBad:',
+                            primaryBad
                         );
 
-                        if (validMaster) {
-                            // true validMaster means we have a valid masterIid, just pass it on
-                            logger.info('Valid master ID:', masterIid);
-                            return masterIid;
+                        if (validPrimary) {
+                            // true validPrimary means we have a valid primaryIid, just pass it on
+                            logger.info('Valid primary ID:', primaryIid);
+                            return primaryIid;
                         }
 
-                        // false or undefined validMaster means no masterIid or invalid masterIid
-                        if (validMaster === false) {
-                            logger.info('Invalid master ID:', masterIid);
-                            cloudProvider.masterInvalidated(masterIid);
+                        // false or undefined validPrimary means no primaryIid or invalid primaryIid
+                        if (validPrimary === false) {
+                            logger.info('Invalid primary ID:', primaryIid);
+                            cloudProvider.primaryInvalidated(primaryIid);
                         }
 
-                        // if no master, master is visible or expired, elect, otherwise, wait
-                        if (!masterInstance ||
-                            masterInstance.instance.providerVisible ||
-                            masterBad) {
-                            logger.info('Electing master.');
-                            return cloudProvider.electMaster(this.instances);
+                        // if no primary, primary is visible or expired, elect, otherwise, wait
+                        if (!primaryInstance ||
+                            primaryInstance.instance.providerVisible ||
+                            primaryBad) {
+                            logger.info('Electing primary.');
+                            return cloudProvider.electPrimary(this.instances);
                         }
                         return q();
                     })
@@ -508,22 +509,22 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         const now = new Date();
 
                         if (response) {
-                            // we just elected a master
-                            masterIid = response;
-                            this.instance.isMaster = (this.instanceId === masterIid);
-                            logger.info('Using master ID:', masterIid);
+                            // we just elected a primary
+                            primaryIid = response;
+                            this.instance.isPrimary = (this.instanceId === primaryIid);
+                            logger.info('Using primary ID:', primaryIid);
                             logger.info(
                                 'This instance',
-                                (this.instance.isMaster ? 'is' : 'is not'),
-                                'master'
+                                (this.instance.isPrimary ? 'is' : 'is not'),
+                                'primary'
                             );
 
-                            if (this.instance.masterStatus.instanceId !== masterIid) {
-                                logger.info('New master elected');
-                                newMaster = true;
+                            if (this.instance.primaryStatus.instanceId !== primaryIid) {
+                                logger.info('New primary elected');
+                                newPrimary = true;
 
-                                this.instance.masterStatus = {
-                                    instanceId: masterIid,
+                                this.instance.primaryStatus = {
+                                    instanceId: primaryIid,
                                     status: CloudProvider.STATUS_OK,
                                     lastUpdate: now,
                                     lastStatusChange: now
@@ -535,40 +536,40 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         return q();
                     })
                     .then(() => {
-                        if (this.instance.isMaster && newMaster) {
-                            this.instance.status = AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER;
+                        if (this.instance.isPrimary && newPrimary) {
+                            this.instance.status = AutoscaleInstance.INSTANCE_STATUS_BECOMING_PRIMARY;
                             return cloudProvider.putInstance(this.instanceId, this.instance);
                         }
                         return q();
                     })
                     .then(() => {
-                        if (this.instance.isMaster && newMaster) {
-                            return becomeMaster.call(this, cloudProvider, bigIp, options);
+                        if (this.instance.isPrimary && newPrimary) {
+                            return becomePrimary.call(this, cloudProvider, bigIp, options);
                         }
                         return q();
                     })
                     .then((response) => {
                         if (
-                            this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_MASTER &&
+                            this.instance.status === AutoscaleInstance.INSTANCE_STATUS_BECOMING_PRIMARY &&
                             response === true
                         ) {
                             this.instance.status = AutoscaleInstance.INSTANCE_STATUS_OK;
-                            logger.silly('Became master');
+                            logger.silly('Became primary');
                             return cloudProvider.putInstance(this.instanceId, this.instance);
                         } else if (response === false) {
-                            logger.warn('Error writing master file');
+                            logger.warn('Error writing primary file');
                         }
                         return q();
                     })
                     .then(() => {
-                        if (masterIid && this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
-                            return cloudProvider.masterElected(masterIid);
+                        if (primaryIid && this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
+                            return cloudProvider.primaryElected(primaryIid);
                         }
                         return q();
                     })
                     .then(() => {
-                        if (masterIid && this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
-                            return cloudProvider.tagMasterInstance(masterIid, this.instances);
+                        if (primaryIid && this.instance.status === AutoscaleInstance.INSTANCE_STATUS_OK) {
+                            return cloudProvider.tagPrimaryInstance(primaryIid, this.instances);
                         }
                         return q();
                     })
@@ -582,7 +583,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                                     this,
                                     cloudProvider,
                                     bigIp,
-                                    masterIid,
+                                    primaryIid,
                                     options
                                 );
                             case 'update':
@@ -599,8 +600,8 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                                             this,
                                             cloudProvider,
                                             bigIp,
-                                            masterIid,
-                                            masterBad || newMaster,
+                                            primaryIid,
+                                            primaryBad || newPrimary,
                                             options
                                         );
                                     });
@@ -711,7 +712,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
      *
      * Called with this bound to the caller
      */
-    function handleJoin(provider, bigIp, masterIid, options) {
+    function handleJoin(provider, bigIp, primaryIid, options) {
         const deferred = q.defer();
 
         logger.info('Cluster action JOIN');
@@ -721,12 +722,12 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
             .then(() => {
                 let promise;
 
-                // If we are master and are replacing an expired master, other instances
+                // If we are primary and are replacing an expired primary, other instances
                 // will join to us. Just set our config sync ip.
-                if (this.instance.isMaster) {
+                if (this.instance.isPrimary) {
                     if (!provider.hasFeature(CloudProvider.FEATURE_MESSAGING)) {
-                        logger.info('Storing master credentials.');
-                        promise = provider.putMasterCredentials();
+                        logger.info('Storing primary credentials.');
+                        promise = provider.putPrimaryCredentials();
                     } else {
                         promise = q();
                     }
@@ -751,21 +752,21 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                             throw err;
                         });
                 } else {
-                    // We're not the master
+                    // We're not the primary
 
-                    // Make sure the master file is not on our disk
-                    if (fs.existsSync(MASTER_FILE_PATH)) {
-                        fs.unlinkSync(MASTER_FILE_PATH);
+                    // Make sure the primary file is not on our disk
+                    if (fs.existsSync(PRIMARY_FILE_PATH)) {
+                        fs.unlinkSync(PRIMARY_FILE_PATH);
                     }
 
                     // Configure cm configsync-ip on this BIG-IP node and join the cluster
                     logger.info('Setting config sync IP.');
                     bigIp.cluster.configSyncIp(this.instance.privateIp)
                         .then(() => {
-                            // If there is a master, join it. Otherwise wait for an update event
-                            // when we have a master.
-                            if (masterIid) {
-                                return joinCluster.call(this, provider, bigIp, masterIid, options);
+                            // If there is a primary, join it. Otherwise wait for an update event
+                            // when we have a primary.
+                            if (primaryIid) {
+                                return joinCluster.call(this, provider, bigIp, primaryIid, options);
                             }
                             return q();
                         })
@@ -787,27 +788,27 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
      *
      * Called with this bound to the caller
      */
-    function handleUpdate(provider, bigIp, masterIid, masterBadOrNew, options) {
+    function handleUpdate(provider, bigIp, primaryIid, primaryBadOrNew, options) {
         logger.info('Cluster action UPDATE');
 
-        if (this.instance.isMaster && !masterBadOrNew) {
+        if (this.instance.isPrimary && !primaryBadOrNew) {
             return checkClusteredDevices.call(this, provider, bigIp);
-        } else if (!this.instance.isMaster) {
-            // We're not the master, make sure the master file is not on our disk
-            if (fs.existsSync(MASTER_FILE_PATH)) {
-                fs.unlinkSync(MASTER_FILE_PATH);
+        } else if (!this.instance.isPrimary) {
+            // We're not the primary, make sure the primary file is not on our disk
+            if (fs.existsSync(PRIMARY_FILE_PATH)) {
+                fs.unlinkSync(PRIMARY_FILE_PATH);
             }
 
-            // If there is a new master, join the cluster
-            if (masterBadOrNew && masterIid) {
-                return joinCluster.call(this, provider, bigIp, masterIid, options);
-            } else if (masterIid) {
+            // If there is a new primary, join the cluster
+            if (primaryBadOrNew && primaryIid) {
+                return joinCluster.call(this, provider, bigIp, primaryIid, options);
+            } else if (primaryIid) {
                 // Double check that we are clustered
                 return bigIp.list('/tm/cm/trust-domain/Root')
                     .then((response) => {
                         if (!response || response.status === 'standalone') {
                             logger.info('This instance is not in cluster. Requesting join.');
-                            return joinCluster.call(this, provider, bigIp, masterIid, options);
+                            return joinCluster.call(this, provider, bigIp, primaryIid, options);
                         }
 
                         return q();
@@ -831,11 +832,11 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
 
         let messageMetadata = [];
 
-        if (this.instance.isMaster && !options.blockSync) {
+        if (this.instance.isPrimary && !options.blockSync) {
             actions.push(CloudProvider.MESSAGE_ADD_TO_CLUSTER);
         }
 
-        if (!this.instance.isMaster) {
+        if (!this.instance.isPrimary) {
             actions.push(CloudProvider.MESSAGE_SYNC_COMPLETE);
         }
 
@@ -1048,9 +1049,9 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
     }
 
     function handleBackupUcs(provider, clusterMetadata, bigIp, options) {
-        if (!this.instance.isMaster
+        if (!this.instance.isPrimary
             || this.instance.status !== AutoscaleInstance.INSTANCE_STATUS_OK) {
-            logger.debug('not master or not ready, skipping ucs backup');
+            logger.debug('not primary or not ready, skipping ucs backup');
             return q();
         }
 
@@ -1116,28 +1117,28 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
     }
 
     /**
-     * Handles becoming master.
+     * Handles becoming primary.
      *
      * @returns {Promise} promise which is resolved tieh true if successful
      */
-    function becomeMaster(provider, bigIp, options) {
+    function becomePrimary(provider, bigIp, options) {
         let hasUcs = false;
         const promises = [];
-        logger.info('Becoming master.');
+        logger.info('Becoming primary.');
         logger.info('Checking if need to restore UCS.');
         /*
              - By default, lastBackup time is set to the begining of epoch (i.e. 2678400000)
              - When backup created, lastBackup value will be set to time of backup
-             - lastBackup will be updated on each in-sync host to match master lastBackup time
-             - lastBackup will be used to confirm if a host was in-sync with previous master to
+             - lastBackup will be updated on each in-sync host to match primary lastBackup time
+             - lastBackup will be used to confirm if a host was in-sync with previous primary to
                check if ucs restore is needed to copy over custom configs
          */
         if (this.instance.lastBackup === new Date(1970, 1, 1).getTime()) {
             logger.silly('will attempt to restore ucs; ' +
-                'this instance never was in synced with previous master');
+                'this instance never was in synced with previous primary');
             promises.push(provider.getStoredUcs());
         } else {
-            logger.silly('no need to restore ucs; this instance was in sync with previous master');
+            logger.silly('no need to restore ucs; this instance was in sync with previous primary');
         }
         return Promise.all(promises)
             .then((response) => {
@@ -1148,7 +1149,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                 return q();
             })
             .then(() => {
-                logger.silly('setting lastBackup to current time since this instnace is master now.');
+                logger.silly('setting lastBackup to current time since this instnace is primary now.');
                 // this is done to prefer running config
                 this.instance.lastBackup = new Date().getTime();
                 // If we loaded UCS, re-initialize encryption so our keys
@@ -1200,15 +1201,15 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                 );
             })
             .then(() => {
-                logger.info('Writing master file.');
-                return writeMasterFile(hasUcs);
+                logger.info('Writing primary file.');
+                return writePrimaryFile(hasUcs);
             });
     }
 
     /**
      * Called with this bound to the caller
      */
-    function joinCluster(provider, bigIp, masterIid, options) {
+    function joinCluster(provider, bigIp, primaryIid, options) {
         const TEMP_USER_NAME_LENGHTH = 10; // these are hex bytes - user name will be 20 chars
         const TEMP_USER_PASSWORD_LENGTH = 24; // use a multiple of 6 to prevent '=' at the end
 
@@ -1218,11 +1219,11 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         let tempPassword;
         let tempUser;
 
-        if (!masterIid) {
-            return q.reject(new Error('Must have a master ID to join'));
+        if (!primaryIid) {
+            return q.reject(new Error('Must have a primary ID to join'));
         }
 
-        // don't send request too often - master might be in process of syncing
+        // don't send request too often - primary might be in process of syncing
         this.instance.lastJoinRequest = this.instance.lastJoinRequest || new Date(1970, 0);
         const elapsedMsFromLastJoin = now - new Date(this.instance.lastJoinRequest);
         if (elapsedMsFromLastJoin < MIN_MS_BETWEEN_JOIN_REQUESTS) {
@@ -1280,14 +1281,14 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                         deviceGroup: options.deviceGroup
                     };
 
-                    return prepareMessageData.call(this, provider, masterIid, JSON.stringify(messageData));
+                    return prepareMessageData.call(this, provider, primaryIid, JSON.stringify(messageData));
                 })
                 .then((preppedData) => {
                     if (preppedData) {
                         return provider.sendMessage(
                             CloudProvider.MESSAGE_ADD_TO_CLUSTER,
                             {
-                                toInstanceId: masterIid,
+                                toInstanceId: primaryIid,
                                 fromInstanceId: this.instanceId,
                                 data: preppedData
                             }
@@ -1303,7 +1304,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         }
 
         // not using messaging, just send the request via iControl REST
-        const masterInstance = this.instances[masterIid];
+        const primaryInstance = this.instances[primaryIid];
 
         this.instance.lastJoinRequest = now;
         return provider.putInstance(this.instanceId, this.instance)
@@ -1320,13 +1321,13 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
             })
             .then((response) => {
                 logger.debug(response);
-                return provider.getMasterCredentials(masterInstance.mgmtIp, options.port);
+                return provider.getPrimaryCredentials(primaryInstance.mgmtIp, options.port);
             })
             .then((credentials) => {
                 logger.debug('Sending request to join cluster.');
                 return bigIp.cluster.joinCluster(
                     options.deviceGroup,
-                    masterInstance.mgmtIp,
+                    primaryInstance.mgmtIp,
                     credentials.username,
                     credentials.password,
                     false,
@@ -1471,24 +1472,24 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
     }
 
     /**
-     * Gets the instance marked as master
+     * Gets the instance marked as primary
      *
      * @param {Object} instances - Instances map
      *
-     * @returns {Object} master instance if one is found
+     * @returns {Object} primary instance if one is found
      *
      *                   {
      *                       id: instance_id,
      *                       instance: instance_data
      *                   }
      */
-    function getMasterInstance(instances) {
+    function getPrimaryInstance(instances) {
         let instanceId;
 
         const instanceIds = Object.keys(instances);
         for (let i = 0; i < instanceIds.length; i++) {
             instanceId = instanceIds[i];
-            if (instances[instanceId].isMaster) {
+            if (instances[instanceId].isPrimary) {
                 return {
                     id: instanceId,
                     instance: instances[instanceId]
@@ -1499,7 +1500,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
     }
 
     /**
-     * Checks that master instance has the most recent
+     * Checks that primary instance has the most recent
      * version of all the BIG-IP instances
      *
      * @param {Object} instances - Instances map
@@ -1526,17 +1527,17 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
     }
 
     /**
-     * Checks that if there are external instances, the master is
+     * Checks that if there are external instances, the primary is
      * one of them
      *
-     * @param {String} masterId  - Instance ID of master
+     * @param {String} primaryId  - Instance ID of primary
      * @param {Object} instances - Instances map
      *
      * @returns {Boolean} True if there are no external instances or
-     *                    if there are external instances and the master is
+     *                    if there are external instances and the primary is
      *                    one of them
      */
-    function isMasterExternalValueOk(masterId, instances) {
+    function isPrimaryExternalValueOk(primaryId, instances) {
         const instanceIds = Object.keys(instances);
         let instance;
         let hasExternal;
@@ -1550,44 +1551,45 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         }
 
         if (hasExternal) {
-            return !!instances[masterId].external;
+            return !!instances[primaryId].external;
         }
 
         return true;
     }
 
     /*
-     * Determines if the master status has been bad for more than a certain
+     * Determines if the primary status has been bad for more than a certain
      * amount of time.
      *
      * @param {Object} instance - instance as returned by getInstances
      * @param {Object} options
      *
-     * @returns {Boolean} Whether or not the master status has been bad for too long
+     * @returns {Boolean} Whether or not the primary status has been bad for too long
      */
-    function isMasterExpired(instance, options) {
-        const masterStatus = instance.masterStatus || {};
+    function isPrimaryExpired(instance, options) {
+        const primaryStatus = instance.primaryStatus || {};
         let isExpired = false;
         let disconnectedMs;
 
-        if (masterStatus.status !== CloudProvider.STATUS_OK) {
-            disconnectedMs = new Date() - new Date(masterStatus.lastStatusChange);
-            logger.silly('master has been disconnected for', disconnectedMs.toString(), 'ms');
-            if (disconnectedMs > options.masterDisconnectedTime) {
-                logger.info('master has been disconnected for too long (', disconnectedMs.toString(), 'ms )');
+        if (primaryStatus.status !== CloudProvider.STATUS_OK) {
+            disconnectedMs = new Date() - new Date(primaryStatus.lastStatusChange);
+            logger.silly('primary has been disconnected for', disconnectedMs.toString(), 'ms');
+            if (disconnectedMs > options.primaryDisconnectedTime) {
+                logger.info('primary has been disconnected for too long (',
+                    disconnectedMs.toString(), 'ms )');
                 isExpired = true;
             }
         }
         return isExpired;
     }
 
-    function updateMasterStatus(provider, status) {
+    function updatePrimaryStatus(provider, status) {
         const now = new Date();
-        this.instance.masterStatus = this.instance.masterStatus || {};
-        this.instance.masterStatus.lastUpdate = now;
-        if (this.instance.masterStatus.status !== status) {
-            this.instance.masterStatus.status = status;
-            this.instance.masterStatus.lastStatusChange = now;
+        this.instance.primaryStatus = this.instance.primaryStatus || {};
+        this.instance.primaryStatus.lastUpdate = now;
+        if (this.instance.primaryStatus.status !== status) {
+            this.instance.primaryStatus.status = status;
+            this.instance.primaryStatus.lastStatusChange = now;
         }
         return provider.putInstance(this.instanceId, this.instance);
     }
@@ -1711,19 +1713,19 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         return deferred.promise;
     }
 
-    function writeMasterFile(ucsLoaded) {
+    function writePrimaryFile(ucsLoaded) {
         const deferred = q.defer();
-        const masterInfo = { ucsLoaded };
+        const primaryInfo = { ucsLoaded };
 
-        // Mark ourself as master on disk so other scripts have access to this info
-        fs.writeFile(MASTER_FILE_PATH, JSON.stringify(masterInfo), (err) => {
+        // Mark ourself as primary on disk so other scripts have access to this info
+        fs.writeFile(PRIMARY_FILE_PATH, JSON.stringify(primaryInfo), (err) => {
             if (err) {
-                logger.warn('Error saving master file', err);
+                logger.warn('Error saving primary file', err);
                 deferred.reject(err);
                 return;
             }
 
-            logger.silly('Wrote master file', MASTER_FILE_PATH, masterInfo);
+            logger.silly('Wrote primary file', PRIMARY_FILE_PATH, primaryInfo);
             deferred.resolve(true);
         });
 

@@ -8,8 +8,8 @@
     coapi_login("admin");
     $query_result = coapi_query("master_key");
     $row = coapi_fetch($query_result);
-    $master_key = $row["master_key"];
-    $plain = f5_decrypt_string($argv[1], $master_key);
+    $primary_key = $row["master_key"];
+    $plain = f5_decrypt_string($argv[1], $primary_key);
     echo $plain;
     return 0;
 ?>

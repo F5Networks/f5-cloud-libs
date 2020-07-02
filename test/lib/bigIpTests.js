@@ -421,7 +421,7 @@ module.exports = {
                     test.strictEqual(bigIp.password, password);
                     test.strictEqual(bigIp.port, port);
                     // Test that for BIG-IP, we do not add in the BIG-IQ mixins
-                    test.strictEqual(bigIp.onboard.isMasterKeySet, undefined);
+                    test.strictEqual(bigIp.onboard.isPrimaryKeySet, undefined);
                 })
                 .catch((err) => {
                     test.ok(false, err);
@@ -461,7 +461,7 @@ module.exports = {
             bigIp.init('host', 'user', 'password')
                 .then(() => {
                     // test that BIG-IQ mixins were added
-                    test.notStrictEqual(bigIp.onboard.isMasterKeySet, undefined);
+                    test.notStrictEqual(bigIp.onboard.isPrimaryKeySet, undefined);
                 })
                 .catch((err) => {
                     test.ok(false, err);

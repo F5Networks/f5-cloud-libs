@@ -169,7 +169,7 @@ def main():
     try:
         tar_original.extractall(path=extract_ucs_dir)
     except IOError as e:
-        sys.exit("I/O Error({0}): {1} - If the latest UCS file is corrupted and/or the current master host is stuck at BECOMING_MASTER state, the corrupted UCS file needs to be deleted as well as master host needs to be terminated to allow re-elect the new master.'".format(e.errno, e.strerror))
+        sys.exit("I/O Error({0}): {1} - If the latest UCS file is corrupted and/or the current primary host is stuck at BECOMING_PRIMARY state, the corrupted UCS file needs to be deleted as well as primary host needs to be terminated to allow re-elect the new primary.'".format(e.errno, e.strerror))
 
 
     bigip_base_file = "/config/bigip_base.conf"

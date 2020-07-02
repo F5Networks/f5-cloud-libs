@@ -108,14 +108,14 @@ module.exports = {
         test.done();
     },
 
-    testUnimplementedElectMaster(test) {
+    testUnimplementedElectPrimary(test) {
         test.throws(() => {
-            testCloudProvider.electMaster();
+            testCloudProvider.electPrimary();
         });
         test.done();
     },
 
-    testUnimplementedGetMasterCredentials: {
+    testUnimplementedGetPrimaryCredentials: {
         tearDown(callback) {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
             callback();
@@ -123,7 +123,7 @@ module.exports = {
 
         testMessagingNotSupported(test) {
             test.throws(() => {
-                testCloudProvider.getMasterCredentials();
+                testCloudProvider.getPrimaryCredentials();
             });
             test.done();
         },
@@ -131,15 +131,15 @@ module.exports = {
         testMessagingSupported(test) {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
             test.doesNotThrow(() => {
-                testCloudProvider.getMasterCredentials();
+                testCloudProvider.getPrimaryCredentials();
             });
             test.done();
         }
     },
 
-    testUnimplementedGetMasterStatus(test) {
+    testUnimplementedGetPrimaryStatus(test) {
         test.doesNotThrow(() => {
-            testCloudProvider.getMasterStatus();
+            testCloudProvider.getPrimaryStatus();
         });
         test.done();
     },
@@ -186,9 +186,9 @@ module.exports = {
         }
     },
 
-    testUnimplementedPutMasterCredentials(test) {
+    testUnimplementedPutPrimaryCredentials(test) {
         test.doesNotThrow(() => {
-            testCloudProvider.putMasterCredentials();
+            testCloudProvider.putPrimaryCredentials();
         });
         test.done();
     },
@@ -229,23 +229,23 @@ module.exports = {
         test.done();
     },
 
-    testUnimplementedIsValidMaster(test) {
+    testUnimplementedIsValidPrimary(test) {
         test.doesNotThrow(() => {
-            testCloudProvider.isValidMaster();
+            testCloudProvider.isValidPrimary();
         });
         test.done();
     },
 
-    testUnimplementedMasterElected(test) {
+    testUnimplementedPrimaryElected(test) {
         test.doesNotThrow(() => {
-            testCloudProvider.masterElected();
+            testCloudProvider.primaryElected();
         });
         test.done();
     },
 
-    testUnimplementedMasterInvalidated(test) {
+    testUnimplementedPrimaryInvalidated(test) {
         test.doesNotThrow(() => {
-            testCloudProvider.masterInvalidated();
+            testCloudProvider.primaryInvalidated();
         });
         test.done();
     },
