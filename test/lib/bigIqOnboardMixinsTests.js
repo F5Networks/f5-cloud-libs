@@ -209,18 +209,18 @@ module.exports = {
         }
     },
 
-    testIsMasterKeySet: {
+    testIsPrimaryKeySet: {
         testIsSet(test) {
             icontrolMock.when(
                 'list',
-                '/cm/shared/secure-storage/masterkey',
+                '/cm/shared/secure-storage/primarykey',
                 {
                     isMkSet: true
                 }
             );
 
             test.expect(1);
-            bigIqOnboardMixins.isMasterKeySet()
+            bigIqOnboardMixins.isPrimaryKeySet()
                 .then((isSet) => {
                     test.ok(isSet);
                 })
@@ -235,14 +235,14 @@ module.exports = {
         testIsNotSet(test) {
             icontrolMock.when(
                 'list',
-                '/cm/shared/secure-storage/masterkey',
+                '/cm/shared/secure-storage/primarykey',
                 {
                     isMkSet: false
                 }
             );
 
             test.expect(1);
-            bigIqOnboardMixins.isMasterKeySet()
+            bigIqOnboardMixins.isPrimaryKeySet()
                 .then((isSet) => {
                     test.ok(!isSet);
                 })
@@ -255,13 +255,13 @@ module.exports = {
         }
     },
 
-    testSetMasterPassphrase(test) {
+    testSetPrimaryPassphrase(test) {
         const passphrase = 'my passphrase';
 
-        bigIqOnboardMixins.setMasterPassphrase(passphrase)
+        bigIqOnboardMixins.setPrimaryPassphrase(passphrase)
             .then(() => {
                 const passphraseRequest =
-                    icontrolMock.getRequest('create', '/cm/shared/secure-storage/masterkey');
+                    icontrolMock.getRequest('create', '/cm/shared/secure-storage/primarykey');
                 test.strictEqual(passphraseRequest.passphrase, passphrase);
             })
             .catch((err) => {
@@ -272,11 +272,11 @@ module.exports = {
             });
     },
 
-    testSetRandomMasterPassphrase(test) {
-        bigIqOnboardMixins.setRandomMasterPassphrase()
+    testSetRandomPrimaryPassphrase(test) {
+        bigIqOnboardMixins.setRandomPrimaryPassphrase()
             .then(() => {
                 const passphraseRequest =
-                    icontrolMock.getRequest('create', '/cm/shared/secure-storage/masterkey');
+                    icontrolMock.getRequest('create', '/cm/shared/secure-storage/primarykey');
                 test.ok(passphraseRequest.passphrase);
             })
             .catch((err) => {

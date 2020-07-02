@@ -443,7 +443,7 @@ if necessary</p>
     
 
     
-    <h4 class="name" id="electMaster"><span class="type-signature">(abstract) </span>electMaster<span class="signature">(instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="electPrimary"><span class="type-signature">(abstract) </span>electPrimary<span class="signature">(instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -451,7 +451,7 @@ if necessary</p>
 
 
 <div class="description">
-    <p>Elects a new master instance from the available instances</p>
+    <p>Elects a new primary instance from the available instances</p>
 </div>
 
 
@@ -567,7 +567,7 @@ if necessary</p>
         
 <div class="param-desc">
     <p>A promise which will be resolved with the instance ID of the
-                   elected master.</p>
+                   elected primary.</p>
 </div>
 
 
@@ -1057,7 +1057,7 @@ itself, stored info that we have in a database, or both.</p>
     <p>A promise which will be resolved with a dictionary of instances
                    keyed by instance ID. Each instance value should be:</p>
 <pre class="prettyprint source"><code>              {
-                  isMaster: &lt;Boolean>,
+                  isPrimary: &lt;Boolean>,
                   hostname: &lt;String>,
                   mgmtIp: &lt;String>,
                   privateIp: &lt;String>,
@@ -1093,7 +1093,7 @@ itself, stored info that we have in a database, or both.</p>
     
 
     
-    <h4 class="name" id="getMasterCredentials"><span class="type-signature">(abstract) </span>getMasterCredentials<span class="signature">(mgmtIp, port)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="getPrimaryCredentials"><span class="type-signature">(abstract) </span>getPrimaryCredentials<span class="signature">(mgmtIp, port)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -1101,11 +1101,11 @@ itself, stored info that we have in a database, or both.</p>
 
 
 <div class="description">
-    <p>Called to retrieve master instance credentials</p>
+    <p>Called to retrieve primary instance credentials</p>
 <p>Must be implemented if FEATURE_MESSAGING is not supported.</p>
 <p>If FEATURE_MESSAGING is not supported, when joining a cluster we need the
-username and password for the master instance.</p>
-<p>If FEATURE_MESSAGING is supported, the master will be sent a message to
+username and password for the primary instance.</p>
+<p>If FEATURE_MESSAGING is supported, the primary will be sent a message to
 add an instance.</p>
 <p>Management IP and port are passed in so that credentials can be
 validated desired.</p>
@@ -1160,7 +1160,7 @@ validated desired.</p>
 
             
 
-            <td class="description last"><p>Management IP of master.</p></td>
+            <td class="description last"><p>Management IP of primary.</p></td>
         </tr>
 
     
@@ -1183,7 +1183,7 @@ validated desired.</p>
 
             
 
-            <td class="description last"><p>Management port of master.</p></td>
+            <td class="description last"><p>Management port of primary.</p></td>
         </tr>
 
     
@@ -1279,7 +1279,7 @@ validated desired.</p>
     
 
     
-    <h4 class="name" id="getMasterStatus"><span class="type-signature"></span>getMasterStatus<span class="signature">()</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="getPrimaryStatus"><span class="type-signature"></span>getPrimaryStatus<span class="signature">()</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -1287,7 +1287,7 @@ validated desired.</p>
 
 
 <div class="description">
-    <p>Gets info on what this instance thinks the master status is</p>
+    <p>Gets info on what this instance thinks the primary status is</p>
 <p>Info is retrieval is cloud specific. Likely either from the cloud infrastructure
 itself, stored info that we have in a database, or both.</p>
 </div>
@@ -1355,10 +1355,10 @@ itself, stored info that we have in a database, or both.</p>
 
         
 <div class="param-desc">
-    <p>A promise which will be resolved with a dictionary of master
+    <p>A promise which will be resolved with a dictionary of primary
                    status:</p>
 <pre class="prettyprint source"><code>               {
-                   &quot;instanceId&quot;: masterInstanceId
+                   &quot;instanceId&quot;: primaryInstanceId
                    &quot;status&quot;: CloudProvider.STATUS_*
                    &quot;lastUpdate&quot;: Date,
                    &quot;lastStatusChange&quot;: Date
@@ -2156,7 +2156,7 @@ of objects are also supported.</p>
 
             
 
-            <td class="description last"><p>Instance ID to validate as a valid master.</p></td>
+            <td class="description last"><p>Instance ID to validate as a valid primary.</p></td>
         </tr>
 
     
@@ -2259,7 +2259,7 @@ of objects are also supported.</p>
 <div class="description">
     <p>Called to get check for and retrieve a stored UCS file</p>
 <p>Provider implementations can optionally store a UCS to be
-used to restore a master instance to a last known good state</p>
+used to restore a primary instance to a last known good state</p>
 </div>
 
 
@@ -3083,7 +3083,7 @@ processing.</p>
     
 
     
-    <h4 class="name" id="isValidMaster"><span class="type-signature"></span>isValidMaster<span class="signature">(instanceId, instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="isValidPrimary"><span class="type-signature"></span>isValidPrimary<span class="signature">(instanceId, instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -3091,8 +3091,8 @@ processing.</p>
 
 
 <div class="description">
-    <p>Determines if a given instanceId is a valid master</p>
-<p>In some cloud environments, the master may change unexpectedly.
+    <p>Determines if a given instanceId is a valid primary</p>
+<p>In some cloud environments, the primary may change unexpectedly.
 Override this method if implementing such a cloud provider.</p>
 </div>
 
@@ -3145,7 +3145,7 @@ Override this method if implementing such a cloud provider.</p>
 
             
 
-            <td class="description last"><p>Instance ID to validate as a valid master.</p></td>
+            <td class="description last"><p>Instance ID to validate as a valid primary.</p></td>
         </tr>
 
     
@@ -3232,7 +3232,7 @@ Override this method if implementing such a cloud provider.</p>
         
 <div class="param-desc">
     <p>A promise which will be resolved with a boolean indicating
-                   wether or not the given instanceId is a valid master.</p>
+                   wether or not the given instanceId is a valid primary.</p>
 </div>
 
 
@@ -3261,7 +3261,7 @@ Override this method if implementing such a cloud provider.</p>
     
 
     
-    <h4 class="name" id="masterElected"><span class="type-signature"></span>masterElected<span class="signature">(instancId)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="primaryElected"><span class="type-signature"></span>primaryElected<span class="signature">(instancId)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -3269,8 +3269,8 @@ Override this method if implementing such a cloud provider.</p>
 
 
 <div class="description">
-    <p>Called when a master has been elected</p>
-<p>In some cloud environments, information about the master needs to be
+    <p>Called when a primary has been elected</p>
+<p>In some cloud environments, information about the primary needs to be
 stored in persistent storage. Override this method if implementing
 such a cloud provider.</p>
 </div>
@@ -3324,7 +3324,7 @@ such a cloud provider.</p>
 
             
 
-            <td class="description last"><p>Instance ID that was elected master.</p></td>
+            <td class="description last"><p>Instance ID that was elected primary.</p></td>
         </tr>
 
     
@@ -3416,7 +3416,7 @@ such a cloud provider.</p>
     
 
     
-    <h4 class="name" id="masterInvalidated"><span class="type-signature"></span>masterInvalidated<span class="signature">(instanceId, instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="primaryInvalidated"><span class="type-signature"></span>primaryInvalidated<span class="signature">(instanceId, instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -3424,8 +3424,8 @@ such a cloud provider.</p>
 
 
 <div class="description">
-    <p>Indicates that an instance that was master is now invalid</p>
-<p>Override for cloud providers that need to take some action when a master
+    <p>Indicates that an instance that was primary is now invalid</p>
+<p>Override for cloud providers that need to take some action when a primary
 becomes invalid.</p>
 </div>
 
@@ -3479,7 +3479,7 @@ becomes invalid.</p>
             
 
             <td class="description last"><p>Instance ID of instnace that is no longer a valid
-                             master.</p></td>
+                             primary.</p></td>
         </tr>
 
     
@@ -3770,7 +3770,7 @@ becomes invalid.</p>
     
 
     
-    <h4 class="name" id="putMasterCredentials"><span class="type-signature"></span>putMasterCredentials<span class="signature">()</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="putPrimaryCredentials"><span class="type-signature"></span>putPrimaryCredentials<span class="signature">()</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -3778,11 +3778,11 @@ becomes invalid.</p>
 
 
 <div class="description">
-    <p>Called to store master credentials</p>
+    <p>Called to store primary credentials</p>
 <p>When joining a cluster we need the username and password for the
-master instance. This method is called to tell us that we are
-the master and we should store our credentials if we need to store
-them for later retrieval in getMasterCredentials.</p>
+primary instance. This method is called to tell us that we are
+the primary and we should store our credentials if we need to store
+them for later retrieval in getPrimaryCredentials.</p>
 </div>
 
 
@@ -3940,7 +3940,7 @@ Must be implemented if provider supports FEATURE_ENCRYPTION.</p>
 
             
 
-            <td class="description last"><p>Instance ID to validate as a valid master.</p></td>
+            <td class="description last"><p>Instance ID to validate as a valid primary.</p></td>
         </tr>
 
     
@@ -5171,7 +5171,7 @@ the synced to device.</p>
     
 
     
-    <h4 class="name" id="tagMasterInstance"><span class="type-signature"></span>tagMasterInstance<span class="signature">(instanceId, instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="tagPrimaryInstance"><span class="type-signature"></span>tagPrimaryInstance<span class="signature">(instanceId, instances)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
     
 
     
@@ -5179,10 +5179,10 @@ the synced to device.</p>
 
 
 <div class="description">
-    <p>Called after a master has been elected.</p>
-<p>In some cloud environments, instances running a master should be tagged through
+    <p>Called after a primary has been elected.</p>
+<p>In some cloud environments, instances running a primary should be tagged through
 cloud provider specific tagging. Override this method for cloud providers that support
-instance tagging for instances running masters.</p>
+instance tagging for instances running primarys.</p>
 </div>
 
 
@@ -5234,7 +5234,7 @@ instance tagging for instances running masters.</p>
 
             
 
-            <td class="description last"><p>Instance ID that was elected master.</p></td>
+            <td class="description last"><p>Instance ID that was elected primary.</p></td>
         </tr>
 
     

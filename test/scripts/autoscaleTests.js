@@ -95,21 +95,21 @@ ProviderMock.prototype.getInstanceId = function getInstanceId() {
     return q(instanceId);
 };
 
-ProviderMock.prototype.isValidMaster = function isValidMaster() {
-    this.functionCalls.isValidMaster = true;
+ProviderMock.prototype.isValidPrimary = function isValidPrimary() {
+    this.functionCalls.isValidPrimary = true;
     return q(true);
 };
 
-ProviderMock.prototype.electMaster = function isValidMaster(instancesToElect) {
+ProviderMock.prototype.electPrimary = function isValidPrimary(instancesToElect) {
     this.functionCalls.instancesSent = instancesToElect;
-    this.functionCalls.electMaster = true;
+    this.functionCalls.electPrimary = true;
     return q();
 };
 
-ProviderMock.prototype.tagMasterInstance = function tagMasterInstance(masterIid, gInstances) {
-    this.functionCalls.tagMasterInstance = true;
-    this.functionCalls.taggedMasterIid = masterIid;
-    this.functionCalls.taggedMasterInstances = gInstances;
+ProviderMock.prototype.tagPrimaryInstance = function tagPrimaryInstance(primaryIid, gInstances) {
+    this.functionCalls.tagPrimaryInstance = true;
+    this.functionCalls.taggedPrimaryIid = primaryIid;
+    this.functionCalls.taggedPrimaryInstances = gInstances;
     return q();
 };
 
@@ -136,13 +136,13 @@ ProviderMock.prototype.sendMessage = function sendMessage() {
     return q(messages);
 };
 
-ProviderMock.prototype.getMasterCredentials = function getMasterCredentials() {
-    this.functionCalls.getMasterCredentials = arguments;
+ProviderMock.prototype.getPrimaryCredentials = function getPrimaryCredentials() {
+    this.functionCalls.getPrimaryCredentials = arguments;
     return q(credentials);
 };
 
-ProviderMock.prototype.putMasterCredentials = function putMasterCredentials() {
-    this.functionCalls.putMasterCredentials = arguments;
+ProviderMock.prototype.putPrimaryCredentials = function putPrimaryCredentials() {
+    this.functionCalls.putPrimaryCredentials = arguments;
     return q();
 };
 
@@ -163,7 +163,7 @@ module.exports = {
             .setMgmtIp('1.2.3.4')
             .setLastBackup(new Date(1970, 1, 1).getTime());
         const instance2 = new AutoscaleInstance()
-            .setIsMaster()
+            .setIsPrimary()
             .setHostname('host2')
             .setPrivateIp('5.6.7.8')
             .setMgmtIp('5.6.7.8');
@@ -476,7 +476,7 @@ module.exports = {
         testMissingOurInstance(test) {
             instances = {
                 one: {
-                    isMaster: false,
+                    isPrimary: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true
@@ -491,21 +491,21 @@ module.exports = {
             });
         },
 
-        testBecomingMaster(test) {
+        testBecomingPrimary(test) {
             instances = {
                 two: {
-                    isMaster: true,
+                    isPrimary: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
                     providerVisible: true,
-                    status: 'BECOMING_MASTER'
+                    status: 'BECOMING_PRIMARY'
                 }
             };
 
             test.expect(2);
             autoscale.run(argv, testOptions, () => {
                 test.strictEqual(exitCode, 0);
-                test.notStrictEqual(exitMessage.indexOf('becoming master'), -1);
+                test.notStrictEqual(exitMessage.indexOf('becoming primary'), -1);
                 test.done();
             });
         },
@@ -513,14 +513,14 @@ module.exports = {
         testBadVersion(test) {
             instances = {
                 one: {
-                    isMaster: false,
+                    isPrimary: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true,
                     version: '2'
                 },
                 two: {
-                    isMaster: true,
+                    isPrimary: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
                     providerVisible: true
@@ -535,7 +535,7 @@ module.exports = {
 
             test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status,
+                test.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
                     CloudProvider.STATUS_VERSION_NOT_UP_TO_DATE);
                 test.done();
             });
@@ -544,14 +544,14 @@ module.exports = {
         testNotExternal(test) {
             instances = {
                 one: {
-                    isMaster: false,
+                    isPrimary: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true,
                     external: true
                 },
                 two: {
-                    isMaster: true,
+                    isPrimary: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
                     providerVisible: true,
@@ -561,7 +561,7 @@ module.exports = {
 
             test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status,
+                test.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
                     CloudProvider.STATUS_NOT_EXTERNAL);
                 test.done();
             });
@@ -570,13 +570,13 @@ module.exports = {
         testNotProviderVisible(test) {
             instances = {
                 one: {
-                    isMaster: false,
+                    isPrimary: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true
                 },
                 two: {
-                    isMaster: true,
+                    isPrimary: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
                     providerVisible: false
@@ -585,22 +585,22 @@ module.exports = {
 
             test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].masterStatus.status,
+                test.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
                     CloudProvider.STATUS_NOT_IN_CLOUD_LIST);
                 test.done();
             });
         },
 
-        testIsValidMasterCalledWithInstances(test) {
+        testIsValidPrimaryCalledWithInstances(test) {
             test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.ok(providerMock.functionCalls.isValidMaster);
+                test.ok(providerMock.functionCalls.isValidPrimary);
                 test.done();
             });
         },
 
         testElectCalledWithVersionsMarked(test) {
-            providerMock.isValidMaster = () => {
+            providerMock.isValidPrimary = () => {
                 return q(false);
             };
 
@@ -612,14 +612,14 @@ module.exports = {
 
             instances = {
                 one: {
-                    isMaster: false,
+                    isPrimary: false,
                     hostname: 'host1',
                     privateIp: '1.2.3.4',
                     providerVisible: true,
                     version: '1.2.3'
                 },
                 two: {
-                    isMaster: true,
+                    isPrimary: true,
                     hostname: 'host2',
                     privateIp: '5.6.7.8',
                     providerVisible: true
@@ -634,24 +634,24 @@ module.exports = {
             });
         },
 
-        testElectMasterCalledWithInvalidMaster(test) {
-            providerMock.isValidMaster = () => {
+        testElectPrimaryCalledWithInvalidPrimary(test) {
+            providerMock.isValidPrimary = () => {
                 return q(false);
             };
             test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.ok(providerMock.functionCalls.electMaster);
+                test.ok(providerMock.functionCalls.electPrimary);
                 test.done();
             });
         },
 
-        testElectNotCalledWithValidMaster(test) {
-            providerMock.isValidMaster = () => {
+        testElectNotCalledWithValidPrimary(test) {
+            providerMock.isValidPrimary = () => {
                 return q(true);
             };
             test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.ifError(providerMock.functionCalls.electMaster);
+                test.ifError(providerMock.functionCalls.electPrimary);
                 test.done();
             });
         },
@@ -692,7 +692,7 @@ module.exports = {
             }
         },
 
-        testBecomeMaster: {
+        testBecomePrimary: {
             setUp(callback) {
                 childProcessMock.execFile = (file, args, cb) => {
                     cb();
@@ -799,14 +799,14 @@ module.exports = {
 
                     instances = {
                         one: {
-                            isMaster: false,
+                            isPrimary: false,
                             hostname: 'host1',
                             privateIp: '1.2.3.4',
                             mgmtIp: '1.2.3.4',
                             providerVisible: true
                         },
                         two: {
-                            isMaster: true,
+                            isPrimary: true,
                             privateIp: '5.6.7.8',
                             mgmtIp: '5.6.7.8',
                             providerVisible: true
@@ -914,7 +914,7 @@ module.exports = {
 
                 instances = {
                     one: {
-                        isMaster: false,
+                        isPrimary: false,
                         hostname: 'host1',
                         privateIp: '1.2.3.4',
                         publicIp: '11.12.13.14',
@@ -922,7 +922,7 @@ module.exports = {
                         providerVisible: true
                     },
                     two: {
-                        isMaster: true,
+                        isPrimary: true,
                         hostname: 'host2',
                         privateIp: '5.6.7.8',
                         publicIp: '15.16.17.18',
@@ -1013,12 +1013,12 @@ module.exports = {
                 .setMgmtIp('1.2.3.4')
                 .setLastBackup(new Date(1970, 1, 2).getTime());
             const instance2 = new AutoscaleInstance()
-                .setIsMaster()
+                .setIsPrimary()
                 .setHostname('host2')
                 .setPrivateIp('5.6.7.8')
                 .setMgmtIp('5.6.7.8');
 
-            instance2.masterStatus = {
+            instance2.primaryStatus = {
                 instanceId: 'two'
             };
 
@@ -1074,7 +1074,7 @@ module.exports = {
             });
         },
 
-        testIsMaster: {
+        testIsPrimary: {
             testDisconnected(test) {
                 let devicesRemoved = [];
                 icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
@@ -1101,13 +1101,13 @@ module.exports = {
             }
         },
 
-        testIsNotMaster: {
+        testIsNotPrimary: {
             setUp(callback) {
                 instanceId = 'one';
                 callback();
             },
 
-            testMasterFileRemoved(test) {
+            testPrimaryFileRemoved(test) {
                 fsMock.existsSync = () => {
                     return true;
                 };
@@ -1141,7 +1141,7 @@ module.exports = {
             });
         },
 
-        testCreateGroupWhenMaster(test) {
+        testCreateGroupWhenPrimary(test) {
             autoscale.run(argv, testOptions, () => {
                 test.strictEqual(bigIpMock.functionCalls.createDeviceGroup[0], deviceGroup);
                 test.done();
@@ -1293,7 +1293,7 @@ module.exports = {
             callback();
         },
 
-        testIsMaster: {
+        testIsPrimary: {
             testActions(test) {
                 autoscale.run(argv, testOptions, () => {
                     test.deepEqual(providerMock.functionCalls.getMessages[0],
@@ -1336,7 +1336,7 @@ module.exports = {
             }
         },
 
-        testIsNotMaster: {
+        testIsNotPrimary: {
             setUp(callback) {
                 instanceId = 'one';
                 callback();
@@ -1426,7 +1426,7 @@ module.exports = {
             callback();
         },
 
-        testIsNotMaster(test) {
+        testIsNotPrimary(test) {
             instanceId = 'one';
             credentials = {
                 username: 'myUser',
@@ -1443,17 +1443,17 @@ module.exports = {
             });
         }
     },
-    testTagMasterCalled(test) {
+    testTagPrimaryCalled(test) {
         instances = {
             one: {
-                isMaster: false,
+                isPrimary: false,
                 hostname: 'host1',
                 privateIp: '1.2.3.4',
                 mgmtIp: '1.2.3.4',
                 providerVisible: true
             },
             two: {
-                isMaster: true,
+                isPrimary: true,
                 privateIp: '5.6.7.8',
                 mgmtIp: '5.6.7.8',
                 providerVisible: true
@@ -1462,10 +1462,10 @@ module.exports = {
 
         test.expect(4);
         autoscale.run(argv, testOptions, () => {
-            test.strictEqual(providerMock.functionCalls.taggedMasterInstances.one.isMaster, false);
-            test.strictEqual(providerMock.functionCalls.taggedMasterIid, 'two');
-            test.notStrictEqual(providerMock.functionCalls.taggedMasterIid, 'one');
-            test.ok(providerMock.functionCalls.tagMasterInstance);
+            test.strictEqual(providerMock.functionCalls.taggedPrimaryInstances.one.isPrimary, false);
+            test.strictEqual(providerMock.functionCalls.taggedPrimaryIid, 'two');
+            test.notStrictEqual(providerMock.functionCalls.taggedPrimaryIid, 'one');
+            test.ok(providerMock.functionCalls.tagPrimaryInstance);
             test.done();
         });
     },

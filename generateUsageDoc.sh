@@ -42,7 +42,7 @@ writeHelp scripts/cluster.js
 cat >> $USAGE_FILE << EOL
 ## autoscale.js
 
-Runs autoscale code to elect master and cluster
+Runs autoscale code to elect primary and cluster
 EOL
 
 writeHelp scripts/autoscale.js
