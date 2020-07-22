@@ -1,5 +1,15 @@
 # Release notes
 
+## Release 4.21.0
+* Enhance workflow used for electing primary host in autoscale solution
+    - the primary election workflow prefers running cluster config over UCS restore when electing a new master
+    - the election is done using lowest private mgmt ip as well as lastBackup date, which is stored under instance metadata in Cloud Storage
+* Expose tenant parameter in onboard.js script to allow include/append deployment specific metadata in tenant value stored on BIGIQ side; example: 
+   - default tenant value: ```hostname=<hostname>, mgmtPrivdate=<address>```
+   - with deployment specific tenant value: ```"<deployment_specific_tenant_value>,hostname=<hostname>, mgmtPrivdate=<address>"```
+* Add script to AWS provider to verify deployment completion based on sync status; script sends signal to AWS Cloud Formation Web Service to complete deployment
+* Update Azure cloud provider to allow only primary host handle license revocation and metadata deletion 
+* Rename variable/parameter 'master' to 'primary'
 
 ## Release 4.20.0
 * Update AWS Cloud provider to resolve issue with autoscale solution when licenses are not revoked on BIGIQ side
