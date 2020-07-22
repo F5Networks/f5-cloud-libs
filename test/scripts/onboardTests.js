@@ -169,12 +169,12 @@ module.exports = {
                     return q();
                 },
 
-                isMasterKeySet() {
+                isPrimaryKeySet() {
                     return q(true);
                 },
 
-                setMasterPassphrase() {
-                    functionsCalled.bigIp.onboard.setMasterPassphrase = arguments[0];
+                setPrimaryPassphrase() {
+                    functionsCalled.bigIp.onboard.setPrimaryPassphrase = arguments[0];
                     return q();
                 },
 
@@ -538,8 +538,8 @@ module.exports = {
                 return false;
             };
 
-            bigIpMock.onboard.isMasterKeySet = () => {
-                functionsCalled.bigIp.onboard.isMasterKeySet = false;
+            bigIpMock.onboard.isPrimaryKeySet = () => {
+                functionsCalled.bigIp.onboard.isPrimaryKeySet = false;
                 return q(false);
             };
 
@@ -556,7 +556,7 @@ module.exports = {
                 functionsCalled.utilMock.readData = arguments;
                 return q(JSON.stringify(
                     {
-                        masterPassphrase: 'keykeykey',
+                        primaryPassphrase: 'keykeykey',
                         root: 'rootpass',
                         admin: 'AdPass'
                     }
@@ -578,7 +578,7 @@ module.exports = {
                         shell: undefined
                     }]
                 );
-                test.strictEqual(functionsCalled.bigIp.onboard.setMasterPassphrase, 'keykeykey');
+                test.strictEqual(functionsCalled.bigIp.onboard.setPrimaryPassphrase, 'keykeykey');
                 test.strictEqual(functionsCalled.bigIp.onboard.setRootPassword[0], 'rootpass');
                 test.deepEqual(functionsCalled.bigIp.onboard.setRootPassword[2], { enableRoot: true });
                 test.done();
@@ -598,7 +598,7 @@ module.exports = {
                 functionsCalled.localCryptoUtilMock.decryptPassword = arguments;
                 return q(JSON.stringify(
                     {
-                        masterPassphrase: 'keykeykey',
+                        primaryPassphrase: 'keykeykey',
                         root: 'rootpazz',
                         admin: 'AdPass'
                     }
@@ -616,7 +616,7 @@ module.exports = {
         }
     },
 
-    testMasterKeySet(test) {
+    testPrimaryKeySet(test) {
         providerMock = new ProviderMock();
         testOptions.cloudProvider = providerMock;
 
@@ -626,14 +626,14 @@ module.exports = {
         bigIpMock.isBigIp = () => {
             return false;
         };
-        bigIpMock.onboard.isMasterKeySet = () => {
-            functionsCalled.bigIp.onboard.isMasterKeySet = true;
+        bigIpMock.onboard.isPrimaryKeySet = () => {
+            functionsCalled.bigIp.onboard.isPrimaryKeySet = true;
             return q(true);
         };
 
         test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.deepEqual(functionsCalled.bigIp.onboard, { isMasterKeySet: true });
+            test.deepEqual(functionsCalled.bigIp.onboard, { isPrimaryKeySet: true });
             test.done();
         });
     },
@@ -896,6 +896,7 @@ module.exports = {
                 const skuKeyword1 = 'mySku1';
                 const skuKeyword2 = 'mySku2';
                 const unitOfMeasure = 'myUnitOfMeasure';
+                const tenant = 'myTenant';
                 const cloud = 'myCloud';
 
                 argv.push(
@@ -910,6 +911,7 @@ module.exports = {
                     '--sku-keyword-1', skuKeyword1,
                     '--sku-keyword-2', skuKeyword2,
                     '--unit-of-measure', unitOfMeasure,
+                    '--tenant', tenant,
                     '--cloud', cloud
                 );
 
@@ -930,6 +932,7 @@ module.exports = {
                             skuKeyword1,
                             skuKeyword2,
                             unitOfMeasure,
+                            tenant,
                             noUnreachable: false
                         }
                     );
@@ -947,6 +950,7 @@ module.exports = {
                 const skuKeyword1 = 'mySku1';
                 const skuKeyword2 = 'mySku2';
                 const unitOfMeasure = 'myUnitOfMeasure';
+                const tenant = 'myTenant';
                 const cloud = 'myCloud';
 
                 argv.push(
@@ -961,6 +965,7 @@ module.exports = {
                     '--sku-keyword-1', skuKeyword1,
                     '--sku-keyword-2', skuKeyword2,
                     '--unit-of-measure', unitOfMeasure,
+                    '--tenant', tenant,
                     '--cloud', cloud,
                     '--no-unreachable'
                 );
@@ -982,6 +987,7 @@ module.exports = {
                             skuKeyword1,
                             skuKeyword2,
                             unitOfMeasure,
+                            tenant,
                             noUnreachable: true
                         }
                     );
@@ -997,6 +1003,7 @@ module.exports = {
                 const bigIpMgmtAddress = 'myMgmtAddress';
                 const bigIpMgmtPort = '1234';
                 const unitOfMeasure = 'myUnitOfMeasure';
+                const tenant = 'myTenant';
                 const cloud = 'myCloud';
 
                 argv.push(
@@ -1011,6 +1018,7 @@ module.exports = {
                     '--sku-keyword-1', '',
                     '--sku-keyword-2', '',
                     '--unit-of-measure', unitOfMeasure,
+                    '--tenant', tenant,
                     '--cloud', cloud,
                     '--no-unreachable'
                 );
@@ -1027,6 +1035,7 @@ module.exports = {
                             skuKeyword1: '',
                             skuKeyword2: '',
                             unitOfMeasure,
+                            tenant,
                             noUnreachable: true
                         }
                     );

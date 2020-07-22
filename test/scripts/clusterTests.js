@@ -293,7 +293,7 @@ module.exports = {
 
     testBigIqPrimaryRequiredOptions: {
         testNoRootPasswordURI(test) {
-            argv.push('--master', '--big-iq-failover-peer-ip', '1.2.3.4');
+            argv.push('--primary', '--big-iq-failover-peer-ip', '1.2.3.4');
 
             test.expect(2);
             cluster.run(argv, testOptions, () => {
@@ -322,7 +322,7 @@ module.exports = {
 
             argv = ['node', 'cluster.js', '--log-level', 'none', '--host', 'localhost', '-u', 'admin',
                 '--output', 'cluster.log', '--cloud', 'aws', '--big-iq-password-data-uri',
-                'arn:::foo:bar/password', '--master', '--big-iq-failover-peer-ip', '1.2.3.4'];
+                'arn:::foo:bar/password', '--primary', '--big-iq-failover-peer-ip', '1.2.3.4'];
 
             callback();
         },
@@ -351,7 +351,7 @@ module.exports = {
                 functionsCalled.localCryptoUtilMock.decryptPassword = arguments;
                 return q(JSON.stringify(
                     {
-                        masterPassphrase: 'keykeykey',
+                        primaryPassphrase: 'keykeykey',
                         root: 'rootpazz',
                         admin: 'AdPass'
                     }

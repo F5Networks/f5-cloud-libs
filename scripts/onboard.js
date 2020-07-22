@@ -59,7 +59,8 @@ const cryptoUtil = require('../lib/cryptoUtil');
                 'passwordUrl',
                 'skuKeyword1',
                 'skuKeyword2',
-                'unitOfMeasure'
+                'unitOfMeasure',
+                'tenant'
             ];
             const REQUIRED_OPTIONS = ['host'];
             const globalSettings = {};
@@ -148,7 +149,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
                     )
                     .option(
                         '--cloud <provider>',
-                        'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, signalling resource provisioned, or providing a master passphrase'
+                        'Cloud provider (aws | azure | etc.). This is required if licensing via BIG-IQ 5.4+ is being used, signalling resource provisioned, or providing a primary passphrase'
                     )
                     .option(
                         '--provider-options <cloud_options>',
@@ -197,6 +198,10 @@ const cryptoUtil = require('../lib/cryptoUtil');
                         '    unitOfMeasure parameter for CLPv2 licensing. Default none.'
                     )
                     .option(
+                        '    --tenant [tenant]',
+                        '    tenant parameter for CLPv2 licensing. Default none.'
+                    )
+                    .option(
                         '    --big-ip-mgmt-address <big_ip_address>',
                         '    IP address or FQDN of BIG-IP management port. Use this if BIG-IP reports an address not reachable from BIG-IQ.'
                     )
@@ -218,7 +223,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
                     )
                     .option(
                         '--big-iq-password-data-uri <key_uri>',
-                        'URI (arn, url, etc.) to a JSON file containing the BIG-IQ passwords (required keys: admin, root, masterpassphrase)'
+                        'URI (arn, url, etc.) to a JSON file containing the BIG-IQ passwords (required keys: admin, root, primarypassphrase)'
                     )
                     .option(
                         '    --big-iq-password-data-encrypted',
@@ -246,8 +251,8 @@ const cryptoUtil = require('../lib/cryptoUtil');
                         parseRootPasswords
                     )
                     .option(
-                        '--set-master-key',
-                        'If running on a BIG-IQ, set the master key with a random passphrase'
+                        '--set-primary-key',
+                        'If running on a BIG-IQ, set the primary key with a random passphrase'
                     )
                     .option(
                         '--create-license-pool <name:reg_key>',
@@ -456,7 +461,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
                                 .then(() => {
                                     if (!bigIqPasswordData.admin
                                         || !bigIqPasswordData.root
-                                        || !bigIqPasswordData.masterpassphrase
+                                        || !bigIqPasswordData.primarypassphrase
                                     ) {
                                         const msg =
                                             'Required passwords missing from --biq-iq-password-data-uri';
@@ -518,39 +523,39 @@ const cryptoUtil = require('../lib/cryptoUtil');
                     })
                     .then(() => {
                         const deferred = q.defer();
-                        // Set the MasterKey if it's not set, using either a random passphrase or
+                        // Set the PrimaryKey if it's not set, using either a random passphrase or
                         // a passphrase provided via --password-data-uri
                         if (bigIp.isBigIq()) {
-                            bigIp.onboard.isMasterKeySet()
+                            bigIp.onboard.isPrimaryKeySet()
                                 .then((isSet) => {
                                     if (isSet) {
-                                        logger.info('Master key is already set.');
+                                        logger.info('Primary key is already set.');
                                         deferred.resolve();
-                                    } else if (options.setMasterKey) {
-                                        logger.info('Setting master key.');
+                                    } else if (options.setPrimaryKey) {
+                                        logger.info('Setting primary key.');
 
-                                        bigIp.onboard.setRandomMasterPassphrase()
+                                        bigIp.onboard.setRandomPrimaryPassphrase()
                                             .then(() => {
                                                 deferred.resolve();
                                             })
                                             .catch((err) => {
                                                 logger.info(
-                                                    'Unable to set master key',
+                                                    'Unable to set primary key',
                                                     err && err.message ? err.message : err
                                                 );
                                                 deferred.reject(err);
                                             });
                                     } else if (bigIqPasswordData) {
-                                        logger.info('Setting master passphrase from password data uri');
-                                        bigIp.onboard.setMasterPassphrase(
-                                            bigIqPasswordData.masterpassphrase
+                                        logger.info('Setting primary passphrase from password data uri');
+                                        bigIp.onboard.setPrimaryPassphrase(
+                                            bigIqPasswordData.primarypassphrase
                                         )
                                             .then(() => {
                                                 deferred.resolve();
                                             })
                                             .catch((err) => {
                                                 logger.info(
-                                                    'Unable to set master passphrase',
+                                                    'Unable to set primary passphrase',
                                                     err && err.message ? err.message : err
                                                 );
                                                 deferred.reject(err);
@@ -559,7 +564,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
                                 })
                                 .catch((err) => {
                                     logger.info(
-                                        'Unable to check master key', err && err.message ? err.message : err
+                                        'Unable to check primary key', err && err.message ? err.message : err
                                     );
                                     deferred.reject(err);
                                 });
@@ -784,6 +789,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
                                     skuKeyword1: options.skuKeyword1,
                                     skuKeyword2: options.skuKeyword2,
                                     unitOfMeasure: options.unitOfMeasure,
+                                    tenant: options.tenant,
                                     noUnreachable: !options.unreachable
                                 }
                             );

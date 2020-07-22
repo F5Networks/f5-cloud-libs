@@ -90,8 +90,8 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         '   Indicates that the BIG-IQ password data is encrypted (either with encryptDataToFile or generatePassword)'
                     )
                     .option(
-                        '    --master',
-                        'If using a cloud provider, indicates that this is the master. If running on a BIG-IP credentials should be stored. If running on a BIG-IQ, --create-group and --join-group options are not needed.'
+                        '    --primary',
+                        'If using a cloud provider, indicates that this is the primary. If running on a BIG-IP credentials should be stored. If running on a BIG-IQ, --create-group and --join-group options are not needed.'
                     )
                     .option(
                         '    --provider-options <cloud_options>',
@@ -368,7 +368,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     })
                     .then(() => {
                         // Primary BIG-IQ initiates peering with secondary BIG-IQ
-                        if (options.master
+                        if (options.primary
                             && options.bigIqFailoverPeerIp
                             && bigIp.isBigIq()
                         ) {
@@ -416,13 +416,13 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     .then((response) => {
                         logger.debug(response);
 
-                        // If we are using cloud storage and are the master, store our credentials
-                        if (options.cloud && options.master && bigIp.isBigIp()) {
+                        // If we are using cloud storage and are the primary, store our credentials
+                        if (options.cloud && options.primary && bigIp.isBigIp()) {
                             logger.info('Storing credentials.');
                             return util.tryUntil(
                                 provider,
                                 util.DEFAULT_RETRY,
-                                provider.putMasterCredentials
+                                provider.putPrimaryCredentials
                             );
                         }
                         return q();
@@ -431,13 +431,13 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         logger.debug(response);
 
                         // options.cloud set indicates that the provider must use some storage
-                        // for its master credentials
+                        // for its primary credentials
                         if (options.cloud && options.joinGroup && bigIp.isBigIp()) {
-                            logger.info('Getting master credentials.');
+                            logger.info('Getting primary credentials.');
                             return util.tryUntil(
                                 provider,
                                 util.DEFAULT_RETRY,
-                                provider.getMasterCredentials,
+                                provider.getPrimaryCredentials,
                                 [options.remoteHost, options.remotePort]
                             );
                         }
@@ -446,7 +446,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     .then((response) => {
                         // Don't log the response here - it has the credentials in it
                         if (options.cloud && options.joinGroup && bigIp.isBigIp()) {
-                            logger.info('Got master credentials.');
+                            logger.info('Got primary credentials.');
 
                             options.remoteUser = response.username;
                             options.remotePassword = response.password;
