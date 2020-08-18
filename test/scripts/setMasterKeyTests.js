@@ -171,7 +171,7 @@ module.exports = {
             .then(() => {
                 test.strictEqual(
                     validationResults.cloudUtilMock.readDataFromFile[0],
-                    `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsContent${BACKUP.MASTER_KEY_DIR}`
+                    `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsContent${BACKUP.PRIMARY_KEY_DIR}`
                 );
                 test.strictEqual(validationResults.cloudUtilMock.readDataFromFile[1],
                     `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsContent${BACKUP.UNIT_KEY_DIR}`);

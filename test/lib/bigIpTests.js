@@ -1100,21 +1100,6 @@ module.exports = {
                 });
         },
 
-        testRestjavadRestart(test) {
-            icontrolMock.fail('list', `${UCS_TASK_PATH}/1234`);
-            test.expect(1);
-            bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
-                .then(() => {
-                    test.ok(true);
-                })
-                .catch((err) => {
-                    test.ok(false, err);
-                })
-                .finally(() => {
-                    test.done();
-                });
-        },
-
         testPasswordUrl: {
             testBasic(test) {
                 const password = 'myPassword';
