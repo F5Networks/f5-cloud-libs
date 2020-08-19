@@ -2,6 +2,9 @@
 
 ## Release 4.22.0
 * Add getNodesByResourceId to cloudProvider
+* Update bigip module to improve UCS restore; promise is rejected to trigger workaround when system restarts happen
+* Fix autoscale script to define correct path to primary key
+* Update default log filename for aws verifyDeployment.js script
 
 ## Release 4.21.0
 * Enhance workflow used for electing primary host in autoscale solution
