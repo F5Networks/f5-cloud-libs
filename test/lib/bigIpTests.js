@@ -1721,7 +1721,7 @@ module.exports = {
         testFailed(test) {
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'FAILED' });
             test.expect(1);
-            bigIp.runTask(DUMMY_TASK_PATH)
+            bigIp.runTask(DUMMY_TASK_PATH, {}, { neverReject: true })
                 .then(() => {
                     test.ok(false, 'Should not have completed');
                 })
