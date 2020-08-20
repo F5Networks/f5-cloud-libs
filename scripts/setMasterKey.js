@@ -40,7 +40,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
             const loggerOptions = {};
             const tempUcsDir = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/`;
             const DEFAULT_LOG_FILE = '/var/log/cloudlibs/setMasterKey.log';
-            const MASTER_KEY_DIR = BACKUP.MASTER_KEY_DIR;
+            const PRIMARY_KEY_DIR = BACKUP.PRIMARY_KEY_DIR;
             const UNIT_KEY_DIR = BACKUP.UNIT_KEY_DIR;
             let cloudProvider;
             options
@@ -155,11 +155,11 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                 })
                 .then(() => {
                     logger.silly(LOG_ID, 'untar success, reading key');
-                    return util.readDataFromFile(`${tempUcsDir}ucsContent${MASTER_KEY_DIR}`);
+                    return util.readDataFromFile(`${tempUcsDir}ucsContent${PRIMARY_KEY_DIR}`);
                 })
                 .then((oldMasterKey) => {
                     logger.silly(LOG_ID, 'read success, writing key');
-                    return util.writeDataToFile(oldMasterKey, MASTER_KEY_DIR);
+                    return util.writeDataToFile(oldMasterKey, PRIMARY_KEY_DIR);
                 })
                 .then(() => {
                     logger.silly(LOG_ID, 'wrote master key, reading unit key');
