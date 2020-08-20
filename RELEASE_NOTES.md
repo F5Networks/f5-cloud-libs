@@ -1,14 +1,20 @@
 # Release notes
 
+## Release 4.22.0
+* Add getNodesByResourceId to cloudProvider
+* Update bigip module to improve UCS restore; promise is rejected to trigger workaround when system restarts happen
+* Fix autoscale script to define correct path to primary key
+* Update default log filename for aws verifyDeployment.js script
+
 ## Release 4.21.0
 * Enhance workflow used for electing primary host in autoscale solution
     - the primary election workflow prefers running cluster config over UCS restore when electing a new master
     - the election is done using lowest private mgmt ip as well as lastBackup date, which is stored under instance metadata in Cloud Storage
-* Expose tenant parameter in onboard.js script to allow include/append deployment specific metadata in tenant value stored on BIGIQ side; example: 
+* Expose tenant parameter in onboard.js script to allow include/append deployment specific metadata in tenant value stored on BIGIQ side; example:
    - default tenant value: ```hostname=<hostname>, mgmtPrivdate=<address>```
    - with deployment specific tenant value: ```"<deployment_specific_tenant_value>,hostname=<hostname>, mgmtPrivdate=<address>"```
 * Add script to AWS provider to verify deployment completion based on sync status; script sends signal to AWS Cloud Formation Web Service to complete deployment
-* Update Azure cloud provider to allow only primary host handle license revocation and metadata deletion 
+* Update Azure cloud provider to allow only primary host handle license revocation and metadata deletion
 * Rename variable/parameter 'master' to 'primary'
 
 ## Release 4.20.0
@@ -16,14 +22,14 @@
 
 ## Release 4.19.0
 * Update autoscale script to populate lastBackup date within instance metadata when UCS generated. The lastBackup date will be shared with other hosts when they get in sync with master.
-* Enable logic on autoscale.js script for preventing restoring UCS file when new master elected and new master was in sync with previous master. 
+* Enable logic on autoscale.js script for preventing restoring UCS file when new master elected and new master was in sync with previous master.
 
 ## Release 4.18.0
 * Improve availability check for BIGIP system
 * Update format for the tenant string used for sending BIGIP host metadata to BIGIQ as part of licensing via BIGIQ system
     * Old: ```{ "mgmtAddress": "<ip_address>", "hostname": "<hostname>"}```
     * New: ```"mgmtAddress": "<ip_address>", "hostname": "<hostname>"```
-    
+
 ## Release 4.17.1
 * Resolved big-iq onboard error "Public URI path not registered"
   * Update bigIp.js to only use availability check '/shared/iapp/package-management-tasks/available' when system is a bigip.
