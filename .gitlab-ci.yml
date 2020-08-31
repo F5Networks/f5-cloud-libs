@@ -51,6 +51,19 @@ test_node8:
         - npm run lint
         - npm test
 
+# audit packages for vulnerabilities
+test_audit:
+  image: node:8
+  stage: test
+  script:
+    # npm audit - uses custom audit processor wrapper
+    - npm install
+    - npm run audit
+  tags:
+    - cm-official-docker-executor
+  except:
+    - triggers
+
 update_hash:
     tags:
         - docker-executor

@@ -15,6 +15,25 @@
   "bugs": {
     "url": "https://github.com/F5Networks/f5-cloud-libs/issues"
   },
+  "auditProcessor": {
+    "whitelist": [
+      "1523",
+      "1490",
+      "1500",
+      "1179",
+      "1084",
+      "1013",
+      "1012",
+      "1065",
+      "782",
+      "1325",
+      "1324",
+      "1316",
+      "1300",
+      "1164",
+      "755"
+    ]
+  },
   "license": "Apache-2.0",
   "dependencies": {
     "commander": "^2.19.0",
@@ -30,9 +49,11 @@
     "eslint-plugin-import": "^2.14.0",
     "istanbul": "^0.4.5",
     "jsdoc": "^3.4.3",
-    "nodeunit": "^0.11.3"
+    "nodeunit": "^0.11.3",
+    "yargs": "^15.4.1"
   },
   "scripts": {
+    "audit": "npm audit --json > .auditReport.json; node scripts/auditProcessor.js",
     "coverage": "istanbul cover --print detail nodeunit test/lib test/scripts",
     "coveralls": "istanbul cover nodeunit test/lib test/scripts; cat coverage/lcov.info | node_modules/coveralls/bin/coveralls.js",
     "doc": "./generateUsageDoc.sh; node node_modules/jsdoc/jsdoc.js -c jsdoc.conf",
