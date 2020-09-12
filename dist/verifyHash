@@ -28,6 +28,7 @@ proc script::run {} {
             set hashes(f5-cloud-failover-1.1.0-0.noarch.rpm) 15a440c299f9e4af86a3d0f5b0d75b0054385b95e47c3ef116d2e0bfb0041a26dcbf549028e2a26d2c718ec61446bd657be38fbbcd9db781efe5414c174ac68c
             set hashes(f5-cloud-failover-1.3.0-0.noarch.rpm) 19681eb33d9f910c913f8180199485eb653b4b5ebeaae0b90a6ce8341d7a22fed8d21815b5ba148c468852d20cc26fad4c4242e50ecc184f1f8770dacced6f6a
             set hashes(f5-cloud-failover-1.4.0-0.noarch.rpm) 49e9108a070e0c8713aeb7b330662358542e61b7c53a9d45108d37a9bf5246f9e4aaae10cc61064801dcccd20bfd5108347b0f694510e7ece07f96c45ba683b0
+            set hashes(f5-cloud-failover-1.5.0-0.noarch.rpm) 33a7e2d047106bcce681757a65240bfacedd48e13567e05fdb23a4b269d266aa5001f81158c3964dc297f0428db31c9df428002898d190285b349c59422a573b
 
             set file_path [lindex $tmsh::argv 1]
             set file_name [file tail $file_path]
@@ -49,6 +50,6 @@ proc script::run {} {
             exit 1
         }
     }
-    script-signature BrPhvwDOJwEvfJsM25Xnkf9/VmDMar4n91RG8Zp7Oc5DzYCYdYlAXVxV2goRPUq5J/1nfTwFCL+9SuZk8jiafGbXOj03xsFxRrShuIGxvu4tpVxIJbTCawPnybr6b16ShQVSckaigdstiYfh0kaGwM6qNeww+Dlu54va1ZkVNrZgEQULy2lyuCZ86qOOFxgpHPCVSrL0DKu1R1EgjoQwwHHohv9uANmSwNRShVb9AwrxItck5qnnR28zWirPXpvR4PXU4NUgw2gqhYeuGUi1TWG+tIBSMNVgqKu+rsjEPTxnllYsy2HGl2aSJHHXVpx7VpfaFmb8xPCbt2VTBjTWbA==
+    script-signature nM54nlgu6pC9B1JfsBVtt6fnQxfrYq1WY/gQx6aj2bPMVz39iODjzGPe39n+nrYjJVBV/dhMTFdBFImSBF9dqTdgPttEqa0tQUCqMqgUdr15+OQhiJ4dJ8vfINozvLbu0dLhoWepbg0Er7sJ6r5mv8WVX6X1T2DnPnt92reTL1XGAeY/pc+PsbZ0K6+gsJ8ged5cBbPaNYcMKuHw7lVlOgXuTuqIC4pn/4Nj65mV6kt0QuAENmYyYNeiw7miJXUiwcYHI2MSxlmugiZWqO/9ry0DfYgbO0LK5oMrj5QJ2QIdTfWRznytS9ct0wEKB2f5MCG9ZCPwGsND9NVjlO0scg==
     signing-key /Common/f5-irule
 }
