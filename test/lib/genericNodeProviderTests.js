@@ -33,6 +33,10 @@ let providerOptions = {
 };
 providerOptions = Object.assign(providerOptions, propertyPaths);
 
+const providerJmesPathOptions = {
+    jmesPathQuery: '[*].{id:node.uuid,ip:{private:node.ips[0],public:node.ips[1]}}'
+};
+
 const initOptions = {
     bar: 'foo',
     world: 'hello'
@@ -289,6 +293,40 @@ module.exports = {
 
             test.expect(globalTests + 1);
             testProvider.init(providerOptions)
+                .then(() => {
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
+                        .then((results) => {
+                            test.deepEqual(results, [
+                                {
+                                    id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
+                                    ip: {
+                                        public: '10.10.0.10',
+                                        private: '192.168.0.140'
+                                    }
+                                },
+                                {
+                                    id: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
+                                    ip: {
+                                        public: '11.11.0.11',
+                                        private: '192.168.0.141'
+                                    }
+                                }
+                            ]);
+                        });
+                })
+                .catch((err) => {
+                    test.ok(false, err);
+                })
+                .finally(() => {
+                    test.done();
+                });
+        },
+
+        testJmesPathJsonArrayNodes(test) {
+            mockGetDataFromUrl(test, responseNodeData);
+
+            test.expect(globalTests + 1);
+            testProvider.init(providerJmesPathOptions)
                 .then(() => {
                     return testProvider.getNodesFromUri(targetUrl, targetOptions)
                         .then((results) => {
