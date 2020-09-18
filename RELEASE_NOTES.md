@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.23.0
+* Use a retry on /tm/shared/licensing/registration. This sometimes give an ECONNRESET error.
+
 ## Release 4.22.0
 * Add getNodesByResourceId to cloudProvider
 * Update bigip module to improve UCS restore; promise is rejected to trigger workaround when system restarts happen
