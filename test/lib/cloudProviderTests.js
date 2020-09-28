@@ -18,346 +18,345 @@
 
 const q = require('q');
 const util = require('util');
+const assert = require('assert');
 const CloudProvider = require('../../../f5-cloud-libs').cloudProvider;
 
-util.inherits(TestCloudProvider, CloudProvider);
-function TestCloudProvider(options) {
-    TestCloudProvider.super_.call(this, options);
-}
+describe('bigip tests', () => {
+    util.inherits(TestCloudProvider, CloudProvider);
+    function TestCloudProvider(options) {
+        TestCloudProvider.super_.call(this, options);
+    }
 
-// Our tests cause too many event listeners. Turn off the check.
-const options = require('commander');
+    // Our tests cause too many event listeners. Turn off the check.
+    /* eslint-disable global-require */
+    const options = require('commander');
 
-options.setMaxListeners(0);
-process.setMaxListeners(0);
+    options.setMaxListeners(0);
+    process.setMaxListeners(0);
 
-let instancesCalled = [];
-let testCloudProvider;
-let bigIqMock;
-let poolCalled;
+    let instancesCalled = [];
+    let testCloudProvider;
+    let bigIqMock;
+    let poolCalled;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         testCloudProvider = new TestCloudProvider();
-        callback();
-    },
+    });
 
-    tearDown(callback) {
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
+    });
 
-        callback();
-    },
-
-    testLogger(test) {
+    it('logger test', (done) => {
         const logger = {
             a: 1,
             b: 2
         };
         testCloudProvider = new TestCloudProvider({ logger });
-        test.deepEqual(testCloudProvider.logger, logger);
-        test.done();
-    },
+        assert.deepEqual(testCloudProvider.logger, logger);
+        done();
+    });
 
-    testClOptions(test) {
+    it('cl options test', (done) => {
         const clOptions = {
             foo: 'bar',
             hello: 'world'
         };
 
         testCloudProvider = new TestCloudProvider({ clOptions });
-        test.deepEqual(testCloudProvider.clOptions, clOptions);
-        test.done();
-    },
+        assert.deepEqual(testCloudProvider.clOptions, clOptions);
+        done();
+    });
 
-    testInit(test) {
-        test.expect(1);
+    it('init test', (done) => {
         testCloudProvider.init()
             .then(() => {
-                test.ok(true);
-                test.done();
+                assert.ok(true);
+                done();
             });
-    },
+    });
 
-    testUnimplementedBigIpReady(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented bigip ready test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.bigIpReady();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetDataFromUri(test) {
-        test.throws(() => {
+    it('unimplemented get data from uri test', (done) => {
+        assert.throws(() => {
             testCloudProvider.getDataFromUri();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetInstanceId(test) {
-        test.throws(() => {
+    it('unimplemented get instance id test', (done) => {
+        assert.throws(() => {
             testCloudProvider.getInstanceId();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetInstances(test) {
-        test.throws(() => {
+    it('unimplemented get instances test', (done) => {
+        assert.throws(() => {
             testCloudProvider.getInstances();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedElectPrimary(test) {
-        test.throws(() => {
+    it('unimplemented elect primary test', (done) => {
+        assert.throws(() => {
             testCloudProvider.electPrimary();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetPrimaryCredentials: {
-        tearDown(callback) {
+    describe('unimplemented get primary credentials tests', () => {
+        afterEach(() => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
-            callback();
-        },
+        });
 
-        testMessagingNotSupported(test) {
-            test.throws(() => {
+        it('messaging not supported test', (done) => {
+            assert.throws(() => {
                 testCloudProvider.getPrimaryCredentials();
             });
-            test.done();
-        },
+            done();
+        });
 
-        testMessagingSupported(test) {
+        it('messaging supported test', (done) => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
-            test.doesNotThrow(() => {
+            assert.doesNotThrow(() => {
                 testCloudProvider.getPrimaryCredentials();
             });
-            test.done();
-        }
-    },
+            done();
+        });
+    });
 
-    testUnimplementedGetPrimaryStatus(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented get primary status test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.getPrimaryStatus();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetPublicKey: {
-        tearDown(callback) {
+    describe('unimplemented get primary credentials tests', () => {
+        afterEach(() => {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = false;
-            callback();
-        },
+        });
 
-        testEncryptionSupported(test) {
+        it('encryption supported test', (done) => {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = true;
-            test.throws(() => {
+            assert.throws(() => {
                 testCloudProvider.getPublicKey();
             });
-            test.done();
-        },
+            done();
+        });
 
-        testEncryptionNotSupported(test) {
-            test.doesNotThrow(() => {
+        it('encryption not supported test', (done) => {
+            assert.doesNotThrow(() => {
                 testCloudProvider.getPublicKey();
             });
-            test.done();
-        }
-    },
+            done();
+        });
+    });
 
-    testHasFeature: {
-        setUp(callback) {
+    describe('unimplemented get public key tests', () => {
+        it('encryption not supported test', (done) => {
+            assert.doesNotThrow(() => {
+                testCloudProvider.getPublicKey();
+            });
+            done();
+        });
+    });
+
+    describe('has feature tests', () => {
+        beforeEach(() => {
             testCloudProvider.features = {};
-            callback();
-        },
+        });
 
-        testHasFeature(test) {
+        it('has feature test', (done) => {
             testCloudProvider.features.FOO = true;
-            test.expect(1);
-            test.strictEqual(testCloudProvider.hasFeature('FOO'), true);
-            test.done();
-        },
+            assert.strictEqual(testCloudProvider.hasFeature('FOO'), true);
+            done();
+        });
 
-        testDoesNotHaveFeature(test) {
-            test.expect(1);
-            test.strictEqual(testCloudProvider.hasFeature('FOO'), false);
-            test.done();
-        }
-    },
+        it('does not have feature test', (done) => {
+            assert.strictEqual(testCloudProvider.hasFeature('FOO'), false);
+            done();
+        });
+    });
 
-    testUnimplementedPutPrimaryCredentials(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented put primary credentials test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.putPrimaryCredentials();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedPutPublicKey: {
-        tearDown(callback) {
+    describe('unimplemented put public key tests', () => {
+        afterEach(() => {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = false;
-            callback();
-        },
+        });
 
-        testEncryptionSupported(test) {
+        it('encryption supported test', (done) => {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = true;
-            test.throws(() => {
+            assert.throws(() => {
                 testCloudProvider.putPublicKey();
             });
-            test.done();
-        },
+            done();
+        });
 
-        testEncryptionNotSupported(test) {
-            test.doesNotThrow(() => {
+        it('encryption not supported test', (done) => {
+            assert.doesNotThrow(() => {
                 testCloudProvider.putPublicKey();
             });
-            test.done();
-        }
-    },
+            done();
+        });
+    });
 
-    testUnimplementedGetNicsByTag(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented get nics by tag test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.getNicsByTag();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetVmsByTag(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented get vms by tag test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.getVmsByTag();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedIsValidPrimary(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented is valid primary test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.isValidPrimary();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedPrimaryElected(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented primary elected test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.primaryElected();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedPrimaryInvalidated(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented primary invalidated test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.primaryInvalidated();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetStoredUcs(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented get Stored Ucs test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.getStoredUcs();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedStoreUcs(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented store Ucs test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.storeUcs();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedPutInstance(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented put Instance test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.putInstance();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedSendMessage: {
-        tearDown(callback) {
+    describe('unimplemented send message tests', () => {
+        afterEach(() => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
-            callback();
-        },
+        });
 
-        testMessagingNotSupported(test) {
-            test.doesNotThrow(() => {
+        it('messaging not supported test', (done) => {
+            assert.doesNotThrow(() => {
                 testCloudProvider.sendMessage();
             });
-            test.done();
-        },
+            done();
+        });
 
-        testMessagingSupported(test) {
+        it('messaging supported test', (done) => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
-            test.throws(() => {
+            assert.throws(() => {
                 testCloudProvider.sendMessage();
             });
-            test.done();
-        }
-    },
+            done();
+        });
+    });
 
-    testUnimplementedGetMessages: {
-        tearDown(callback) {
+    describe('unimplemented get message tests', () => {
+        afterEach(() => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
-            callback();
-        },
+        });
 
-        testMessagingNotSupported(test) {
-            test.doesNotThrow(() => {
+        it('messaging not supported test', (done) => {
+            assert.doesNotThrow(() => {
                 testCloudProvider.getMessages();
             });
-            test.done();
-        },
+            done();
+        });
 
-        testMessagingSupported(test) {
+        it('messaging supported test', (done) => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
-            test.throws(() => {
+            assert.throws(() => {
                 testCloudProvider.getMessages();
             });
-            test.done();
-        }
-    },
+            done();
+        });
+    });
 
-    testUnimplementedSyncComplete(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented sync complete test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.syncComplete();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetNodesByUri(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented get nodes by uri test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.getNodesFromUri();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testUnimplementedGetNodesByResourceId(test) {
-        test.doesNotThrow(() => {
+    it('unimplemented get nodes by resource id test', (done) => {
+        assert.doesNotThrow(() => {
             testCloudProvider.getNodesByResourceId();
         });
-        test.done();
-    },
+        done();
+    });
 
-    testIsInstanceExpired: {
-        testExpired(test) {
+    describe('is instance expired tests', () => {
+        it('expired test', (done) => {
             const instance = {
                 lastUpdate: new Date(1970, 1, 1)
             };
 
-            test.strictEqual(testCloudProvider.isInstanceExpired(instance), true);
-            test.done();
-        },
+            assert.strictEqual(testCloudProvider.isInstanceExpired(instance), true);
+            done();
+        });
 
-        testNotExpired(test) {
+        it('not expired test', (done) => {
             const instance = {
                 lastUpdate: new Date()
             };
 
-            test.strictEqual(testCloudProvider.isInstanceExpired(instance), false);
-            test.done();
-        }
-    },
+            assert.strictEqual(testCloudProvider.isInstanceExpired(instance), false);
+            done();
+        });
+    });
 
-    testRevokeLicenses: {
-        setUp(callback) {
+    describe('revoke licenses tests', () => {
+        beforeEach(() => {
             bigIqMock = {
                 init() {
                     return q();
@@ -372,11 +371,9 @@ module.exports = {
             testCloudProvider.bigIq = bigIqMock;
             instancesCalled = [];
             poolCalled = undefined;
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
+        it('basic test', (done) => {
             const instances = [
                 {
                     hostname: 'host1'
@@ -392,21 +389,20 @@ module.exports = {
                 licensePoolName: licensePool
             };
 
-            test.expect(2);
             testCloudProvider.revokeLicenses(instances, {})
                 .then(() => {
-                    test.strictEqual(poolCalled, licensePool);
-                    test.strictEqual(instancesCalled.length, instances.length);
+                    assert.strictEqual(poolCalled, licensePool);
+                    assert.strictEqual(instancesCalled.length, instances.length);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoLicensePool(test) {
+        it('no license pool test', (done) => {
             const instances = [
                 {
                     hostname: 'host1'
@@ -418,21 +414,20 @@ module.exports = {
 
             testCloudProvider.clOptions = {};
 
-            test.expect(2);
             testCloudProvider.revokeLicenses(instances, {})
                 .then(() => {
-                    test.strictEqual(poolCalled, undefined);
-                    test.strictEqual(instancesCalled.length, 0);
+                    assert.strictEqual(poolCalled, undefined);
+                    assert.strictEqual(instancesCalled.length, 0);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRevokeFail(test) {
+        it('revoke fail test', (done) => {
             const instances = [
                 {
                     hostname: 'host1'
@@ -452,17 +447,17 @@ module.exports = {
                 return q.reject(new Error('foo'));
             };
 
-            test.expect(1);
             testCloudProvider.revokeLicenses(instances, {})
                 .then(() => {
-                    test.ok(false, 'Revoke should have thrown');
+                    assert.ok(false, 'Revoke should have thrown');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    }
-};
+        });
+    });
+});
+

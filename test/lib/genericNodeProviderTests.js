@@ -16,249 +16,238 @@
 
 'use strict';
 
-const GenericNodeProvider = require('../../lib/genericNodeProvider');
-const utilMock = require('../../lib/util');
-const q = require('q');
+const assert = require('assert');
 
-const origGetDataFromUrl = utilMock.getDataFromUrl;
+describe('generic Node Provider tests', () => {
+    /* eslint-disable global-require */
+    const GenericNodeProvider = require('../../lib/genericNodeProvider');
+    const utilMock = require('../../lib/util');
+    const q = require('q');
 
-const propertyPaths = {
-    propertyPathId: 'node.uuid',
-    propertyPathIpPrivate: 'node.ips.0',
-    propertyPathIpPublic: 'node.ips.1'
-};
+    const origGetDataFromUrl = utilMock.getDataFromUrl;
 
-let providerOptions = {
-    foo: 'bar',
-};
-providerOptions = Object.assign(providerOptions, propertyPaths);
-
-const initOptions = {
-    bar: 'foo',
-    world: 'hello'
-};
-
-const responseNodeData = [
-    {
-        foo: 'bar',
-        node: {
-            uuid: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
-            ips: [
-                '192.168.0.140',
-                '10.10.0.10'
-            ]
-        }
-    },
-    {
-        hello: 'world',
-        node: {
-            uuid: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
-            ips: [
-                '192.168.0.141',
-                '11.11.0.11'
-            ]
-        }
-    }
-];
-
-const targetUrl = 'https://example.com';
-const targetOptions = {
-    headers: { headerName: 'headerValue' },
-    rejectUnauthorized: false
-};
-
-let testProvider;
-let globalTests;
-
-// Our tests cause too many event listeners. Turn off the check.
-process.setMaxListeners(0);
-
-function mockGetDataFromUrl(test, urlResponse) {
-    globalTests += 2;
-    utilMock.getDataFromUrl = function getDataFromUrl(url, options) {
-        test.strictEqual(url, targetUrl);
-        test.deepEqual(options, targetOptions);
-        return q(urlResponse);
+    const propertyPaths = {
+        propertyPathId: 'node.uuid',
+        propertyPathIpPrivate: 'node.ips.0',
+        propertyPathIpPublic: 'node.ips.1'
     };
-}
 
-module.exports = {
-    setUp(callback) {
+    let providerOptions = {
+        foo: 'bar',
+    };
+    providerOptions = Object.assign(providerOptions, propertyPaths);
+
+    const initOptions = {
+        bar: 'foo',
+        world: 'hello'
+    };
+
+    const responseNodeData = [
+        {
+            foo: 'bar',
+            node: {
+                uuid: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
+                ips: [
+                    '192.168.0.140',
+                    '10.10.0.10'
+                ]
+            }
+        },
+        {
+            hello: 'world',
+            node: {
+                uuid: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
+                ips: [
+                    '192.168.0.141',
+                    '11.11.0.11'
+                ]
+            }
+        }
+    ];
+
+    const targetUrl = 'https://example.com';
+    const targetOptions = {
+        headers: { headerName: 'headerValue' },
+        rejectUnauthorized: false
+    };
+
+    let testProvider;
+
+    // Our tests cause too many event listeners. Turn off the check.
+    process.setMaxListeners(0);
+
+    function mockGetDataFromUrl(urlResponse) {
+        utilMock.getDataFromUrl = function getDataFromUrl(url, options) {
+            assert.strictEqual(url, targetUrl);
+            assert.deepEqual(options, targetOptions);
+            return q(urlResponse);
+        };
+    }
+
+    beforeEach(() => {
         testProvider = new GenericNodeProvider();
-        globalTests = 0;
-        callback();
-    },
+    });
 
-    tearDown(callback) {
+    afterEach(() => {
         utilMock.getDataFromUrl = origGetDataFromUrl;
-        callback();
-    },
+    });
 
-    testLogger(test) {
+    it('logger test', (done) => {
         const logger = {
             a: 1,
             b: 2
         };
         testProvider = new GenericNodeProvider({ logger });
-        test.deepEqual(testProvider.logger, logger);
-        test.done();
-    },
+        assert.deepEqual(testProvider.logger, logger);
+        done();
+    });
 
-    testInit: {
-        testMissingProviderOptions(test) {
-            test.expect(2);
+    describe('init test', () => {
+        it('missing provider options test', (done) => {
             testProvider.init()
                 .then(() => {
-                    test.ok(false, 'should have thrown missing required provider options');
+                    assert.ok(false, 'should have thrown missing required provider options');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('ProviderOptions.propertyPathId required'), -1);
+                    assert.notStrictEqual(err.message.indexOf('ProviderOptions.propertyPathId required'), -1);
                 })
                 .then(() => {
                     return testProvider.init({ propertyPathId: 'foo' });
                 })
                 .then(() => {
-                    test.ok(false, 'should have thrown missing required provider options');
+                    assert.ok(false, 'should have thrown missing required provider options');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('ProviderOptions.propertyPathIpPrivate '
+                    assert.notStrictEqual(err.message.indexOf('ProviderOptions.propertyPathIpPrivate '
                         + 'required'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testInitSuccess(test) {
-            test.expect(1);
+        it('init success test', (done) => {
             testProvider.init(providerOptions, initOptions)
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testProviderOptions(test) {
-            test.expect(2);
+        it('provider options test', (done) => {
             testProvider.init(providerOptions)
                 .then(() => {
-                    test.deepEqual(testProvider.providerOptions, providerOptions);
-                    test.deepEqual(testProvider.propertyPaths, {
+                    assert.deepEqual(testProvider.providerOptions, providerOptions);
+                    assert.deepEqual(testProvider.propertyPaths, {
                         propertyPathId: ['node', 'uuid'],
                         propertyPathIpPrivate: ['node', 'ips', '0'],
                         propertyPathIpPublic: ['node', 'ips', '1']
                     });
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPropertyPathNoIpPublic(test) {
+        it('property path no ip test', (done) => {
             const optsNoPublic = JSON.parse(JSON.stringify(providerOptions));
             delete optsNoPublic.propertyPathIpPublic;
-            test.expect(2);
             testProvider.init(optsNoPublic)
                 .then(() => {
-                    test.deepEqual(testProvider.providerOptions, optsNoPublic);
-                    test.deepEqual(testProvider.propertyPaths, {
+                    assert.deepEqual(testProvider.providerOptions, optsNoPublic);
+                    assert.deepEqual(testProvider.propertyPaths, {
                         propertyPathId: ['node', 'uuid'],
                         propertyPathIpPrivate: ['node', 'ips', '0'],
                         propertyPathIpPublic: []
                     });
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testInitOptions(test) {
-            test.expect(1);
+        it('init option test', (done) => {
             testProvider.init(providerOptions, initOptions)
                 .then(() => {
-                    test.deepEqual(testProvider.initOptions, initOptions);
+                    assert.deepEqual(testProvider.initOptions, initOptions);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGetNodesFromUri: {
-        testBadJsonStringResponse(test) {
-            mockGetDataFromUrl(test, 'foo');
+    describe('get nodes from uri test', () => {
+        it('bad json string response test', (done) => {
+            mockGetDataFromUrl('foo');
 
-            test.expect(globalTests + 1);
             testProvider.getNodesFromUri(targetUrl, targetOptions)
                 .then(() => {
-                    test.ok(false, 'should have thrown bad response data');
+                    assert.ok(false, 'should have thrown bad response data');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('Data must parse to a JSON array'), -1);
+                    assert.notStrictEqual(err.message.indexOf('Data must parse to a JSON array'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testBadJsonArrayResponse(test) {
-            mockGetDataFromUrl(test, {});
+        it('bad json array response test', (done) => {
+            mockGetDataFromUrl({});
 
-            test.expect(globalTests + 1);
             testProvider.getNodesFromUri(targetUrl, targetOptions)
                 .then(() => {
-                    test.ok(false, 'should have thrown bad response data');
+                    assert.ok(false, 'should have thrown bad response data');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('Data must be a JSON array'), -1);
+                    assert.notStrictEqual(err.message.indexOf('Data must be a JSON array'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoNodes(test) {
-            mockGetDataFromUrl(test, JSON.stringify([{ foo: 'bar' }]));
+        it('no nodes test', (done) => {
+            mockGetDataFromUrl(JSON.stringify([{ foo: 'bar' }]));
 
-            test.expect(globalTests + 1);
             testProvider.init(providerOptions)
                 .then(() => {
                     return testProvider.getNodesFromUri(targetUrl, targetOptions)
                         .then((results) => {
-                            test.deepEqual(results, []);
+                            assert.deepEqual(results, []);
                         });
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testJsonStringNodes(test) {
-            mockGetDataFromUrl(test, JSON.stringify(responseNodeData));
+        it('json string nodes test', (done) => {
+            mockGetDataFromUrl(JSON.stringify(responseNodeData));
 
-            test.expect(globalTests + 1);
             testProvider.init(providerOptions)
                 .then(() => {
                     return testProvider.getNodesFromUri(targetUrl, targetOptions)
                         .then((results) => {
-                            test.deepEqual(results, [
+                            assert.deepEqual(results, [
                                 {
                                     id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
                                     ip: {
@@ -277,22 +266,21 @@ module.exports = {
                         });
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testJsonArrayNodes(test) {
-            mockGetDataFromUrl(test, responseNodeData);
+        it('json array nodes test', (done) => {
+            mockGetDataFromUrl(responseNodeData);
 
-            test.expect(globalTests + 1);
             testProvider.init(providerOptions)
                 .then(() => {
                     return testProvider.getNodesFromUri(targetUrl, targetOptions)
                         .then((results) => {
-                            test.deepEqual(results, [
+                            assert.deepEqual(results, [
                                 {
                                     id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
                                     ip: {
@@ -311,23 +299,22 @@ module.exports = {
                         });
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testTopLevelJson(test) {
-            mockGetDataFromUrl(test, responseNodeData);
+        it('top level json test', (done) => {
+            mockGetDataFromUrl(responseNodeData);
 
-            test.expect(globalTests + 1);
             const provOptsCopy = Object.assign(providerOptions, { propertyPathId: '' });
             testProvider.init(provOptsCopy)
                 .then(() => {
                     return testProvider.getNodesFromUri('https://example.com', targetOptions)
                         .then((results) => {
-                            test.deepEqual(results, [
+                            assert.deepEqual(results, [
                                 {
                                     id: {
                                         foo: 'bar',
@@ -364,11 +351,11 @@ module.exports = {
                         });
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    }
-};
+        });
+    });
+});

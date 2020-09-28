@@ -16,143 +16,147 @@
 
 'use strict';
 
-const deviceGroup = 'testDeviceGroup';
-const util = require('util');
 const q = require('q');
+const util = require('util');
+const assert = require('assert');
+
+const deviceGroup = 'testDeviceGroup';
 const CloudProvider = require('../../lib/cloudProvider');
 const AutoscaleInstance = require('../../lib/autoscaleInstance');
 
-let autoscale;
-let fsMock;
-let BigIp;
-let authnMock;
-let icontrolMock;
-let cloudUtilMock;
-let cryptoUtilMock;
-let ipcMock;
-let dnsProviderFactoryMock;
-let gtmDnsProviderMock;
-let childProcessMock;
-let argv;
-let providerMock;
-let bigIpMock;
-let testOptions;
-let instances;
-let instanceId;
-let exitCode;
-let exitMessage;
-let messages;
-let credentials;
-let functionsCalled;
-let cloudPrivateKeyPath;
-let privateKeyMetadata;
 
-let existsSync;
-let unlinkSync;
-let writeFile;
-let createWriteStream;
-let readdir;
-let stat;
-let rename;
+describe('autoscale tests', () => {
+    let autoscale;
+    let fsMock;
+    let BigIp;
+    let authnMock;
+    let icontrolMock;
+    let cloudUtilMock;
+    let cryptoUtilMock;
+    let ipcMock;
+    let dnsProviderFactoryMock;
+    let gtmDnsProviderMock;
+    let childProcessMock;
+    let argv;
+    let providerMock;
+    let bigIpMock;
+    let testOptions;
+    let instances;
+    let instanceId;
+    let exitCode;
+    let exitMessage;
+    let messages;
+    let credentials;
+    let functionsCalled;
+    let cloudPrivateKeyPath;
+    let privateKeyMetadata;
 
-let execFile;
+    let existsSync;
+    let unlinkSync;
+    let writeFile;
+    let createWriteStream;
+    let readdir;
+    let stat;
+    let rename;
 
-let unlinkedFiles;
-let renamedFiles;
-let missingFilePrefix;
+    let execFile;
 
-let ucsBackupName;
+    let unlinkedFiles;
+    let renamedFiles;
+    let missingFilePrefix;
 
-// Our tests cause too many event listeners. Turn off the check.
-const options = require('commander');
+    let ucsBackupName;
 
-options.setMaxListeners(0);
-process.setMaxListeners(0);
+    // Our tests cause too many event listeners. Turn off the check.
+    /* eslint-disable global-require */
+    const options = require('commander');
 
-util.inherits(ProviderMock, CloudProvider);
-function ProviderMock() {
-    ProviderMock.super_.call(this);
-    this.functionCalls = {};
-}
+    options.setMaxListeners(0);
+    process.setMaxListeners(0);
 
-ProviderMock.prototype.init = function init() {
-    this.functionCalls.init = arguments;
-    return q();
-};
+    util.inherits(ProviderMock, CloudProvider);
+    function ProviderMock() {
+        ProviderMock.super_.call(this);
+        this.functionCalls = {};
+    }
 
-ProviderMock.prototype.putInstance = function putInstance() {
-    this.functionCalls.putInstance = arguments;
-    return q();
-};
+    ProviderMock.prototype.init = function init() {
+        this.functionCalls.init = arguments;
+        return q();
+    };
 
-ProviderMock.prototype.getInstances = function getInstances() {
-    this.functionCalls.getInstances = arguments;
-    return q(instances);
-};
+    ProviderMock.prototype.putInstance = function putInstance() {
+        this.functionCalls.putInstance = arguments;
+        return q();
+    };
 
-ProviderMock.prototype.getInstanceId = function getInstanceId() {
-    this.functionCalls.getInstanceId = true;
-    return q(instanceId);
-};
+    ProviderMock.prototype.getInstances = function getInstances() {
+        this.functionCalls.getInstances = arguments;
+        return q(instances);
+    };
 
-ProviderMock.prototype.isValidPrimary = function isValidPrimary() {
-    this.functionCalls.isValidPrimary = true;
-    return q(true);
-};
+    ProviderMock.prototype.getInstanceId = function getInstanceId() {
+        this.functionCalls.getInstanceId = true;
+        return q(instanceId);
+    };
 
-ProviderMock.prototype.electPrimary = function isValidPrimary(instancesToElect) {
-    this.functionCalls.instancesSent = instancesToElect;
-    this.functionCalls.electPrimary = true;
-    return q();
-};
+    ProviderMock.prototype.isValidPrimary = function isValidPrimary() {
+        this.functionCalls.isValidPrimary = true;
+        return q(true);
+    };
 
-ProviderMock.prototype.tagPrimaryInstance = function tagPrimaryInstance(primaryIid, gInstances) {
-    this.functionCalls.tagPrimaryInstance = true;
-    this.functionCalls.taggedPrimaryIid = primaryIid;
-    this.functionCalls.taggedPrimaryInstances = gInstances;
-    return q();
-};
+    ProviderMock.prototype.electPrimary = function isValidPrimary(instancesToElect) {
+        this.functionCalls.instancesSent = instancesToElect;
+        this.functionCalls.electPrimary = true;
+        return q();
+    };
 
-ProviderMock.prototype.instancesRemoved = function instancesRemoved(instancesToRemove) {
-    this.functionCalls.instancesRemoved = instancesToRemove;
-    return q();
-};
+    ProviderMock.prototype.tagPrimaryInstance = function tagPrimaryInstance(primaryIid, gInstances) {
+        this.functionCalls.tagPrimaryInstance = true;
+        this.functionCalls.taggedPrimaryIid = primaryIid;
+        this.functionCalls.taggedPrimaryInstances = gInstances;
+        return q();
+    };
 
-ProviderMock.prototype.getStoredUcs = function getStoredUcs() {
-    return q();
-};
+    ProviderMock.prototype.instancesRemoved = function instancesRemoved(instancesToRemove) {
+        this.functionCalls.instancesRemoved = instancesToRemove;
+        return q();
+    };
 
-ProviderMock.prototype.putPublicKey = function putPublicKey() {
-    return q();
-};
+    ProviderMock.prototype.getStoredUcs = function getStoredUcs() {
+        return q();
+    };
 
-ProviderMock.prototype.getMessages = function getMessages() {
-    this.functionCalls.getMessages = arguments;
-    return q(messages);
-};
+    ProviderMock.prototype.putPublicKey = function putPublicKey() {
+        return q();
+    };
 
-ProviderMock.prototype.sendMessage = function sendMessage() {
-    this.functionCalls.sendMessage = arguments;
-    return q(messages);
-};
+    ProviderMock.prototype.getMessages = function getMessages() {
+        this.functionCalls.getMessages = arguments;
+        return q(messages);
+    };
 
-ProviderMock.prototype.getPrimaryCredentials = function getPrimaryCredentials() {
-    this.functionCalls.getPrimaryCredentials = arguments;
-    return q(credentials);
-};
+    ProviderMock.prototype.sendMessage = function sendMessage() {
+        this.functionCalls.sendMessage = arguments;
+        return q(messages);
+    };
 
-ProviderMock.prototype.putPrimaryCredentials = function putPrimaryCredentials() {
-    this.functionCalls.putPrimaryCredentials = arguments;
-    return q();
-};
+    ProviderMock.prototype.getPrimaryCredentials = function getPrimaryCredentials() {
+        this.functionCalls.getPrimaryCredentials = arguments;
+        return q(credentials);
+    };
 
-ProviderMock.prototype.storeUcs = function storeUcs() {
-    this.functionCalls.storeUcs = arguments;
-    return q();
-};
+    ProviderMock.prototype.putPrimaryCredentials = function putPrimaryCredentials() {
+        this.functionCalls.putPrimaryCredentials = arguments;
+        return q();
+    };
 
-module.exports = {
-    setUp(callback) {
+    ProviderMock.prototype.storeUcs = function storeUcs() {
+        this.functionCalls.storeUcs = arguments;
+        return q();
+    };
+
+    beforeEach((done) => {
         argv = ['node', 'autoscale', '--password', 'foobar', '--device-group',
             deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
 
@@ -349,13 +353,13 @@ module.exports = {
                         return q();
                     }
                 };
-                callback();
+                done();
             });
 
         autoscale = require('../../scripts/autoscale');
-    },
+    });
 
-    tearDown(callback) {
+    afterEach(() => {
         fsMock.existsSync = existsSync;
         fsMock.unlinkSync = unlinkSync;
         fsMock.writeFile = writeFile;
@@ -370,68 +374,62 @@ module.exports = {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
+    });
 
-    testUndefinedOptions: {
-        testNoPassword(test) {
+    describe('Undefined Options tests', () => {
+        it('no password test', (done) => {
             const passwordUrl = 'https://password';
             argv = ['node', 'autoscale', '--host', '1.2.3.4', '-u', 'foo',
                 '--password-url', passwordUrl, '--password', '--log-level', 'none'];
 
             autoscale.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(autoscale.options.passwordUrl, passwordUrl);
-                test.strictEqual(autoscale.options.password, undefined);
-                test.done();
+                assert.strictEqual(autoscale.options.passwordUrl, passwordUrl);
+                assert.strictEqual(autoscale.options.password, undefined);
+                done();
             });
-        },
+        });
 
-        testNoPasswordUrl(test) {
+        it('no password url test', (done) => {
             const password = 'password';
             argv = ['node', 'autoscale', '--host', '1.2.3.4', '-u', 'foo',
                 '--password-url', '--password', password, '--log-level', 'none'];
 
             autoscale.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(autoscale.options.passwordUrl, undefined);
-                test.strictEqual(autoscale.options.password, password);
-                test.done();
+                assert.strictEqual(autoscale.options.passwordUrl, undefined);
+                assert.strictEqual(autoscale.options.password, password);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    commonTests: {
-        setUp(callback) {
+    describe('common tests', () => {
+        beforeEach(() => {
             fsMock.writeFile = (path, data, cb) => {
                 cb();
             };
-            callback();
-        },
+        });
 
-        testNoPassword(test) {
+        it('no password test', (done) => {
             argv = ['node', 'autoscale', '--device-group',
                 deviceGroup, '--cloud', 'aws', '--log-level', 'none'];
 
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(exitCode, 1);
-                test.notStrictEqual(exitMessage.indexOf('is required'), -1);
-                test.done();
+                assert.strictEqual(exitCode, 1);
+                assert.notStrictEqual(exitMessage.indexOf('is required'), -1);
+                done();
             });
-        },
+        });
 
-        testWaitFor(test) {
+        it('wait for test', (done) => {
             argv.push('--wait-for', 'foo');
 
-            test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.ipc.once[0], 'foo');
-                test.done();
+                assert.strictEqual(functionsCalled.ipc.once[0], 'foo');
+                done();
             });
-        },
+        });
 
-        testBackground(test) {
+        it('background test', (done) => {
             let runInBackgroundCalled = false;
             cloudUtilMock.runInBackgroundAndExit = () => {
                 runInBackgroundCalled = true;
@@ -439,41 +437,37 @@ module.exports = {
 
             argv.push('--background');
 
-            test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.ok(runInBackgroundCalled);
-                test.done();
+                assert.ok(runInBackgroundCalled);
+                done();
             });
-        },
+        });
 
-        testInitCalled(test) {
+        it('init called test', (done) => {
             argv.push('--provider-options', 'key1:value1,key2:value2');
-            test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.deepEqual(providerMock.functionCalls.init[0], { key1: 'value1', key2: 'value2' });
-                test.done();
+                assert.deepEqual(providerMock.functionCalls.init[0], { key1: 'value1', key2: 'value2' });
+                done();
             });
-        },
+        });
 
-        testGetInstancesCalled(test) {
-            test.expect(1);
+        it('instances called test', (done) => {
             autoscale.run(argv, testOptions, () => {
-                test.ok(providerMock.functionCalls.getInstances, 'getInstances not called');
-                test.done();
+                assert.ok(providerMock.functionCalls.getInstances, 'getInstances not called');
+                done();
             });
-        },
+        });
 
-        testNoInstances(test) {
+        it('no instances test', (done) => {
             instances = {};
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(exitCode, 1);
-                test.notStrictEqual(exitMessage.indexOf('list is empty'), -1);
-                test.done();
+                assert.strictEqual(exitCode, 1);
+                assert.notStrictEqual(exitMessage.indexOf('list is empty'), -1);
+                done();
             });
-        },
+        });
 
-        testMissingOurInstance(test) {
+        it('missing our instance test', (done) => {
             instances = {
                 one: {
                     isPrimary: false,
@@ -483,15 +477,14 @@ module.exports = {
                 }
             };
 
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(exitCode, 1);
-                test.notStrictEqual(exitMessage.indexOf('Our instance ID'), -1);
-                test.done();
+                assert.strictEqual(exitCode, 1);
+                assert.notStrictEqual(exitMessage.indexOf('Our instance ID'), -1);
+                done();
             });
-        },
+        });
 
-        testBecomingPrimary(test) {
+        it('becoming primary test', (done) => {
             instances = {
                 two: {
                     isPrimary: true,
@@ -502,15 +495,14 @@ module.exports = {
                 }
             };
 
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(exitCode, 0);
-                test.notStrictEqual(exitMessage.indexOf('becoming primary'), -1);
-                test.done();
+                assert.strictEqual(exitCode, 0);
+                assert.notStrictEqual(exitMessage.indexOf('becoming primary'), -1);
+                done();
             });
-        },
+        });
 
-        testBadVersion(test) {
+        it('bad version test', (done) => {
             instances = {
                 one: {
                     isPrimary: false,
@@ -533,15 +525,14 @@ module.exports = {
                 };
             };
 
-            test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
+                assert.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
                     CloudProvider.STATUS_VERSION_NOT_UP_TO_DATE);
-                test.done();
+                done();
             });
-        },
+        });
 
-        testNotExternal(test) {
+        it('not external test', (done) => {
             instances = {
                 one: {
                     isPrimary: false,
@@ -559,15 +550,14 @@ module.exports = {
                 }
             };
 
-            test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
+                assert.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
                     CloudProvider.STATUS_NOT_EXTERNAL);
-                test.done();
+                done();
             });
-        },
+        });
 
-        testNotProviderVisible(test) {
+        it('not provider visible test', (done) => {
             instances = {
                 one: {
                     isPrimary: false,
@@ -583,23 +573,21 @@ module.exports = {
                 }
             };
 
-            test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
+                assert.strictEqual(providerMock.functionCalls.putInstance[1].primaryStatus.status,
                     CloudProvider.STATUS_NOT_IN_CLOUD_LIST);
-                test.done();
+                done();
             });
-        },
+        });
 
-        testIsValidPrimaryCalledWithInstances(test) {
-            test.expect(1);
+        it('is valid primary called with instances test', (done) => {
             autoscale.run(argv, testOptions, () => {
-                test.ok(providerMock.functionCalls.isValidPrimary);
-                test.done();
+                assert.ok(providerMock.functionCalls.isValidPrimary);
+                done();
             });
-        },
+        });
 
-        testElectCalledWithVersionsMarked(test) {
+        it('elect called with versions marked test', (done) => {
             providerMock.isValidPrimary = () => {
                 return q(false);
             };
@@ -626,38 +614,35 @@ module.exports = {
                 }
             };
 
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(providerMock.functionCalls.instancesSent.one.versionOk, false);
-                test.strictEqual(providerMock.functionCalls.instancesSent.two.versionOk, true);
-                test.done();
+                assert.strictEqual(providerMock.functionCalls.instancesSent.one.versionOk, false);
+                assert.strictEqual(providerMock.functionCalls.instancesSent.two.versionOk, true);
+                done();
             });
-        },
+        });
 
-        testElectPrimaryCalledWithInvalidPrimary(test) {
+        it('Elect Primary Called With Invalid Primary test', (done) => {
             providerMock.isValidPrimary = () => {
                 return q(false);
             };
-            test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.ok(providerMock.functionCalls.electPrimary);
-                test.done();
+                assert.ok(providerMock.functionCalls.electPrimary);
+                done();
             });
-        },
+        });
 
-        testElectNotCalledWithValidPrimary(test) {
+        it('Elect Not Called With Valid Primary test', (done) => {
             providerMock.isValidPrimary = () => {
                 return q(true);
             };
-            test.expect(1);
             autoscale.run(argv, testOptions, () => {
-                test.ifError(providerMock.functionCalls.electPrimary);
-                test.done();
+                assert.ifError(providerMock.functionCalls.electPrimary);
+                done();
             });
-        },
+        });
 
-        testAutoscaleProcessCount: {
-            testOneRunningAutoscale(test) {
+        describe('Autoscale Process Count tests', () => {
+            it('One Running Autoscale test', (done) => {
                 argv.push('--cluster-action', 'join');
                 cloudUtilMock.getProcessCount = function getProcessCount() {
                     return q('2');
@@ -667,14 +652,13 @@ module.exports = {
                     return q('12123-01');
                 };
 
-                test.expect(1);
                 autoscale.run(argv, testOptions, () => {
-                    test.strictEqual(exitMessage, 'Another autoscale process already running. Exiting.');
-                    test.done();
+                    assert.strictEqual(exitMessage, 'Another autoscale process already running. Exiting.');
+                    done();
                 });
-            },
+            });
 
-            testOneRunningAutoscaleShortCommand(test) {
+            it('One Running Autoscale Short Command test', (done) => {
                 argv.push('-c', 'update');
                 cloudUtilMock.getProcessCount = function getProcessCount() {
                     return q('2');
@@ -684,24 +668,22 @@ module.exports = {
                     return q('12123-01');
                 };
 
-                test.expect(1);
                 autoscale.run(argv, testOptions, () => {
-                    test.strictEqual(exitMessage, 'Another autoscale process already running. Exiting.');
-                    test.done();
+                    assert.strictEqual(exitMessage, 'Another autoscale process already running. Exiting.');
+                    done();
                 });
-            }
-        },
+            });
+        });
 
-        testBecomePrimary: {
-            setUp(callback) {
+        describe('Becoming primary tests', () => {
+            beforeEach(() => {
                 childProcessMock.execFile = (file, args, cb) => {
                     cb();
                 };
-                callback();
-            },
+            });
 
-            testLoadUcs: {
-                setUp(callback) {
+            describe('load ucs tests', () => {
+                beforeEach(() => {
                     missingFilePrefix = undefined;
                     fsMock.existsSync = (file) => {
                         if (file.startsWith(missingFilePrefix)) {
@@ -722,53 +704,47 @@ module.exports = {
                     cloudUtilMock.writeUcsFile = () => {
                         return q();
                     };
+                });
 
-                    callback();
-                },
-
-                testUpdateScriptFailure(test) {
+                it('update script failure test', (done) => {
                     const errorMessage = 'bad script';
                     childProcessMock.execFile = (file, args, cb) => {
                         cb(new Error(errorMessage));
                     };
-                    test.expect(2);
                     autoscale.run(argv, testOptions, (err) => {
-                        test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
-                        test.notStrictEqual(err.message.indexOf(errorMessage), -1);
-                        test.done();
+                        assert.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
+                        assert.notStrictEqual(err.message.indexOf(errorMessage), -1);
+                        done();
                     });
-                },
+                });
 
-                testMissingFile(test) {
+                it('missing file test', (done) => {
                     missingFilePrefix = '/shared/tmp/ucs/ucsUpdated_';
-                    test.expect(2);
                     autoscale.run(argv, testOptions, (err) => {
-                        test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
-                        test.notStrictEqual(err.message.indexOf('updated ucs not found'), -1);
-                        test.done();
+                        assert.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
+                        assert.notStrictEqual(err.message.indexOf('updated ucs not found'), -1);
+                        done();
                     });
-                },
+                });
 
-                testLoadUcsFailure(test) {
+                it('load ucs failure test', (done) => {
                     bigIpMock.loadUcs = () => {
                         return q.reject('foo');
                     };
-                    test.expect(1);
                     autoscale.run(argv, testOptions, () => {
-                        test.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
-                        test.done();
+                        assert.strictEqual(bigIpMock.functionCalls.loadUcs, undefined);
+                        done();
                     });
-                },
+                });
 
-                testBuffer(test) {
-                    test.expect(1);
+                it('buffer test', (done) => {
                     autoscale.run(argv, testOptions, () => {
-                        test.notStrictEqual(bigIpMock.functionCalls.loadUcs, undefined);
-                        test.done();
+                        assert.notStrictEqual(bigIpMock.functionCalls.loadUcs, undefined);
+                        done();
                     });
-                },
+                });
 
-                testPipe(test) {
+                it('pipe test', (done) => {
                     providerMock.getStoredUcs = () => {
                         return q({
                             pipe() { },
@@ -785,16 +761,15 @@ module.exports = {
                             }
                         };
                     };
-                    test.expect(1);
                     autoscale.run(argv, testOptions, () => {
-                        test.notStrictEqual(bigIpMock.functionCalls.loadUcs, undefined);
-                        test.done();
+                        assert.notStrictEqual(bigIpMock.functionCalls.loadUcs, undefined);
+                        done();
                     });
-                }
-            },
+                });
+            });
 
-            testCreateDeviceGroup: {
-                testGetHostname(test) {
+            describe('create device group tests', () => {
+                it('get hostname test', (done) => {
                     const hostname = 'myNewHostname';
 
                     instances = {
@@ -821,14 +796,13 @@ module.exports = {
                         }
                     );
 
-                    test.expect(1);
                     autoscale.run(argv, testOptions, () => {
-                        test.deepEqual(bigIpMock.functionCalls.createDeviceGroup[2], [hostname]);
-                        test.done();
+                        assert.deepEqual(bigIpMock.functionCalls.createDeviceGroup[2], [hostname]);
+                        done();
                     });
-                },
+                });
 
-                testAsmProvisioned(test) {
+                it('asm provisioned test', (done) => {
                     icontrolMock.when(
                         'list',
                         '/tm/sys/provision',
@@ -856,14 +830,13 @@ module.exports = {
                         ]
                     );
 
-                    test.expect(1);
                     autoscale.run(argv, testOptions, () => {
-                        test.ok(bigIpMock.functionCalls.createDeviceGroup[3].asmSync);
-                        test.done();
+                        assert.ok(bigIpMock.functionCalls.createDeviceGroup[3].asmSync);
+                        done();
                     });
-                },
+                });
 
-                testAsmNotProvisioned(test) {
+                it('asm not provisioned test', (done) => {
                     icontrolMock.when(
                         'list',
                         '/tm/sys/provision',
@@ -891,115 +864,109 @@ module.exports = {
                         ]
                     );
 
-                    test.expect(1);
                     autoscale.run(argv, testOptions, () => {
-                        test.ok(!bigIpMock.functionCalls.createDeviceGroup[3].asmSync);
-                        test.done();
+                        assert.ok(!bigIpMock.functionCalls.createDeviceGroup[3].asmSync);
+                        done();
                     });
-                }
+                });
+            });
 
-            },
-        },
+            describe('dns tests', () => {
+                beforeEach(() => {
+                    argv.push('--dns', 'gtm', '--dns-app-port', '1234', '--cluster-action', 'update');
 
-        testDns: {
-            setUp(callback) {
-                argv.push('--dns', 'gtm', '--dns-app-port', '1234', '--cluster-action', 'update');
+                    icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
+                    bigIpMock.cluster.getCmSyncStatus = () => {
+                        return q({
+                            disconnected: []
+                        });
+                    };
 
-                icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
-                bigIpMock.cluster.getCmSyncStatus = () => {
-                    return q({
-                        disconnected: []
-                    });
-                };
-
-                instances = {
-                    one: {
-                        isPrimary: false,
-                        hostname: 'host1',
-                        privateIp: '1.2.3.4',
-                        publicIp: '11.12.13.14',
-                        mgmtIp: '1.2.3.4',
-                        providerVisible: true
-                    },
-                    two: {
-                        isPrimary: true,
-                        hostname: 'host2',
-                        privateIp: '5.6.7.8',
-                        publicIp: '15.16.17.18',
-                        mgmtIp: '5.6.7.8',
-                        providerVisible: true
-                    }
-                };
-
-
-                callback();
-            },
-
-            testInitCall(test) {
-                cloudUtilMock.getProcessCount = function getProcessCount() {
-                    return q('0');
-                };
-
-                cloudUtilMock.getProcessExecutionTimeWithPid = function getProcessExecutionTimeWithPid() {
-                    return q();
-                };
-                test.expect(1);
-                argv.push('--dns-provider-options', 'key1:value1,key2:value2');
-                autoscale.run(argv, testOptions, () => {
-                    test.deepEqual(
-                        gtmDnsProviderMock.functionCalls.init[0],
-                        {
-                            key1: 'value1',
-                            key2: 'value2'
+                    instances = {
+                        one: {
+                            isPrimary: false,
+                            hostname: 'host1',
+                            privateIp: '1.2.3.4',
+                            publicIp: '11.12.13.14',
+                            mgmtIp: '1.2.3.4',
+                            providerVisible: true
+                        },
+                        two: {
+                            isPrimary: true,
+                            hostname: 'host2',
+                            privateIp: '5.6.7.8',
+                            publicIp: '15.16.17.18',
+                            mgmtIp: '5.6.7.8',
+                            providerVisible: true
                         }
-                    );
-                    test.done();
+                    };
                 });
-            },
 
-            testPrivate(test) {
-                argv.push('--dns-ip-type', 'private');
+                it('init call test', (done) => {
+                    cloudUtilMock.getProcessCount = function getProcessCount() {
+                        return q('0');
+                    };
 
-                autoscale.run(argv, testOptions, () => {
-                    const updatedServers = gtmDnsProviderMock.functionCalls.update[0];
-                    test.strictEqual(updatedServers.length, 2);
-                    test.deepEqual(updatedServers[0], {
-                        name: instances.one.hostname,
-                        ip: instances.one.privateIp,
-                        port: '1234'
+                    cloudUtilMock.getProcessExecutionTimeWithPid = function getProcessExecutionTimeWithPid() {
+                        return q();
+                    };
+                    argv.push('--dns-provider-options', 'key1:value1,key2:value2');
+                    autoscale.run(argv, testOptions, () => {
+                        assert.deepEqual(
+                            gtmDnsProviderMock.functionCalls.init[0],
+                            {
+                                key1: 'value1',
+                                key2: 'value2'
+                            }
+                        );
+                        done();
                     });
-                    test.deepEqual(updatedServers[1], {
-                        name: instances.two.hostname,
-                        ip: instances.two.privateIp,
-                        port: '1234'
-                    });
-                    test.done();
                 });
-            },
 
-            testPublic(test) {
-                argv.push('--dns-ip-type', 'public');
-                autoscale.run(argv, testOptions, () => {
-                    const updatedServers = gtmDnsProviderMock.functionCalls.update[0];
-                    test.strictEqual(updatedServers.length, 2);
-                    test.deepEqual(updatedServers[0], {
-                        name: instances.one.hostname,
-                        ip: instances.one.publicIp,
-                        port: '1234'
+                it('private test', (done) => {
+                    argv.push('--dns-ip-type', 'private');
+
+                    autoscale.run(argv, testOptions, () => {
+                        const updatedServers = gtmDnsProviderMock.functionCalls.update[0];
+                        assert.strictEqual(updatedServers.length, 2);
+                        assert.deepEqual(updatedServers[0], {
+                            name: instances.one.hostname,
+                            ip: instances.one.privateIp,
+                            port: '1234'
+                        });
+                        assert.deepEqual(updatedServers[1], {
+                            name: instances.two.hostname,
+                            ip: instances.two.privateIp,
+                            port: '1234'
+                        });
+                        done();
                     });
-                    test.deepEqual(updatedServers[1], {
-                        name: instances.two.hostname,
-                        ip: instances.two.publicIp,
-                        port: '1234'
-                    });
-                    test.done();
                 });
-            }
-        }
-    },
 
-    updateTests: {
-        setUp(callback) {
+                it('public test', (done) => {
+                    argv.push('--dns-ip-type', 'public');
+                    autoscale.run(argv, testOptions, () => {
+                        const updatedServers = gtmDnsProviderMock.functionCalls.update[0];
+                        assert.strictEqual(updatedServers.length, 2);
+                        assert.deepEqual(updatedServers[0], {
+                            name: instances.one.hostname,
+                            ip: instances.one.publicIp,
+                            port: '1234'
+                        });
+                        assert.deepEqual(updatedServers[1], {
+                            name: instances.two.hostname,
+                            ip: instances.two.publicIp,
+                            port: '1234'
+                        });
+                        done();
+                    });
+                });
+            });
+        });
+    });
+
+    describe('update tests', () => {
+        beforeEach(() => {
             argv.push('--cluster-action', 'update');
             bigIpMock.cluster.getCmSyncStatus = () => {
                 return q({
@@ -1026,11 +993,9 @@ module.exports = {
                 one: instance1,
                 two: instance2
             };
+        });
 
-            callback();
-        },
-
-        testSetConfigSync(test) {
+        it('set config sync test', (done) => {
             let hostname;
             let privateIp;
 
@@ -1044,15 +1009,14 @@ module.exports = {
             };
             icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
 
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(hostname, 'host2');
-                test.strictEqual(privateIp, '5.6.7.8');
-                test.done();
+                assert.strictEqual(hostname, 'host2');
+                assert.strictEqual(privateIp, '5.6.7.8');
+                done();
             });
-        },
+        });
 
-        testConfigSyncAlreadySet(test) {
+        it('config sync already happened test', (done) => {
             let hostname;
             let configSyncIpCalled = false;
 
@@ -1066,16 +1030,15 @@ module.exports = {
             };
             icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
 
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(hostname, 'host2');
-                test.strictEqual(configSyncIpCalled, false);
-                test.done();
+                assert.strictEqual(hostname, 'host2');
+                assert.strictEqual(configSyncIpCalled, false);
+                done();
             });
-        },
+        });
 
-        testIsPrimary: {
-            testDisconnected(test) {
+        describe('is primary tests', () => {
+            it('disconnected test', (done) => {
                 let devicesRemoved = [];
                 icontrolMock.when('list', '/tm/sys/global-settings', { hostname: 'host2' });
                 bigIpMock.cluster.getCmSyncStatus = () => {
@@ -1093,40 +1056,38 @@ module.exports = {
                 // We expect that host3 and host4 will be removed. host1 will not because the cloud provider
                 // says it is still in the list of known instances
                 autoscale.run(argv, testOptions, () => {
-                    test.strictEqual(devicesRemoved.length, 2);
-                    test.notStrictEqual(devicesRemoved.indexOf('host3'), -1);
-                    test.notStrictEqual(devicesRemoved.indexOf('host4'), -1);
-                    test.done();
+                    assert.strictEqual(devicesRemoved.length, 2);
+                    assert.notStrictEqual(devicesRemoved.indexOf('host3'), -1);
+                    assert.notStrictEqual(devicesRemoved.indexOf('host4'), -1);
+                    done();
                 });
-            }
-        },
+            });
+        });
 
-        testIsNotPrimary: {
-            setUp(callback) {
+        describe('is not primary tests', () => {
+            beforeEach(() => {
                 instanceId = 'one';
-                callback();
-            },
+            });
 
-            testPrimaryFileRemoved(test) {
+            it('primary file removed test', (done) => {
                 fsMock.existsSync = () => {
                     return true;
                 };
 
                 autoscale.run(argv, testOptions, () => {
-                    test.notStrictEqual(unlinkedFiles.indexOf('/config/cloud/master'), -1);
-                    test.done();
+                    assert.notStrictEqual(unlinkedFiles.indexOf('/config/cloud/master'), -1);
+                    done();
                 });
-            }
-        }
-    },
+            });
+        });
+    });
 
-    joinTests: {
-        setUp(callback) {
+    describe('join tests', () => {
+        beforeEach(() => {
             argv.push('--cluster-action', 'join');
-            callback();
-        },
+        });
 
-        testConfigSyncCalled(test) {
+        it('config sync called test', (done) => {
             icontrolMock.when(
                 'list',
                 '/shared/identified-devices/config/device-info',
@@ -1136,81 +1097,72 @@ module.exports = {
             );
 
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(bigIpMock.functionCalls.configSyncIp[0], instances[instanceId].privateIp);
-                test.done();
+                assert.strictEqual(bigIpMock.functionCalls.configSyncIp[0], instances[instanceId].privateIp);
+                done();
             });
-        },
+        });
 
-        testCreateGroupWhenPrimary(test) {
+        it('create group when primary test', (done) => {
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(bigIpMock.functionCalls.createDeviceGroup[0], deviceGroup);
-                test.done();
+                assert.strictEqual(bigIpMock.functionCalls.createDeviceGroup[0], deviceGroup);
+                done();
             });
-        },
+        });
 
-        testCreateGroupOptionsDefaults(test) {
+        it('create group options defaults test', (done) => {
             autoscale.run(argv, testOptions, () => {
                 const createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
 
-                test.expect(5);
-                test.strictEqual(createGroupOptions.autoSync, true);
-                test.strictEqual(createGroupOptions.asmSync, undefined);
-                test.strictEqual(createGroupOptions.networkFailover, undefined);
-                test.strictEqual(createGroupOptions.fullLoadOnSync, undefined);
-                test.strictEqual(createGroupOptions.saveOnAutoSync, true);
-                test.done();
+                assert.strictEqual(createGroupOptions.autoSync, true);
+                assert.strictEqual(createGroupOptions.asmSync, undefined);
+                assert.strictEqual(createGroupOptions.networkFailover, undefined);
+                assert.strictEqual(createGroupOptions.fullLoadOnSync, undefined);
+                assert.strictEqual(createGroupOptions.saveOnAutoSync, true);
+                done();
             });
-        },
+        });
 
-        testCreateGroupOptionsNonDefaults(test) {
+        it('create group options non defaults test', (done) => {
             argv.push('--no-auto-sync', '--asm-sync', '--network-failover', '--full-load-on-sync');
 
             autoscale.run(argv, testOptions, () => {
                 const createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
 
-                test.expect(4);
-                test.strictEqual(createGroupOptions.autoSync, false);
-                test.strictEqual(createGroupOptions.asmSync, true);
-                test.strictEqual(createGroupOptions.networkFailover, true);
-                test.strictEqual(createGroupOptions.fullLoadOnSync, true);
-                test.done();
+                assert.strictEqual(createGroupOptions.autoSync, false);
+                assert.strictEqual(createGroupOptions.asmSync, true);
+                assert.strictEqual(createGroupOptions.networkFailover, true);
+                assert.strictEqual(createGroupOptions.fullLoadOnSync, true);
+                done();
             });
-        },
+        });
 
-        testCreateGroupOptionsNoSaveOnAutoSync(test) {
+        it('create group options no save on autoSync test', (done) => {
             argv.push('--no-save-on-auto-sync');
 
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
                 const createGroupOptions = bigIpMock.functionCalls.createDeviceGroup[3];
-                test.strictEqual(createGroupOptions.autoSync, true);
-                test.strictEqual(createGroupOptions.saveOnAutoSync, false);
-                test.done();
+                assert.strictEqual(createGroupOptions.autoSync, true);
+                assert.strictEqual(createGroupOptions.saveOnAutoSync, false);
+                done();
             });
-        },
+        });
 
-        testEncryption: {
-            setUp(callback) {
+        describe('encryption tests', () => {
+            beforeEach(() => {
                 providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
-                callback();
-            },
+            });
 
-            tearDown(callback) {
-                callback();
-            },
-
-            testBasic(test) {
-                test.expect(1);
+            it('basic test', (done) => {
                 autoscale.run(argv, testOptions, () => {
-                    test.notStrictEqual(bigIpMock.functionCalls.installPrivateKey, undefined);
-                    test.done();
+                    assert.notStrictEqual(bigIpMock.functionCalls.installPrivateKey, undefined);
+                    done();
                 });
-            }
-        }
-    },
+            });
+        });
+    });
 
-    unblockSyncTests: {
-        setUp(callback) {
+    describe('unblock sync tests', () => {
+        beforeEach(() => {
             argv.push('--cluster-action', 'unblock-sync');
             icontrolMock.when(
                 'list',
@@ -1219,20 +1171,18 @@ module.exports = {
                     hostname: 'host2'
                 }
             );
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
+        it('basic test', (done) => {
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(bigIpMock.functionCalls.configSyncIp[0], instances[instanceId].privateIp);
-                test.done();
+                assert.strictEqual(bigIpMock.functionCalls.configSyncIp[0], instances[instanceId].privateIp);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    backupUcsTests: {
-        setUp(callback) {
+    describe('backup ucs tests', () => {
+        beforeEach(() => {
             argv.push('--cluster-action', 'backup-ucs');
 
             ucsBackupName = undefined;
@@ -1246,26 +1196,24 @@ module.exports = {
             fsMock.readdir = (directory, cb) => {
                 cb(null, ['file1.ucs', 'ucsAutosave_1234.ucs']);
             };
-            callback();
-        },
+        });
 
-        testBasic(test) {
+        it('basic test', (done) => {
             autoscale.run(argv, testOptions, () => {
-                test.ok(ucsBackupName.startsWith('ucsAutosave_'));
-                test.done();
+                assert.ok(ucsBackupName.startsWith('ucsAutosave_'));
+                done();
             });
-        },
+        });
 
-        testOldFilesDeleted(test) {
-            test.expect(2);
+        it('old files deleted test', (done) => {
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(unlinkedFiles.length, 1);
-                test.strictEqual(unlinkedFiles[0], '/var/local/ucs/ucsAutosave_1234.ucs');
-                test.done();
+                assert.strictEqual(unlinkedFiles.length, 1);
+                assert.strictEqual(unlinkedFiles[0], '/var/local/ucs/ucsAutosave_1234.ucs');
+                done();
             });
-        },
+        });
 
-        testAjvCleanup(test) {
+        it('ajv cleanup test', (done) => {
             bigIpMock.deviceInfo = () => {
                 return q({ version: '13.0.0' });
             };
@@ -1277,32 +1225,30 @@ module.exports = {
                 }
             };
 
-            test.expect(2);
             autoscale.run(argv, testOptions, () => {
-                test.strictEqual(renamedFiles.length, 1);
-                test.ok(renamedFiles[0].endsWith('ajv/lib/refs/$data.json'));
-                test.done();
+                assert.strictEqual(renamedFiles.length, 1);
+                assert.ok(renamedFiles[0].endsWith('ajv/lib/refs/$data.json'));
+                done();
             });
-        }
-    },
+        });
+    });
 
-    messagingTests: {
-        setUp(callback) {
+    describe('messaging tests', () => {
+        beforeEach(() => {
             providerMock.features[CloudProvider.FEATURE_MESSAGING] = true;
             argv.push('--cluster-action', 'join');
-            callback();
-        },
+        });
 
-        testIsPrimary: {
-            testActions(test) {
+        describe('is primary tests', () => {
+            it('actions test', (done) => {
                 autoscale.run(argv, testOptions, () => {
-                    test.deepEqual(providerMock.functionCalls.getMessages[0],
+                    assert.deepEqual(providerMock.functionCalls.getMessages[0],
                         [CloudProvider.MESSAGE_ADD_TO_CLUSTER]);
-                    test.done();
+                    done();
                 });
-            },
+            });
 
-            testAddToCluster(test) {
+            it('add to cluster test', (done) => {
                 const deviceGroupToAdd = 'addDeviceGroup';
                 const hostToAdd = 'addHost';
                 const usernameToAdd = 'addUserName';
@@ -1325,46 +1271,44 @@ module.exports = {
                     return q(messages);
                 };
 
-                test.expect(4);
                 autoscale.run(argv, testOptions, () => {
-                    test.strictEqual(bigIpMock.functionCalls.joinCluster[0], deviceGroupToAdd);
-                    test.strictEqual(bigIpMock.functionCalls.joinCluster[1], hostToAdd);
-                    test.strictEqual(bigIpMock.functionCalls.joinCluster[2], usernameToAdd);
-                    test.strictEqual(bigIpMock.functionCalls.joinCluster[3], passwordToAdd);
-                    test.done();
+                    assert.strictEqual(bigIpMock.functionCalls.joinCluster[0], deviceGroupToAdd);
+                    assert.strictEqual(bigIpMock.functionCalls.joinCluster[1], hostToAdd);
+                    assert.strictEqual(bigIpMock.functionCalls.joinCluster[2], usernameToAdd);
+                    assert.strictEqual(bigIpMock.functionCalls.joinCluster[3], passwordToAdd);
+                    done();
                 });
-            }
-        },
+            });
+        });
 
-        testIsNotPrimary: {
-            setUp(callback) {
+        describe('is not primary tests', () => {
+            beforeEach(() => {
                 instanceId = 'one';
-                callback();
-            },
+            });
 
-            testActions(test) {
+            it('actions test', (done) => {
                 autoscale.run(argv, testOptions, () => {
-                    test.deepEqual(providerMock.functionCalls.getMessages[0],
+                    assert.deepEqual(providerMock.functionCalls.getMessages[0],
                         [CloudProvider.MESSAGE_SYNC_COMPLETE]);
-                    test.done();
+                    done();
                 });
-            },
+            });
 
-            testPrepareEncryptedMessageData(test) {
+            it('Prepare Encrypted Message Data test', (done) => {
                 const publicKey = 'myPubKey';
                 providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
                 providerMock.getPublicKey = () => {
                     return q(publicKey);
                 };
                 autoscale.run(argv, testOptions, () => {
-                    test.deepEqual(cryptoUtilMock.functionCalls.encrypt[0], publicKey);
-                    test.done();
+                    assert.deepEqual(cryptoUtilMock.functionCalls.encrypt[0], publicKey);
+                    done();
                 });
-            }
-        },
+            });
+        });
 
-        testEncrypted: {
-            setUp(callback) {
+        describe('encrypted tests', () => {
+            beforeEach(() => {
                 providerMock.features[CloudProvider.FEATURE_ENCRYPTION] = true;
                 providerMock.getMessages = () => {
                     messages = [
@@ -1378,72 +1322,64 @@ module.exports = {
                 privateKeyMetadata = {
                     passphrase: 'myPassphrase'
                 };
-                callback();
-            },
+            });
 
-            testHasKey(test) {
+            it('has key test', (done) => {
                 autoscale.cloudPrivateKeyPath = 'foo';
-                test.expect(2);
                 autoscale.run(argv, testOptions, () => {
-                    test.deepEqual(cryptoUtilMock.functionCalls.decrypt[0], autoscale.cloudPrivateKeyPath);
-                    test.deepEqual(
+                    assert.deepEqual(cryptoUtilMock.functionCalls.decrypt[0], autoscale.cloudPrivateKeyPath);
+                    assert.deepEqual(
                         cryptoUtilMock.functionCalls.decrypt[2],
                         {
                             passphrase: privateKeyMetadata.passphrase,
                             passphraseEncrypted: true
                         }
                     );
-                    test.done();
+                    done();
                 });
-            },
+            });
 
-            testDoesNotHaveKey(test) {
+            it('does not have key test', (done) => {
                 cloudPrivateKeyPath = 'bar';
-                test.expect(2);
                 autoscale.run(argv, testOptions, () => {
-                    test.deepEqual(cryptoUtilMock.functionCalls.decrypt[0], cloudPrivateKeyPath);
-                    test.deepEqual(
+                    assert.deepEqual(cryptoUtilMock.functionCalls.decrypt[0], cloudPrivateKeyPath);
+                    assert.deepEqual(
                         cryptoUtilMock.functionCalls.decrypt[2],
                         {
                             passphrase: privateKeyMetadata.passphrase,
                             passphraseEncrypted: true
                         }
                     );
-                    test.done();
+                    done();
                 });
-            }
-        }
-    },
+            });
+        });
+    });
 
-    testNonMessagingTests: {
-        setUp(callback) {
+    describe('non messaging tests', () => {
+        beforeEach(() => {
             providerMock.features[CloudProvider.FEATURE_MESSAGING] = false;
             argv.push('--cluster-action', 'join');
-            callback();
-        },
+        });
 
-        tearDown(callback) {
-            callback();
-        },
-
-        testIsNotPrimary(test) {
+        it('is not primary test', (done) => {
             instanceId = 'one';
             credentials = {
                 username: 'myUser',
                 password: 'myPassword'
             };
-            test.expect(4);
             autoscale.run(argv, testOptions, () => {
                 const joinClusterCall = bigIpMock.functionCalls.joinCluster;
-                test.strictEqual(joinClusterCall[0], deviceGroup);
-                test.strictEqual(joinClusterCall[1], instances.two.mgmtIp);
-                test.strictEqual(joinClusterCall[2], credentials.username);
-                test.strictEqual(joinClusterCall[3], credentials.password);
-                test.done();
+                assert.strictEqual(joinClusterCall[0], deviceGroup);
+                assert.strictEqual(joinClusterCall[1], instances.two.mgmtIp);
+                assert.strictEqual(joinClusterCall[2], credentials.username);
+                assert.strictEqual(joinClusterCall[3], credentials.password);
+                done();
             });
-        }
-    },
-    testTagPrimaryCalled(test) {
+        });
+    });
+
+    it('tag primary called test', (done) => {
         instances = {
             one: {
                 isPrimary: false,
@@ -1460,13 +1396,12 @@ module.exports = {
             }
         };
 
-        test.expect(4);
         autoscale.run(argv, testOptions, () => {
-            test.strictEqual(providerMock.functionCalls.taggedPrimaryInstances.one.isPrimary, false);
-            test.strictEqual(providerMock.functionCalls.taggedPrimaryIid, 'two');
-            test.notStrictEqual(providerMock.functionCalls.taggedPrimaryIid, 'one');
-            test.ok(providerMock.functionCalls.tagPrimaryInstance);
-            test.done();
+            assert.strictEqual(providerMock.functionCalls.taggedPrimaryInstances.one.isPrimary, false);
+            assert.strictEqual(providerMock.functionCalls.taggedPrimaryIid, 'two');
+            assert.notStrictEqual(providerMock.functionCalls.taggedPrimaryIid, 'one');
+            assert.ok(providerMock.functionCalls.tagPrimaryInstance);
+            done();
         });
-    },
-};
+    });
+});

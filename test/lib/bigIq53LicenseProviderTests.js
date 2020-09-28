@@ -16,17 +16,19 @@
 
 'use strict';
 
-const poolName = 'myLicensePool';
-const LICENSE_PATH = '/cm/device/tasks/licensing/pool/member-management/';
-const taskId = '1234';
+const assert = require('assert');
 
-let util;
-let BigIqProvider;
-let provider;
-let icontrolMock;
+describe('BIGIQ 5.3.0 License Provider Tests', () => {
+    const poolName = 'myLicensePool';
+    const LICENSE_PATH = '/cm/device/tasks/licensing/pool/member-management/';
+    const taskId = '1234';
 
-module.exports = {
-    setUp(callback) {
+    let util;
+    let BigIqProvider;
+    let provider;
+    let icontrolMock;
+
+    beforeEach(() => {
         /* eslint-disable global-require */
         util = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
@@ -38,37 +40,41 @@ module.exports = {
             user: 'user',
             password: 'password'
         };
-        callback();
-    },
+    });
 
-    testConstructor: {
-        testSetLogger(test) {
+    it('get license timeout test', (done) => {
+        assert.deepEqual(provider.getLicenseTimeout(), { maxRetries: 40, retryIntervalMs: 5000 });
+        done();
+    });
+
+    describe('Constructor Tests', () => {
+        it('should set logger', (done) => {
             const logger = {
                 a: 1,
                 b: 2
             };
 
             provider = new BigIqProvider({}, { logger });
-            test.deepEqual(provider.logger, logger);
-            test.done();
-        },
+            assert.deepEqual(provider.logger, logger);
+            done();
+        });
 
-        testLoggerOptions(test) {
+        it('should set logger options', (done) => {
             const loggerOptions = {
                 a: 1,
                 b: 2
             };
 
-            test.doesNotThrow(() => {
+            assert.doesNotThrow(() => {
                 // eslint-disable-next-line no-new
                 new BigIqProvider({ loggerOptions });
             });
-            test.done();
-        }
-    },
+            done();
+        });
+    });
 
-    testGetUnmanagedDeviceLicense: {
-        setUp(callback) {
+    describe('Unmanaged Device License Tests', () => {
+        beforeEach(() => {
             icontrolMock.when(
                 'create',
                 LICENSE_PATH,
@@ -84,29 +90,22 @@ module.exports = {
                     status: 'FINISHED'
                 }
             );
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
-            test.expect(1);
-
+        it('basic test', (done) => {
             provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
                 .then(() => {
                     const licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH);
-                    test.strictEqual(licenseRequest.licensePoolName, 'pool1');
+                    assert.strictEqual(licenseRequest.licensePoolName, 'pool1');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
-
-        testOptions(test) {
-            test.expect(3);
-
+        });
+        it('options test', (done) => {
             provider.getUnmanagedDeviceLicense(
                 icontrolMock,
                 'pool1',
@@ -120,19 +119,19 @@ module.exports = {
             )
                 .then(() => {
                     const licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH);
-                    test.strictEqual(licenseRequest.skuKeyword1, 'mySku1');
-                    test.strictEqual(licenseRequest.skuKeyword2, 'mySku2');
-                    test.strictEqual(licenseRequest.unitOfMeasure, 'myUnitOfMeasure');
+                    assert.strictEqual(licenseRequest.skuKeyword1, 'mySku1');
+                    assert.strictEqual(licenseRequest.skuKeyword2, 'mySku2');
+                    assert.strictEqual(licenseRequest.unitOfMeasure, 'myUnitOfMeasure');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testLicenseRaceConditionFails(test) {
+        it('license race condition fails test', (done) => {
             provider.getLicenseTimeout = () => { return util.SHORT_RETRY; };
 
             icontrolMock.when(
@@ -146,17 +145,17 @@ module.exports = {
 
             provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
                 .then(() => {
-                    test.ok(false, 'should have thrown license failure');
+                    assert.ok(false, 'should have thrown license failure');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                    assert.notStrictEqual(err.message.indexOf('Giving up'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testLicenseFailure(test) {
+        it('license failure test', (done) => {
             const failureReason = 'we failed for no apparent reason';
             provider.getLicenseTimeout = () => { return util.SHORT_RETRY; };
 
@@ -171,17 +170,17 @@ module.exports = {
 
             provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
                 .then(() => {
-                    test.ok(false, 'should have thrown license failure');
+                    assert.ok(false, 'should have thrown license failure');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf(failureReason), -1);
+                    assert.notStrictEqual(err.message.indexOf(failureReason), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testUnknownStatus(test) {
+        it('unknown status test', (done) => {
             const failureReason = 'we do not know what is happening';
             provider.getLicenseTimeout = () => { return util.SHORT_RETRY; };
 
@@ -196,19 +195,19 @@ module.exports = {
 
             provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
                 .then(() => {
-                    test.ok(false, 'should have thrown license failure');
+                    assert.ok(false, 'should have thrown license failure');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf(failureReason), -1);
+                    assert.notStrictEqual(err.message.indexOf(failureReason), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testRevokeLicense: {
-        setUp(callback) {
+    describe('Revoke License Tests', () => {
+        beforeEach(() => {
             icontrolMock.when(
                 'list',
                 // eslint-disable-next-line max-len
@@ -217,27 +216,19 @@ module.exports = {
                     selfLink: 'https://localhost/mgmt/foo/bar/5678'
                 }]
             );
-            callback();
-        },
-
-        testBasic(test) {
-            test.expect(1);
+        });
+        it('basic test', (done) => {
             provider.revoke(icontrolMock, poolName, { machineId: '1234' })
                 .then(() => {
                     const deleteReq = icontrolMock.getRequest('delete', '/foo/bar/5678');
-                    test.strictEqual(deleteReq.id, '5678');
+                    assert.strictEqual(deleteReq.id, '5678');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
-
-    testGetLicenseTimeout(test) {
-        test.deepEqual(provider.getLicenseTimeout(), { maxRetries: 40, retryIntervalMs: 5000 });
-        test.done();
-    }
-};
+        });
+    });
+});

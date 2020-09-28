@@ -17,30 +17,33 @@
 'use strict';
 
 const now = Date.now();
-const publicKeyFile = `/tmp/public_${now}.pem`;
-const privateKeyFile = `/tmp/private_${now}.pem`;
+const assert = require('assert');
 
-let fs;
-let childProcess;
-let crypto;
-let cryptoUtil;
-let util;
-let q;
+describe('bigip tests', () => {
+    const publicKeyFile = `/tmp/public_${now}.pem`;
+    const privateKeyFile = `/tmp/private_${now}.pem`;
 
-let fsReadFile;
+    let fs;
+    let childProcess;
+    let crypto;
+    let cryptoUtil;
+    let util;
+    let q;
 
-const testData = {
-    foo: 'bar',
-    hello: 'world',
-    a: {
-        x: 1,
-        y: 2
-    }
-};
+    let fsReadFile;
 
-/* eslint-disable global-require */
-module.exports = {
-    setUp(callback) {
+    const testData = {
+        foo: 'bar',
+        hello: 'world',
+        a: {
+            x: 1,
+            y: 2
+        }
+    };
+
+    /* eslint-disable global-require */
+
+    beforeEach(() => {
         fs = require('fs');
         childProcess = require('child_process');
         crypto = require('crypto');
@@ -49,11 +52,9 @@ module.exports = {
         cryptoUtil = require('../../../f5-cloud-libs').cryptoUtil;
 
         fsReadFile = fs.readFile;
+    });
 
-        callback();
-    },
-
-    tearDown(callback) {
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
@@ -69,18 +70,15 @@ module.exports = {
             }
         } catch (err) {
             console.log(err); // eslint-disable-line no-console
-        } finally {
-            callback();
         }
-    },
+    });
 
-    testRoundTrip: {
-        testPublicKeyInFile(test) {
+    describe('round trip tests', () => {
+        it('public key in file test', (done) => {
             const options = {
                 publicKeyOutFile: publicKeyFile
             };
 
-            test.expect(1);
             cryptoUtil.generateKeyPair(privateKeyFile, options)
                 .then(() => {
                     return cryptoUtil.encrypt(publicKeyFile, JSON.stringify(testData));
@@ -89,23 +87,22 @@ module.exports = {
                     return cryptoUtil.decrypt(privateKeyFile, encryptedData);
                 })
                 .then((decryptedData) => {
-                    test.deepEqual(JSON.parse(decryptedData), testData);
+                    assert.deepEqual(JSON.parse(decryptedData), testData);
                 })
                 .catch((error) => {
-                    test.ok(false, error);
+                    assert.ok(false, error);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPublicKeyInFilePassphrase(test) {
+        it('public key in file passphrase test', (done) => {
             const options = {
                 publicKeyOutFile: publicKeyFile,
                 passphrase: 'foobar'
             };
 
-            test.expect(1);
             cryptoUtil.generateKeyPair(privateKeyFile, options)
                 .then(() => {
                     return cryptoUtil.encrypt(publicKeyFile, JSON.stringify(testData));
@@ -114,18 +111,17 @@ module.exports = {
                     return cryptoUtil.decrypt(privateKeyFile, encryptedData, { passphrase: 'foobar' });
                 })
                 .then((decryptedData) => {
-                    test.deepEqual(JSON.parse(decryptedData), testData);
+                    assert.deepEqual(JSON.parse(decryptedData), testData);
                 })
                 .catch((error) => {
-                    test.ok(false, error);
+                    assert.ok(false, error);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPublicKeyInData(test) {
-            test.expect(1);
+        it('public key in data test', (done) => {
             cryptoUtil.generateKeyPair(privateKeyFile)
                 .then((publicKey) => {
                     return cryptoUtil.encrypt(publicKey, JSON.stringify(testData));
@@ -134,24 +130,23 @@ module.exports = {
                     return cryptoUtil.decrypt(privateKeyFile, encryptedData);
                 })
                 .then((decryptedData) => {
-                    test.deepEqual(JSON.parse(decryptedData), testData);
+                    assert.deepEqual(JSON.parse(decryptedData), testData);
                 })
                 .catch((error) => {
-                    test.ok(false, error);
+                    assert.ok(false, error);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testRoundTripSymmetric: {
-        testPublicKeyInFile(test) {
+    describe('round trip symmetric tests', () => {
+        it('public key in file test', (done) => {
             const options = {
                 publicKeyOutFile: publicKeyFile
             };
 
-            test.expect(1);
             cryptoUtil.generateKeyPair(privateKeyFile, options)
                 .then(() => {
                     return cryptoUtil.symmetricEncrypt(publicKeyFile, JSON.stringify(testData));
@@ -165,19 +160,19 @@ module.exports = {
                     );
                 })
                 .then((decryptedData) => {
-                    test.deepEqual(JSON.parse(decryptedData), testData);
+                    assert.deepEqual(JSON.parse(decryptedData), testData);
                 })
                 .catch((error) => {
-                    test.ok(false, error);
+                    assert.ok(false, error);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGenerateKeyPair: {
-        testGenRsaError(test) {
+    describe('generate Key Pair tests', () => {
+        it('gen rsa error test', (done) => {
             const message = 'genrsa error';
             childProcess.exec = function exec(command, cb) {
                 cb(new Error(message));
@@ -185,17 +180,17 @@ module.exports = {
 
             cryptoUtil.generateKeyPair()
                 .then(() => {
-                    test.ok(false, 'should have thrown genrsa error');
+                    assert.ok(false, 'should have thrown genrsa error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRsaError(test) {
+        it('rsa error test', (done) => {
             const message = 'rsa error';
             childProcess.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/openssl genrsa')) {
@@ -207,109 +202,104 @@ module.exports = {
 
             cryptoUtil.generateKeyPair()
                 .then(() => {
-                    test.ok(false, 'should have thrown rsa error');
+                    assert.ok(false, 'should have thrown rsa error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testEncrypt: {
-        testBadData(test) {
-            test.expect(1);
-            return cryptoUtil.encrypt('publicKey', testData)
+    describe('encrypt tests', () => {
+        it('bad data test', (done) => {
+            cryptoUtil.encrypt('publicKey', testData)
                 .then(() => {
-                    test.ok(false, 'should have thrown bad data');
+                    assert.ok(false, 'should have thrown bad data');
                 })
                 .catch((error) => {
-                    test.notStrictEqual(error.message.indexOf('must be a string'), -1);
+                    assert.notStrictEqual(error.message.indexOf('must be a string'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testReadPublicKeyError(test) {
+        it('read public key error test', (done) => {
             const message = 'read file error';
 
             fs.readFile = function readFile(file, cb) {
                 cb(new Error(message));
             };
 
-            test.expect(1);
-            return cryptoUtil.encrypt(publicKeyFile, JSON.stringify(testData))
+            cryptoUtil.encrypt(publicKeyFile, JSON.stringify(testData))
                 .then(() => {
-                    test.ok(false, 'should have thrown read error');
+                    assert.ok(false, 'should have thrown read error');
                 })
                 .catch((error) => {
-                    test.strictEqual(error.message, message);
+                    assert.strictEqual(error.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCryptoEncryptError(test) {
+        it('crypto encrypt error test', (done) => {
             const message = 'crypto encrypt error';
 
             crypto.publicEncrypt = function publicEncrypt() {
                 throw new Error(message);
             };
 
-            test.expect(1);
-            return cryptoUtil.encrypt('-----BEGIN PUBLIC KEY-----', JSON.stringify(testData))
+            cryptoUtil.encrypt('-----BEGIN PUBLIC KEY-----', JSON.stringify(testData))
                 .then(() => {
-                    test.ok(false, 'should have thrown crypto encrypt error');
+                    assert.ok(false, 'should have thrown crypto encrypt error');
                 })
                 .catch((error) => {
-                    test.strictEqual(error.message, message);
+                    assert.strictEqual(error.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testDecrypt: {
-        testBadData(test) {
-            test.expect(1);
-            return cryptoUtil.decrypt('privateKey', testData)
+    describe('decrypt tests', () => {
+        it('bad data test', (done) => {
+            cryptoUtil.decrypt('privateKey', testData)
                 .then(() => {
-                    test.ok(false, 'should have thrown bad data');
+                    assert.ok(false, 'should have thrown bad data');
                 })
                 .catch((error) => {
-                    test.notStrictEqual(error.message.indexOf('must be a string'), -1);
+                    assert.notStrictEqual(error.message.indexOf('must be a string'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testReadPrivateKeyError(test) {
+        it('read private key error test', (done) => {
             const message = 'read file error';
 
             fs.readFile = function readFile(file, cb) {
                 cb(new Error(message));
             };
 
-            test.expect(1);
-            return cryptoUtil.decrypt(publicKeyFile, JSON.stringify(testData))
+            cryptoUtil.decrypt(publicKeyFile, JSON.stringify(testData))
                 .then(() => {
-                    test.ok(false, 'should have thrown read error');
+                    assert.ok(false, 'should have thrown read error');
                 })
                 .catch((error) => {
-                    test.strictEqual(error.message, message);
+                    assert.strictEqual(error.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testWaitForMcpError(test) {
+        it('wait for mcp error test', (done) => {
             const message = 'waitForMcp error';
             const options = {
                 passphrase: '123',
@@ -326,20 +316,19 @@ module.exports = {
                 cb();
             };
 
-            test.expect(1);
             cryptoUtil.decrypt(publicKeyFile, JSON.stringify(testData), options)
                 .then(() => {
-                    test.ok(false, 'should have thrown decrypt conf value error');
+                    assert.ok(false, 'should have thrown decrypt conf value error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPassphraseDecryptError(test) {
+        it('passphrase decrypt error test', (done) => {
             const message = 'decrypt conf value error';
             const options = {
                 passphrase: '123',
@@ -360,20 +349,19 @@ module.exports = {
                 cb();
             };
 
-            test.expect(1);
             cryptoUtil.decrypt(publicKeyFile, JSON.stringify(testData), options)
                 .then(() => {
-                    test.ok(false, 'should have thrown decrypt conf value error');
+                    assert.ok(false, 'should have thrown decrypt conf value error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCryptoDecryptError(test) {
+        it('crypto decrypt error test', (done) => {
             const message = 'crypto private decrypt error';
             const options = {
                 passphrase: '123',
@@ -398,58 +386,55 @@ module.exports = {
                 throw new Error(message);
             };
 
-            test.expect(1);
             cryptoUtil.decrypt(publicKeyFile, JSON.stringify(testData), options)
                 .then(() => {
-                    test.ok(false, 'should have thrown decrypt conf value error');
+                    assert.ok(false, 'should have thrown decrypt conf value error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGenerateRandomBytes: {
-        testBasic(test) {
-            test.expect(1);
+    describe('generate random bytes tests', () => {
+        it('basic test', (done) => {
             cryptoUtil.generateRandomBytes(4, 'hex')
                 .then((bytes) => {
-                    test.strictEqual(bytes.length, 8);
+                    assert.strictEqual(bytes.length, 8);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCryptoRandomBytesError(test) {
+        it('crypto random bytes error test', (done) => {
             const message = 'crypto randomBytes error';
             const realRandomBytes = crypto.randomBytes;
             crypto.randomBytes = function randomBytes(length, cb) {
                 cb(new Error(message));
             };
 
-            test.expect(1);
             cryptoUtil.generateRandomBytes(4, 'hex')
                 .then(() => {
-                    test.ok(false, 'should have thrown random bytes error');
+                    assert.ok(false, 'should have thrown random bytes error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
                     crypto.randomBytes = realRandomBytes;
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGenerateRandomIntInRange(test) {
+    it('generate random int in range test', (done) => {
         const LOW = 0;
         const HIGH_RANGE_1 = 255;
         const HIGH_RANGE_2 = 65535;
@@ -460,34 +445,34 @@ module.exports = {
         let randomNum;
         for (let i = 0; i < 1000; i++) {
             randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_1);
-            test.ok(randomNum >= LOW);
-            test.ok(randomNum <= HIGH_RANGE_1);
+            assert.ok(randomNum >= LOW);
+            assert.ok(randomNum <= HIGH_RANGE_1);
         }
         for (let i = 0; i < 1000; i++) {
             randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_2);
-            test.ok(randomNum >= LOW);
-            test.ok(randomNum <= HIGH_RANGE_2);
+            assert.ok(randomNum >= LOW);
+            assert.ok(randomNum <= HIGH_RANGE_2);
         }
         for (let i = 0; i < 1000; i++) {
             randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_3);
-            test.ok(randomNum >= LOW);
-            test.ok(randomNum <= HIGH_RANGE_3);
+            assert.ok(randomNum >= LOW);
+            assert.ok(randomNum <= HIGH_RANGE_3);
         }
         for (let i = 0; i < 1000; i++) {
             randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_4);
-            test.ok(randomNum >= LOW);
-            test.ok(randomNum <= HIGH_RANGE_4);
+            assert.ok(randomNum >= LOW);
+            assert.ok(randomNum <= HIGH_RANGE_4);
         }
         for (let i = 0; i < 1000; i++) {
             randomNum = cryptoUtil.generateRandomIntInRange(LOW, HIGH_RANGE_5);
-            test.ok(randomNum >= LOW);
-            test.ok(randomNum <= HIGH_RANGE_5);
+            assert.ok(randomNum >= LOW);
+            assert.ok(randomNum <= HIGH_RANGE_5);
         }
-        test.done();
-    },
+        done();
+    });
 
-    testRandomUser: {
-        testCreateRandomUserBadPassword(test) {
+    describe('random user tests', () => {
+        it('create random user bad password test', (done) => {
             cryptoUtil.generateRandomBytes = function generateRandomBytes(length) {
                 const lengths = {
                     10: 'user',
@@ -504,20 +489,19 @@ module.exports = {
                 return q();
             };
 
-            test.expect(1);
             cryptoUtil.nextRandomUser()
                 .then(() => {
-                    test.ok(false, 'Should have thrown an error, please check test.');
+                    assert.ok(false, 'Should have thrown an error, please check test.');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, 'too many tries');
+                    assert.strictEqual(err.message, 'too many tries');
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCreateRandomUser(test) {
+        it('create random user test', (done) => {
             const expectedUser = {
                 user: 'user',
                 password: 'Z+Skz3kmUoLft02zUoguohaR0e1yIO+p'
@@ -539,21 +523,20 @@ module.exports = {
                 return q();
             };
 
-            test.expect(1);
             cryptoUtil.nextRandomUser()
                 .then((response) => {
-                    test.deepEqual(response, expectedUser);
+                    assert.deepEqual(response, expectedUser);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
-    },
+        });
+    });
 
-    testSetLogger(test) {
-        test.doesNotThrow(() => {
+    it('set logger test', (done) => {
+        assert.doesNotThrow(() => {
             cryptoUtil.setLogger();
         });
-        test.done();
-    }
-};
+        done();
+    });
+});

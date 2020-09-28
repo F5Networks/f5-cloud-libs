@@ -19,23 +19,24 @@
 /* eslint-disable no-console */
 
 const q = require('q');
+const assert = require('assert');
 const signals = require('../../lib/signals');
 
-let fsMock;
-let localKeyUtilMock;
-let ipcMock;
-let cryptoUtilMock;
-let utilMock;
-let argv;
-let encryptData;
-let realWriteFile;
-let realReadFile;
+describe('encrypt data from file tests', () => {
+    let fsMock;
+    let localKeyUtilMock;
+    let ipcMock;
+    let cryptoUtilMock;
+    let utilMock;
+    let argv;
+    let encryptData;
+    let realWriteFile;
+    let realReadFile;
 
-let functionsCalled;
-let generateAndInstallKeyPairCalled;
+    let functionsCalled;
+    let generateAndInstallKeyPairCalled;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         /* eslint-disable global-require */
         fsMock = require('fs');
         utilMock = require('../../lib/util');
@@ -88,11 +89,9 @@ module.exports = {
 
         encryptData = require('../../scripts/encryptDataToFile');
         argv = ['node', 'encryptDataToFile', '--log-level', 'none'];
+    });
 
-        callback();
-    },
-
-    tearDown(callback) {
+    afterEach(() => {
         utilMock.removeDirectorySync(ipcMock.signalBasePath);
         fsMock.readFile = realReadFile;
         fsMock.writeFile = realWriteFile;
@@ -100,21 +99,19 @@ module.exports = {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
+    });
 
-    testWaitFor(test) {
+    it('wait for test', (done) => {
         argv.push('--wait-for', 'foo', '--data', 'dataToEncrypt', '--out-file', 'foo');
 
-        test.expect(2);
         encryptData.run(argv, () => {
-            test.notStrictEqual(functionsCalled.ipc.once.indexOf('foo'), -1);
-            test.notStrictEqual(functionsCalled.ipc.once.indexOf(signals.CLOUD_LIBS_ERROR), -1);
-            test.done();
+            assert.notStrictEqual(functionsCalled.ipc.once.indexOf('foo'), -1);
+            assert.notStrictEqual(functionsCalled.ipc.once.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            done();
         });
-    },
+    });
 
-    testExceptionSignalsError(test) {
+    it('exception signals error test', (done) => {
         const sentSignals = [];
         localKeyUtilMock.generateAndInstallKeyPair = () => {
             return q.reject('err');
@@ -136,15 +133,14 @@ module.exports = {
 
         argv.push('--wait-for', 'foo', '--data', 'dataToEncrypt', '--out-file', 'foo');
         ipcMock.send('foo');
-        test.expect(2);
         encryptData.run(argv, () => {
-            test.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
-            test.strictEqual(sentSignals.indexOf(signals.ENCRYPTION_DONE), -1);
-            test.done();
+            assert.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            assert.strictEqual(sentSignals.indexOf(signals.ENCRYPTION_DONE), -1);
+            done();
         });
-    },
+    });
 
-    testBackground(test) {
+    it('background test', (done) => {
         let runInBackgroundCalled = false;
         utilMock.runInBackgroundAndExit = () => {
             runInBackgroundCalled = true;
@@ -152,72 +148,66 @@ module.exports = {
 
         argv.push('--background', '--data', 'dataToEncrypt', '--out-file', 'foo');
 
-        test.expect(1);
         encryptData.run(argv, () => {
-            test.ok(runInBackgroundCalled);
-            test.done();
+            assert.ok(runInBackgroundCalled);
+            done();
         });
-    },
+    });
 
-    testNoDataOrDataFile(test) {
+    it('no data or data file test', (done) => {
         const log = console.log;
         console.log = () => {};
-        test.expect(1);
         argv.push('--out-file', 'foo');
         encryptData.run(argv, (err) => {
-            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
+            assert.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             console.log = log;
-            test.done();
+            done();
         });
-    },
+    });
 
-    testDataNoFile(test) {
+    it('data no file test', (done) => {
         const log = console.log;
         console.log = () => {};
-        test.expect(1);
         argv.push('--data', 'foo');
         encryptData.run(argv, (err) => {
-            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
+            assert.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             console.log = log;
-            test.done();
+            done();
         });
-    },
+    });
 
-    testDataFileNoFile(test) {
+    it('data file no file test', (done) => {
         const log = console.log;
         console.log = () => {};
-        test.expect(1);
         argv.push('--data-file', 'foo');
         encryptData.run(argv, (err) => {
-            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
+            assert.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             console.log = log;
-            test.done();
+            done();
         });
-    },
+    });
 
-    testDataAndFile(test) {
+    it('data and file test', (done) => {
         const log = console.log;
         console.log = () => {};
-        test.expect(1);
         argv.push('--data', 'foo', '--data-file', 'bar', '--out-file', 'hello');
         encryptData.run(argv, (err) => {
-            test.notStrictEqual(err.name.indexOf('AssertionError'), -1);
+            assert.notStrictEqual(err.name.indexOf('AssertionError'), -1);
             console.log = log;
-            test.done();
+            done();
         });
-    },
+    });
 
-    testLocalKeyUtilCalled(test) {
+    it('local key util called test', (done) => {
         argv.push('--data', 'foo', '--out-file', 'foo');
 
-        test.expect(1);
         encryptData.run(argv, () => {
-            test.ok(generateAndInstallKeyPairCalled);
-            test.done();
+            assert.ok(generateAndInstallKeyPairCalled);
+            done();
         });
-    },
+    });
 
-    testEncryptData(test) {
+    it('encrypt data test', (done) => {
         const dataToEncrypt = 'my data';
         let dataSent;
 
@@ -228,14 +218,13 @@ module.exports = {
             return q();
         };
 
-        test.expect(1);
         encryptData.run(argv, () => {
-            test.strictEqual(dataSent, dataToEncrypt);
-            test.done();
+            assert.strictEqual(dataSent, dataToEncrypt);
+            done();
         });
-    },
+    });
 
-    testEncryptDataFromFile(test) {
+    it('encrypt data from file test', (done) => {
         const dataToEncrypt = 'my data';
         let dataSent;
 
@@ -250,14 +239,13 @@ module.exports = {
             return q();
         };
 
-        test.expect(1);
         encryptData.run(argv, () => {
-            test.strictEqual(dataSent, dataToEncrypt);
-            test.done();
+            assert.strictEqual(dataSent, dataToEncrypt);
+            done();
         });
-    },
+    });
 
-    testDataWrittenToFile(test) {
+    it('data written to file test', (done) => {
         const fileToWriteTo = '/tmp/myFile';
         let fileWrittenTo;
 
@@ -268,40 +256,37 @@ module.exports = {
             cb();
         };
 
-        test.expect(1);
         encryptData.run(argv, () => {
-            test.strictEqual(fileWrittenTo, fileToWriteTo);
-            test.done();
+            assert.strictEqual(fileWrittenTo, fileToWriteTo);
+            done();
         });
-    },
+    });
 
-    testPrivateKeyOption(test) {
+    it('private key option test', (done) => {
         argv.push('--data', 'data', '--out-file', 'foo.file', '--private-key-name', 'myPrivatekey.key');
 
-        test.expect(2);
         encryptData.run(argv, () => {
             const generateAndInstallKeyPair = functionsCalled.localKeyUtil.generateAndInstallKeyPair;
-            test.strictEqual(generateAndInstallKeyPair.privateKeyName, 'myPrivatekey.key');
-            test.strictEqual(
+            assert.strictEqual(generateAndInstallKeyPair.privateKeyName, 'myPrivatekey.key');
+            assert.strictEqual(
                 generateAndInstallKeyPair.publicKeyOutFile,
                 '/config/cloud/keys/myPrivatekey.pub'
             );
-            test.done();
+            done();
         });
-    },
+    });
 
-    testPrivateKeyOptionNoKeySuffix(test) {
+    it('private key option no key suffix test', (done) => {
         argv.push('--data', 'data', '--out-file', 'foo.file', '--private-key-name', 'myPrivatekey');
 
-        test.expect(2);
         encryptData.run(argv, () => {
             const generateAndInstallKeyPair = functionsCalled.localKeyUtil.generateAndInstallKeyPair;
-            test.strictEqual(generateAndInstallKeyPair.privateKeyName, 'myPrivatekey.key');
-            test.strictEqual(
+            assert.strictEqual(generateAndInstallKeyPair.privateKeyName, 'myPrivatekey.key');
+            assert.strictEqual(
                 generateAndInstallKeyPair.publicKeyOutFile,
                 '/config/cloud/keys/myPrivatekey.pub'
             );
-            test.done();
+            done();
         });
-    }
-};
+    });
+});

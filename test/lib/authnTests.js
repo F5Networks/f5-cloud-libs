@@ -18,19 +18,20 @@
 
 const fs = require('fs');
 const q = require('q');
+const assert = require('assert');
 
-const token = 'my auth token';
-const refreshToken = 'my refresh token';
-const decryptedPassword = 'my decrypted password';
+describe('authn tests', () => {
+    const token = 'my auth token';
+    const refreshToken = 'my refresh token';
+    const decryptedPassword = 'my decrypted password';
 
-let authn;
-let icontrolMock;
-let localCryptoUtilMock;
-let utilMock;
-let LoggerMock;
+    let authn;
+    let icontrolMock;
+    let localCryptoUtilMock;
+    let utilMock;
+    let LoggerMock;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         /* eslint-disable global-require */
         utilMock = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
@@ -58,56 +59,51 @@ module.exports = {
                 }
             }
         );
+    });
 
-        callback();
-    },
-
-    tearDown(callback) {
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
+    });
 
-    testBasic(test) {
+    it('basic test', (done) => {
         const host = 'myHost';
         const user = 'myUser';
         const password = 'myPassword';
 
-        test.expect(1);
         authn.authenticate(host, user, password)
             .then(() => {
-                test.strictEqual(
+                assert.strictEqual(
                     icontrolMock.getRequest('create', '/shared/authn/login').password, password
                 );
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testProductSpecified(test) {
+    it('product specified test', (done) => {
         const host = 'myHost';
         const user = 'myUser';
         const password = 'myPassword';
 
-        test.expect(1);
         authn.authenticate(host, user, password, { product: 'BIG-IP' })
             .then(() => {
-                test.strictEqual(icontrolMock.getRequest('create', '/shared/authn/login'), undefined);
+                assert.strictEqual(icontrolMock.getRequest('create', '/shared/authn/login'), undefined);
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testPasswordUrl(test) {
+    it('password url test', (done) => {
         const host = 'myHost';
         const user = 'myUser';
         const password = 'myPassword';
@@ -116,24 +112,23 @@ module.exports = {
 
         fs.writeFileSync(passwordFile, password);
 
-        test.expect(2);
         authn.authenticate(host, user, passwordUrl, { passwordIsUri: true })
             .then((icontrol) => {
-                test.strictEqual(
+                assert.strictEqual(
                     icontrolMock.getRequest('create', '/shared/authn/login').password, password
                 );
-                test.strictEqual(icontrol.authToken, token);
+                assert.strictEqual(icontrol.authToken, token);
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
                 fs.unlinkSync(passwordFile);
-                test.done();
+                done();
             });
-    },
+    });
 
-    testPasswordArn(test) {
+    it('password arn test', (done) => {
         const host = 'myHost';
         const user = 'myUser';
         const password = 'myPassword';
@@ -148,21 +143,20 @@ module.exports = {
             return q(password);
         };
 
-        test.expect(1);
         authn.authenticate(host, user, passwordUri, { passwordIsUri: true })
             .then(() => {
                 const loginRequest = icontrolMock.getRequest('create', '/shared/authn/login');
-                test.strictEqual(loginRequest.password, password);
+                assert.strictEqual(loginRequest.password, password);
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testPasswordArnBucketFail(test) {
+    it('password arn bucket fail test', (done) => {
         const host = 'myHost';
         const user = 'myUser';
         const passwordUri = 'arn:::foo:bar/password';
@@ -181,111 +175,104 @@ module.exports = {
                 return q();
             }
         };
-        test.expect(1);
         authn.authenticate(host, user, passwordUri, { passwordIsUri: true })
             .then(() => {
-                test.ok(false, 'Should not have been able to resolve');
+                assert.ok(false, 'Should not have been able to resolve');
             })
             .catch(() => {
-                test.strictEqual(loggedMessages[0],
+                assert.strictEqual(loggedMessages[0],
                     'Unable to initialize device');
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testPasswordToken(test) {
+    it('password token test', (done) => {
         const host = 'myHost';
         const user = 'myUser';
 
-        test.expect(1);
         authn.authenticate(host, user, token, { product: 'BIG-IP', passwordIsToken: true })
             .then((icontrol) => {
-                test.strictEqual(icontrol.authToken, token);
+                assert.strictEqual(icontrol.authToken, token);
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testPasswordEncrypted: {
-        setUp(callback) {
+    describe('password encrypted tests', () => {
+        beforeEach(() => {
             localCryptoUtilMock.decryptPassword = () => {
                 return q(decryptedPassword);
             };
-            callback();
-        },
+        });
 
-        testBasic(test) {
-            test.expect(1);
+        it('basic test', (done) => {
             authn.authenticate('host', 'user', 'password', { passwordEncrypted: true })
                 .then(() => {
-                    test.strictEqual(
+                    assert.strictEqual(
                         icontrolMock.getRequest('create', '/shared/authn/login').password, decryptedPassword
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testDecryptError(test) {
+        it('decrypt error test', (done) => {
             const errorMessage = 'decryption error';
             localCryptoUtilMock.decryptPassword = () => {
                 return q.reject(new Error(errorMessage));
             };
-            test.expect(1);
             authn.authenticate('host', 'user', 'password', { passwordEncrypted: true })
                 .then(() => {
-                    test.ok(false, 'should have thrown decryption error');
+                    assert.ok(false, 'should have thrown decryption error');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf(errorMessage), -1);
+                    assert.notStrictEqual(err.message.indexOf(errorMessage), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testNoAuthToken(test) {
+    it('no auth token test', (done) => {
         icontrolMock.when(
             'create',
             '/shared/authn/login',
             {}
         );
 
-        test.expect(1);
         authn.authenticate('host', 'user', 'password')
             .then(() => {
-                test.ok(false, 'should have thrown no auth token');
+                assert.ok(false, 'should have thrown no auth token');
             })
             .catch((err) => {
-                test.notStrictEqual(err.message.indexOf('Did not receive auth token'), -1);
+                assert.notStrictEqual(err.message.indexOf('Did not receive auth token'), -1);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testLocalAuth(test) {
-        test.expect(1);
+    it('local auth test', (done) => {
         authn.authenticate('localhost', null, null, { port: 8100 })
             .then(() => {
-                test.strictEqual(icontrolMock.getNumRequests(), 0);
+                assert.strictEqual(icontrolMock.getNumRequests(), 0);
             })
             .catch((err) => {
-                test.ok(false, err.message);
+                assert.ok(false, err.message);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    }
-};
+    });
+});

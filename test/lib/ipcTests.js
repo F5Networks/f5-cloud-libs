@@ -16,50 +16,64 @@
 
 'use strict';
 
+// const log = require('why-is-node-running');
+
 const fs = require('fs');
+const assert = require('assert');
 const ipc = require('../../../f5-cloud-libs').ipc;
 const util = require('../../../f5-cloud-libs').util;
 
-const existsSync = fs.existsSync;
-const closeSync = fs.closeSync;
-const readdirSync = fs.readdirSync;
+describe('Metrics Collector Unit Tests', () => {
+    const existsSync = fs.existsSync;
+    const closeSync = fs.closeSync;
+    const readdirSync = fs.readdirSync;
 
-let counter;
-const checkCounter = (expected, test) => {
-    test.strictEqual(counter, expected);
-    test.done();
-};
+    let counter;
+    const checkCounter = (expected, done) => {
+        assert.strictEqual(counter, expected);
+        done();
+    };
 
-module.exports = {
-    setUp(callback) {
-        counter = 0;
-        callback();
-    },
+    it('set logger', (done) => {
+        assert.doesNotThrow(() => {
+            ipc.setLogger({});
+        });
+        done();
+    });
 
-    tearDown(callback) {
-        fs.readdirSync = readdirSync;
-        fs.closeSync = closeSync;
-        fs.existsSync = existsSync;
-        ipc.clearSignals();
-        util.removeDirectorySync(ipc.signalBasePath);
-        callback();
-    },
+    it('set logger options', (done) => {
+        assert.doesNotThrow(() => {
+            ipc.setLoggerOptions({});
+        });
+        done();
+    });
 
-    testOnce: {
-        testBasic(test) {
+    describe('Test Once', () => {
+        beforeEach(() => {
+            counter = 0;
+        });
+
+        afterEach(() => {
+            fs.readdirSync = readdirSync;
+            fs.closeSync = closeSync;
+            fs.existsSync = existsSync;
+            ipc.clearSignals();
+            util.removeDirectorySync(ipc.signalBasePath);
+        });
+
+        it('basic test', (done) => {
             ipc.once('foo')
                 .then(() => {
                     counter += 1;
                 });
 
-            test.expect(2);
-            test.strictEqual(counter, 0);
+            assert.strictEqual(counter, 0);
             ipc.send('foo');
             ipc.send('foo');
-            setTimeout(checkCounter, 1100, 1, test);
-        },
+            setTimeout(checkCounter, 1100, 1, done);
+        });
 
-        testTwice(test) {
+        it('twice test', (done) => {
             ipc.once('foo')
                 .then(() => {
                     counter += 1;
@@ -69,14 +83,13 @@ module.exports = {
                     counter += 1;
                 });
 
-            test.expect(2);
-            test.strictEqual(counter, 0);
+            assert.strictEqual(counter, 0);
             ipc.send('foo');
             ipc.send('foo');
-            setTimeout(checkCounter, 1100, 2, test);
-        },
+            setTimeout(checkCounter, 1100, 2, done);
+        });
 
-        testError(test) {
+        it('error test', (done) => {
             const message = 'existsSync error';
             fs.existsSync = () => {
                 throw new Error(message);
@@ -87,112 +100,119 @@ module.exports = {
             try {
                 ipc.once('foo')
                     .then(() => {
-                        test.ok(false, 'once should have thrown');
+                        assert.ok(false, 'once should have thrown');
                     })
                     .catch((err) => {
                         counter += 1;
-                        test.strictEqual(err.message, message);
+                        assert.strictEqual(err.message, message);
                     });
             } catch (err) {
                 counter += 1;
-                test.strictEqual(err.message, message);
+                assert.strictEqual(err.message, message);
             }
 
-            test.expect(2);
-            setTimeout(checkCounter, 1100, 1, test);
-        }
+            setTimeout(checkCounter, 1100, 1, done);
+        });
+    });
 
-    },
+    describe('Test Send', () => {
+        beforeEach(() => {
+            counter = 0;
+        });
 
-    testSend: {
-        testBasic(test) {
+        afterEach(() => {
+            fs.readdirSync = readdirSync;
+            fs.closeSync = closeSync;
+            fs.existsSync = existsSync;
+            ipc.clearSignals();
+            util.removeDirectorySync(ipc.signalBasePath);
+        });
+
+        it('basic test', (done) => {
             ipc.send('foo');
-            test.strictEqual(fs.existsSync(`${ipc.signalBasePath}foo`), true);
-            test.done();
-        },
+            assert.strictEqual(fs.existsSync(`${ipc.signalBasePath}foo`), true);
+            done();
+        });
 
-        testError(test) {
+        it('error test', (done) => {
             const message = 'closeSync error';
             fs.closeSync = () => {
                 throw new Error(message);
             };
 
-            test.expect(1);
             try {
                 ipc.send('foo');
-                test.ok(false, 'send should have thrown');
+                assert.ok(false, 'send should have thrown');
             } catch (err) {
-                test.strictEqual(err.message, message);
+                assert.strictEqual(err.message, message);
             } finally {
-                test.done();
+                done();
             }
-        }
-    },
+        });
+    });
 
-    testClearSignals: {
-        testBasic(test) {
-            test.expect(2);
-            ipc.send('foo');
-            test.strictEqual(fs.existsSync('/tmp/f5-cloud-libs-signals/foo'), true);
+    describe('Test Clear Signals', () => {
+        beforeEach(() => {
+            counter = 0;
+        });
+
+        afterEach(() => {
+            fs.readdirSync = readdirSync;
+            fs.closeSync = closeSync;
+            fs.existsSync = existsSync;
             ipc.clearSignals();
-            test.strictEqual(fs.existsSync('/tmp/f5-cloud-libs-signals/foo'), false);
-            test.done();
-        },
+            util.removeDirectorySync(ipc.signalBasePath);
+        });
 
-        testError(test) {
+        it('basic test', (done) => {
+            ipc.send('foo');
+            assert.strictEqual(fs.existsSync('/tmp/f5-cloud-libs-signals/foo'), true);
+            ipc.clearSignals();
+            assert.strictEqual(fs.existsSync('/tmp/f5-cloud-libs-signals/foo'), false);
+            done();
+        });
+        it('error test', (done) => {
             const message = 'readdirSync error';
             fs.readdirSync = () => {
                 throw new Error(message);
             };
 
-            test.expect(1);
             try {
                 ipc.clearSignals();
-                test.ok(false, 'clearSignals should have thrown');
+                assert.ok(false, 'clearSignals should have thrown');
             } catch (err) {
-                test.strictEqual(err.message, message);
+                assert.strictEqual(err.message, message);
             } finally {
-                test.done();
+                done();
             }
-        }
-    },
+        });
+    });
 
-    testDirCreated: {
-        setUp(callback) {
+    describe('Test Dir Created', () => {
+        beforeEach(() => {
             if (fs.existsSync(ipc.signalBasePath)) {
                 fs.rmdirSync(ipc.signalBasePath);
             }
-            callback();
-        },
-
-        testOnSend(test) {
+        });
+        afterEach(() => {
+            fs.readdirSync = readdirSync;
+            fs.closeSync = closeSync;
+            fs.existsSync = existsSync;
+            ipc.clearSignals();
+            util.removeDirectorySync(ipc.signalBasePath);
+        });
+        after(() => {
+            ipc.clearSignals();
+        });
+        it('on send', (done) => {
             ipc.send('foo');
-            test.expect(1);
-            test.strictEqual(fs.existsSync(ipc.signalBasePath), true);
-            test.done();
-        },
-
-        testOnOnce(test) {
+            assert.strictEqual(fs.existsSync(ipc.signalBasePath), true);
+            done();
+        });
+        it('on once', (done) => {
             ipc.once('foo');
-            test.expect(1);
-            test.strictEqual(fs.existsSync(ipc.signalBasePath), true);
-            test.done();
-        }
-    },
-
-    testSetLogger(test) {
-        test.expect(1);
-        test.doesNotThrow(() => {
-            ipc.setLogger({});
+            assert.strictEqual(fs.existsSync(ipc.signalBasePath), true);
+            done();
         });
-        test.done();
-    },
-
-    testSetLoggerOptions(test) {
-        test.expect(1);
-        test.doesNotThrow(() => {
-            ipc.setLoggerOptions({});
-        });
-        test.done();
-    }
-};
+    });
+});

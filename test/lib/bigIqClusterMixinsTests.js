@@ -16,23 +16,24 @@
 
 'use strict';
 
+const assert = require('assert');
 const icontrolMock = require('../testUtil/icontrolMock');
 const Logger = require('../../../f5-cloud-libs').logger;
 const q = require('q');
 
-let utilMock;
+describe('bigiq cluster mixins tests', () => {
+    let utilMock;
 
-let BigIp;
-let bigIp;
-let bigIqClusterMixins;
+    let BigIp;
+    let bigIp;
+    let bigIqClusterMixins;
 
-let passedInitParams;
-let waitForPeeredParams;
-let bigIqClusterMixinsWaitForPeered;
-let bigIqClusterMixinsWaitForPeerReady;
+    let passedInitParams;
+    let waitForPeeredParams;
+    let bigIqClusterMixinsWaitForPeered;
+    let bigIqClusterMixinsWaitForPeerReady;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         /* eslint-disable global-require */
         BigIp = require('../../../f5-cloud-libs').bigIp;
         bigIqClusterMixins = require('../../../f5-cloud-libs').bigIqClusterMixins;
@@ -54,12 +55,10 @@ module.exports = {
         bigIqClusterMixins.logger = Logger.getLogger({ console: false });
 
         icontrolMock.reset();
-        callback();
-    },
+    });
 
-
-    testAddSecondary: {
-        setUp(callback) {
+    describe('add secondary tests', () => {
+        beforeEach(() => {
             bigIqClusterMixinsWaitForPeered = bigIqClusterMixins.waitForPeered;
             bigIqClusterMixins.waitForPeered = (response) => {
                 waitForPeeredParams = response;
@@ -70,10 +69,14 @@ module.exports = {
             bigIqClusterMixins.waitForPeerReady = () => {
                 return q();
             };
+        });
 
-            callback();
-        },
-        testAddSecondarySuccess(test) {
+        afterEach(() => {
+            bigIqClusterMixins.waitForPeerReady = bigIqClusterMixinsWaitForPeerReady;
+            bigIqClusterMixins.waitForPeered = bigIqClusterMixinsWaitForPeered;
+        });
+
+        it('add secondary success test', (done) => {
             icontrolMock.when(
                 'list',
                 '/shared/ssh-trust-setup?ipAddress=1.2.3.4',
@@ -98,30 +101,19 @@ module.exports = {
 
             bigIqClusterMixins.addSecondary('1.2.3.4', 'admin', 'password', 'rootPassword', { bigIp })
                 .then(() => {
-                    test.expect(1);
-                    test.deepEqual(addPeerTaskResponse, waitForPeeredParams);
+                    assert.deepEqual(addPeerTaskResponse, waitForPeeredParams);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
+    });
 
-        tearDown(callback) {
-            bigIqClusterMixins.waitForPeerReady = bigIqClusterMixinsWaitForPeerReady;
-            bigIqClusterMixins.waitForPeered = bigIqClusterMixinsWaitForPeered;
-            callback();
-        }
-    },
-
-    testWaitFunctions: {
-        setUp(callback) {
-            callback();
-        },
-
-        testWaitForPeered(test) {
+    describe('wait functions tests', () => {
+        it('wait for peered test', (done) => {
             const listResponse = {
                 step: 'ADD_TO_HA_GROUP',
                 progress: 'Adding Peer to BIG-IQ Device Group',
@@ -133,18 +125,17 @@ module.exports = {
 
             bigIqClusterMixins.waitForPeered('task1')
                 .then((response) => {
-                    test.expect(1);
-                    test.deepEqual(response, listResponse);
+                    assert.deepEqual(response, listResponse);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testWaitForPeeredFailed(test) {
+        it('wait for peered failed test', (done) => {
             const errorMessage =
                 'Authentication Failure to host 18.235.136.32. Please check the credentials provided.';
             const listResponse = {
@@ -159,19 +150,18 @@ module.exports = {
 
             bigIqClusterMixins.waitForPeered('task1')
                 .then(() => {
-                    test.ok(false, 'Should have thrown authentication failure');
+                    assert.ok(false, 'Should have thrown authentication failure');
                 })
                 .catch((err) => {
-                    test.expect(2);
-                    test.strictEqual(err.message, errorMessage);
-                    test.strictEqual(err.code, 400);
+                    assert.strictEqual(err.message, errorMessage);
+                    assert.strictEqual(err.code, 400);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testWaitForPeerReady(test) {
+        it('wait for peered ready test', (done) => {
             const listResponse = {
                 discoveryAddress: '1.2.3.4',
                 generation: 2,
@@ -192,9 +182,8 @@ module.exports = {
             );
             bigIqClusterMixins.waitForPeerReady(bigIp, '1.2.3.4', 'user', 'password1')
                 .then((response) => {
-                    test.expect(2);
-                    test.deepEqual(listResponse, response);
-                    test.deepEqual(
+                    assert.deepEqual(listResponse, response);
+                    assert.deepEqual(
                         passedInitParams,
                         [
                             '1.2.3.4',
@@ -205,14 +194,14 @@ module.exports = {
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testWaitForPeerReadyNotReady(test) {
+        it('wait for peered ready not ready test', (done) => {
             const listResponse = {
                 name: 'systemauth.disablerootlogin',
                 value: 'true'
@@ -229,19 +218,18 @@ module.exports = {
                 { maxRetries: 2, retryIntervalMs: 100 }
             )
                 .then(() => {
-                    test.ok(false, 'should have received error that secondary is not ready');
+                    assert.ok(false, 'should have received error that secondary is not ready');
                 })
                 .catch((err) => {
-                    test.expect(1);
-                    test.strictEqual(
+                    assert.strictEqual(
                         err.message,
                         // eslint-disable-next-line max-len
                         'tryUntil: max tries reached: Failover peer not ready for peering. Root not yet enabled on peer'
                     );
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    }
-};
+        });
+    });
+});
