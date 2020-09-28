@@ -17,35 +17,39 @@
 'use strict';
 
 const q = require('q');
-const BigIp = require('../../../f5-cloud-libs').bigIp;
-const icontrolMock = require('../testUtil/icontrolMock');
-const signals = require('../../../f5-cloud-libs').signals;
+const assert = require('assert');
 
-let bigIp;
-let testOptions;
+describe('network tests', () => {
+    let bigIp;
+    let testOptions;
 
-let authnMock;
-let cryptoUtilMock;
-let utilMock;
-let ipcMock;
-let argv;
-let network;
+    let authnMock;
+    let cryptoUtilMock;
+    let utilMock;
+    let ipcMock;
+    let argv;
+    let network;
+    let BigIp;
+    let icontrolMock;
+    let signals;
 
-let functionsCalled;
-let exitMessage;
-let exitCode;
-let logErrorMessage;
-let logErrorOptions;
+    let functionsCalled;
+    let exitMessage;
+    let exitCode;
+    let logErrorMessage;
+    let logErrorOptions;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach((done) => {
+        /* eslint-disable global-require */
+        BigIp = require('../../../f5-cloud-libs').bigIp;
+        icontrolMock = require('../testUtil/icontrolMock');
+        signals = require('../../../f5-cloud-libs').signals;
+        ipcMock = require('../../lib/ipc');
+
         bigIp = new BigIp();
         testOptions = {
             bigIp
         };
-
-        /* eslint-disable global-require */
-        ipcMock = require('../../lib/ipc');
 
         ipcMock.once = function once() {
             const deferred = q.defer();
@@ -96,85 +100,79 @@ module.exports = {
             .then(() => {
                 bigIp.icontrol = icontrolMock;
                 icontrolMock.reset();
-                callback();
+                done();
             });
-    },
+    });
 
-    tearDown(callback) {
+    afterEach(() => {
         utilMock.removeDirectorySync(ipcMock.signalBasePath);
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
+    });
 
-    testRequiredOptions: {
-        testNoHost(test) {
+    describe('required options tests', () => {
+        it('no host test', (done) => {
             argv = ['node', 'onboard', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
 
-            test.expect(4);
             network.run(argv, testOptions, () => {
-                test.notStrictEqual(exitMessage.indexOf('host'), -1);
-                test.notStrictEqual(logErrorMessage.indexOf('host'), -1);
-                test.strictEqual(logErrorOptions.logLevel, 'none');
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.notStrictEqual(exitMessage.indexOf('host'), -1);
+                assert.notStrictEqual(logErrorMessage.indexOf('host'), -1);
+                assert.strictEqual(logErrorOptions.logLevel, 'none');
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        },
+        });
 
-        testNoPassword(test) {
+        it('no password test', (done) => {
             argv = ['node', 'network', '--host', '1.2.3.4', '-u', 'foo', '--log-level', 'none'];
 
-            test.expect(4);
             network.run(argv, testOptions, () => {
-                test.notStrictEqual(exitMessage.indexOf('password'), -1);
-                test.notStrictEqual(logErrorMessage.indexOf('password'), -1);
-                test.strictEqual(logErrorOptions.logLevel, 'none');
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.notStrictEqual(exitMessage.indexOf('password'), -1);
+                assert.notStrictEqual(logErrorMessage.indexOf('password'), -1);
+                assert.strictEqual(logErrorOptions.logLevel, 'none');
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        },
+        });
 
-        testSingleAndMultiNic(test) {
+        it('single and multi nic test', (done) => {
             argv.push('--single-nic', '--multi-nic');
 
-            test.expect(1);
             network.run(argv, testOptions, () => {
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testUndefinedOptions: {
-        testNoPassword(test) {
+    describe('undefined options tests', () => {
+        it('no password test', (done) => {
             const passwordUrl = 'https://password';
             argv = ['node', 'network', '--log-level', 'none', '--password-url', passwordUrl,
                 '-u', 'user', '--password', '--host', 'localhost'];
 
             network.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(network.options.passwordUrl, passwordUrl);
-                test.strictEqual(network.options.password, undefined);
-                test.done();
+                assert.strictEqual(network.options.passwordUrl, passwordUrl);
+                assert.strictEqual(network.options.password, undefined);
+                done();
             });
-        },
+        });
 
-        testNoPasswordUrl(test) {
+        it('no password url test', (done) => {
             const password = 'password';
             argv = ['node', 'network', '--log-level', 'none', '--password-url', '-u', 'user',
                 '--password', password, '--host', 'localhost'];
 
             network.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(network.options.passwordUrl, undefined);
-                test.strictEqual(network.options.password, password);
-                test.done();
+                assert.strictEqual(network.options.passwordUrl, undefined);
+                assert.strictEqual(network.options.password, password);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testWaitFor(test) {
+    it('wait for test', (done) => {
         argv.push('--wait-for', 'foo');
 
         ipcMock.once = function once() {
@@ -182,14 +180,13 @@ module.exports = {
             return q();
         };
 
-        test.expect(1);
         network.run(argv, testOptions, () => {
-            test.strictEqual(functionsCalled.ipc.once[0], 'foo');
-            test.done();
+            assert.strictEqual(functionsCalled.ipc.once[0], 'foo');
+            done();
         });
-    },
+    });
 
-    testBackground(test) {
+    it('background test', (done) => {
         let runInBackgroundCalled = false;
         utilMock.runInBackgroundAndExit = () => {
             runInBackgroundCalled = true;
@@ -197,14 +194,13 @@ module.exports = {
 
         argv.push('--background');
 
-        test.expect(1);
         network.run(argv, testOptions, () => {
-            test.ok(runInBackgroundCalled);
-            test.done();
+            assert.ok(runInBackgroundCalled);
+            done();
         });
-    },
+    });
 
-    testExceptionSignalsError(test) {
+    it('exception signals error test', (done) => {
         const sentSignals = [];
 
         cryptoUtilMock.createRandomUser = () => {
@@ -226,14 +222,13 @@ module.exports = {
             }, 100);
             return deferred.promise;
         };
-        test.expect(1);
         network.run(argv, testOptions, () => {
-            test.deepEqual(sentSignals, [signals.NETWORK_RUNNING, signals.CLOUD_LIBS_ERROR]);
-            test.done();
+            assert.deepEqual(sentSignals, [signals.NETWORK_RUNNING, signals.CLOUD_LIBS_ERROR]);
+            done();
         });
-    },
+    });
 
-    testSignalDone(test) {
+    it('signal done test', (done) => {
         const sentSignals = [];
 
         argv = ['node', 'network', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
@@ -251,15 +246,14 @@ module.exports = {
             }, 100);
             return deferred.promise;
         };
-        test.expect(2);
         network.run(argv, testOptions, () => {
-            test.deepEqual(sentSignals, [signals.NETWORK_RUNNING, signals.NETWORK_DONE]);
-            test.strictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
-            test.done();
+            assert.deepEqual(sentSignals, [signals.NETWORK_RUNNING, signals.NETWORK_DONE]);
+            assert.strictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            done();
         });
-    },
+    });
 
-    testNoUser(test) {
+    it('no user test', (done) => {
         argv = ['node', 'network', '--host', '1.2.3.4', '-p', 'bar', '--log-level', 'none'];
 
         const randomUser = 'my random user';
@@ -275,62 +269,58 @@ module.exports = {
             userDeleted = user;
         };
 
-        test.expect(2);
         network.run(argv, testOptions, () => {
-            test.ok(userCreated);
-            test.strictEqual(userDeleted, randomUser);
-            test.done();
+            assert.ok(userCreated);
+            assert.strictEqual(userDeleted, randomUser);
+            done();
         });
-    },
+    });
 
-    testSingleNic: {
-        testBasic(test) {
+    describe('single nic tests', () => {
+        it('basic test', (done) => {
             argv.push('--single-nic');
-            test.expect(3);
             network.run(argv, testOptions, () => {
-                test.deepEqual(
+                assert.deepEqual(
                     icontrolMock.getRequest('modify', '/tm/sys/db/provision.1nic'),
                     { value: 'enable' }
                 );
-                test.deepEqual(
+                assert.deepEqual(
                     icontrolMock.getRequest('modify', '/tm/sys/db/provision.1nicautoconfig'),
                     { value: 'disable' }
                 );
-                test.deepEqual(
+                assert.deepEqual(
                     icontrolMock.getRequest('create', '/tm/util/bash'),
                     {
                         command: 'run',
                         utilCmdArgs: "-c 'bigstart restart'"
                     }
                 );
-                test.done();
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testDefaultRoute: {
-        testBasic(test) {
+    describe('default route tests', () => {
+        it('basic test', (done) => {
             argv.push('--default-gw', '1.2.3.4');
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 const request = icontrolMock.getRequest('create', '/tm/net/route');
-                test.deepEqual(
+                assert.deepEqual(
                     request,
                     {
                         name: 'default',
                         gw: '1.2.3.4'
                     }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testLocalOnly(test) {
+        it('local only test', (done) => {
             argv.push('--default-gw', '1.2.3.4', '--local-only');
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 const request = icontrolMock.getRequest('create', '/tm/net/route');
-                test.deepEqual(
+                assert.deepEqual(
                     request,
                     {
                         name: 'default',
@@ -339,11 +329,11 @@ module.exports = {
                         network: 'default'
                     }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testBadGateway(test) {
+        it('bad gateway test', (done) => {
             argv.push('--default-gw', 'aaa.com');
             icontrolMock.fail(
                 'create',
@@ -354,23 +344,21 @@ module.exports = {
                 }
             );
 
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 // eslint-disable-next-line no-unused-vars
                 const request = icontrolMock.getRequest('create', '/tm/net/route');
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testRoute: {
-        testBasic(test) {
+    describe('route tests', () => {
+        it('basic test', (done) => {
             argv.push('--route', 'name:foo, gw:1.2.3.4, network:10.1.0.0');
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 const request = icontrolMock.getRequest('create', '/tm/net/route');
-                test.deepEqual(
+                assert.deepEqual(
                     request,
                     {
                         name: 'foo',
@@ -378,16 +366,15 @@ module.exports = {
                         network: '10.1.0.0/24'
                     }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testCidr(test) {
+        it('cidr test', (done) => {
             argv.push('--route', 'name:foo, gw:1.2.3.4, network:10.0.0.0/32');
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 const request = icontrolMock.getRequest('create', '/tm/net/route');
-                test.deepEqual(
+                assert.deepEqual(
                     request,
                     {
                         name: 'foo',
@@ -395,11 +382,11 @@ module.exports = {
                         network: '10.0.0.0/32'
                     }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testBadRoute(test) {
+        it('bad route test', (done) => {
             argv.push('--route', 'name:routename,gw:1.2.3.4,network:networkname');
             icontrolMock.fail(
                 'create',
@@ -409,21 +396,19 @@ module.exports = {
                     message: 'foo'
                 }
             );
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 // eslint-disable-next-line no-unused-vars
                 const request = icontrolMock.getRequest('create', '/tm/net/route');
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        },
+        });
 
-        testWithInterface(test) {
+        it('with interface test', (done) => {
             argv.push('--route', 'name:foo, network:10.1.0.0, interface:int_name');
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 const request = icontrolMock.getRequest('create', '/tm/net/route');
-                test.deepEqual(
+                assert.deepEqual(
                     request,
                     {
                         name: 'foo',
@@ -431,17 +416,16 @@ module.exports = {
                         network: '10.1.0.0/24'
                     }
                 );
-                test.done();
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testManagementRoute(test) {
+    it('management route test', (done) => {
         argv.push('--mgmt-route', 'name:foo, gw:1.2.3.4, network:10.1.0.0');
-        test.expect(1);
         network.run(argv, testOptions, () => {
             const request = icontrolMock.getRequest('create', '/tm/sys/management-route');
-            test.deepEqual(
+            assert.deepEqual(
                 request,
                 {
                     name: 'foo',
@@ -449,17 +433,16 @@ module.exports = {
                     network: '10.1.0.0/24'
                 }
             );
-            test.done();
+            done();
         });
-    },
+    });
 
-    testVlan: {
-        testBasic(test) {
+    describe('vlan tests', () => {
+        it('basic test', (done) => {
             argv.push('--vlan', 'name:foo,nic:1.1');
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 const request = icontrolMock.getRequest('create', '/tm/net/vlan');
-                test.deepEqual(
+                assert.deepEqual(
                     request,
                     {
                         name: 'foo',
@@ -471,16 +454,15 @@ module.exports = {
                         ]
                     }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testTagMtu(test) {
+        it('tag mtu test', (done) => {
             argv.push('--vlan', 'name:foo,nic:1.1,tag:1040,mtu:600');
-            test.expect(1);
             network.run(argv, testOptions, () => {
                 const request = icontrolMock.getRequest('create', '/tm/net/vlan');
-                test.deepEqual(
+                assert.deepEqual(
                     request,
                     {
                         name: 'foo',
@@ -494,13 +476,12 @@ module.exports = {
                         mtu: '600'
                     }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testBadNicName(test) {
+        it('bad nic name test', (done) => {
             argv.push('--vlan', 'name:vlanname,nic:nicname');
-            test.expect(1);
             icontrolMock.fail(
                 'create',
                 '/tm/net/vlan',
@@ -513,18 +494,17 @@ module.exports = {
             network.run(argv, testOptions, () => {
                 // eslint-disable-next-line no-unused-vars
                 const request = icontrolMock.getRequest('create', '/tm/net/vlan');
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        },
+        });
 
-        testSelfIp: {
-            testBasic(test) {
+        describe('self ip tests', () => {
+            it('basic test', (done) => {
                 argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar');
-                test.expect(1);
                 network.run(argv, testOptions, () => {
                     const request = icontrolMock.getRequest('create', '/tm/net/self');
-                    test.deepEqual(
+                    assert.deepEqual(
                         request,
                         {
                             name: 'foo',
@@ -533,16 +513,15 @@ module.exports = {
                             allowService: 'default'
                         }
                     );
-                    test.done();
+                    done();
                 });
-            },
+            });
 
-            testCidr(test) {
+            it('cidr test', (done) => {
                 argv.push('--self-ip', 'name:foo, address:1.2.0.0/16, vlan:bar');
-                test.expect(1);
                 network.run(argv, testOptions, () => {
                     const request = icontrolMock.getRequest('create', '/tm/net/self');
-                    test.deepEqual(
+                    assert.deepEqual(
                         request,
                         {
                             name: 'foo',
@@ -551,12 +530,12 @@ module.exports = {
                             allowService: 'default'
                         }
                     );
-                    test.done();
+                    done();
                 });
-            },
+            });
 
-            testTrafficGroup: {
-                testExistingTrafficGroup(test) {
+            describe('traffic group tests', () => {
+                it('existing traffic group test', (done) => {
                     argv.push('--self-ip',
                         'name:selfip1, address:1.2.3.4/24, vlan:external, trafficGroup:group1');
 
@@ -570,12 +549,11 @@ module.exports = {
                         ]
                     );
 
-                    test.expect(2);
                     network.run(argv, testOptions, () => {
                         const trafficGroupRequest = icontrolMock.getRequest('create', '/tm/cm/traffic-group');
                         const selfIpRequest = icontrolMock.getRequest('create', '/tm/net/self');
-                        test.strictEqual(trafficGroupRequest, undefined);
-                        test.deepEqual(
+                        assert.strictEqual(trafficGroupRequest, undefined);
+                        assert.deepEqual(
                             selfIpRequest,
                             {
                                 address: '1.2.3.4/24',
@@ -585,11 +563,11 @@ module.exports = {
                                 trafficGroup: 'group1'
                             }
                         );
-                        test.done();
+                        done();
                     });
-                },
+                });
 
-                testNewTrafficGroup(test) {
+                it('new traffic group test', (done) => {
                     argv.push('--self-ip',
                         'name:selfip1, address:1.2.3.4/24, vlan:external, trafficGroup:group1');
 
@@ -601,11 +579,10 @@ module.exports = {
                         ]
                     );
 
-                    test.expect(3);
                     network.run(argv, testOptions, () => {
                         const selfIpRequest = icontrolMock.getRequest('create', '/tm/net/self');
                         const trafficGroupRequest = icontrolMock.getRequest('create', '/tm/cm/traffic-group');
-                        test.deepEqual(
+                        assert.deepEqual(
                             selfIpRequest,
                             {
                                 address: '1.2.3.4/24',
@@ -615,19 +592,19 @@ module.exports = {
                                 trafficGroup: 'group1'
                             }
                         );
-                        test.strictEqual(trafficGroupRequest.name, 'group1');
-                        test.strictEqual(trafficGroupRequest.partition, '/Common');
-                        test.done();
+                        assert.strictEqual(trafficGroupRequest.name, 'group1');
+                        assert.strictEqual(trafficGroupRequest.partition, '/Common');
+                        done();
                     });
-                },
-            },
-            testPortLockdown: {
-                testSpecificSingle(test) {
+                });
+            });
+
+            describe('port lockdown tests', () => {
+                it('specific single test', (done) => {
                     argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar, allow:hello:5678');
-                    test.expect(1);
                     network.run(argv, testOptions, () => {
                         const request = icontrolMock.getRequest('create', '/tm/net/self');
-                        test.deepEqual(
+                        assert.deepEqual(
                             request,
                             {
                                 name: 'foo',
@@ -636,17 +613,16 @@ module.exports = {
                                 allowService: ['hello:5678']
                             }
                         );
-                        test.done();
+                        done();
                     });
-                },
+                });
 
-                testSpecificMultiple(test) {
+                it('specific multiple test', (done) => {
                     argv.push('--self-ip',
                         'name:foo, address:1.2.3.4, vlan:bar, allow:hello:5678 world:9876');
-                    test.expect(1);
                     network.run(argv, testOptions, () => {
                         const request = icontrolMock.getRequest('create', '/tm/net/self');
-                        test.deepEqual(
+                        assert.deepEqual(
                             request,
                             {
                                 name: 'foo',
@@ -655,16 +631,15 @@ module.exports = {
                                 allowService: ['hello:5678', 'world:9876']
                             }
                         );
-                        test.done();
+                        done();
                     });
-                },
+                });
 
-                testSpecificPlusDefault(test) {
+                it('specific plus default test', (done) => {
                     argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar, allow:default world:9876');
-                    test.expect(1);
                     network.run(argv, testOptions, () => {
                         const request = icontrolMock.getRequest('create', '/tm/net/self');
-                        test.deepEqual(
+                        assert.deepEqual(
                             request,
                             {
                                 name: 'foo',
@@ -673,16 +648,15 @@ module.exports = {
                                 allowService: ['default', 'world:9876']
                             }
                         );
-                        test.done();
+                        done();
                     });
-                },
+                });
 
-                testGeneral(test) {
+                it('general test', (done) => {
                     argv.push('--self-ip', 'name:foo, address:1.2.3.4, vlan:bar, allow:all');
-                    test.expect(1);
                     network.run(argv, testOptions, () => {
                         const request = icontrolMock.getRequest('create', '/tm/net/self');
-                        test.deepEqual(
+                        assert.deepEqual(
                             request,
                             {
                                 name: 'foo',
@@ -691,48 +665,45 @@ module.exports = {
                                 allowService: 'all'
                             }
                         );
-                        test.done();
+                        done();
                     });
-                }
-            },
+                });
+            });
 
-            testMissingVlan(test) {
+            it('missing vlan test', (done) => {
                 argv.push('--self-ip', 'name:foo, address:1.2.3.4');
 
-                test.expect(1);
                 network.run(argv, testOptions, () => {
-                    test.strictEqual(exitCode, 1);
-                    test.done();
+                    assert.strictEqual(exitCode, 1);
+                    done();
                 });
-            }
-        }
-    },
+            });
+        });
+    });
 
-    testDiscoveryAddress: {
-        setUp(callback) {
+    describe('discovery address tests', () => {
+        beforeEach(() => {
             bigIp.isBigIq = () => {
                 return true;
             };
             bigIp.isBigIp = () => {
                 return false;
             };
-            callback();
-        },
+        });
 
-        testDiscoveryAddressSet(test) {
+        it('discovery address set test', (done) => {
             argv.push('--discovery-address', '1.2.3.4');
 
-            test.expect(1);
             network.run(argv, testOptions, () => {
-                test.deepEqual(
+                assert.deepEqual(
                     icontrolMock.getRequest('replace', '/shared/identified-devices/config/discovery'),
                     { discoveryAddress: '1.2.3.4' }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testMgmtDiscoveryAddress(test) {
+        it('mgmt discovery address test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/sys/management-ip',
@@ -743,18 +714,17 @@ module.exports = {
                 ]
             );
 
-            test.expect(1);
             network.run(argv, testOptions, () => {
-                test.deepEqual(
+                assert.deepEqual(
                     icontrolMock.getRequest('replace', '/shared/identified-devices/config/discovery'),
                     { discoveryAddress: '10.0.0.204' }
                 );
-                test.done();
+                done();
             });
-        },
-    },
+        });
+    });
 
-    testForceReboot(test) {
+    it('force reboot test', (done) => {
         let strippedArgs;
         let rebootCalled;
         utilMock.saveArgs = (args, id, argsToStrip) => {
@@ -768,12 +738,11 @@ module.exports = {
 
         argv.push('--force-reboot');
 
-        test.expect(3);
         network.run(argv, testOptions, () => {
-            test.strictEqual(rebootCalled, true);
-            test.notStrictEqual(strippedArgs.indexOf('--force-reboot'), -1);
-            test.notStrictEqual(strippedArgs.indexOf('--wait-for'), -1);
-            test.done();
+            assert.strictEqual(rebootCalled, true);
+            assert.notStrictEqual(strippedArgs.indexOf('--force-reboot'), -1);
+            assert.notStrictEqual(strippedArgs.indexOf('--wait-for'), -1);
+            done();
         });
-    }
-};
+    });
+});

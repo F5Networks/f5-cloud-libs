@@ -16,47 +16,48 @@
 
 'use strict';
 
-const fs = require('fs');
 const q = require('q');
+const fs = require('fs');
+const assert = require('assert');
 const childProcessMock = require('child_process');
 
-const realSetTimeout = setTimeout;
-const realUnlink = fs.unlink;
-const realExecFile = childProcessMock.execFile;
-const realAccess = fs.access;
+describe('bigip tests', () => {
+    const realSetTimeout = setTimeout;
+    const realUnlink = fs.unlink;
+    const realExecFile = childProcessMock.execFile;
+    const realAccess = fs.access;
 
-let BigIp;
-let utilMock;
-let icontrolMock;
-let localKeyUtilMock;
-let cryptoUtilMock;
-let authnMock;
+    let BigIp;
+    let utilMock;
+    let icontrolMock;
+    let localKeyUtilMock;
+    let cryptoUtilMock;
+    let authnMock;
 
-let bigIp;
-let realReady;
+    let bigIp;
+    let realReady;
 
-let getProductCalled;
-let removedFile;
+    let getProductCalled;
+    let removedFile;
 
-const UCS_TASK_PATH = '/tm/task/sys/ucs';
-const DUMMY_TASK_PATH = '/foo/task/bar';
+    const UCS_TASK_PATH = '/tm/task/sys/ucs';
+    const DUMMY_TASK_PATH = '/foo/task/bar';
 
-const privateKeyFolder = 'aFolder';
-const privateKeyName = 'aKey';
-const privateKeyMetadata = [
-    {
-        name: 'default.key',
-        partition: 'Common',
-        fullPath: '/Common/default.key',
-    }
-];
+    const privateKeyFolder = 'aFolder';
+    const privateKeyName = 'aKey';
+    const privateKeyMetadata = [
+        {
+            name: 'default.key',
+            partition: 'Common',
+            fullPath: '/Common/default.key',
+        }
+    ];
 
-const encryptedPassword = 'myEncryptedPassword';
-let dataWritten;
-let tmshCommandCalled;
+    const encryptedPassword = 'myEncryptedPassword';
+    let dataWritten;
+    let tmshCommandCalled;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         /* eslint-disable global-require */
         utilMock = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
@@ -88,11 +89,10 @@ module.exports = {
         bigIp.init('host', 'user', 'password')
             .then(() => {
                 icontrolMock.reset();
-                callback();
             });
-    },
+    });
 
-    tearDown(callback) {
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
@@ -100,23 +100,21 @@ module.exports = {
         fs.unlink = realUnlink;
         fs.access = realAccess;
         childProcessMock.execFile = realExecFile;
-
-        callback();
         /* eslint-enable global-require */
-    },
+    });
 
-    testConstructor(test) {
-        test.doesNotThrow(() => {
+    it('constructor test', (done) => {
+        assert.doesNotThrow(() => {
             // eslint-disable-next-line no-unused-vars
             const x = new BigIp({
                 logger: {}
             });
         });
-        test.done();
-    },
+        done();
+    });
 
-    testActive: {
-        testActive(test) {
+    describe('active tests', () => {
+        it('active test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/cm/failover-status',
@@ -135,20 +133,19 @@ module.exports = {
                 }
             );
 
-            test.expect(1);
             bigIp.active()
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testStandby(test) {
+        it('standby test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/cm/failover-status',
@@ -167,20 +164,19 @@ module.exports = {
                 }
             );
 
-            test.expect(1);
             bigIp.active()
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNotActive(test) {
+        it('not active test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/cm/failover-status',
@@ -199,39 +195,37 @@ module.exports = {
                 }
             );
 
-            test.expect(1);
             bigIp.active(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'BIG-IP should not be active.');
+                    assert.ok(false, 'BIG-IP should not be active.');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.name, 'ActiveError');
+                    assert.strictEqual(err.name, 'ActiveError');
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testActiveThrow(test) {
+        it('active throw test', (done) => {
             icontrolMock.fail('list', '/tm/cm/failover-status');
 
-            test.expect(1);
             bigIp.active(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'BIG-IP should not be active.');
+                    assert.ok(false, 'BIG-IP should not be active.');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.name, 'ActiveError');
+                    assert.strictEqual(err.name, 'ActiveError');
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testCreateOrModify: {
-        testCommonPartition: {
-            testDoesNotExist(test) {
+    describe('create modify delete tests', () => {
+        describe('common partition tests', () => {
+            it('does not exist test', (done) => {
                 const error404 = new Error('does not exist');
                 error404.code = 404;
                 icontrolMock.fail(
@@ -242,34 +236,50 @@ module.exports = {
 
                 bigIp.createOrModify('/tm/sys/foo', { name: 'bar' })
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'create');
-                        test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo');
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testExists(test) {
+            it('exists test', (done) => {
                 bigIp.createOrModify('/tm/sys/foo', { name: 'bar' })
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                        test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/~Common~bar');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'modify');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/~Common~bar');
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            }
-        },
+            });
 
-        testOtherPartition: {
-            testDoesNotExist(test) {
+            it('delete test', (done) => {
+                icontrolMock.when('delete', '/tm/sys/foo/bar', {});
+
+                bigIp.delete('/tm/sys/foo/bar')
+                    .then(() => {
+                        assert.strictEqual(icontrolMock.lastCall.method, 'delete');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/bar');
+                    })
+                    .catch((err) => {
+                        assert.ok(false, err.message);
+                    })
+                    .finally(() => {
+                        done();
+                    });
+            });
+        });
+
+        describe('other partition tests', () => {
+            it('does not exist test', (done) => {
                 const error404 = new Error('does not exist');
                 error404.code = 404;
                 icontrolMock.fail(
@@ -280,34 +290,34 @@ module.exports = {
 
                 bigIp.createOrModify('/tm/sys/foo', { name: 'bar', partition: 'myOtherPartition' })
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'create');
-                        test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo');
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testExists(test) {
+            it('exists test', (done) => {
                 bigIp.createOrModify('/tm/sys/foo', { name: 'bar', partition: 'myOtherPartition' })
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                        test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/~myOtherPartition~bar');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'modify');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/~myOtherPartition~bar');
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            }
-        },
+            });
+        });
 
-        testTrunk: {
-            testDoesNotExist(test) {
+        describe('trunk tests', () => {
+            it('does not exist test', (done) => {
                 const error404 = new Error('does not exist');
                 error404.code = 404;
                 icontrolMock.fail(
@@ -318,34 +328,34 @@ module.exports = {
 
                 bigIp.createOrModify('/tm/net/trunk', { name: 'bar' })
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'create');
-                        test.strictEqual(icontrolMock.lastCall.path, '/tm/net/trunk');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/net/trunk');
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testExists(test) {
+            it('exists test', (done) => {
                 bigIp.createOrModify('/tm/net/trunk', { name: 'bar' })
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                        test.strictEqual(icontrolMock.lastCall.path, '/tm/net/trunk/bar');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'modify');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/net/trunk/bar');
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            }
-        },
+            });
+        });
 
-        testUser: {
-            testDoesNotExist(test) {
+        describe('user tests', () => {
+            it('does not exist test', (done) => {
                 const error404 = new Error('does not exist');
                 error404.code = 404;
                 icontrolMock.fail(
@@ -356,52 +366,35 @@ module.exports = {
 
                 bigIp.createOrModify('/tm/auth/user', { name: 'bar' })
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'create');
-                        test.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user');
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testExists(test) {
+            it('exists test', (done) => {
                 bigIp.createOrModify('/tm/auth/user', { name: 'bar' })
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                        test.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user/bar');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'modify');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user/bar');
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            }
-        }
-    },
-
-    testDelete(test) {
-        icontrolMock.when('delete', '/tm/sys/foo/bar', {});
-
-        test.expect(2);
-        bigIp.delete('/tm/sys/foo/bar')
-            .then(() => {
-                test.strictEqual(icontrolMock.lastCall.method, 'delete');
-                test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/bar');
-            })
-            .catch((err) => {
-                test.ok(false, err.message);
-            })
-            .finally(() => {
-                test.done();
             });
-    },
+        });
+    });
 
-    testInit: {
-        testBasic(test) {
+    describe('init tests', () => {
+        it('basic test', (done) => {
             const host = 'myHost';
             const user = 'myUser';
             const password = 'myPassword';
@@ -411,43 +404,41 @@ module.exports = {
                 return q();
             };
 
-            test.expect(5);
             // we have to call init here w/ the same params as the ctor can't
             // be async.
             bigIp.init(host, user, password, { port })
                 .then(() => {
-                    test.strictEqual(bigIp.host, host);
-                    test.strictEqual(bigIp.user, user);
-                    test.strictEqual(bigIp.password, password);
-                    test.strictEqual(bigIp.port, port);
+                    assert.strictEqual(bigIp.host, host);
+                    assert.strictEqual(bigIp.user, user);
+                    assert.strictEqual(bigIp.password, password);
+                    assert.strictEqual(bigIp.port, port);
                     // Test that for BIG-IP, we do not add in the BIG-IQ mixins
-                    test.strictEqual(bigIp.onboard.isPrimaryKeySet, undefined);
+                    assert.strictEqual(bigIp.onboard.isPrimaryKeySet, undefined);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNotInitialized(test) {
+        it('not initialized test', (done) => {
             bigIp = new BigIp();
 
-            test.expect(1);
             bigIp.ready(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Uninitialized BIG-IP should not be ready');
+                    assert.ok(false, 'Uninitialized BIG-IP should not be ready');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testBigIq(test) {
+        it('bigiq test', (done) => {
             bigIp = new BigIp();
             bigIp.ready = () => {
                 return q();
@@ -457,78 +448,72 @@ module.exports = {
                 return q('BIG-IQ');
             };
 
-            test.expect(1);
             bigIp.init('host', 'user', 'password')
                 .then(() => {
                     // test that BIG-IQ mixins were added
-                    test.notStrictEqual(bigIp.onboard.isPrimaryKeySet, undefined);
+                    assert.notStrictEqual(bigIp.onboard.isPrimaryKeySet, undefined);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testGetProductOption: {
-            setUp(callback) {
+        describe('get product option test', () => {
+            beforeEach(() => {
                 bigIp.product = null;
                 getProductCalled = false;
                 utilMock.getProduct = () => {
                     getProductCalled = true;
                     return q('BIG-IP');
                 };
+            });
 
-                callback();
-            },
-
-            testProductSpecified(test) {
-                test.expect(1);
+            it('product specified test', (done) => {
                 bigIp.init('host', 'user', 'password', { product: 'foo' })
                     .then(() => {
-                        test.strictEqual(getProductCalled, false);
+                        assert.strictEqual(getProductCalled, false);
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testProductNotSpecified(test) {
-                test.expect(1);
+            it('product not specified test', (done) => {
                 bigIp.init('host', 'user', 'password')
                     .then(() => {
-                        test.strictEqual(getProductCalled, true);
+                        assert.strictEqual(getProductCalled, true);
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            }
-        }
-    },
-
-    testList(test) {
-        test.expect(1);
-        bigIp.list()
-            .then(() => {
-                test.strictEqual(icontrolMock.lastCall.method, 'list');
-            })
-            .catch((err) => {
-                test.ok(false, err);
-            })
-            .finally(() => {
-                test.done();
             });
-    },
+        });
 
-    testCreateFolder: {
-        testBasic(test) {
+        it('product not specified test', (done) => {
+            bigIp.list()
+                .then(() => {
+                    assert.strictEqual(icontrolMock.lastCall.method, 'list');
+                })
+                .catch((err) => {
+                    assert.ok(false, err);
+                })
+                .finally(() => {
+                    done();
+                });
+        });
+    });
+
+    describe('create folder tests', () => {
+        it('basic test', (done) => {
             const folderName = 'foo';
 
             icontrolMock.when(
@@ -537,11 +522,10 @@ module.exports = {
                 []
             );
 
-            test.expect(2);
             bigIp.createFolder(folderName)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.deepEqual(
+                    assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                    assert.deepEqual(
                         icontrolMock.lastCall.body,
                         {
                             name: folderName,
@@ -552,14 +536,14 @@ module.exports = {
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testAlreadyExists(test) {
+        it('already exists test', (done) => {
             const folderName = 'foo';
 
             icontrolMock.when(
@@ -572,20 +556,19 @@ module.exports = {
                 ]
             );
 
-            test.expect(1);
             bigIp.createFolder(folderName)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    assert.strictEqual(icontrolMock.lastCall.method, 'list');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testOptions(test) {
+        it('options test', (done) => {
             const folderName = 'foo';
             const options = {
                 subPath: '/',
@@ -599,11 +582,10 @@ module.exports = {
                 []
             );
 
-            test.expect(2);
             bigIp.createFolder(folderName, options)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.deepEqual(
+                    assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                    assert.deepEqual(
                         icontrolMock.lastCall.body,
                         {
                             name: folderName,
@@ -614,16 +596,16 @@ module.exports = {
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGetPrivateKeyFilePath: {
-        testBasic(test) {
+    describe('get private key file path tests', () => {
+        it('basic test', (done) => {
             const folder = 'CloudLibs';
             const name = 'cloudLibsPrivate';
 
@@ -639,17 +621,17 @@ module.exports = {
             bigIp.getPrivateKeyFilePath(folder, name)
                 .then((privateKeyFilePath) => {
                     // eslint-disable-next-line max-len
-                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:CloudLibs:cloudLibsPrivate.key_1234_1');
+                    assert.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:CloudLibs:cloudLibsPrivate.key_1234_1');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoKeySuffix(test) {
+        it('no key suffix test', (done) => {
             const folder = 'CloudLibs';
             const name = 'cloudLibsPrivate.key';
 
@@ -665,17 +647,17 @@ module.exports = {
             bigIp.getPrivateKeyFilePath(folder, name)
                 .then((privateKeyFilePath) => {
                     // eslint-disable-next-line max-len
-                    test.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:CloudLibs:cloudLibsPrivate_1234_1');
+                    assert.strictEqual(privateKeyFilePath, '/config/filestore/files_d/CloudLibs_d/certificate_key_d/:CloudLibs:cloudLibsPrivate_1234_1');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNotFound(test) {
+        it('not found test', (done) => {
             const folder = 'CloudLibs';
             const name = 'cloudLibsPrivate';
 
@@ -690,19 +672,19 @@ module.exports = {
 
             bigIp.getPrivateKeyFilePath(folder, name)
                 .then((privateKeyFilePath) => {
-                    test.strictEqual(privateKeyFilePath, undefined);
+                    assert.strictEqual(privateKeyFilePath, undefined);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testInstallPrivateKey: {
-        setUp(callback) {
+    describe('install private key tests', () => {
+        beforeEach(() => {
             fs.unlink = (path, cb) => {
                 removedFile = path;
                 cb();
@@ -725,11 +707,9 @@ module.exports = {
                     version: '13.1.0'
                 }
             );
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
+        it('basic test', (done) => {
             const folder = 'CloudLibs';
             const name = 'cloudLibsPrivate';
 
@@ -742,21 +722,20 @@ module.exports = {
 
             icontrolMock.when('create', '/tm/sys/crypto/key', {});
 
-            test.expect(2);
             bigIp.installPrivateKey(keyFile, folder, name)
                 .then(() => {
-                    test.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
-                    test.strictEqual(removedFile, keyFile);
+                    assert.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
+                    assert.strictEqual(removedFile, keyFile);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testEncryptedPassphrase(test) {
+        it('encrypted passphrase test', (done) => {
             const folder = 'CloudLibs';
             const name = 'cloudLibsPrivate';
             const passphrase = 'abc123';
@@ -771,21 +750,20 @@ module.exports = {
 
             icontrolMock.when('create', '/tm/sys/crypto/key', {});
 
-            test.expect(2);
             bigIp.installPrivateKey(keyFile, folder, name, { passphrase })
                 .then(() => {
-                    test.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
-                    test.strictEqual(removedFile, keyFile);
+                    assert.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
+                    assert.strictEqual(removedFile, keyFile);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testUnlinkErrorIgnored(test) {
+        it('unlink error ignored test', (done) => {
             const folder = 'CloudLibs';
             const name = 'cloudLibsPrivate';
 
@@ -797,22 +775,21 @@ module.exports = {
                 cb(new Error());
             };
 
-            test.expect(1);
             bigIp.installPrivateKey(keyFile, folder, name)
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGetPrivateKeyMetadata: {
-        testNoKeySuffix(test) {
+    describe('get private key metadata tests', () => {
+        it('no key suffix test', (done) => {
             const sslKey = {
                 name: 'aKey',
                 partition: 'aFolder',
@@ -827,17 +804,17 @@ module.exports = {
 
             bigIp.getPrivateKeyMetadata(privateKeyFolder, privateKeyName)
                 .then((response) => {
-                    test.deepEqual(response, sslKey);
+                    assert.deepEqual(response, sslKey);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testKeySuffix(test) {
+        it('key suffix test', (done) => {
             const sslKey = {
                 name: 'aKey.key',
                 partition: 'aFolder',
@@ -852,87 +829,84 @@ module.exports = {
 
             bigIp.getPrivateKeyMetadata(privateKeyFolder, `${privateKeyName}.key`)
                 .then((response) => {
-                    test.deepEqual(response, sslKey);
+                    assert.deepEqual(response, sslKey);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGetPassword(test) {
+    it('get password test', (done) => {
         bigIp.getPassword()
             .then((response) => {
-                test.strictEqual(response, 'password');
+                assert.strictEqual(response, 'password');
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testLoadConfig: {
-        testNoFile(test) {
-            test.expect(4);
+    describe('load config tests', () => {
+        it('no file test', (done) => {
             bigIp.loadConfig()
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
-                    test.strictEqual(icontrolMock.lastCall.body.command, 'load');
-                    test.strictEqual(icontrolMock.lastCall.body.name, 'default');
+                    assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                    assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
+                    assert.strictEqual(icontrolMock.lastCall.body.command, 'load');
+                    assert.strictEqual(icontrolMock.lastCall.body.name, 'default');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testFile(test) {
+        it('file test', (done) => {
             const fileName = 'foobar';
 
-            test.expect(1);
             bigIp.loadConfig(fileName)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.body.options[0].file, fileName);
+                    assert.strictEqual(icontrolMock.lastCall.body.options[0].file, fileName);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testOptions(test) {
+        it('options test', (done) => {
             const options = {
                 foo: 'bar',
                 hello: 'world'
             };
 
-            test.expect(2);
             bigIp.loadConfig(null, options)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.body.options[0].foo, options.foo);
-                    test.strictEqual(icontrolMock.lastCall.body.options[1].hello, options.hello);
+                    assert.strictEqual(icontrolMock.lastCall.body.options[0].foo, options.foo);
+                    assert.strictEqual(icontrolMock.lastCall.body.options[1].hello, options.hello);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
-    },
+        });
+    });
 
-    testLoadUcs: {
-        setUp(callback) {
+    describe('load ucs tests', () => {
+        beforeEach(() => {
             icontrolMock.when('create', UCS_TASK_PATH, { _taskId: '1234' });
             icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'COMPLETED' });
 
@@ -950,44 +924,40 @@ module.exports = {
                 }
                 funcToCall();
             };
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
-            test.expect(1);
+        it('basic test', (done) => {
             bigIp.loadUcs('/tmp/foo')
                 .then(() => {
-                    test.deepEqual(
+                    assert.deepEqual(
                         icontrolMock.getRequest('replace', `${UCS_TASK_PATH}/1234`),
                         { _taskState: 'VALIDATING' }
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testLoadOptions(test) {
-            test.expect(1);
+        it('load options test', (done) => {
             bigIp.loadUcs('/tmp/foo', { foo: 'bar', hello: 'world' })
                 .then(() => {
                     const command = icontrolMock.getRequest('create', UCS_TASK_PATH);
-                    test.deepEqual(command.options, [{ foo: 'bar' }, { hello: 'world' }]);
+                    assert.deepEqual(command.options, [{ foo: 'bar' }, { hello: 'world' }]);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRestoreUser: {
-            setUp(callback) {
+        describe('restore user tests', () => {
+            beforeEach(() => {
                 utilMock.runTmshCommand = function runTmshCommand(command) {
                     tmshCommandCalled = command;
                     return q();
@@ -1005,129 +975,121 @@ module.exports = {
                 };
 
                 tmshCommandCalled = undefined;
+            });
 
-                callback();
-            },
-
-            testBasic(test) {
+            it('basic test', (done) => {
                 bigIp.initOptions = {
                     passwordIsUrl: true,
                     passwordEncrypted: true
                 };
 
-                test.expect(2);
                 bigIp.loadUcs('/tmp/foo', undefined, { initLocalKeys: true, restoreUser: true })
                     .then(() => {
-                        test.strictEqual(tmshCommandCalled.startsWith('modify auth user'), true);
-                        test.strictEqual(dataWritten, encryptedPassword);
+                        assert.strictEqual(tmshCommandCalled.startsWith('modify auth user'), true);
+                        assert.strictEqual(dataWritten, encryptedPassword);
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
                         childProcessMock.execFile = realExecFile;
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testAuthToken(test) {
+            it('auth token test', (done) => {
                 bigIp.initOptions = {
                     passwordIsToken: true
                 };
 
-                test.expect(1);
                 bigIp.loadUcs('/tmp/foo', undefined, { initLocalKeys: true, restoreUser: true })
                     .then(() => {
-                        test.strictEqual(tmshCommandCalled, undefined);
+                        assert.strictEqual(tmshCommandCalled, undefined);
                     })
                     .catch((err) => {
-                        test.ok(false, err);
+                        assert.ok(false, err);
                     })
                     .finally(() => {
                         childProcessMock.execFile = realExecFile;
-                        test.done();
+                        done();
                     });
-            }
-        },
+            });
+        });
 
-        testFailed(test) {
+        it('failed test', (done) => {
             icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'FAILED' });
-            test.expect(1);
             bigIp.loadUcs('foo')
                 .then(() => {
-                    test.ok(false, 'Should not have completed');
+                    assert.ok(false, 'Should not have completed');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNeverComplete(test) {
+        it('never complete test', (done) => {
             icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'PENDING' });
             utilMock.DEFAULT_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
-            test.expect(1);
             bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Should not have completed');
+                    assert.ok(false, 'Should not have completed');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testMcpNeverReady(test) {
+        it('mcp never ready test', (done) => {
             const message = 'mcp is not ready';
             bigIp.ready = function ready() {
                 return q.reject(new Error(message));
             };
 
-            test.expect(1);
             bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Should have thrown mcp not ready');
+                    assert.ok(false, 'Should have thrown mcp not ready');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPasswordUrl: {
-            testBasic(test) {
+        describe('password url tests', () => {
+            it('basic test', (done) => {
                 const password = 'myPassword';
                 const passwordFile = '/tmp/passwordFromUrlTest';
                 const passwordUrl = `file://${passwordFile}`;
 
                 fs.writeFileSync(passwordFile, password);
 
-                test.expect(1);
                 bigIp.init('host', 'user', passwordUrl, { passwordIsUrl: true })
                     .then(() => {
                         bigIp.icontrol = icontrolMock;
                         bigIp.password = '';
                         bigIp.loadUcs('/tmp/foo')
                             .then(() => {
-                                test.strictEqual(bigIp.password, password);
+                                assert.strictEqual(bigIp.password, password);
                             })
                             .catch((err) => {
-                                test.ok(false, err);
+                                assert.ok(false, err);
                             })
                             .finally(() => {
                                 fs.unlinkSync(passwordFile);
-                                test.done();
+                                done();
                             });
                     });
-            },
+            });
 
-            testGetDataFromUrlError(test) {
+            it('get data from url error test', (done) => {
                 const message = 'getDataFromUrl error';
 
                 const password = 'myPassword';
@@ -1136,7 +1098,6 @@ module.exports = {
 
                 fs.writeFileSync(passwordFile, password);
 
-                test.expect(1);
                 bigIp.init('host', 'user', passwordUrl, { passwordIsUrl: true })
                     .then(() => {
                         utilMock.getDataFromUrl = function getDataFromUrl() {
@@ -1147,19 +1108,19 @@ module.exports = {
                         bigIp.password = '';
                         bigIp.loadUcs('/tmp/foo')
                             .then(() => {
-                                test.ok(false, 'should have thrown getDataFromUrl error');
+                                assert.ok(false, 'should have thrown getDataFromUrl error');
                             })
                             .catch((err) => {
-                                test.strictEqual(err.message, message);
+                                assert.strictEqual(err.message, message);
                             })
                             .finally(() => {
                                 fs.unlinkSync(passwordFile);
-                                test.done();
+                                done();
                             });
                     });
-            },
+            });
 
-            testDecryptPasswordError(test) {
+            it('decrypt password error test', (done) => {
                 const message = 'encrypt password error';
 
                 const password = 'myPassword';
@@ -1168,7 +1129,6 @@ module.exports = {
 
                 fs.writeFileSync(passwordFile, password);
 
-                test.expect(1);
                 bigIp.init('host', 'user', passwordUrl, { passwordIsUrl: true })
                     .then(() => {
                         cryptoUtilMock.encrypt = function encrypt() {
@@ -1183,36 +1143,35 @@ module.exports = {
                         bigIp.password = '';
                         bigIp.loadUcs('/tmp/foo', {}, { initLocalKeys: true })
                             .then(() => {
-                                test.ok(false, 'should have thrown getDataFromUrl error');
+                                assert.ok(false, 'should have thrown getDataFromUrl error');
                             })
                             .catch((err) => {
-                                test.strictEqual(err.message, message);
+                                assert.strictEqual(err.message, message);
                             })
                             .finally(() => {
                                 fs.unlinkSync(passwordFile);
-                                test.done();
+                                done();
                             });
                     });
-            }
-        }
-    },
+            });
+        });
+    });
 
-    testPing: {
-        testNoAddress(test) {
-            test.expect(1);
+    describe('ping tests', () => {
+        it('no address test', (done) => {
             bigIp.ping()
                 .then(() => {
-                    test.ok(false, 'Ping with no address should have been rejected.');
+                    assert.ok(false, 'Ping with no address should have been rejected.');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('Address is required'), -1);
+                    assert.notStrictEqual(err.message.indexOf('Address is required'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPacketsReceived(test) {
+        it('packets received test', (done) => {
             icontrolMock.when(
                 'create',
                 '/tm/util/ping',
@@ -1221,20 +1180,19 @@ module.exports = {
                     commandResult: 'PING 104.219.104.168 (104.219.104.168) 56(84) bytes of data.\n64 bytes from 104.219.104.168: icmp_seq=1 ttl=240 time=43.5 ms\n\n--- 104.219.104.168 ping statistics ---\n1 packets transmitted, 1 received, 0% packet loss, time 43ms\nrtt min/avg/max/mdev = 43.593/43.593/43.593/0.000 ms\n'
                 }
             );
-            test.expect(1);
             bigIp.ping('1.2.3.4')
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoPacketsReceived(test) {
+        it('no packets received test', (done) => {
             icontrolMock.when(
                 'create',
                 '/tm/util/ping',
@@ -1243,20 +1201,19 @@ module.exports = {
                     commandResult: 'PING 1.2.3.4 (1.2.3.4) 56(84) bytes of data.\n\n--- 1.2.3.4 ping statistics ---\n2 packets transmitted, 0 received, 100% packet loss, time 2000ms\n\n'
                 }
             );
-            test.expect(1);
             bigIp.ping('1.2.3.4', utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Ping with no packets should have failed.');
+                    assert.ok(false, 'Ping with no packets should have failed.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testUnknownHost(test) {
+        it('unknown host test', (done) => {
             icontrolMock.when(
                 'create',
                 '/tm/util/ping',
@@ -1264,20 +1221,19 @@ module.exports = {
                     commandResult: 'ping: unknown host f5.com\n'
                 }
             );
-            test.expect(1);
             bigIp.ping('1.2.3.4', utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Ping with unknown host should have failed.');
+                    assert.ok(false, 'Ping with unknown host should have failed.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testUnexpectedResponse(test) {
+        it('unexpected response test', (done) => {
             icontrolMock.when(
                 'create',
                 '/tm/util/ping',
@@ -1285,42 +1241,40 @@ module.exports = {
                     commandResult: 'foobar'
                 }
             );
-            test.expect(1);
             bigIp.ping('1.2.3.4', utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Ping with unexpected response should have failed.');
+                    assert.ok(false, 'Ping with unexpected response should have failed.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoResponse(test) {
+        it('no response test', (done) => {
             icontrolMock.setDefaultResponse(undefined);
             icontrolMock.when(
                 'create',
                 '/tm/util/ping',
                 undefined
             );
-            test.expect(1);
             bigIp.ping('1.2.3.4', utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Ping with no response should have failed.');
+                    assert.ok(false, 'Ping with no response should have failed.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testReady: {
-        setUp(callback) {
+    describe('ready tests', () => {
+        beforeEach(() => {
             bigIp.ready = realReady;
 
             icontrolMock.when(
@@ -1402,44 +1356,40 @@ module.exports = {
                     }
                 }
             );
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
-            test.expect(1);
+        it('basic test', (done) => {
             bigIp.ready(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testAvailabilityFail(test) {
+        it('availability fail test', (done) => {
             icontrolMock.fail(
                 'list',
                 '/shared/echo/available'
             );
 
-            test.expect(1);
             bigIp.ready(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Ready should have failed availability.');
+                    assert.ok(false, 'Ready should have failed availability.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testMcpNotReady(test) {
+        it('mcp not ready test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/sys/mcp-state',
@@ -1458,36 +1408,34 @@ module.exports = {
                 }
             );
 
-            test.expect(1);
             bigIp.ready(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Ready should have failed MCP check.');
+                    assert.ok(false, 'Ready should have failed MCP check.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testMcpCheckReject(test) {
+        it('mcp check reject test', (done) => {
             icontrolMock.fail('list', '/tm/sys/mcp-state');
 
-            test.expect(1);
             bigIp.ready(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'MCP check should have rejected.');
+                    assert.ok(false, 'MCP check should have rejected.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testSysNotReady(test) {
+        it('sys not ready test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/sys/ready',
@@ -1512,20 +1460,19 @@ module.exports = {
                 }
             );
 
-            test.expect(1);
             bigIp.ready(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Ready should have failed sys ready check.');
+                    assert.ok(false, 'Ready should have failed sys ready check.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testSysReady13_0NoOp(test) {
+        it('sys ready 13_0 no op test', (done) => {
             icontrolMock.when(
                 'list',
                 '/shared/identified-devices/config/device-info',
@@ -1537,39 +1484,37 @@ module.exports = {
             // fail any call to the sys ready endpoint
             icontrolMock.fail('list', '/tm/sys/ready');
 
-            test.expect(1);
             bigIp.ready(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testReboot(test) {
+    it('reboot test', (done) => {
         icontrolMock.when('create', '/tm/sys', {});
-        test.expect(3);
         bigIp.reboot()
             .then(() => {
-                test.strictEqual(icontrolMock.lastCall.method, 'create');
-                test.strictEqual(icontrolMock.lastCall.path, '/tm/sys');
-                test.strictEqual(icontrolMock.lastCall.body.command, 'reboot');
+                assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys');
+                assert.strictEqual(icontrolMock.lastCall.body.command, 'reboot');
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testRebootRequired: {
-        testRebootRequired(test) {
+    describe('reboot required tests', () => {
+        it('reboot required test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/sys/db/provision.action',
@@ -1578,22 +1523,21 @@ module.exports = {
                 }
             );
 
-            test.expect(3);
             bigIp.rebootRequired()
                 .then((rebootRequired) => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'list');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/db/provision.action');
-                    test.ok(rebootRequired, 'Reboot should have been required.');
+                    assert.strictEqual(icontrolMock.lastCall.method, 'list');
+                    assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/db/provision.action');
+                    assert.ok(rebootRequired, 'Reboot should have been required.');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRebootNotRequired(test) {
+        it('reboot not required test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/sys/db/provision.action',
@@ -1602,177 +1546,165 @@ module.exports = {
                 }
             );
 
-            test.expect(1);
             bigIp.rebootRequired()
                 .then((rebootRequired) => {
-                    test.ifError(rebootRequired);
+                    assert.ifError(rebootRequired);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testUnexpectedResponse(test) {
+        it('unexpected response test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/sys/db/provision.action',
                 {}
             );
 
-            test.expect(1);
             bigIp.rebootRequired(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'rebootRequired with no value should not have resolved.');
+                    assert.ok(false, 'rebootRequired with no value should not have resolved.');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('no value'), -1);
+                    assert.notStrictEqual(err.message.indexOf('no value'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testFailedActionCheck(test) {
+        it('failed action check test', (done) => {
             icontrolMock.fail('list', '/tm/sys/db/provision.action');
-            test.expect(1);
             bigIp.rebootRequired(utilMock.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'rebootRequired with failed action check should not have resolved.');
+                    assert.ok(false, 'rebootRequired with failed action check should not have resolved.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testRunTask: {
-        setUp(callback) {
+    describe('run task tests', () => {
+        beforeEach(() => {
             icontrolMock.when('create', DUMMY_TASK_PATH, { _taskId: '1234' });
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'COMPLETED' });
-
             utilMock.DEFAULT_RETRY = { maxRetries: 10, retryIntervalMs: 10 };
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
+        it('basic test', (done) => {
             const commandBody = { foo: 'bar', hello: 'world' };
-            test.expect(2);
             bigIp.runTask(DUMMY_TASK_PATH, commandBody)
                 .then(() => {
-                    test.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
-                    test.deepEqual(
+                    assert.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
+                    assert.deepEqual(
                         icontrolMock.getRequest('replace', `${DUMMY_TASK_PATH}/1234`),
                         { _taskState: 'VALIDATING' }
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testOptions(test) {
+        it('options test', (done) => {
             icontrolMock.when('create', DUMMY_TASK_PATH, { id: '1234' });
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { status: 'FINISHED' });
 
             const commandBody = { foo: 'bar', hello: 'world' };
             const options = { idAttribute: 'id', validate: false, statusAttribute: 'status' };
-            test.expect(1);
             bigIp.runTask(DUMMY_TASK_PATH, commandBody, options)
                 .then(() => {
-                    test.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
+                    assert.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCreatedTaskStatus(test) {
+        it('created task status test', (done) => {
             icontrolMock.when('create', DUMMY_TASK_PATH, { _taskId: '1234' });
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'CREATED' });
             icontrolMock.whenNext('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'FINISHED' });
 
             const commandBody = { foo: 'bar', hello: 'world' };
-            test.expect(1);
             bigIp.runTask(DUMMY_TASK_PATH, commandBody)
                 .then(() => {
-                    test.strictEqual(icontrolMock.getNumRequests('list', `${DUMMY_TASK_PATH}/1234`), 2);
+                    assert.strictEqual(icontrolMock.getNumRequests('list', `${DUMMY_TASK_PATH}/1234`), 2);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testFailed(test) {
+        it('failed test', (done) => {
             icontrolMock.when('list', `${DUMMY_TASK_PATH}/1234`, { _taskState: 'FAILED' });
-            test.expect(1);
             bigIp.runTask(DUMMY_TASK_PATH, {}, { neverReject: true })
                 .then(() => {
-                    test.ok(false, 'Should not have completed');
+                    assert.ok(false, 'Should not have completed');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testSave: {
-        testNoFile(test) {
+    describe('save tests', () => {
+        it('no file test', (done) => {
             icontrolMock.when('create', '/tm/sys/config', {});
 
-            test.expect(4);
             bigIp.save()
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'create');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
-                    test.strictEqual(icontrolMock.lastCall.body.command, 'save');
-                    test.strictEqual(icontrolMock.lastCall.body.options, undefined);
+                    assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                    assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/config');
+                    assert.strictEqual(icontrolMock.lastCall.body.command, 'save');
+                    assert.strictEqual(icontrolMock.lastCall.body.options, undefined);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testFile(test) {
+        it('file test', (done) => {
             icontrolMock.when('create', '/tm/sys/config', {});
 
-            test.expect(1);
             bigIp.save('foo')
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.body.options[0].file, 'foo');
+                    assert.strictEqual(icontrolMock.lastCall.body.options[0].file, 'foo');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testSaveUcs: {
-        setUp(callback) {
+    describe('save ucs tests', () => {
+        beforeEach(() => {
             icontrolMock.when('create', UCS_TASK_PATH, { _taskId: '1234' });
             icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'COMPLETED' });
 
@@ -1788,45 +1720,41 @@ module.exports = {
             setTimeout = function (cb) {
                 cb();
             };
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
-            test.expect(1);
+        it('basic test', (done) => {
             bigIp.saveUcs('foo')
                 .then(() => {
-                    test.deepEqual(
+                    assert.deepEqual(
                         icontrolMock.getRequest('replace', `${UCS_TASK_PATH}/1234`),
                         { _taskState: 'VALIDATING' }
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testFailed(test) {
+        it('failed test', (done) => {
             icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'FAILED' });
-            test.expect(1);
             bigIp.saveUcs('foo')
                 .then(() => {
-                    test.ok(false, 'Should not have completed');
+                    assert.ok(false, 'Should not have completed');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testTransaction: {
-        testBasic(test) {
+    describe('transaction tests', () => {
+        it('basic test', (done) => {
             const commands = [
                 {
                     method: 'list',
@@ -1871,26 +1799,25 @@ module.exports = {
                 }
             );
 
-            test.expect(5);
             bigIp.transaction(commands)
                 .then(() => {
-                    test.strictEqual(icontrolMock.getRequest('list', '/foo/bar'), null);
-                    test.deepEqual(icontrolMock.getRequest('create', '/bar/foo'), { foo: 'bar' });
-                    test.deepEqual(icontrolMock.getRequest('modify', 'hello/world', { roger: 'dodger' }));
-                    test.deepEqual(icontrolMock.getRequest('delete', '/okie/dokie'), { hello: 'world' });
-                    test.deepEqual(
+                    assert.strictEqual(icontrolMock.getRequest('list', '/foo/bar'), null);
+                    assert.deepEqual(icontrolMock.getRequest('create', '/bar/foo'), { foo: 'bar' });
+                    assert.deepEqual(icontrolMock.getRequest('modify', 'hello/world', { roger: 'dodger' }));
+                    assert.deepEqual(icontrolMock.getRequest('delete', '/okie/dokie'), { hello: 'world' });
+                    assert.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/transaction/1234'), { state: 'VALIDATING' }
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testIncomplete(test) {
+        it('incomplete test', (done) => {
             const commands = [
                 {
                     method: 'list',
@@ -1914,31 +1841,29 @@ module.exports = {
                 }
             );
 
-            test.expect(1);
             bigIp.transaction(commands)
                 .then(() => {
-                    test.ok(false, 'Transaction should have rejected incomplete');
+                    assert.ok(false, 'Transaction should have rejected incomplete');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('not completed'), -1);
+                    assert.notStrictEqual(err.message.indexOf('not completed'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoCommands(test) {
-            test.expect(1);
+        it('no commands test', (done) => {
             bigIp.transaction()
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    }
-};
+        });
+    });
+});

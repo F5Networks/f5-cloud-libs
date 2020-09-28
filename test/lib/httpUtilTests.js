@@ -17,37 +17,37 @@
 'use strict';
 
 const q = require('q');
+const assert = require('assert');
 const httpUtil = require('../../../f5-cloud-libs').httpUtil;
 const httpMock = require('../testUtil/httpMock');
 
-const testUrl = 'https://one/two/three';
-const testOptions = {
-    foo: 'bar',
-    hello: 'world'
-};
+describe('bigip tests', () => {
+    const testUrl = 'https://one/two/three';
+    const testOptions = {
+        foo: 'bar',
+        hello: 'world'
+    };
 
-const http = require('http');
-const https = require('https');
+    /* eslint-disable global-require */
+    const http = require('http');
+    const https = require('https');
 
-const realHttpUtilRequest = httpUtil.request;
-const realHttpRequest = http.request;
-const realHttpsRequest = https.request;
-const realHttpClientRequest = http.clientRequest;
-const realHttpsClientRequest = https.clientRequest;
+    const realHttpUtilRequest = httpUtil.request;
+    const realHttpRequest = http.request;
+    const realHttpsRequest = https.request;
+    const realHttpClientRequest = http.clientRequest;
+    const realHttpsClientRequest = https.clientRequest;
 
-let lastRequest;
+    let lastRequest;
 
-module.exports = {
-    tearDown(callback) {
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
+    });
 
-        callback();
-    },
-
-    testCRUD: {
-        setUp(callback) {
+    describe('CRUD tests', () => {
+        beforeEach(() => {
             lastRequest = {};
 
             httpUtil.request = (method, url, options) => {
@@ -56,210 +56,192 @@ module.exports = {
                 lastRequest.options = options;
                 return q();
             };
+        });
 
-            callback();
-        },
-
-        tearDown(callback) {
+        afterEach(() => {
             httpUtil.request = realHttpUtilRequest;
-            callback();
-        },
+        });
 
-        testGet(test) {
-            test.expect(3);
+        it('get test', (done) => {
             httpUtil.get(testUrl, testOptions)
                 .then(() => {
-                    test.strictEqual(lastRequest.method, 'GET');
-                    test.strictEqual(lastRequest.url, testUrl);
-                    test.deepEqual(lastRequest.options, testOptions);
+                    assert.strictEqual(lastRequest.method, 'GET');
+                    assert.strictEqual(lastRequest.url, testUrl);
+                    assert.deepEqual(lastRequest.options, testOptions);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPost(test) {
-            test.expect(3);
+        it('post test', (done) => {
             httpUtil.post(testUrl, testOptions)
                 .then(() => {
-                    test.strictEqual(lastRequest.method, 'POST');
-                    test.strictEqual(lastRequest.url, testUrl);
-                    test.deepEqual(lastRequest.options, testOptions);
+                    assert.strictEqual(lastRequest.method, 'POST');
+                    assert.strictEqual(lastRequest.url, testUrl);
+                    assert.deepEqual(lastRequest.options, testOptions);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPatch(test) {
-            test.expect(3);
+        it('patch test', (done) => {
             httpUtil.patch(testUrl, testOptions)
                 .then(() => {
-                    test.strictEqual(lastRequest.method, 'PATCH');
-                    test.strictEqual(lastRequest.url, testUrl);
-                    test.deepEqual(lastRequest.options, testOptions);
+                    assert.strictEqual(lastRequest.method, 'PATCH');
+                    assert.strictEqual(lastRequest.url, testUrl);
+                    assert.deepEqual(lastRequest.options, testOptions);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPut(test) {
-            test.expect(3);
+        it('put test', (done) => {
             httpUtil.put(testUrl, testOptions)
                 .then(() => {
-                    test.strictEqual(lastRequest.method, 'PUT');
-                    test.strictEqual(lastRequest.url, testUrl);
-                    test.deepEqual(lastRequest.options, testOptions);
+                    assert.strictEqual(lastRequest.method, 'PUT');
+                    assert.strictEqual(lastRequest.url, testUrl);
+                    assert.deepEqual(lastRequest.options, testOptions);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testDelete(test) {
-            test.expect(3);
+        it('delete test', (done) => {
             httpUtil.delete(testUrl, testOptions)
                 .then(() => {
-                    test.strictEqual(lastRequest.method, 'DELETE');
-                    test.strictEqual(lastRequest.url, testUrl);
-                    test.deepEqual(lastRequest.options, testOptions);
+                    assert.strictEqual(lastRequest.method, 'DELETE');
+                    assert.strictEqual(lastRequest.url, testUrl);
+                    assert.deepEqual(lastRequest.options, testOptions);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testRequest: {
-        setUp(callback) {
+    describe('request tests', () => {
+        beforeEach(() => {
             httpMock.reset();
             http.request = httpMock.request;
             http.clientRequest = httpMock.clientRequest;
             https.request = httpMock.request;
             https.clientRequest = httpMock.clientRequest;
+        });
 
-            callback();
-        },
-
-        tearDown(callback) {
+        afterEach(() => {
             http.request = realHttpRequest;
             http.clientRequest = realHttpClientRequest;
             https.request = realHttpsRequest;
             https.clientRequest = realHttpsClientRequest;
+        });
 
-            callback();
-        },
-
-        testRequestOptions(test) {
-            test.expect(4);
+        it('request options test', (done) => {
             httpUtil.request('GET', 'http://www.example.com')
                 .then(() => {
-                    test.strictEqual(http.lastRequest.protocol, 'http:');
-                    test.strictEqual(http.lastRequest.hostname, 'www.example.com');
-                    test.strictEqual(http.lastRequest.method, 'GET');
-                    test.strictEqual(http.lastRequest.path, '/');
+                    assert.strictEqual(http.lastRequest.protocol, 'http:');
+                    assert.strictEqual(http.lastRequest.hostname, 'www.example.com');
+                    assert.strictEqual(http.lastRequest.method, 'GET');
+                    assert.strictEqual(http.lastRequest.path, '/');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRequestOptionsWithPath(test) {
-            test.expect(1);
+        it('request options with path test', (done) => {
             httpUtil.request('GET', 'http://www.example.com/foo/bar')
                 .then(() => {
-                    test.strictEqual(http.lastRequest.path, '/foo/bar');
+                    assert.strictEqual(http.lastRequest.path, '/foo/bar');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRequestOptionsWithQuery(test) {
+        it('request options with query test', (done) => {
             const query = '?hello=world&alpha=beta';
-            test.expect(1);
             httpUtil.request('GET', `http://www.example.com/foo/bar${query}`)
                 .then(() => {
-                    test.strictEqual(http.lastRequest.path, `/foo/bar${query}`);
+                    assert.strictEqual(http.lastRequest.path, `/foo/bar${query}`);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testHttps(test) {
-            test.expect(1);
+        it('https test', (done) => {
             httpUtil.request('GET', 'https://www.example.com')
                 .then(() => {
-                    test.strictEqual(https.lastRequest.protocol, 'https:');
+                    assert.strictEqual(https.lastRequest.protocol, 'https:');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testBadProtocol(test) {
-            test.expect(1);
+        it('bad protocol test', (done) => {
             httpUtil.request('GET', 'file:///tmp/foo')
                 .then(() => {
-                    test.ok(false, 'Should have thrown bad protocol');
+                    assert.ok(false, 'Should have thrown bad protocol');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('supported'), -1);
+                    assert.notStrictEqual(err.message.indexOf('supported'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testTextBody(test) {
+        it('text body test', (done) => {
             const body = 'hello, world';
             const options = {
                 body,
             };
 
-            test.expect(1);
             httpUtil.request('GET', 'http://www.example.com', options)
                 .then(() => {
-                    test.strictEqual(httpMock.clientRequest.data, body);
+                    assert.strictEqual(httpMock.clientRequest.data, body);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testJSONBody(test) {
+        it('json body test', (done) => {
             const body = {
                 hello: 'world'
             };
@@ -270,99 +252,94 @@ module.exports = {
                     'Content-Type': 'application/json'
                 }
             };
-            test.expect(1);
             httpUtil.request('GET', 'http://www.example.com', options)
                 .then(() => {
-                    test.strictEqual(httpMock.clientRequest.data, JSON.stringify(body));
+                    assert.strictEqual(httpMock.clientRequest.data, JSON.stringify(body));
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testStringResponse(test) {
+        it('string response test', (done) => {
             httpMock.setResponse('hello world');
             httpUtil.request('GET', 'http://www.example.com')
                 .then((data) => {
-                    test.strictEqual(data, 'hello world');
+                    assert.strictEqual(data, 'hello world');
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testJSONResponse(test) {
+        it('json response test', (done) => {
             httpMock.setResponse({ hello: 'world' }, { 'content-type': 'application/json' });
 
-            test.expect(1);
             httpUtil.request('GET', 'http://www.example.com')
                 .then((data) => {
-                    test.deepEqual(data, { hello: 'world' });
+                    assert.deepEqual(data, { hello: 'world' });
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testBadStatus(test) {
+        it('bad status test', (done) => {
             httpMock.setResponse(null, null, 300);
 
-            test.expect(1);
             httpUtil.request('GET', 'http://www.example.com')
                 .then(() => {
-                    test.ok(false, 'should have thrown with bad status');
+                    assert.ok(false, 'should have thrown with bad status');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('300'), -1);
+                    assert.notStrictEqual(err.message.indexOf('300'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testError(test) {
+        it('error test', (done) => {
             const message = 'foo bar';
             httpMock.setError(message);
 
-            test.expect(1);
             httpUtil.request('GET', 'http://www.example.com')
                 .then(() => {
-                    test.ok(false, 'should have thrown error');
+                    assert.ok(false, 'should have thrown error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testHttpThrows(test) {
+        it('http throws test', (done) => {
             const message = 'http threw';
             http.request = () => {
                 throw new Error(message);
             };
 
-            test.expect(1);
             httpUtil.request('GET', 'http://www.example.com')
                 .then(() => {
-                    test.ok(false, 'should have thrown error');
+                    assert.ok(false, 'should have thrown error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    }
-};
+        });
+    });
+});

@@ -17,6 +17,7 @@
 'use strict';
 
 const util = require('util');
+const assert = require('assert');
 const DnsProvider = require('../../../f5-cloud-libs').dnsProvider;
 
 util.inherits(TestDnsProvider, DnsProvider);
@@ -27,27 +28,25 @@ function TestDnsProvider(options) {
 // Our tests cause too many event listeners. Turn off the check.
 process.setMaxListeners(0);
 
-let testDnsProvider;
+describe('DNS Provider Unit Tests', () => {
+    let testDnsProvider;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         testDnsProvider = new TestDnsProvider();
-        callback();
-    },
+    });
 
-    testInit(test) {
-        test.expect(1);
+
+    it('should init', (done) => {
         testDnsProvider.init()
             .then(() => {
-                test.ok(true);
-                test.done();
+                done();
             });
-    },
+    });
 
-    testUnimplementedUpdate(test) {
-        test.throws(() => {
+    it('should fail for update', (done) => {
+        assert.throws(() => {
             testDnsProvider.update();
         });
-        test.done();
-    }
-};
+        done();
+    });
+});

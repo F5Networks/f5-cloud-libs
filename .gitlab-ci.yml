@@ -15,15 +15,17 @@ cache:
         - node_modules/
 
 test_node4:
-    image: node:4.2.3
+    image: node:4
     tags:
         - docker-executor
     stage: test
     except:
         - triggers
     script:
-        - npm install -g npm@latest-4
+        - npm install --global npm@5.10.0
         - npm install --registry ${NPM_REGISTRY}
+        - npm install mocha@5.2.0
+        - npm install nyc@11.1.0
         - npm run lint
         - npm test
 
@@ -36,6 +38,8 @@ test_node6:
         - triggers
     script:
         - npm install --registry ${NPM_REGISTRY}
+        - npm install mocha@5.2.0
+        - npm install nyc@14.0.0
         - npm run lint
         - npm test
 

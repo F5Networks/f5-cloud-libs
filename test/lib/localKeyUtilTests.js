@@ -18,28 +18,30 @@
 
 const q = require('q');
 const fsMock = require('fs');
+const assert = require('assert');
 
-const realWriteFile = fsMock.writeFile;
+describe('local crypto util tests', () => {
+    const realWriteFile = fsMock.writeFile;
 
-const passphrase = 'abc123';
+    const passphrase = 'abc123';
 
-const publicKeyDirctory = 'myPublicKeyDir';
-const publicKeyOutFile = 'myPublicKeyOutFile';
-const privateKeyFolder = 'myPrivateKeyFolder';
-const privateKeyName = 'myPrivateKeyName.key';
+    const publicKeyDirctory = 'myPublicKeyDir';
+    const publicKeyOutFile = 'myPublicKeyOutFile';
+    const privateKeyFolder = 'myPrivateKeyFolder';
+    const privateKeyName = 'myPrivateKeyName.key';
 
-let childProcessMock;
-let cryptoUtilMock;
-let localKeyUtil;
+    let childProcessMock;
+    let cryptoUtilMock;
+    let localKeyUtil;
 
-let dirCreated;
-let keyPairGenerated;
-let bigIpFolderCreated;
-let installCmd;
+    let dirCreated;
+    let keyPairGenerated;
+    let bigIpFolderCreated;
+    let installCmd;
 
-/* eslint-disable global-require */
-module.exports = {
-    setUp(callback) {
+    /* eslint-disable global-require */
+
+    beforeEach(() => {
         childProcessMock = require('child_process');
         cryptoUtilMock = require('../../lib/cryptoUtil');
         localKeyUtil = require('../../lib/localKeyUtil');
@@ -81,25 +83,25 @@ module.exports = {
         fsMock.access = function access(file, cb) {
             cb();
         };
+    });
 
-        callback();
-    },
-
-    tearDown(callback) {
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
         fsMock.writeFile = realWriteFile;
-        callback();
-    },
+    });
 
-    testGenerateAndInstallKeyPair: {
-        setUp(callback) {
+    describe('generate and install key pair tests', () => {
+        beforeEach(() => {
             childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
                     cb(null, false);
                 } else if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(null, {});
+                } else if (command.startsWith('/usr/bin/tmsh -a create sys folder')) {
+                    bigIpFolderCreated = true;
+                    cb(null, null);
                 } else if (command.startsWith('/usr/bin/tmsh -a install')) {
                     installCmd = command;
                     cb(null, null);
@@ -107,12 +109,9 @@ module.exports = {
                     cb(null, null);
                 }
             };
+        });
 
-            callback();
-        },
-
-        testPrivateKeyCreated(test) {
-            test.expect(2);
+        it('private key created test', (done) => {
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -120,18 +119,18 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ok(keyPairGenerated);
-                    test.ok(installCmd.endsWith(`passphrase ${passphrase}`));
+                    assert.ok(keyPairGenerated);
+                    assert.ok(installCmd.endsWith(`passphrase ${passphrase}`));
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPrivateKeyExists(test) {
+        it('private key exists test', (done) => {
             childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a list sys crypto key')) {
                     cb(null, 'ok');
@@ -143,7 +142,6 @@ module.exports = {
                     cb();
                 }
             };
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -151,17 +149,17 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ifError(keyPairGenerated);
+                    assert.ifError(keyPairGenerated);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPrivateKeyExistsForce(test) {
+        it('private key exists force test', (done) => {
             childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('ls -1t')) {
                     cb(null, `:${privateKeyFolder}:${privateKeyName}.key`);
@@ -169,7 +167,6 @@ module.exports = {
                     cb(null, 'ok');
                 }
             };
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -178,22 +175,21 @@ module.exports = {
                 { force: true }
             )
                 .then(() => {
-                    test.ok(keyPairGenerated);
+                    assert.ok(keyPairGenerated);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testDirectoryCreated(test) {
+        it('directory created test', (done) => {
             fsMock.access = function access(file, cb) {
                 cb(new Error());
             };
 
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -201,22 +197,21 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ok(dirCreated);
+                    assert.ok(dirCreated);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testDirectoryExists(test) {
+        it('directory exists test', (done) => {
             fsMock.access = function access(file, cb) {
                 cb();
             };
 
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -224,17 +219,17 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ifError(dirCreated);
+                    assert.ifError(dirCreated);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testDirectoryCreateError(test) {
+        it('directory create error test', (done) => {
             const message = 'cannot make directory';
 
             fsMock.access = function access(file, cb) {
@@ -245,7 +240,6 @@ module.exports = {
                 cb(new Error(message));
             };
 
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -253,17 +247,17 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ok(false, 'should have thrown mkdir error');
+                    assert.ok(false, 'should have thrown mkdir error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testBigIpFolderCreated(test) {
+        it('bigip folder created test', (done) => {
             childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(new Error());
@@ -275,7 +269,6 @@ module.exports = {
                 }
             };
 
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -283,17 +276,17 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ok(bigIpFolderCreated);
+                    assert.ok(bigIpFolderCreated);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        }).timeout(150000);
 
-        testBigIpFolderExists(test) {
+        it('bigip folder exists test', (done) => {
             childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a list sys folder')) {
                     cb(null, null);
@@ -305,7 +298,6 @@ module.exports = {
                 }
             };
 
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -313,24 +305,23 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ifError(bigIpFolderCreated);
+                    assert.ifError(bigIpFolderCreated);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testTempPrivateKeyRemoved(test) {
+        it('temp private key removed test', (done) => {
             let fileDeleted = false;
             fsMock.unlink = function unlink(file, cb) {
                 fileDeleted = true;
                 cb();
             };
 
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -338,23 +329,22 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ok(fileDeleted);
+                    assert.ok(fileDeleted);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testBigIpNotReady(test) {
+        it('bigip not ready test', (done) => {
             const message = 'mcp not ready';
             childProcessMock.execFile = function execFile(file, cb) {
                 cb(new Error(message));
             };
 
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -362,17 +352,17 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ok(false, 'should have thrown mkdir error');
+                    assert.ok(false, 'should have thrown mkdir error');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testInstallError(test) {
+        it('install error test', (done) => {
             const message = 'install failed';
             childProcessMock.exec = function exec(command, cb) {
                 if (command.startsWith('/usr/bin/tmsh -a install')) {
@@ -382,7 +372,6 @@ module.exports = {
                 }
             };
 
-            test.expect(1);
             localKeyUtil.generateAndInstallKeyPair(
                 publicKeyDirctory,
                 publicKeyOutFile,
@@ -390,19 +379,19 @@ module.exports = {
                 privateKeyName
             )
                 .then(() => {
-                    test.ok(false, 'should have thrown install error');
+                    assert.ok(false, 'should have thrown install error');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf(message), -1);
+                    assert.notStrictEqual(err.message.indexOf(message), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        }).timeout(150000);
+    });
 
-    testGetPrivateKeyFilePath: {
-        testWithSuffix(test) {
+    describe('get private key file path tests', () => {
+        it('with suffix test', (done) => {
             const folder = 'hello';
             const name = 'world';
             const suffix = '_1234_1';
@@ -412,23 +401,22 @@ module.exports = {
                 cb(null, shellOut);
             };
 
-            test.expect(1);
             localKeyUtil.getPrivateKeyFilePath(folder, name)
                 .then((path) => {
-                    test.strictEqual(
+                    assert.strictEqual(
                         path,
                         `/config/filestore/files_d/${folder}_d/certificate_key_d/:${folder}:${name}.key${suffix}` // eslint-disable-line max-len
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoSuffix(test) {
+        it('no suffix test', (done) => {
             const folder = 'hello';
             const name = 'world';
             const suffix = '_1234_1';
@@ -441,24 +429,23 @@ module.exports = {
                 cb(null, shellOut);
             };
 
-            test.expect(1);
             localKeyUtil.getPrivateKeyFilePath(folder, name)
                 .then((path) => {
-                    test.strictEqual(
+                    assert.strictEqual(
                         path,
                         `/config/filestore/files_d/${folder}_d/certificate_key_d/:${folder}:${name}${suffix}`
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGetPrivateKeyMetadata(test) {
+    it('get private key metadata test', (done) => {
         const folder = 'hello';
         const name = 'world';
 
@@ -468,16 +455,15 @@ module.exports = {
             cb(null, tmshOut);
         };
 
-        test.expect(1);
         localKeyUtil.getPrivateKeyMetadata(folder, name)
             .then((metadata) => {
-                test.strictEqual(metadata.passphrase, passphrase);
+                assert.strictEqual(metadata.passphrase, passphrase);
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    }
-};
+    });
+});

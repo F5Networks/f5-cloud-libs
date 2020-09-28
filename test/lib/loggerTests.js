@@ -16,122 +16,109 @@
 
 'use strict';
 
-const Logger = require('../../../f5-cloud-libs').logger;
 const fs = require('fs');
+const assert = require('assert');
+const Logger = require('../../../f5-cloud-libs').logger;
 
-let logger;
+describe('Logger Unit Tests', () => {
+    let logger;
+    const fsWrite = fs.write;
+    const LOGFILE = 'foo';
+    let loggedMessage;
 
-const fsWrite = fs.write;
-
-const LOGFILE = 'foo';
-
-let loggedMessage;
-
-module.exports = {
-    testConsole(test) {
+    it('should work with console', (done) => {
         logger = Logger.getLogger();
-        test.ok(logger.transports.console, 'No conosle logger found.');
-        test.done();
-    },
+        assert.ok(logger.transports.console, 'No conosle logger found.');
+        done();
+    });
 
-    testNoConsole(test) {
+    it('should work without console', (done) => {
         logger = Logger.getLogger({ console: false });
-        test.ifError(logger.transports.console);
-        test.done();
-    },
+        assert.ifError(logger.transports.console);
+        done();
+    });
 
-    testLogfile(test) {
-        test.expect(3);
+    it('should work with log file', (done) => {
         logger = Logger.getLogger({ fileName: 'foo' });
-        test.ok(logger.transports.file, 'No file logger found.');
-        test.strictEqual(logger.transports.file.maxFiles, 10);
-        test.strictEqual(logger.transports.file.maxsize, 10485760);
-        test.done();
-    },
+        assert.ok(logger.transports.file, 'No file logger found.');
+        assert.strictEqual(logger.transports.file.maxFiles, 10);
+        assert.strictEqual(logger.transports.file.maxsize, 10485760);
+        done();
+    });
 
-    testNoLogFile(test) {
-        logger = Logger.getLogger();
-        test.ifError(logger.transports.file);
-        test.done();
-    },
-
-    testSetJsonFormat(test) {
+    it('should work with json format', (done) => {
         logger = Logger.getLogger({
             console: true,
             json: true
         });
-        test.expect(1);
-        test.strictEqual(logger.transports.console.json, true);
-        test.done();
-    },
+        assert.strictEqual(logger.transports.console.json, true);
+        done();
+    });
 
-    testDefaultJsonFormat(test) {
+    it('should not default to json', (done) => {
         logger = Logger.getLogger({
             console: true
         });
-        test.expect(1);
-        test.strictEqual(logger.transports.console.json, false);
-        test.done();
-    },
+        assert.strictEqual(logger.transports.console.json, false);
+        done();
+    });
 
-    testLogMessages: {
-        setUp(callback) {
+    describe('Log Message tests', () => {
+        beforeEach(() => {
             logger = Logger.getLogger({ console: false, fileName: LOGFILE });
             loggedMessage = null;
             fs.write = (fd, message, offset, length, position, cb) => {
                 loggedMessage = message.toString();
                 cb();
             };
-            callback();
-        },
+        });
 
-        tearDown(callback) {
+        afterEach(() => {
             fs.write = fsWrite;
 
             if (fs.existsSync(LOGFILE)) {
                 fs.unlinkSync(LOGFILE);
             }
-            callback();
-        },
+        });
 
-        testPasswordMask(test) {
+        it('should mask passwords', (done) => {
             logger.warn('password=1234', { Password: '5678' });
 
             logger.transports.file.on('logged', () => {
-                test.notStrictEqual(loggedMessage.indexOf('password='), -1);
-                test.notStrictEqual(loggedMessage.indexOf('"Password":'), -1);
-                test.strictEqual(loggedMessage.indexOf('1234'), -1);
-                test.strictEqual(loggedMessage.indexOf('5678'), -1);
-                test.done();
+                assert.notStrictEqual(loggedMessage.indexOf('password='), -1);
+                assert.notStrictEqual(loggedMessage.indexOf('"Password":'), -1);
+                assert.strictEqual(loggedMessage.indexOf('1234'), -1);
+                assert.strictEqual(loggedMessage.indexOf('5678'), -1);
+                done();
             });
-        },
+        });
 
-        testPassphraseMask(test) {
+        it('should mask passphrase', (done) => {
             logger.warn('passphrase=1234', { passphrase: '5678' });
 
             logger.transports.file.on('logged', () => {
-                test.notStrictEqual(loggedMessage.indexOf('passphrase='), -1);
-                test.notStrictEqual(loggedMessage.indexOf('"passphrase":'), -1);
-                test.strictEqual(loggedMessage.indexOf('1234'), -1);
-                test.strictEqual(loggedMessage.indexOf('5678'), -1);
-                test.done();
+                assert.notStrictEqual(loggedMessage.indexOf('passphrase='), -1);
+                assert.notStrictEqual(loggedMessage.indexOf('"passphrase":'), -1);
+                assert.strictEqual(loggedMessage.indexOf('1234'), -1);
+                assert.strictEqual(loggedMessage.indexOf('5678'), -1);
+                done();
             });
-        },
+        });
 
-        testWholeWordMask(test) {
+        it('should mask whole word', (done) => {
             // these should be logged in full
             logger.warn('passwordUrl=file:///tmp/foo', { passwordUrl: 'file:///tmp/bar' });
 
             logger.transports.file.on('logged', () => {
-                test.notStrictEqual(loggedMessage.indexOf('passwordUrl='), -1);
-                test.notStrictEqual(loggedMessage.indexOf('"passwordUrl":'), -1);
-                test.notStrictEqual(loggedMessage.indexOf('file:///tmp/foo'), -1);
-                test.notStrictEqual(loggedMessage.indexOf('file:///tmp/bar'), -1);
-                test.done();
+                assert.notStrictEqual(loggedMessage.indexOf('passwordUrl='), -1);
+                assert.notStrictEqual(loggedMessage.indexOf('"passwordUrl":'), -1);
+                assert.notStrictEqual(loggedMessage.indexOf('file:///tmp/foo'), -1);
+                assert.notStrictEqual(loggedMessage.indexOf('file:///tmp/bar'), -1);
+                done();
             });
-        },
+        });
 
-        testLabel(test) {
+        it('should work with labels', (done) => {
             logger = Logger.getLogger(
                 {
                     console: false,
@@ -143,9 +130,9 @@ module.exports = {
             logger.debug('hello, world');
 
             logger.transports.file.on('logged', () => {
-                test.notStrictEqual(loggedMessage.indexOf('[lib/loggerTests.js]'), -1);
-                test.done();
+                assert.notStrictEqual(loggedMessage.indexOf('[lib/loggerTests.js]'), -1);
+                done();
             });
-        }
-    }
-};
+        });
+    });
+});

@@ -16,82 +16,65 @@
 
 'use strict';
 
+const assert = require('assert');
+
 const sharedConstants = require('../../lib/sharedConstants');
 
 const bigIqLicenseProviderFactory = require('../../lib/bigIqLicenseProviderFactory');
 
-module.exports = {
-    testByVersion: {
-        test50(test) {
-            test.expect(1);
+describe('BIGIQ License Provider Factory Unit Tests', () => {
+    describe('Tests by version', () => {
+        it('should work for version 5.0.0', () => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByVersion('5.0.0');
-            test.strictEqual(provider.constructor.name, 'BigIq50LicenseProvider');
-            test.done();
-        },
-
-        test52(test) {
-            test.expect(1);
+            assert.strictEqual(provider.constructor.name, 'BigIq50LicenseProvider');
+        });
+        it('should work for version 5.2.0', () => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByVersion('5.2.0');
-            test.strictEqual(provider.constructor.name, 'BigIq52LicenseProvider');
-            test.done();
-        },
-
-        test53(test) {
-            test.expect(1);
+            assert.strictEqual(provider.constructor.name, 'BigIq52LicenseProvider');
+        });
+        it('should work for version 5.3.0', () => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByVersion('5.3.0');
-            test.strictEqual(provider.constructor.name, 'BigIq53LicenseProvider');
-            test.done();
-        },
-
-        test54(test) {
-            test.expect(1);
+            assert.strictEqual(provider.constructor.name, 'BigIq53LicenseProvider');
+        });
+        it('should work for version 5.4.0', () => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByVersion('5.4.0');
-            test.strictEqual(provider.constructor.name, 'BigIq54LicenseProvider');
-            test.done();
-        },
-
-        testPre50(test) {
-            test.expect(1);
+            assert.strictEqual(provider.constructor.name, 'BigIq54LicenseProvider');
+        });
+        it('should not work for pre 5.0.0', (done) => {
             try {
                 bigIqLicenseProviderFactory.getLicenseProviderByVersion('4.9.0');
-                test.ok(false, 'pre 5.2 should have thrown');
+                assert.ok(false, 'pre 5.2 should have thrown');
             } catch (err) {
-                test.ok(true);
+                assert.ok(true);
             } finally {
-                test.done();
+                done();
             }
-        }
-    },
-
-    testByType: {
-        testUtility(test) {
-            test.expect(1);
+        });
+    });
+    describe('Tests by type', () => {
+        it('should work when type set to utility', (done) => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByType(
                 sharedConstants.LICENSE_API_TYPES.UTILITY
             );
-            test.strictEqual(provider.constructor.name, 'BigIq53LicenseProvider');
-            test.done();
-        },
-
-        testUtilityUnreachable(test) {
-            test.expect(1);
+            assert.strictEqual(provider.constructor.name, 'BigIq53LicenseProvider');
+            done();
+        });
+        it('should work when type set to utility unreachable', (done) => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByType(
                 sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
             );
-            test.strictEqual(provider.constructor.name, 'BigIq54LicenseProvider');
-            test.done();
-        },
-
-        testBadType(test) {
-            test.expect(1);
+            assert.strictEqual(provider.constructor.name, 'BigIq54LicenseProvider');
+            done();
+        });
+        it('should fail for bad type', (done) => {
             try {
                 bigIqLicenseProviderFactory.getLicenseProviderByType('foo');
-                test.ok(false, 'bad api type should have thrown');
+                assert.ok(false, 'bad api type should have thrown');
             } catch (err) {
-                test.ok(true);
+                assert.ok(true);
             } finally {
-                test.done();
+                done();
             }
-        }
-    }
-};
+        });
+    });
+});
