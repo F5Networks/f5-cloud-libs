@@ -40,7 +40,8 @@
     "q": "^1.5.1",
     "sinon": "^9.0.3",
     "uuid5": "^1.0.2",
-    "winston": "^2.4.4"
+    "winston": "^2.4.4",
+    "jmespath": "^0.15.0"
   },
   "devDependencies": {
     "eslint": "^4.19.1",

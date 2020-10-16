@@ -37,6 +37,14 @@ describe('generic Node Provider tests', () => {
     };
     providerOptions = Object.assign(providerOptions, propertyPaths);
 
+    const providerJmesPathOptions = {
+        jmesPathQuery: '[*].{id:node.uuid,ip:{private:node.ips[0],public:node.ips[1]}}'
+    };
+
+    const providerJmesPathOptions2 = {
+        jmesPathQuery: '[*].{id:ID||Node,ip:{private:Node,public:Node},port:ServicePort}'
+    };
+
     const initOptions = {
         bar: 'foo',
         world: 'hello'
@@ -62,6 +70,106 @@ describe('generic Node Provider tests', () => {
                     '11.11.0.11'
                 ]
             }
+        }
+
+    ];
+
+    const responseNodeData2 = [
+        {
+            ID: '',
+            Node: '192.168.128.1',
+            Address: '192.168.128.1',
+            Datacenter: 'dc1',
+            TaggedAddresses: null,
+            NodeMeta: {
+                'external-node': 'true',
+                'external-probe': 'false'
+            },
+            ServiceKind: '',
+            ServiceID: 'dc1-Production-app001-1',
+            ServiceName: 'app001',
+            ServiceTags: [
+                'as3',
+                'Production'
+            ],
+            ServiceAddress: '',
+            ServiceWeights: {
+                Passing: 1,
+                Warning: 1
+            },
+            ServiceMeta: {},
+            ServicePort: 443,
+            ServiceEnableTagOverride: false,
+            ServiceProxy: {
+                MeshGateway: {}
+            },
+            ServiceConnect: {},
+            CreateIndex: 360503,
+            ModifyIndex: 360503
+        },
+        {
+            ID: '',
+            Node: '192.168.128.2',
+            Address: '192.168.128.2',
+            Datacenter: 'dc1',
+            TaggedAddresses: null,
+            NodeMeta: {
+                'external-node': 'true',
+                'external-probe': 'false'
+            },
+            ServiceKind: '',
+            ServiceID: 'dc1-Production-app001-2',
+            ServiceName: 'app001',
+            ServiceTags: [
+                'as3',
+                'Production'
+            ],
+            ServiceAddress: '',
+            ServiceWeights: {
+                Passing: 1,
+                Warning: 1
+            },
+            ServiceMeta: {},
+            ServicePort: 443,
+            ServiceEnableTagOverride: false,
+            ServiceProxy: {
+                MeshGateway: {}
+            },
+            ServiceConnect: {},
+            CreateIndex: 360503,
+            ModifyIndex: 360503
+        },
+        {
+            ID: '',
+            Node: '192.168.128.3',
+            Address: '192.168.128.3',
+            Datacenter: 'dc1',
+            TaggedAddresses: null,
+            NodeMeta: {
+                'external-node': 'true',
+                'external-probe': 'false'
+            },
+            ServiceKind: '',
+            ServiceID: 'dc1-Production-app001-3',
+            ServiceName: 'app001',
+            ServiceTags: [
+                'as3',
+                'Production'
+            ],
+            ServiceAddress: '',
+            ServiceWeights: {
+                Passing: 1,
+                Warning: 1
+            },
+            ServiceMeta: {},
+            ServicePort: 443,
+            ServiceEnableTagOverride: false,
+            ServiceProxy: {
+                MeshGateway: {}
+            },
+            ServiceConnect: {},
+            CreateIndex: 360503,
+            ModifyIndex: 360503
         }
     ];
 
@@ -284,7 +392,7 @@ describe('generic Node Provider tests', () => {
                                 {
                                     id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
                                     ip: {
-                                        public: '10.10.0.10',
+                                        public: '10.10.0.10X',
                                         private: '192.168.0.140'
                                     }
                                 },
@@ -303,6 +411,82 @@ describe('generic Node Provider tests', () => {
                 })
                 .finally(() => {
                     done();
+                });
+        });
+
+        it('JMES Path json array nodes test', () => {
+            mockGetDataFromUrl(responseNodeData);
+
+            return testProvider.init(providerJmesPathOptions)
+                .then(() => {
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
+                        .then((results) => {
+                            assert.deepEqual(results, [
+                                {
+                                    id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
+                                    ip: {
+                                        public: '10.10.0.10',
+                                        private: '192.168.0.140'
+                                    }
+                                },
+                                {
+                                    id: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
+                                    ip: {
+                                        public: '11.11.0.11',
+                                        private: '192.168.0.141'
+                                    }
+                                }
+                            ]);
+                        });
+                })
+                .catch((err) => {
+                    assert.ok(false, err);
+                });
+        });
+
+        it('Bad JMES Path json array nodes test', () => {
+            mockGetDataFromUrl(responseNodeData);
+            return testProvider.init(providerJmesPathOptions2)
+                .then(() => {
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions);
+                })
+                .then((results) => {
+                    assert.deepEqual(results, [
+                    ]);
+                })
+                .catch((err) => {
+                    assert.ok(false, err);
+                });
+        });
+
+        it('JMES Path json array nodes test 2', () => {
+            mockGetDataFromUrl(responseNodeData2);
+
+            return testProvider.init(providerJmesPathOptions2)
+                .then(() => {
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
+                        .then((results) => {
+                            assert.deepEqual(results, [
+                                {
+                                    id: '192.168.128.1',
+                                    ip: { private: '192.168.128.1', public: '192.168.128.1' },
+                                    port: 443
+                                },
+                                {
+                                    id: '192.168.128.2',
+                                    ip: { private: '192.168.128.2', public: '192.168.128.2' },
+                                    port: 443
+                                },
+                                {
+                                    id: '192.168.128.3',
+                                    ip: { private: '192.168.128.3', public: '192.168.128.3' },
+                                    port: 443
+                                }
+                            ]);
+                        });
+                })
+                .catch((err) => {
+                    assert.ok(false, err);
                 });
         });
 
