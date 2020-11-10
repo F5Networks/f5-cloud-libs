@@ -1,5 +1,11 @@
 # Release notes
 
+## Release 4.23.1
+* Added additional logic to update_autoscale_ucs.py script to account for .1 vs .11 vs .111 when running replace function.
+Previously, script would replace all instances of specified values, including ip values for ltm nodes which was not desired
+behavior. Script now contains logic to regex mpre specific matches, ie: 10.1.1.1 versus 10.1.1.111, and only for hostname,
+gw, self-ip, & dhcp-mgmt which is required when restoring instance with UCS.
+
 ## Release 4.23.0
 * Use a retry on /tm/shared/licensing/registration. This sometimes give an ECONNRESET error.
 
