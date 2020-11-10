@@ -6,3 +6,18 @@ node_modules/
 out/
 .idea/
 .DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Pytest
+.cache/
+.pytest_cache/
+
+# Pytest coverage
+.coverage
+code_coverage/
+
+# Temp files
+*.temp
