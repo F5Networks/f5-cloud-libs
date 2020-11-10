@@ -7,13 +7,8 @@
 import os
 import sys
 import re
-import json
-import time
-import string
 import shutil
 import tarfile
-from random import *
-from datetime import datetime
 from tempfile import mkstemp
 from optparse import OptionParser
 
@@ -32,9 +27,6 @@ def get_hostname(config_file):
                 match = re.search('sys global-settings', line)
                 if match:
                     global_settings_token_found = True
-
-    return
-
 
 def get_ip(config_file):
     # 1nic Autoscale IPv4 Specific
@@ -119,7 +111,14 @@ def replace(source_file_path, pattern, substring):
     with open(target_file_path, 'w') as target_file:
         with open(source_file_path, 'r') as source_file:
             for line in source_file:
-                target_file.write(line.replace(pattern, substring))
+                if "-" in pattern:
+                    newline = re.sub("(%s)$" %(pattern),substring,line)
+                    newline = re.sub("(%s)\." %(pattern),substring+'.',newline)
+                    target_file.write(newline)
+                else:    
+                    newline = re.sub("(%s)$" %(pattern),substring,line)
+                    newline = re.sub("(%s)\/" %(pattern),substring+'/',newline)
+                    target_file.write(newline)
     os.remove(source_file_path)
     shutil.move(target_file_path, source_file_path)
 

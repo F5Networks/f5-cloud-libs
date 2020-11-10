@@ -68,6 +68,19 @@ test_audit:
   except:
     - triggers
 
+# run python tests
+test_python27:
+    image: python:2.7
+    stage: test
+    script:
+        # install packages
+        - pip install -U pip
+        - pip install -r requirements.txt
+        # run unit tests
+        - make unit_test
+    tags:
+        - cm-official-docker-executor
+
 update_hash:
     tags:
         - docker-executor
