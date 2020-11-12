@@ -16,23 +16,25 @@
 
 'use strict';
 
-const poolName = 'myLicensePool';
-const poolUuid = '1234';
-const licenseUuid = '5678';
-const bigIpHostname = 'myBigIqHost';
-const LICENSE_PATH = '/cm/device/licensing/pool/regkey/licenses/';
-const regKey = '1234';
-const memberId = '5678';
+const assert = require('assert');
 
-let util;
-let BigIqProvider;
-let provider;
-let icontrolMock;
+describe('BIGIQ 5.2.0 License Provider Tests', () => {
+    const poolName = 'myLicensePool';
+    const poolUuid = '1234';
+    const licenseUuid = '5678';
+    const bigIpHostname = 'myBigIqHost';
+    const LICENSE_PATH = '/cm/device/licensing/pool/regkey/licenses/';
+    const regKey = '1234';
+    const memberId = '5678';
 
-/* eslint-disable global-require */
+    let util;
+    let BigIqProvider;
+    let provider;
+    let icontrolMock;
 
-module.exports = {
-    setUp(callback) {
+    /* eslint-disable global-require */
+
+    beforeEach(() => {
         util = require('../../../f5-cloud-libs').util;
         icontrolMock = require('../testUtil/icontrolMock');
         icontrolMock.reset();
@@ -43,36 +45,35 @@ module.exports = {
             user: 'user',
             password: 'password'
         };
-        callback();
-    },
+    });
 
-    testConstructor: {
-        testSetLogger(test) {
+    describe('Constructor Tests', () => {
+        it('should set logger', (done) => {
             const logger = {
                 a: 1,
                 b: 2
             };
 
             provider = new BigIqProvider({}, { logger });
-            test.deepEqual(provider.logger, logger);
-            test.done();
-        },
+            assert.deepEqual(provider.logger, logger);
+            done();
+        });
 
-        testLoggerOptions(test) {
+        it('should set logger options', (done) => {
             const loggerOptions = {
                 a: 1,
                 b: 2
             };
 
-            test.doesNotThrow(() => {
+            assert.doesNotThrow(() => {
                 return new BigIqProvider({ loggerOptions });
             });
-            test.done();
-        }
-    },
+            done();
+        });
+    });
 
-    testGetUnmanagedDeviceLicense: {
-        setUp(callback) {
+    describe('Get Unmanaged Device License Tests', () => {
+        beforeEach(() => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}?$select=id,name`,
@@ -83,51 +84,47 @@ module.exports = {
                     }
                 ]
             );
+        });
 
-            callback();
-        },
-
-        testEmptyPools(test) {
+        it('empty pools test', (done) => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}?$select=id,name`,
                 []
             );
 
-            test.expect(1);
             provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
                 .then(() => {
-                    test.ok(false, 'Should have thrown empty pools.');
+                    assert.ok(false, 'Should have thrown empty pools.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoPools(test) {
+        it('no pools test', (done) => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}?$select=id,name`,
                 {}
             );
 
-            test.expect(1);
             provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
                 .then(() => {
-                    test.ok(false, 'Should have thrown no pools.');
+                    assert.ok(false, 'Should have thrown no pools.');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('No license pool'), -1);
+                    assert.notStrictEqual(err.message.indexOf('No license pool'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testPoolQueryError(test) {
+        it('pool query error test', (done) => {
             icontrolMock.fail(
                 'list',
                 `${LICENSE_PATH}?$select=id,name`
@@ -135,20 +132,19 @@ module.exports = {
 
             provider.getLicenseTimeout = function getLicenseTimeout() { return util.SHORT_RETRY; };
 
-            test.expect(1);
             provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
                 .then(() => {
-                    test.ok(false, 'Should have thrown query error.');
+                    assert.ok(false, 'Should have thrown query error.');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, 'We were told to fail this.');
+                    assert.strictEqual(err.message, 'We were told to fail this.');
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoActiveRegKeys(test) {
+        it('no active reg keys test', (done) => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}${poolUuid}/offerings?$select=licenseState`,
@@ -164,20 +160,19 @@ module.exports = {
 
             util.MEDIUM_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
 
-            test.expect(1);
             provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
                 .then(() => {
-                    test.ok(false, 'Should have thrown no active licenses.');
+                    assert.ok(false, 'Should have thrown no active licenses.');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
+                    assert.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoValidRegKeys(test) {
+        it('no valid reg keys test', (done) => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}${poolUuid}/offerings?$select=licenseState`,
@@ -204,38 +199,36 @@ module.exports = {
 
             util.MEDIUM_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
 
-            test.expect(1);
             provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
                 .then(() => {
-                    test.ok(false, 'Should have thrown no valid licenses.');
+                    assert.ok(false, 'Should have thrown no valid licenses.');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
+                    assert.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testLicenseRequestError(test) {
+        it('license request error test', (done) => {
             icontrolMock.fail('list', `${LICENSE_PATH}${poolUuid}/offerings?$select=licenseState`);
 
             util.MEDIUM_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
 
-            test.expect(1);
             provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
                 .then(() => {
-                    test.ok(false, 'Should have thrown license error.');
+                    assert.ok(false, 'Should have thrown license error.');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('We were told to fail this.'), -1);
+                    assert.notStrictEqual(err.message.indexOf('We were told to fail this.'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testGetMembersForKeyError(test) {
+        it('get members for key error test', (done) => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}${poolUuid}/offerings?$select=licenseState`,
@@ -254,21 +247,20 @@ module.exports = {
 
             util.MEDIUM_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
 
-            test.expect(1);
             provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1')
                 .then(() => {
-                    test.ok(false, 'Should have thrown license error.');
+                    assert.ok(false, 'Should have thrown license error.');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
+                    assert.notStrictEqual(err.message.indexOf('No valid reg keys'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testLicensed: {
-            setUp(callback) {
+        describe('Licensed Tests', () => {
+            beforeEach(() => {
                 icontrolMock.when(
                     'list',
                     `${LICENSE_PATH}${poolUuid}/offerings?$select=licenseState`,
@@ -290,11 +282,9 @@ module.exports = {
                 );
 
                 provider.getLicenseTimeout = function getLicenseTimeout() { return util.SHORT_RETRY; };
+            });
 
-                callback();
-            },
-
-            testLicensedImmediately(test) {
+            it('licensed immediately test', (done) => {
                 icontrolMock.when(
                     'create',
                     `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members`,
@@ -305,7 +295,7 @@ module.exports = {
 
                 provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
                     .then(() => {
-                        test.deepEqual(icontrolMock.getRequest(
+                        assert.deepEqual(icontrolMock.getRequest(
                             'create',
                             `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members`
                         ),
@@ -316,14 +306,14 @@ module.exports = {
                         });
                     })
                     .catch((err) => {
-                        test.ok(false, err.message);
+                        assert.ok(false, err.message);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testLicensedLater(test) {
+            it('licensed later test', (done) => {
                 icontrolMock.when(
                     'create',
                     `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members`,
@@ -341,24 +331,23 @@ module.exports = {
                     }
                 );
 
-                test.expect(2);
                 provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
                     .then(() => {
-                        test.strictEqual(icontrolMock.lastCall.method, 'list');
-                        test.strictEqual(
+                        assert.strictEqual(icontrolMock.lastCall.method, 'list');
+                        assert.strictEqual(
                             icontrolMock.lastCall.path,
                             `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members/${memberId}`
                         );
                     })
                     .catch((err) => {
-                        test.ok(false, err.message);
+                        assert.ok(false, err.message);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testNeverLicensed(test) {
+            it('never licensed test', (done) => {
                 icontrolMock.when(
                     'create',
                     `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members`,
@@ -378,23 +367,22 @@ module.exports = {
 
                 util.MEDIUM_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
 
-                test.expect(1);
                 provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
                     .then(() => {
-                        test.ok(false, 'should thrown not licensed');
+                        assert.ok(false, 'should thrown not licensed');
                     })
                     .catch((err) => {
-                        test.notStrictEqual(err.message.indexOf('Giving up'), -1);
+                        assert.notStrictEqual(err.message.indexOf('Giving up'), -1);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            }
-        }
-    },
+            });
+        });
+    });
 
-    testRevokeLicense: {
-        setUp(callback) {
+    describe('Revoke License Tests', () => {
+        beforeEach(() => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}?$select=id,name`,
@@ -460,19 +448,16 @@ module.exports = {
                 `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members/${memberId}`,
                 {}
             );
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
-            test.expect(1);
+        it('basic test', (done) => {
             provider.revoke(icontrolMock, poolName, { hostname: bigIpHostname })
                 .then(() => {
                     const request = icontrolMock.getRequest(
                         'delete',
                         `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members/${memberId}`
                     );
-                    test.deepEqual(
+                    assert.deepEqual(
                         request,
                         {
                             username: 'user',
@@ -482,14 +467,14 @@ module.exports = {
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoLicenseForHost(test) {
+        it('no license for host test', (done) => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members`,
@@ -505,39 +490,36 @@ module.exports = {
                 ]
             );
 
-
-            test.expect(1);
             provider.revoke(icontrolMock, poolName, { hostname: bigIpHostname })
                 .then(() => {
-                    test.ok(false, 'should have thrown no license for host');
+                    assert.ok(false, 'should have thrown no license for host');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, 'License for host not found.');
+                    assert.strictEqual(err.message, 'License for host not found.');
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testGetMembersError(test) {
+        it('get members error test', (done) => {
             icontrolMock.fail('list', `${LICENSE_PATH}${poolUuid}/offerings/${regKey}/members`);
 
-            test.expect(1);
             provider.revoke(icontrolMock, poolName, { hostname: bigIpHostname })
                 .then(() => {
-                    test.ok(false, 'should have thrown no license for host');
+                    assert.ok(false, 'should have thrown no license for host');
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, 'License for host not found.');
+                    assert.strictEqual(err.message, 'License for host not found.');
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testGetLicenseTimeout(test) {
-        test.deepEqual(provider.getLicenseTimeout(), { maxRetries: 40, retryIntervalMs: 5000 });
-        test.done();
-    }
-};
+    it('get license timeout test', (done) => {
+        assert.deepEqual(provider.getLicenseTimeout(), { maxRetries: 40, retryIntervalMs: 5000 });
+        done();
+    });
+});

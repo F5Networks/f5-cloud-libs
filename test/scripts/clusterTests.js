@@ -17,48 +17,49 @@
 'use strict';
 
 const q = require('q');
-const signals = require('../../lib/signals');
 const util = require('util');
+const assert = require('assert');
+const signals = require('../../lib/signals');
 const CloudProvider = require('../../lib/cloudProvider');
 
-let fsMock;
-let ipcMock;
-let utilMock;
-let localCryptoUtilMock;
-let argv;
-let cluster;
-let realWriteFile;
-let realReadFile;
+describe('cluster tests', () => {
+    let fsMock;
+    let ipcMock;
+    let utilMock;
+    let localCryptoUtilMock;
+    let argv;
+    let cluster;
+    let realWriteFile;
+    let realReadFile;
 
-let bigIpMock;
-let providerMock;
+    let bigIpMock;
+    let providerMock;
 
-const testOptions = {};
+    const testOptions = {};
 
-let functionsCalled;
-let sentSignals;
+    let functionsCalled;
+    let sentSignals;
 
-let exitMessage;
-let exitCode;
+    let exitMessage;
+    let exitCode;
 
-util.inherits(ProviderMock, CloudProvider);
-function ProviderMock() {
-    ProviderMock.super_.call(this);
-    this.functionCalls = {};
-}
+    util.inherits(ProviderMock, CloudProvider);
+    function ProviderMock() {
+        ProviderMock.super_.call(this);
+        this.functionCalls = {};
+    }
 
-ProviderMock.prototype.init = function init() {
-    this.functionCalls.init = arguments;
-    return q();
-};
+    ProviderMock.prototype.init = function init() {
+        this.functionCalls.init = arguments;
+        return q();
+    };
 
-ProviderMock.prototype.bigIpReady = function bigIpReady() {
-    this.functionCalls.bigIpReady = arguments;
-    return q();
-};
+    ProviderMock.prototype.bigIpReady = function bigIpReady() {
+        this.functionCalls.bigIpReady = arguments;
+        return q();
+    };
 
-module.exports = {
-    setUp(callback) {
+    beforeEach((done) => {
         /* eslint-disable global-require */
         fsMock = require('fs');
         utilMock = require('../../lib/util');
@@ -193,10 +194,10 @@ module.exports = {
         argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', 'file:///password',
             '-u', 'user', '--host', 'localhost', '--output', 'cluster.log'];
 
-        callback();
-    },
+        done();
+    });
 
-    tearDown(callback) {
+    afterEach((done) => {
         utilMock.removeDirectorySync(ipcMock.signalBasePath);
         fsMock.readFile = realReadFile;
         fsMock.writeFile = realWriteFile;
@@ -204,78 +205,73 @@ module.exports = {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
+        done();
+    });
 
-    testUndefinedOptions: {
-        testNoPassword(test) {
+    describe('Undefined Options tests', () => {
+        it('no password test', (done) => {
             const passwordUrl = 'https://password';
             argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', passwordUrl,
                 '-u', 'user', '--password', '--host', 'localhost', '--output', 'cluster.log'];
 
             cluster.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(cluster.options.passwordUrl, passwordUrl);
-                test.strictEqual(cluster.options.password, undefined);
-                test.done();
+                assert.strictEqual(cluster.options.passwordUrl, passwordUrl);
+                assert.strictEqual(cluster.options.password, undefined);
+                done();
             });
-        },
+        });
 
-        testNoPasswordUrl(test) {
+        it('no password url test', (done) => {
             const password = 'password';
             argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', '-u', 'user',
                 '--password', password, '--host', 'localhost', '--output', 'cluster.log'];
 
             cluster.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(cluster.options.passwordUrl, undefined);
-                test.strictEqual(cluster.options.password, password);
-                test.done();
+                assert.strictEqual(cluster.options.passwordUrl, undefined);
+                assert.strictEqual(cluster.options.password, password);
+                done();
             });
-        },
+        });
 
-        testNoRemotePassword(test) {
+        it('no remote password test', (done) => {
             const remotePasswordUrl = 'https://password';
             argv = ['node', 'cluster.js', '--log-level', 'none', '--password', 'password',
                 '-u', 'user', '--password', '--host', 'localhost', '--output', 'cluster.log',
                 '--remote-password-url', remotePasswordUrl, '--remote-password'];
 
             cluster.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(cluster.options.remotePasswordUrl, remotePasswordUrl);
-                test.strictEqual(cluster.options.remotePassword, undefined);
-                test.done();
+                assert.strictEqual(cluster.options.remotePasswordUrl, remotePasswordUrl);
+                assert.strictEqual(cluster.options.remotePassword, undefined);
+                done();
             });
-        },
+        });
 
-        testNoRemotePasswordUrl(test) {
+        it('no remote password url test', (done) => {
             const remotePassword = 'password';
             argv = ['node', 'cluster.js', '--log-level', 'none', '--password-url', '-u', 'user',
                 '--password', 'password', '--host', 'localhost', '--output', 'cluster.log',
                 '--remote-password-url', '--remote-password', remotePassword];
 
             cluster.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(cluster.options.remotePasswordUrl, undefined);
-                test.strictEqual(cluster.options.remotePassword, remotePassword);
-                test.done();
+                assert.strictEqual(cluster.options.remotePasswordUrl, undefined);
+                assert.strictEqual(cluster.options.remotePassword, remotePassword);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testWaitFor(test) {
+    it('wait for test', (done) => {
         argv.push('--wait-for', 'foo');
         ipcMock.send('foo');
 
-        test.expect(2);
         cluster.run(argv, testOptions, () => {
-            test.deepEqual(sentSignals, ['foo', signals.CLUSTER_RUNNING, signals.CLUSTER_DONE]);
-            test.notStrictEqual(functionsCalled.ipc.once.indexOf('foo'), -1);
-            test.done();
+            assert.deepEqual(sentSignals, ['foo', signals.CLUSTER_RUNNING, signals.CLUSTER_DONE]);
+            assert.notStrictEqual(functionsCalled.ipc.once.indexOf('foo'), -1);
+            done();
         });
-    },
+    });
 
-    testExceptionSignalsError(test) {
+    it('exception signals error test', (done) => {
         bigIpMock.ready = () => {
             return q.reject('err');
         };
@@ -283,29 +279,27 @@ module.exports = {
         argv.push('--wait-for', 'foo');
         ipcMock.send('foo');
 
-        test.expect(2);
         cluster.run(argv, testOptions, () => {
-            test.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
-            test.strictEqual(sentSignals.indexOf(signals.CLUSTER_DONE), -1);
-            test.done();
+            assert.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            assert.strictEqual(sentSignals.indexOf(signals.CLUSTER_DONE), -1);
+            done();
         });
-    },
+    });
 
-    testBigIqPrimaryRequiredOptions: {
-        testNoRootPasswordURI(test) {
+    describe('BigIq Primary Required Options tests', () => {
+        it('no root password uri test', (done) => {
             argv.push('--primary', '--big-iq-failover-peer-ip', '1.2.3.4');
 
-            test.expect(2);
             cluster.run(argv, testOptions, () => {
-                test.notStrictEqual(exitMessage.indexOf('--big-iq-password-data-uri'), -1);
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.notStrictEqual(exitMessage.indexOf('--big-iq-password-data-uri'), -1);
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testBigIqCluster: {
-        setUp(callback) {
+    describe('BigIq cluster tests', () => {
+        beforeEach(() => {
             utilMock.readData = () => {
                 return q(JSON.stringify(
                     {
@@ -323,23 +317,20 @@ module.exports = {
             argv = ['node', 'cluster.js', '--log-level', 'none', '--host', 'localhost', '-u', 'admin',
                 '--output', 'cluster.log', '--cloud', 'aws', '--big-iq-password-data-uri',
                 'arn:::foo:bar/password', '--primary', '--big-iq-failover-peer-ip', '1.2.3.4'];
+        });
 
-            callback();
-        },
-
-        testBigIpClusterAddSeconaryCalled(test) {
+        it('BigIp Cluster Add Seconary Called test', (done) => {
             testOptions.bigIp.password = 'adminpass';
-            test.expect(1);
             cluster.run(argv, testOptions, () => {
-                test.deepEqual(
+                assert.deepEqual(
                     functionsCalled.bigIp.cluster.addSecondary,
                     ['1.2.3.4', 'admin', 'adminpass', 'rootPassword']
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testBigIqPasswordDecrypted(test) {
+        it('BigIp password decrypt test', (done) => {
             const encryptedData = 'dke9cxk';
 
             utilMock.readData = function decryptPassword() {
@@ -359,12 +350,11 @@ module.exports = {
             };
 
             argv.push('--big-iq-password-data-encrypted');
-            test.expect(2);
             cluster.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.localCryptoUtilMock.decryptPassword[0], encryptedData);
-                test.strictEqual(functionsCalled.utilMock.readData[0], 'arn:::foo:bar/password');
-                test.done();
+                assert.deepEqual(functionsCalled.localCryptoUtilMock.decryptPassword[0], encryptedData);
+                assert.strictEqual(functionsCalled.utilMock.readData[0], 'arn:::foo:bar/password');
+                done();
             });
-        }
-    }
-};
+        });
+    });
+});

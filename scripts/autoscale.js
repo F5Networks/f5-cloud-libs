@@ -1608,7 +1608,7 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
         const timeStamp = Date.now();
         const originalPath = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsOriginal_${timeStamp}.ucs`;
         const updatedPath = `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsUpdated_${timeStamp}.ucs`;
-        const updateScript = `${__dirname}/updateAutoScaleUcs`;
+        const updateScript = `${__dirname}/update_autoscale_ucs.py`;
 
         const deferred = q.defer();
 

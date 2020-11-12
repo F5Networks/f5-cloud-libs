@@ -1,6 +1,6 @@
 {
   "name": "@f5devcentral/f5-cloud-libs",
-  "version": "4.22.0",
+  "version": "4.23.1",
   "description": "Common library code and scripts for deploying a BIG-IP in a cloud environment",
   "keywords": [
     "f5",
@@ -15,31 +15,84 @@
   "bugs": {
     "url": "https://github.com/F5Networks/f5-cloud-libs/issues"
   },
+  "auditProcessor": {
+    "whitelist": [
+      "1523",
+      "1490",
+      "1500",
+      "1179",
+      "1084",
+      "1013",
+      "1012",
+      "1065",
+      "782",
+      "1325",
+      "1324",
+      "1316",
+      "1300",
+      "1164",
+      "755"
+    ]
+  },
   "license": "Apache-2.0",
   "dependencies": {
     "commander": "^2.19.0",
     "q": "^1.5.1",
+    "sinon": "^9.0.3",
     "uuid5": "^1.0.2",
-    "winston": "^2.4.4"
+    "winston": "^2.4.4",
+    "jmespath": "^0.15.0"
   },
   "devDependencies": {
-    "coveralls": "^3.0.2",
     "eslint": "^4.19.1",
-    "esquery": "1.1.0",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.14.0",
-    "istanbul": "^0.4.5",
+    "eslint-plugin-mocha": "^8.0.0",
+    "esquery": "1.1.0",
+    "nyc": "^15.1.0",
     "jsdoc": "^3.4.3",
-    "nodeunit": "^0.11.3"
+    "mocha": "^7.1.1",
+    "why-is-node-running": "^2.2.0",
+    "yargs": "^15.4.1"
+  },
+  "mocha": {
+    "timeout": 5000,
+    "exit": true
+  },
+  "eslintConfig": {
+    "plugins": [
+      "mocha"
+    ],
+    "env": {
+      "mocha": true,
+      "node": true
+    }
+  },
+  "nyc": {
+    "all": true,
+    "include": [
+      "lib/*.js",
+      "scripts/**/*.js"
+    ],
+    "check-coverage": true,
+    "statements": 80,
+    "branches": 80,
+    "functions": 80,
+    "lines": 80,
+    "reporter": [
+      "html",
+      "text"
+    ],
+    "cache": false
   },
   "scripts": {
-    "coverage": "istanbul cover --print detail nodeunit test/lib test/scripts",
-    "coveralls": "istanbul cover nodeunit test/lib test/scripts; cat coverage/lcov.info | node_modules/coveralls/bin/coveralls.js",
+    "audit": "npm audit --json > .auditReport.json; node scripts/auditProcessor.js",
+    "coverage": "nyc mocha --exit test/lib test/scripts",
     "doc": "./generateUsageDoc.sh; node node_modules/jsdoc/jsdoc.js -c jsdoc.conf",
     "lint": "eslint lib scripts test",
     "package": "./package.sh",
     "postinstall": "bash ./scripts/npmPostInstall.sh",
-    "test": "nodeunit --reporter eclipse test/lib test/scripts",
+    "test": "mocha --exit test/lib test/scripts",
     "version": "./setVersion.sh $npm_package_version && git add ."
   }
 }

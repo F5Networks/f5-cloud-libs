@@ -16,63 +16,66 @@
 
 'use strict';
 
-const realExit = process.exit;
+const assert = require('assert');
 
-const fs = require('fs');
-const q = require('q');
-const util = require('util');
-const ActiveError = require('../../../f5-cloud-libs').activeError;
-const CloudProvider = require('../../lib/cloudProvider');
-const signals = require('../../../f5-cloud-libs').signals;
+describe('onboard tests', () => {
+    const realExit = process.exit;
 
-let metricsCollectorMock;
+    /* eslint-disable global-require */
+    const fs = require('fs');
+    const q = require('q');
+    const util = require('util');
+    const ActiveError = require('../../../f5-cloud-libs').activeError;
+    const CloudProvider = require('../../lib/cloudProvider');
+    const signals = require('../../../f5-cloud-libs').signals;
 
-let rebootCalled = false;
-let signalInstanceProvisionedCalled = false;
-const installIlxPackageParams = [];
-let functionsCalled;
-let onboard;
-let ipcMock;
-let utilMock;
-let cryptoUtilMock;
-let exitMessage;
-let exitCode;
-let logErrorMessage;
-let logErrorOptions;
+    let metricsCollectorMock;
 
-let bigIpMock;
-let providerMock;
-let localCryptoUtilMock;
+    let rebootCalled = false;
+    let signalInstanceProvisionedCalled = false;
+    const installIlxPackageParams = [];
+    let functionsCalled;
+    let onboard;
+    let ipcMock;
+    let utilMock;
+    let cryptoUtilMock;
+    let exitMessage;
+    let exitCode;
+    let logErrorMessage;
+    let logErrorOptions;
 
-const testOptions = {};
+    let bigIpMock;
+    let providerMock;
+    let localCryptoUtilMock;
 
-let argv;
-let rebootRequested;
-let signalsSent;
+    const testOptions = {};
 
-// Our tests cause too many event listeners. Turn off the check.
-const options = require('commander');
+    let argv;
+    let rebootRequested;
+    let signalsSent;
 
-options.setMaxListeners(0);
+    // Our tests cause too many event listeners. Turn off the check.
+    const options = require('commander');
 
-util.inherits(ProviderMock, CloudProvider);
-function ProviderMock() {
-    ProviderMock.super_.call(this);
-    this.functionCalls = {};
-}
+    options.setMaxListeners(0);
 
-ProviderMock.prototype.init = function init() {
-    this.functionCalls.init = arguments;
-    return q();
-};
+    util.inherits(ProviderMock, CloudProvider);
+    function ProviderMock() {
+        ProviderMock.super_.call(this);
+        this.functionCalls = {};
+    }
 
-ProviderMock.prototype.signalInstanceProvisioned = () => {
-    signalInstanceProvisionedCalled = true;
-    return q();
-};
+    ProviderMock.prototype.init = function init() {
+        this.functionCalls.init = arguments;
+        return q();
+    };
 
-module.exports = {
-    setUp(callback) {
+    ProviderMock.prototype.signalInstanceProvisioned = () => {
+        signalInstanceProvisionedCalled = true;
+        return q();
+    };
+
+    beforeEach(() => {
         bigIpMock = {
             init() {
                 functionsCalled.bigIp.init = arguments;
@@ -252,21 +255,18 @@ module.exports = {
             functionsCalled.metrics.upload = arguments;
             return q();
         };
+    });
 
-        callback();
-    },
-
-    tearDown(callback) {
+    afterEach(() => {
         process.exit = realExit;
         utilMock.removeDirectorySync(ipcMock.signalBasePath);
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
+    });
 
-    testUndefinedOptions: {
-        testNoBigIqPassword(test) {
+    describe('undefined options tests', () => {
+        it('no bigiq password test', (done) => {
             const uri = 'uri-path';
             argv.push(
                 '--license-pool',
@@ -278,14 +278,13 @@ module.exports = {
             );
 
             onboard.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], uri);
-                test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[5].passwordIsUri, true);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], uri);
+                assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[5].passwordIsUri, true);
+                done();
             });
-        },
+        });
 
-        testNoBigIqPasswordUri(test) {
+        it('no bigiq password uri test', (done) => {
             const password = 'password';
             argv.push(
                 '--license-pool',
@@ -297,78 +296,72 @@ module.exports = {
             );
 
             onboard.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], password);
-                test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[5].passwordIsUri, false);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], password);
+                assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[5].passwordIsUri, false);
+                done();
             });
-        },
+        });
 
-        testNoMetrics(test) {
+        it('no metrics test', (done) => {
             argv.push('--metrics');
             onboard.run(argv, testOptions, () => {
-                test.expect(1);
-                test.strictEqual(functionsCalled.metrics.upload, undefined);
-                test.done();
+                assert.strictEqual(functionsCalled.metrics.upload, undefined);
+                done();
             });
-        },
+        });
 
-        testNoPassword(test) {
+        it('no password test', (done) => {
             const passwordUrl = 'https://password';
             argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo',
                 '--password-url', passwordUrl, '--password', '--log-level', 'none'];
 
             onboard.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(functionsCalled.bigIp.init[2], passwordUrl);
-                test.strictEqual(functionsCalled.bigIp.init[3].passwordIsUrl, true);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.init[2], passwordUrl);
+                assert.strictEqual(functionsCalled.bigIp.init[3].passwordIsUrl, true);
+                done();
             });
-        },
+        });
 
-        testNoPasswordUrl(test) {
+        it('no password uri test', (done) => {
             const password = 'password';
             argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo',
                 '--password-url', '--password', password, '--log-level', 'none'];
 
             onboard.run(argv, testOptions, () => {
-                test.expect(2);
-                test.strictEqual(functionsCalled.bigIp.init[2], password);
-                test.strictEqual(functionsCalled.bigIp.init[3].passwordIsUrl, false);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.init[2], password);
+                assert.strictEqual(functionsCalled.bigIp.init[3].passwordIsUrl, false);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testRequiredOptions: {
-        testNoHost(test) {
+    describe('required options tests', () => {
+        it('no host test', (done) => {
             argv = ['node', 'onboard', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
 
-            test.expect(4);
             onboard.run(argv, testOptions, () => {
-                test.notStrictEqual(exitMessage.indexOf('host'), -1);
-                test.notStrictEqual(logErrorMessage.indexOf('host'), -1);
-                test.strictEqual(logErrorOptions.logLevel, 'none');
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.notStrictEqual(exitMessage.indexOf('host'), -1);
+                assert.notStrictEqual(logErrorMessage.indexOf('host'), -1);
+                assert.strictEqual(logErrorOptions.logLevel, 'none');
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        },
+        });
 
-        testNoPassword(test) {
+        it('no password test', (done) => {
             argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '--log-level', 'none'];
 
-            test.expect(4);
             onboard.run(argv, testOptions, () => {
-                test.notStrictEqual(exitMessage.indexOf('password'), -1);
-                test.notStrictEqual(logErrorMessage.indexOf('password'), -1);
-                test.strictEqual(logErrorOptions.logLevel, 'none');
-                test.strictEqual(exitCode, 1);
-                test.done();
+                assert.notStrictEqual(exitMessage.indexOf('password'), -1);
+                assert.notStrictEqual(logErrorMessage.indexOf('password'), -1);
+                assert.strictEqual(logErrorOptions.logLevel, 'none');
+                assert.strictEqual(exitCode, 1);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testWaitFor(test) {
+    it('wait for test', (done) => {
         argv.push('--wait-for', 'foo');
 
         ipcMock.once = function once() {
@@ -376,14 +369,13 @@ module.exports = {
             return q();
         };
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.strictEqual(functionsCalled.ipc.once[0], 'foo');
-            test.done();
+            assert.strictEqual(functionsCalled.ipc.once[0], 'foo');
+            done();
         });
-    },
+    });
 
-    testBackground(test) {
+    it('background test', (done) => {
         let runInBackgroundCalled = false;
         utilMock.runInBackgroundAndExit = () => {
             runInBackgroundCalled = true;
@@ -391,14 +383,13 @@ module.exports = {
 
         argv.push('--background');
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.ok(runInBackgroundCalled);
-            test.done();
+            assert.ok(runInBackgroundCalled);
+            done();
         });
-    },
+    });
 
-    testExceptionSignalsError(test) {
+    it('exception signals error test', (done) => {
         const sentSignals = [];
 
         cryptoUtilMock.createRandomUser = () => {
@@ -420,14 +411,13 @@ module.exports = {
             }, 100);
             return deferred.promise;
         };
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.deepEqual(sentSignals, [signals.ONBOARD_RUNNING, signals.CLOUD_LIBS_ERROR]);
-            test.done();
+            assert.deepEqual(sentSignals, [signals.ONBOARD_RUNNING, signals.CLOUD_LIBS_ERROR]);
+            done();
         });
-    },
+    });
 
-    testSignalDone(test) {
+    it('signal done test', (done) => {
         const sentSignals = [];
 
         argv = ['node', 'onboard', '--host', '1.2.3.4', '-u', 'foo', '-p', 'bar', '--log-level', 'none'];
@@ -445,15 +435,14 @@ module.exports = {
             }, 100);
             return deferred.promise;
         };
-        test.expect(2);
         onboard.run(argv, testOptions, () => {
-            test.deepEqual(sentSignals, [signals.ONBOARD_RUNNING, signals.ONBOARD_DONE]);
-            test.strictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
-            test.done();
+            assert.deepEqual(sentSignals, [signals.ONBOARD_RUNNING, signals.ONBOARD_DONE]);
+            assert.strictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            done();
         });
-    },
+    });
 
-    testNoUser(test) {
+    it('no user test', (done) => {
         argv = ['node', 'onboard', '--host', '1.2.3.4', '-p', 'bar', '--log-level', 'none'];
 
         const randomUser = 'my random user';
@@ -468,16 +457,15 @@ module.exports = {
         utilMock.deleteUser = (user) => {
             userDeleted = user;
         };
-        test.expect(2);
         onboard.run(argv, testOptions, () => {
-            test.ok(userCreated);
-            test.strictEqual(userDeleted, randomUser);
-            test.done();
+            assert.ok(userCreated);
+            assert.strictEqual(userDeleted, randomUser);
+            done();
         });
-    },
+    });
 
-    testGlobalSettings: {
-        testHostname(test) {
+    describe('global settings tests', () => {
+        it('hostname test', (done) => {
             let hostnameSet;
             bigIpMock.onboard.hostname = (hostname) => {
                 hostnameSet = hostname;
@@ -485,24 +473,22 @@ module.exports = {
 
             argv.push('--hostname', 'hostname1', '--global-setting', 'hostname:hostname2');
 
-            test.expect(2);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(hostnameSet, 'hostname1');
-                test.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].hostname, undefined);
-                test.done();
+                assert.strictEqual(hostnameSet, 'hostname1');
+                assert.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].hostname, undefined);
+                done();
             });
-        },
+        });
 
-        testIsBigIp(test) {
-            test.expect(2);
+        it('is bigip test', (done) => {
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].guiSetup, 'disabled');
-                test.strictEqual(functionsCalled.bigIp.modify, undefined);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.onboard.globalSettings[0].guiSetup, 'disabled');
+                assert.strictEqual(functionsCalled.bigIp.modify, undefined);
+                done();
             });
-        },
+        });
 
-        testIsBigIq(test) {
+        it('is bigiq test', (done) => {
             bigIpMock.isBigIq = () => {
                 return true;
             };
@@ -510,10 +496,9 @@ module.exports = {
                 return false;
             };
 
-            test.expect(2);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.bigIp.onboard.globalSettings, undefined);
-                test.deepEqual(
+                assert.strictEqual(functionsCalled.bigIp.onboard.globalSettings, undefined);
+                assert.deepEqual(
                     functionsCalled.bigIp.modify[1],
                     {
                         isSystemSetup: true,
@@ -521,13 +506,13 @@ module.exports = {
                         isAdminPasswordChanged: true
                     }
                 );
-                test.done();
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testPasswordDataUri: {
-        setUp(callback) {
+    describe('password data uri tests', () => {
+        beforeEach(() => {
             providerMock = new ProviderMock();
             testOptions.cloudProvider = providerMock;
 
@@ -547,11 +532,9 @@ module.exports = {
                 functionsCalled.bigIp.onboard.setRootPassword = arguments;
                 return q();
             };
+        });
 
-            callback();
-        },
-
-        testSetPasswordsFromJSON(test) {
+        it('set passwords from json test', (done) => {
             utilMock.readData = function readData() {
                 functionsCalled.utilMock.readData = arguments;
                 return q(JSON.stringify(
@@ -566,11 +549,10 @@ module.exports = {
             const s3Arn = 'arn:::foo:bar/password';
             argv.push('--big-iq-password-data-uri', s3Arn, '--cloud', 'aws');
 
-            test.expect(6);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.utilMock.readData[0], s3Arn);
-                test.strictEqual(functionsCalled.utilMock.readData[1], true);
-                test.deepEqual(
+                assert.strictEqual(functionsCalled.utilMock.readData[0], s3Arn);
+                assert.strictEqual(functionsCalled.utilMock.readData[1], true);
+                assert.deepEqual(
                     bigIpMock.onboard.updatedUsers, [{
                         user: 'admin',
                         password: 'AdPass',
@@ -578,14 +560,14 @@ module.exports = {
                         shell: undefined
                     }]
                 );
-                test.strictEqual(functionsCalled.bigIp.onboard.setPrimaryPassphrase, 'keykeykey');
-                test.strictEqual(functionsCalled.bigIp.onboard.setRootPassword[0], 'rootpass');
-                test.deepEqual(functionsCalled.bigIp.onboard.setRootPassword[2], { enableRoot: true });
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.onboard.setPrimaryPassphrase, 'keykeykey');
+                assert.strictEqual(functionsCalled.bigIp.onboard.setRootPassword[0], 'rootpass');
+                assert.deepEqual(functionsCalled.bigIp.onboard.setRootPassword[2], { enableRoot: true });
+                done();
             });
-        },
+        });
 
-        testBigIqPasswordDecrypted(test) {
+        it('bigiq password decrypted test', (done) => {
             const encryptedData = 'dke9cxk';
             const passwordFile = 'file:///tmp/passwords';
 
@@ -607,16 +589,15 @@ module.exports = {
 
             argv.push('--big-iq-password-data-uri', passwordFile,
                 '--big-iq-password-data-encrypted', '--cloud', 'aws');
-            test.expect(2);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.localCryptoUtilMock.decryptPassword[0], encryptedData);
-                test.strictEqual(functionsCalled.utilMock.readData[0], passwordFile);
-                test.done();
+                assert.strictEqual(functionsCalled.localCryptoUtilMock.decryptPassword[0], encryptedData);
+                assert.strictEqual(functionsCalled.utilMock.readData[0], passwordFile);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testPrimaryKeySet(test) {
+    it('primary key set test', (done) => {
         providerMock = new ProviderMock();
         testOptions.cloudProvider = providerMock;
 
@@ -631,27 +612,25 @@ module.exports = {
             return q(true);
         };
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.deepEqual(functionsCalled.bigIp.onboard, { isPrimaryKeySet: true });
-            test.done();
+            assert.deepEqual(functionsCalled.bigIp.onboard, { isPrimaryKeySet: true });
+            done();
         });
-    },
+    });
 
-    testReboot(test) {
+    it('reboot test', (done) => {
         bigIpMock.rebootRequired = function rebootRequired() {
             functionsCalled.bigIp.rebootRequired = arguments;
             return q(true);
         };
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.ok(rebootRequested);
-            test.done();
+            assert.ok(rebootRequested);
+            done();
         });
-    },
+    });
 
-    testNoReboot(test) {
+    it('no reboot test', (done) => {
         argv.push('--no-reboot');
 
         bigIpMock.rebootRequired = function rebootRequired() {
@@ -659,201 +638,183 @@ module.exports = {
             return q(true);
         };
 
-        test.expect(2);
         onboard.run(argv, testOptions, () => {
-            test.ifError(rebootRequested);
-            test.notStrictEqual(signalsSent.indexOf('REBOOT_REQUIRED'), -1);
-            test.done();
+            assert.strictEqual(rebootRequested, false);
+            assert.notStrictEqual(signalsSent.indexOf('REBOOT_REQUIRED'), -1);
+            done();
         });
-    },
+    });
 
-    testProvider: {
-        setUp(callback) {
+    describe('provider tests', () => {
+        beforeEach(() => {
             providerMock = new ProviderMock();
             testOptions.cloudProvider = providerMock;
 
             signalInstanceProvisionedCalled = false;
+        });
 
-            callback();
-        },
-
-        testSignalInstanceProvisioned(test) {
+        it('signal instance provisioned test', (done) => {
             argv.push('--cloud', 'aws', '--signal-resource');
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(signalInstanceProvisionedCalled, true);
-                test.done();
+                assert.strictEqual(signalInstanceProvisionedCalled, true);
+                done();
             });
-        },
+        });
 
-        testOnboardNoSignal(test) {
+        it('onboard no signal test', (done) => {
             argv.push('--cloud', 'aws');
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(signalInstanceProvisionedCalled, false);
-                test.done();
+                assert.strictEqual(signalInstanceProvisionedCalled, false);
+                done();
             });
-        }
+        });
+    });
 
-    },
-
-    testSslPortarguments: {
-        setUp(callback) {
+    describe('ssl port arguments tests', () => {
+        beforeEach(() => {
             utilMock.deletearguments = () => { };
             Date.now = () => {
                 return '1234';
             };
-            callback();
-        },
+        });
 
-        testNoPort(test) {
+        it('no port test', (done) => {
             argv.push('--ssl-port', '8443');
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
                 const argumentsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
-                test.notStrictEqual(argumentsFile.indexOf('--port 8443'), -1);
-                test.done();
+                assert.notStrictEqual(argumentsFile.indexOf('--port 8443'), -1);
+                done();
             });
-        },
+        });
 
-        testPort(test) {
+        it('port test', (done) => {
             argv.push('--port', '443', '--ssl-port', '8443');
 
-            test.expect(2);
             onboard.run(argv, testOptions, () => {
                 const argumentsFile = fs.readFileSync('/tmp/rebootScripts/onboard_1234.sh');
-                test.strictEqual(argumentsFile.indexOf('--port 443'), -1);
-                test.notStrictEqual(argumentsFile.indexOf('--port 8443'), -1);
-                test.done();
+                assert.strictEqual(argumentsFile.indexOf('--port 443'), -1);
+                assert.notStrictEqual(argumentsFile.indexOf('--port 8443'), -1);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testRootPassword: {
-        testBasic(test) {
+    describe('root password tests', () => {
+        it('basic test', (done) => {
             argv.push('--set-root-password', 'old:myOldPassword,new:myNewPassword');
 
-            test.expect(3);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.bigIp.onboard.password[0], 'root');
-                test.strictEqual(functionsCalled.bigIp.onboard.password[1], 'myNewPassword');
-                test.strictEqual(functionsCalled.bigIp.onboard.password[2], 'myOldPassword');
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.onboard.password[0], 'root');
+                assert.strictEqual(functionsCalled.bigIp.onboard.password[1], 'myNewPassword');
+                assert.strictEqual(functionsCalled.bigIp.onboard.password[2], 'myOldPassword');
+                done();
             });
-        },
+        });
 
-        testMissingNew(test) {
+        it('missing new test', (done) => {
             argv.push('--set-root-password', 'old:myOldPassword,new:');
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
+                done();
             });
-        },
+        });
 
-        testMissingOld(test) {
+        it('missing old test', (done) => {
             argv.push('--set-root-password', 'old:,new:myNewPassword');
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
+                done();
             });
-        },
+        });
 
-        testMissingBoth(test) {
+        it('missing both test', (done) => {
             argv.push('--set-root-password', 'foo:myOldPassword,bar:myNewPassword');
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.onboard.password, undefined);
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testUpdateUser(test) {
+    it('update user test', (done) => {
         argv.push('--update-user', 'user:user1,password:pass1,role:role1,shell:shell1',
             '--update-user', 'user:user2,password:pass2,shell:shell2');
         onboard.run(argv, testOptions, () => {
-            test.strictEqual(bigIpMock.onboard.updatedUsers.length, 2);
-            test.deepEqual(bigIpMock.onboard.updatedUsers[0], {
+            assert.strictEqual(bigIpMock.onboard.updatedUsers.length, 2);
+            assert.deepEqual(bigIpMock.onboard.updatedUsers[0], {
                 user: 'user1',
                 password: 'pass1',
                 role: 'role1',
                 shell: 'shell1'
             });
-            test.deepEqual(bigIpMock.onboard.updatedUsers[1], {
+            assert.deepEqual(bigIpMock.onboard.updatedUsers[1], {
                 user: 'user2',
                 password: 'pass2',
                 role: undefined,
                 shell: 'shell2'
             });
-            test.done();
+            done();
         });
-    },
+    });
 
-    testNtp: {
-        testNtp(test) {
+    describe('ntp tests', () => {
+        it('ntp test', (done) => {
             const ntpServer = 'ntp.server1';
             argv.push('--ntp', ntpServer);
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.bigIp.modify[1], { servers: [ntpServer] });
-                test.done();
+                assert.deepEqual(functionsCalled.bigIp.modify[1], { servers: [ntpServer] });
+                done();
             });
-        },
+        });
 
-        testTz(test) {
+        it('tz test', (done) => {
             const tz = 'myTimezone';
             argv.push('--tz', tz);
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.deepEqual(functionsCalled.bigIp.modify[1], { timezone: tz });
-                test.done();
+                assert.deepEqual(functionsCalled.bigIp.modify[1], { timezone: tz });
+                done();
             });
-        }
-    },
+        });
+    });
 
-    testDns(test) {
+    it('dns test', (done) => {
         const dns = 'mydns.com';
         argv.push('--dns', dns);
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.deepEqual(functionsCalled.bigIp.modify[1], { 'name-servers': [dns] });
-            test.done();
+            assert.deepEqual(functionsCalled.bigIp.modify[1], { 'name-servers': [dns] });
+            done();
         });
-    },
+    });
 
-    testDbVars(test) {
+    it('db vars test', (done) => {
         const dbVar1 = 'key1:value1';
         const dbVar2 = 'key2:value2';
 
         argv.push('--db', dbVar1, '--db', dbVar2);
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.deepEqual(functionsCalled.bigIp.onboard.setDbVars[0], { key1: 'value1', key2: 'value2' });
-            test.done();
+            assert.deepEqual(functionsCalled.bigIp.onboard.setDbVars[0], { key1: 'value1', key2: 'value2' });
+            done();
         });
-    },
+    });
 
-    testLicense: {
-        testRegKey(test) {
+    describe('license tests', () => {
+        it('reg key test', (done) => {
             const regKey = '123345';
 
             argv.push('--license', regKey);
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.deepEqual(
+                assert.deepEqual(
                     functionsCalled.bigIp.onboard.license[0],
                     {
                         registrationKey: regKey,
@@ -861,19 +822,18 @@ module.exports = {
                         overwrite: true
                     }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testAddOnKeys(test) {
+        it('add on keys test', (done) => {
             const addOnKey1 = 'addOn1';
             const addOnKey2 = 'addOn2';
 
             argv.push('--add-on', addOnKey1, '--add-on', addOnKey2);
 
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.deepEqual(
+                assert.deepEqual(
                     functionsCalled.bigIp.onboard.license[0],
                     {
                         registrationKey: undefined,
@@ -881,12 +841,12 @@ module.exports = {
                         overwrite: true
                     }
                 );
-                test.done();
+                done();
             });
-        },
+        });
 
-        testLicenseViaBigIq: {
-            testBasic(test) {
+        describe('license via bigiq tests', () => {
+            it('basic test', (done) => {
                 const bigIqHost = 'myBigIq';
                 const bigIqUser = 'myBigIqUser';
                 const bigIqPassword = 'myBigIqPassword';
@@ -915,14 +875,13 @@ module.exports = {
                     '--cloud', cloud
                 );
 
-                test.expect(6);
                 onboard.run(argv, testOptions, () => {
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[0], bigIqHost);
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[1], bigIqUser);
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], bigIqPassword);
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[3], licensePool);
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[4], cloud);
-                    test.deepEqual(
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[0], bigIqHost);
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[1], bigIqUser);
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], bigIqPassword);
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[3], licensePool);
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[4], cloud);
+                    assert.deepEqual(
                         functionsCalled.bigIp.onboard.licenseViaBigIq[5],
                         {
                             passwordIsUri: false,
@@ -936,11 +895,11 @@ module.exports = {
                             noUnreachable: false
                         }
                     );
-                    test.done();
+                    done();
                 });
-            },
+            });
 
-            testNoUnreachable(test) {
+            it('no unreachable test', (done) => {
                 const bigIqHost = 'myBigIq';
                 const bigIqUser = 'myBigIqUser';
                 const bigIqPassword = 'myBigIqPassword';
@@ -970,14 +929,13 @@ module.exports = {
                     '--no-unreachable'
                 );
 
-                test.expect(6);
                 onboard.run(argv, testOptions, () => {
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[0], bigIqHost);
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[1], bigIqUser);
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], bigIqPassword);
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[3], licensePool);
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[4], cloud);
-                    test.deepEqual(
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[0], bigIqHost);
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[1], bigIqUser);
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[2], bigIqPassword);
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[3], licensePool);
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq[4], cloud);
+                    assert.deepEqual(
                         functionsCalled.bigIp.onboard.licenseViaBigIq[5],
                         {
                             passwordIsUri: false,
@@ -991,11 +949,11 @@ module.exports = {
                             noUnreachable: true
                         }
                     );
-                    test.done();
+                    done();
                 });
-            },
+            });
 
-            testOptionalSku(test) {
+            it('optional sku test', (done) => {
                 const bigIqHost = 'myBigIq';
                 const bigIqUser = 'myBigIqUser';
                 const bigIqPassword = 'myBigIqPassword';
@@ -1023,9 +981,8 @@ module.exports = {
                     '--no-unreachable'
                 );
 
-                test.expect(1);
                 onboard.run(argv, testOptions, () => {
-                    test.deepEqual(
+                    assert.deepEqual(
                         functionsCalled.bigIp.onboard.licenseViaBigIq[5],
                         {
                             passwordIsUri: false,
@@ -1039,106 +996,97 @@ module.exports = {
                             noUnreachable: true
                         }
                     );
-                    test.done();
+                    done();
                 });
-            },
+            });
 
-            testMissingParams(test) {
+            it('missing params test', (done) => {
                 argv.push('--license-pool');
 
-                test.expect(1);
                 onboard.run(argv, testOptions, () => {
-                    test.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq, undefined);
-                    test.done();
+                    assert.strictEqual(functionsCalled.bigIp.onboard.licenseViaBigIq, undefined);
+                    done();
                 });
-            }
-        }
-    },
+            });
+        });
+    });
 
-
-    testProvision(test) {
+    it('provision test', (done) => {
         const module1 = 'module1:level1';
         const module2 = 'module2:level2';
 
         argv.push('--module', module1, '--module', module2);
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.deepEqual(functionsCalled.bigIp.onboard.provision[0],
+            assert.deepEqual(functionsCalled.bigIp.onboard.provision[0],
                 { module1: 'level1', module2: 'level2' });
-            test.done();
+            done();
         });
-    },
+    });
 
-    testProvisionMultiple(test) {
+    it('provision multiple test', (done) => {
         const modulesString = 'module1:level1,module2:level2';
 
         argv.push('--modules', modulesString);
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.deepEqual(functionsCalled.bigIp.onboard.provision[0],
+            assert.deepEqual(functionsCalled.bigIp.onboard.provision[0],
                 { module1: 'level1', module2: 'level2' });
-            test.done();
+            done();
         });
-    },
+    });
 
-    testInstallMultipleIlxPackages(test) {
+    it('install multiple ilx packages test', (done) => {
         const iapp = 'file:///dir/f5-iapp.rpm';
         const icontrol = 'file:///dir/f5-icontrol.rpm';
         argv.push('--install-ilx-package', iapp);
         argv.push('--install-ilx-package', icontrol);
 
-        test.expect(2);
         onboard.run(argv, testOptions, () => {
-            test.strictEqual(installIlxPackageParams[0], iapp);
-            test.strictEqual(installIlxPackageParams[1], icontrol);
-            test.done();
+            assert.strictEqual(installIlxPackageParams[0], iapp);
+            assert.strictEqual(installIlxPackageParams[1], icontrol);
+            done();
         });
-    },
+    });
 
-    testAsmSignatures(test) {
+    it('asm signatures test', (done) => {
         argv.push('--update-sigs');
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.strictEqual(functionsCalled.bigIp.create[0], '/tm/asm/tasks/update-signatures');
-            test.done();
+            assert.strictEqual(functionsCalled.bigIp.create[0], '/tm/asm/tasks/update-signatures');
+            done();
         });
-    },
+    });
 
-    testPing: {
-        testDefault(test) {
+    describe('ping tests', () => {
+        it('default test', (done) => {
             argv.push('--ping');
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.bigIp.ping[0], 'f5.com');
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.ping[0], 'f5.com');
+                done();
             });
-        },
+        });
 
-        testAddress(test) {
+        it('address test', (done) => {
             const address = 'www.foo.com';
 
             argv.push('--ping', address);
-            test.expect(1);
             onboard.run(argv, testOptions, () => {
-                test.strictEqual(functionsCalled.bigIp.ping[0], address);
-                test.done();
+                assert.strictEqual(functionsCalled.bigIp.ping[0], address);
+                done();
             });
-        }
-    },
-
-    testMetrics(test) {
-        argv.push('--metrics', 'key1:value1');
-        test.expect(2);
-        onboard.run(argv, testOptions, () => {
-            test.strictEqual(functionsCalled.metrics.upload[0].action, 'onboard');
-            test.strictEqual(functionsCalled.metrics.upload[0].key1, 'value1');
-            test.done();
         });
-    },
+    });
 
-    testActiveError(test) {
+    it('metrics test', (done) => {
+        argv.push('--metrics', 'key1:value1');
+        onboard.run(argv, testOptions, () => {
+            assert.strictEqual(functionsCalled.metrics.upload[0].action, 'onboard');
+            assert.strictEqual(functionsCalled.metrics.upload[0].key1, 'value1');
+            done();
+        });
+    });
+
+    it('active error test', (done) => {
         utilMock.reboot = () => {
             rebootCalled = true;
         };
@@ -1147,10 +1095,9 @@ module.exports = {
             return q.reject(new ActiveError('BIG-IP not active.'));
         };
 
-        test.expect(1);
         onboard.run(argv, testOptions, () => {
-            test.strictEqual(rebootCalled, true);
-            test.done();
+            assert.strictEqual(rebootCalled, true);
+            done();
         });
-    }
-};
+    });
+});

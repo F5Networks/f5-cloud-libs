@@ -17,31 +17,32 @@
 'use strict';
 
 const q = require('q');
+const assert = require('assert');
 const sharedConstants = require('../../lib/sharedConstants');
 
-const host = 'myHost';
-const user = 'myUser';
-const password = 'myPassword';
+describe('bigiq tests', () => {
+    const host = 'myHost';
+    const user = 'myUser';
+    const password = 'myPassword';
 
-const bigIqVersion = '5.2';
+    const bigIqVersion = '5.2';
 
-const poolName = 'mypool';
+    const poolName = 'mypool';
 
-let BigIq;
-let bigIq;
-let bigIqLicenseProviderFactoryMock;
-let authnMock;
-let icontrolMock;
-let utilMock;
-let revokeCalled;
+    let BigIq;
+    let bigIq;
+    let bigIqLicenseProviderFactoryMock;
+    let authnMock;
+    let icontrolMock;
+    let utilMock;
+    let revokeCalled;
 
-let licensingArgs;
-let apiTypeCalled;
-let gotByVersion;
-let authnOptionsSent;
+    let licensingArgs;
+    let apiTypeCalled;
+    let gotByVersion;
+    let authnOptionsSent;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         /* eslint-disable global-require */
         bigIqLicenseProviderFactoryMock = require('../../lib/bigIqLicenseProviderFactory');
 
@@ -91,85 +92,79 @@ module.exports = {
         BigIq = require('../../../f5-cloud-libs').bigIq;
         bigIq = new BigIq();
         bigIq.icontrol = icontrolMock;
+    });
 
-        callback();
-    },
-
-    tearDown(callback) {
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
+    });
 
-        callback();
-    },
-
-    testConstructor: {
-        testSetLogger(test) {
+    describe('constructor test', () => {
+        it('set logger test', (done) => {
             const logger = {
                 a: 1,
                 b: 2
             };
 
             bigIq = new BigIq({ logger });
-            test.deepEqual(bigIq.logger, logger);
-            test.done();
-        },
+            assert.deepEqual(bigIq.logger, logger);
+            done();
+        });
 
-        testLoggerOptions(test) {
+        it('set logger options test', (done) => {
             const loggerOptions = {
                 a: 1,
                 b: 2
             };
 
-            test.doesNotThrow(() => {
+            assert.doesNotThrow(() => {
                 // eslint-disable-next-line no-new
                 new BigIq({ loggerOptions });
             });
-            test.done();
-        }
-    },
+            done();
+        });
+    });
 
-    testInit: {
-        testBasic(test) {
-            test.expect(5);
+    describe('init test', () => {
+        it('basic test', (done) => {
             const port = 1111;
             bigIq.init(host, user, password, { port })
                 .then(() => {
-                    test.strictEqual(bigIq.host, host);
-                    test.strictEqual(bigIq.user, user);
-                    test.strictEqual(bigIq.version, bigIqVersion);
-                    test.strictEqual(icontrolMock.password, password);
-                    test.strictEqual(authnOptionsSent.port, port);
+                    assert.strictEqual(bigIq.host, host);
+                    assert.strictEqual(bigIq.user, user);
+                    assert.strictEqual(bigIq.version, bigIqVersion);
+                    assert.strictEqual(icontrolMock.password, password);
+                    assert.strictEqual(authnOptionsSent.port, port);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testGetVersionError(test) {
+        it('get version error test', (done) => {
             icontrolMock.fail('list',
                 '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version');
 
             utilMock.MEDIUM_RETRY = { maxRetries: 1, retryIntervalMs: 10 };
-            test.expect(1);
             bigIq.init(host, user, password)
                 .then(() => {
-                    test.ok(false, 'should have thrown init error');
+                    assert.ok(false, 'should have thrown init error');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testLicenseBigIp: {
-        setUp(callback) {
+    describe('license bigip test', () => {
+        beforeEach(() => {
             gotByVersion = false;
             licensingArgs = null;
             bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
@@ -191,30 +186,27 @@ module.exports = {
                     }
                 });
             };
+        });
 
-            callback();
-        },
-
-        testByVersion: {
-            testBasic(test) {
-                test.expect(2);
+        describe('by version test', () => {
+            it('basic test', (done) => {
                 bigIq.init('host', 'user', 'password')
                     .then(() => {
                         bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
                             .then(() => {
-                                test.strictEqual(gotByVersion, true);
-                                test.strictEqual(licensingArgs[1], poolName);
+                                assert.strictEqual(gotByVersion, true);
+                                assert.strictEqual(licensingArgs[1], poolName);
                             })
                             .catch(() => {
-                                test.ok(false, 'licensing by version failed');
+                                assert.ok(false, 'licensing by version failed');
                             })
                             .finally(() => {
-                                test.done();
+                                done();
                             });
                     });
-            },
+            });
 
-            testBadVersion(test) {
+            it('bad version test', (done) => {
                 bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
                     throw new Error('get by version failed');
                 };
@@ -223,21 +215,20 @@ module.exports = {
                     .then(() => {
                         bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
                             .then(() => {
-                                test.ok(false, 'getByVersion should have thrown');
+                                assert.ok(false, 'getByVersion should have thrown');
                             })
                             .catch((err) => {
-                                test.strictEqual(err.message, 'get by version failed');
+                                assert.strictEqual(err.message, 'get by version failed');
                             })
                             .finally(() => {
-                                test.done();
+                                done();
                             });
                     });
-            }
-        },
+            });
+        });
 
-        testByType: {
-            testReachable(test) {
-                test.expect(2);
+        describe('by type test', () => {
+            it('reachable test', (done) => {
                 bigIq.init('host', 'user', 'password')
                     .then(() => {
                         bigIq.licenseBigIp(
@@ -254,44 +245,42 @@ module.exports = {
                                 test.strictEqual(licensingArgs[1], poolName);
                             })
                             .catch(() => {
-                                test.ok(false, 'licensing by type failed');
+                                assert.ok(false, 'licensing by type failed');
                             })
                             .finally(() => {
-                                test.done();
+                                done();
                             });
                     });
-            },
+            });
 
-            testUnreachable(test) {
-                test.expect(2);
+            it('unreachable test', (done) => {
                 bigIq.init('host', 'user', 'password')
                     .then(() => {
                         bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
                             .then(() => {
-                                test.strictEqual(
+                                assert.strictEqual(
                                     apiTypeCalled,
                                     sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
                                 );
-                                test.strictEqual(licensingArgs[1], poolName);
+                                assert.strictEqual(licensingArgs[1], poolName);
                             })
                             .catch(() => {
-                                test.ok(false, 'licensing by type failed');
+                                assert.ok(false, 'licensing by type failed');
                             })
                             .finally(() => {
-                                test.done();
+                                done();
                             });
                     });
-            }
-        }
-    },
+            });
+        });
+    });
 
-    testRevokeLicense: {
-        setUp(callback) {
+    describe('revoke license test', () => {
+        beforeEach(() => {
             revokeCalled = false;
-            callback();
-        },
+        });
 
-        testBasic(test) {
+        it('basic test', (done) => {
             bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
                 return {
                     revoke() {
@@ -301,41 +290,39 @@ module.exports = {
                 };
             };
 
-            test.expect(1);
             bigIq.init('host', 'user', 'password')
                 .then(() => {
                     bigIq.revokeLicense()
                         .then(() => {
-                            test.strictEqual(revokeCalled, true);
+                            assert.strictEqual(revokeCalled, true);
                         })
                         .catch(() => {
-                            test.ok(false, 'reovoke failed');
+                            assert.ok(false, 'reovoke failed');
                         })
                         .finally(() => {
-                            test.done();
+                            done();
                         });
                 });
-        },
+        });
 
-        testBadVersion(test) {
+        it('bad version test', (done) => {
             bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
                 throw new Error('get by version failed');
             };
 
-            test.expect(1);
             bigIq.init('host', 'user', 'password')
                 .then(() => {
                     bigIq.revokeLicense()
                         .then(() => {
-                            test.ok(false, 'getByVersion should have thrown');
+                            assert.ok(false, 'getByVersion should have thrown');
                         })
                         .catch((err) => {
-                            test.strictEqual(err.message, 'get by version failed');
+                            assert.strictEqual(err.message, 'get by version failed');
                         })
                         .finally(() => {
-                            test.done();
+                            done();
                         });
                 });
-        }
-    }
-};
+        });
+    });
+});

@@ -15,15 +15,17 @@ cache:
         - node_modules/
 
 test_node4:
-    image: node:4.2.3
+    image: node:4
     tags:
         - docker-executor
     stage: test
     except:
         - triggers
     script:
-        - npm install -g npm@latest-4
+        - npm install --global npm@5.10.0
         - npm install --registry ${NPM_REGISTRY}
+        - npm install mocha@5.2.0
+        - npm install nyc@11.1.0
         - npm run lint
         - npm test
 
@@ -36,6 +38,8 @@ test_node6:
         - triggers
     script:
         - npm install --registry ${NPM_REGISTRY}
+        - npm install mocha@5.2.0
+        - npm install nyc@14.0.0
         - npm run lint
         - npm test
 
@@ -50,6 +54,32 @@ test_node8:
         - npm install --registry ${NPM_REGISTRY}
         - npm run lint
         - npm test
+
+# audit packages for vulnerabilities
+test_audit:
+  image: node:8
+  stage: test
+  script:
+    # npm audit - uses custom audit processor wrapper
+    - npm install
+    - npm run audit
+  tags:
+    - cm-official-docker-executor
+  except:
+    - triggers
+
+# run python tests
+test_python27:
+    image: python:2.7
+    stage: test
+    script:
+        # install packages
+        - pip install -U pip
+        - pip install -r requirements.txt
+        # run unit tests
+        - make unit_test
+    tags:
+        - cm-official-docker-executor
 
 update_hash:
     tags:

@@ -18,36 +18,37 @@
 
 const q = require('q');
 const fs = require('fs');
+const assert = require('assert');
 const icontrolMock = require('../testUtil/icontrolMock');
 
-let BigIp;
-let BigIq;
-let util;
-let authnMock;
-let cryptoUtilMock;
-let fsExistsSync;
-let bigIp;
-let bigIpMgmtAddressSent;
-let bigIpMgmtPortSent;
-let bigIqMgmtPortSent;
-let initCalled;
-let bigIpInit;
+describe('bigip onboard tests', () => {
+    let BigIp;
+    let BigIq;
+    let util;
+    let authnMock;
+    let cryptoUtilMock;
+    let fsExistsSync;
+    let bigIp;
+    let bigIpMgmtAddressSent;
+    let bigIpMgmtPortSent;
+    let bigIqMgmtPortSent;
+    let initCalled;
+    let bigIpInit;
 
-let poolNameSent;
-let instanceSent;
-let passwordSent;
-let optionsSent;
+    let poolNameSent;
+    let instanceSent;
+    let passwordSent;
+    let optionsSent;
 
-let runTaskParams;
+    let runTaskParams;
 
-let shellCommand;
-const sharedAuthnRootResponse = {
-    generation: 0,
-    lastUpdateMicros: 0
-};
+    let shellCommand;
+    const sharedAuthnRootResponse = {
+        generation: 0,
+        lastUpdateMicros: 0
+    };
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         /* eslint-disable global-require */
         util = require('../../../f5-cloud-libs').util;
         BigIp = require('../../../f5-cloud-libs').bigIp;
@@ -84,20 +85,17 @@ module.exports = {
             .then(() => {
                 bigIp.icontrol = icontrolMock;
                 icontrolMock.reset();
-                callback();
             });
-    },
+    });
 
-    tearDown(callback) {
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
+    });
 
-        callback();
-    },
-
-    testDbconsts: {
-        testBasic(test) {
+    describe('db consts tests', () => {
+        it('basic test', (done) => {
             const dbVars = {
                 foo: 'bar',
                 hello: 'world'
@@ -105,78 +103,72 @@ module.exports = {
 
             bigIp.onboard.setDbVars(dbVars)
                 .then(() => {
-                    test.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/db/foo').value, 'bar');
-                    test.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/db/hello').value, 'world');
+                    assert.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/db/foo').value, 'bar');
+                    assert.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/db/hello').value, 'world');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testInstallIlxPackage: {
-        setUp(callback) {
+    describe('install ilx package test', () => {
+        beforeEach(() => {
             fsExistsSync = fs.existsSync;
             fs.existsSync = function existsSync() { return true; };
-            callback();
-        },
+        });
 
-        testFileUri(test) {
+        afterEach(() => {
+            fs.existsSync = fsExistsSync;
+        });
+
+        it('file uri test', (done) => {
             const packageUri = 'file:///dir1/dir2/iapp.rpm';
 
-            test.expect(2);
             bigIp.onboard.installIlxPackage(packageUri)
                 .then(() => {
-                    test.strictEqual(runTaskParams[0], '/shared/iapp/package-management-tasks');
-                    test.deepEqual(runTaskParams[1], {
+                    assert.strictEqual(runTaskParams[0], '/shared/iapp/package-management-tasks');
+                    assert.deepEqual(runTaskParams[1], {
                         operation: 'INSTALL',
                         packageFilePath: '/dir1/dir2/iapp.rpm'
                     });
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testAlreadyInstalled(test) {
+        it('already installed test', (done) => {
             bigIp.runTask = function runTask() {
                 return q.reject(new Error('Package f5-appsvcs version 3.5.1-5 is already installed.'));
             };
             const packageUri = 'file:///dir1/dir2/iapp.rpm';
 
-            test.expect(1);
             bigIp.onboard.installIlxPackage(packageUri)
                 .then(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
+    });
 
-        tearDown(callback) {
-            fs.existsSync = fsExistsSync;
-
-            callback();
-        }
-    },
-
-    testGlobalSettings: {
-        setUp(callback) {
+    describe('global settings test', () => {
+        beforeEach(() => {
             icontrolMock.when('modify', '/tm/sys/global-settings', {});
-            callback();
-        },
+        });
 
-        testBasic(test) {
+        it('basic test', (done) => {
             const globalSettings = {
                 foo: 'bar',
                 hello: 'world'
@@ -184,19 +176,19 @@ module.exports = {
 
             bigIp.onboard.globalSettings(globalSettings)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                    test.strictEqual(icontrolMock.lastCall.path, '/tm/sys/global-settings');
-                    test.deepEqual(icontrolMock.lastCall.body, globalSettings);
+                    assert.strictEqual(icontrolMock.lastCall.method, 'modify');
+                    assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/global-settings');
+                    assert.deepEqual(icontrolMock.lastCall.body, globalSettings);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testHostName(test) {
+        it('hostname test', (done) => {
             const newHostname = 'myNewHostName';
             const globalSettings = {
                 hostname: newHostname,
@@ -220,20 +212,20 @@ module.exports = {
                         'modify', '/tm/sys/global-settings'
                     );
                     const deviceRequest = icontrolMock.getRequest('create', '/tm/cm/device');
-                    test.deepEqual(globalSettingsRequest, { foo: 'bar' });
-                    test.strictEqual(deviceRequest.target, newHostname);
+                    assert.deepEqual(globalSettingsRequest, { foo: 'bar' });
+                    assert.strictEqual(deviceRequest.target, newHostname);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testHostName: {
-        testChange(test) {
+    describe('hostname test', () => {
+        it('change test', (done) => {
             const oldHostname = 'yourOldHostname';
             const newHostname = 'myNewHostName';
 
@@ -254,32 +246,30 @@ module.exports = {
 
             bigIp.onboard.hostname(newHostname)
                 .then(() => {
-                    test.deepEqual(icontrolMock.getRequest(
+                    assert.deepEqual(icontrolMock.getRequest(
                         'create',
                         '/tm/cm/device'
-                    ),
-                    {
+                    ), {
                         command: 'mv',
                         name: oldHostname,
                         target: newHostname
                     });
-                    test.deepEqual(icontrolMock.getRequest(
+                    assert.deepEqual(icontrolMock.getRequest(
                         'modify',
                         '/tm/sys/global-settings'
-                    ),
-                    {
+                    ), {
                         hostname: newHostname
                     });
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoChange(test) {
+        it('no change test', (done) => {
             const oldHostname = 'myNewHostName';
             const newHostname = 'myNewHostName';
 
@@ -308,18 +298,20 @@ module.exports = {
 
             bigIp.onboard.hostname(newHostname)
                 .then(() => {
-                    test.strictEqual(icontrolMock.getRequest('create', '/tm/cm/device'), undefined);
-                    test.strictEqual(icontrolMock.getRequest('modify', '/tm/sys/global-settings'), undefined);
+                    assert.strictEqual(icontrolMock.getRequest('create', '/tm/cm/device'), undefined);
+                    assert.strictEqual(
+                        icontrolMock.getRequest('modify', '/tm/sys/global-settings'), undefined
+                    );
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testBadHostname(test) {
+        it('bad hostname test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/cm/device',
@@ -350,17 +342,17 @@ module.exports = {
 
             bigIp.onboard.hostname('foo')
                 .then(() => {
-                    test.ok(false, 'should have thrown bad hostname');
+                    assert.ok(false, 'should have thrown bad hostname');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testMissingSelfDevice(test) {
+        it('missing self device test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/cm/device',
@@ -373,28 +365,27 @@ module.exports = {
 
             bigIp.onboard.hostname('foo', util.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'should have thrown missing self device');
+                    assert.ok(false, 'should have thrown missing self device');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
-    },
+        });
+    });
 
-    testLicense: {
-        setUp(callback) {
+    describe('license test', () => {
+        beforeEach(() => {
             icontrolMock.when(
                 'create',
                 '/tm/sys/config',
                 {}
             );
-            callback();
-        },
+        });
 
-        testNotLicensed(test) {
+        it('not licensed test', (done) => {
             const regKey = '1234-5678-ABCD-EFGH';
 
             icontrolMock.when(
@@ -412,17 +403,19 @@ module.exports = {
 
             bigIp.onboard.license({ registrationKey: regKey })
                 .then(() => {
-                    test.strictEqual(icontrolMock.getRequest('create', '/tm/sys/license').command, 'install');
+                    assert.strictEqual(
+                        icontrolMock.getRequest('create', '/tm/sys/license').command, 'install'
+                    );
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testIdentical(test) {
+        it('identical test', (done) => {
             const regKey = '1234-5678-ABCD-EFGH';
             icontrolMock.when(
                 'list',
@@ -434,17 +427,17 @@ module.exports = {
 
             bigIp.onboard.license({ registrationKey: regKey })
                 .then((response) => {
-                    test.notStrictEqual(response.indexOf('Identical license'), -1);
+                    assert.notStrictEqual(response.indexOf('Identical license'), -1);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testAlreadyLicensed(test) {
+        it('already licensed test', (done) => {
             const oldRegKey = '1234-5678-ABCD-EFGH';
             const newRegKey = 'ABCD-EFGH-1234-5678';
 
@@ -465,17 +458,17 @@ module.exports = {
 
             bigIp.onboard.license({ registrationKey: newRegKey })
                 .then((response) => {
-                    test.notStrictEqual(response.indexOf('already licensed'), -1);
+                    assert.notStrictEqual(response.indexOf('already licensed'), -1);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testOverwrite(test) {
+        it('overwrite test', (done) => {
             const oldRegKey = '1234-5678-ABCD-EFGH';
             const newRegKey = 'ABCD-EFGH-1234-5678';
 
@@ -497,18 +490,18 @@ module.exports = {
             bigIp.onboard.license({ registrationKey: newRegKey, overwrite: true })
                 .then(() => {
                     const licenseRequest = icontrolMock.getRequest('create', '/tm/sys/license');
-                    test.strictEqual(licenseRequest.command, 'install');
-                    test.strictEqual(licenseRequest.registrationKey, newRegKey);
+                    assert.strictEqual(licenseRequest.command, 'install');
+                    assert.strictEqual(licenseRequest.registrationKey, newRegKey);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testLicenseFailure(test) {
+        it('license failure test', (done) => {
             const regKey = '1234-5678-ABCD-EFGH';
             const failureMessage = 'Foo foo';
 
@@ -527,17 +520,17 @@ module.exports = {
 
             bigIp.onboard.license({ registrationKey: regKey }, util.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Should have failed with license failure');
+                    assert.ok(false, 'Should have failed with license failure');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf(failureMessage), -1);
+                    assert.notStrictEqual(err.message.indexOf(failureMessage), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testAddOnKeys(test) {
+        it('addon keys test', (done) => {
             const addOnKeys = ['1234-5678'];
 
             icontrolMock.when(
@@ -556,33 +549,33 @@ module.exports = {
             bigIp.onboard.license({ addOnKeys })
                 .then(() => {
                     const licenseRequest = icontrolMock.getRequest('create', '/tm/sys/license');
-                    test.strictEqual(licenseRequest.command, 'install');
-                    test.deepEqual(licenseRequest.addOnKeys, addOnKeys);
+                    assert.strictEqual(licenseRequest.command, 'install');
+                    assert.deepEqual(licenseRequest.addOnKeys, addOnKeys);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoKeys(test) {
+        it('no keys test', (done) => {
             bigIp.onboard.license()
                 .then((response) => {
-                    test.notStrictEqual(response.indexOf('No registration key'), -1);
+                    assert.notStrictEqual(response.indexOf('No registration key'), -1);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testLicenseViaBigIq: {
-        setUp(callback) {
+    describe('license via bigiq test', () => {
+        beforeEach(() => {
             icontrolMock.when(
                 'create',
                 '/shared/authn/login',
@@ -607,28 +600,25 @@ module.exports = {
             });
 
             icontrolMock.when('list', '/tm/shared/licensing/registration', {});
+        });
 
-            callback();
-        },
-
-        testVersionTooOld(test) {
+        it('version too old test', (done) => {
             BigIq.prototype.version = '4.9.0';
-            test.expect(1);
 
             bigIp.onboard.licenseViaBigIq()
                 .then(() => {
-                    test.ok(false, 'Should have thrown version too old');
+                    assert.ok(false, 'Should have thrown version too old');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf('is only supported on BIG-IQ versions'), -1);
+                    assert.notStrictEqual(err.message.indexOf('is only supported on BIG-IQ versions'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCommon: {
-            setUp(callback) {
+        describe('common test', () => {
+            beforeEach(() => {
                 BigIq.prototype.version = '5.0.0';
                 BigIq.prototype.licenseBigIp = (poolName, bigIpMgmtAddress, bigIpMgmtPort) => {
                     bigIpMgmtAddressSent = bigIpMgmtAddress;
@@ -649,10 +639,9 @@ module.exports = {
                         }
                     ]
                 );
-                callback();
-            },
+            });
 
-            testGetsMgmtAddressFromDeviceInfo(test) {
+            it('gets mgmt address from device info test', (done) => {
                 icontrolMock.when(
                     'list',
                     '/shared/identified-devices/config/device-info',
@@ -662,32 +651,32 @@ module.exports = {
                 );
                 bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
                     .then(() => {
-                        test.strictEqual(bigIpMgmtAddressSent, 'bigIpMgmtAddressDeviceInfo');
+                        assert.strictEqual(bigIpMgmtAddressSent, 'bigIpMgmtAddressDeviceInfo');
                     })
                     .catch((err) => {
-                        test.ok(false, err.message);
+                        assert.ok(false, err.message);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testGetsMgmtAddressFromOptions(test) {
+            it('gets mgmt address from options test', (done) => {
                 bigIp.onboard.licenseViaBigIq(
                     'host', 'user', 'password', 'pool1', null, { bigIpMgmtAddress: 'bigIpMgmtAddressOptions' }
                 )
                     .then(() => {
-                        test.strictEqual(bigIpMgmtAddressSent, 'bigIpMgmtAddressOptions');
+                        assert.strictEqual(bigIpMgmtAddressSent, 'bigIpMgmtAddressOptions');
                     })
                     .catch((err) => {
-                        test.ok(false, err.message);
+                        assert.ok(false, err.message);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testGetsPortFromOptions(test) {
+            it('gets port from options test', (done) => {
                 const specifiedPort = '8787';
 
                 bigIp.onboard.licenseViaBigIq(
@@ -695,17 +684,17 @@ module.exports = {
                     { bigIpMgmtAddress: 'bigIpMgmtAddress', bigIpMgmtPort: specifiedPort }
                 )
                     .then(() => {
-                        test.strictEqual(bigIpMgmtPortSent, specifiedPort);
+                        assert.strictEqual(bigIpMgmtPortSent, specifiedPort);
                     })
                     .catch((err) => {
-                        test.ok(false, err.message);
+                        assert.ok(false, err.message);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testGetsBigIqPortFromOptions(test) {
+            it('gets bigip port from options test', (done) => {
                 const specifiedPort = '9898';
 
                 bigIp.onboard.licenseViaBigIq(
@@ -713,18 +702,18 @@ module.exports = {
                     { bigIpMgmtAddress: 'bigIpMgmtAddress', bigIqMgmtPort: specifiedPort }
                 )
                     .then(() => {
-                        test.strictEqual(bigIqMgmtPortSent, specifiedPort);
+                        assert.strictEqual(bigIqMgmtPortSent, specifiedPort);
                     })
                     .catch((err) => {
-                        test.ok(false, err.message);
+                        assert.ok(false, err.message);
                     })
                     .finally(() => {
-                        test.done();
+                        done();
                     });
-            },
+            });
 
-            testAlreadyLicensed: {
-                setUp(callback) {
+            describe('already licensed test', () => {
+                beforeEach(() => {
                     initCalled = false;
                     BigIq.prototype.init = () => {
                         initCalled = true;
@@ -738,43 +727,41 @@ module.exports = {
                             registrationKey: 'foo'
                         }
                     );
+                });
 
-                    callback();
-                },
-
-                testNoOverwrite(test) {
+                it('no overwrite test', (done) => {
                     bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'poolName')
                         .then(() => {
-                            test.strictEqual(initCalled, false);
+                            assert.strictEqual(initCalled, false);
                         })
                         .catch((err) => {
-                            test.ok(false, err);
+                            assert.ok(false, err);
                         })
                         .finally(() => {
-                            test.done();
+                            done();
                         });
-                },
+                });
 
-                testOverwrite(test) {
+                it('overwrite test', (done) => {
                     bigIp.onboard.licenseViaBigIq(
                         'host', 'user', 'password', 'poolName', null, { overwrite: true }
                     )
                         .then(() => {
-                            test.strictEqual(initCalled, true);
+                            assert.strictEqual(initCalled, true);
                         })
                         .catch((err) => {
-                            test.ok(false, err);
+                            assert.ok(false, err);
                         })
                         .finally(() => {
-                            test.done();
+                            done();
                         });
-                }
-            }
-        }
-    },
+                });
+            });
+        });
+    });
 
-    testRevokeLicenseViaBigIq: {
-        setUp(callback) {
+    describe('revoke license via bigiq test', () => {
+        beforeEach(() => {
             BigIq.prototype.init = () => {
                 return q();
             };
@@ -783,10 +770,9 @@ module.exports = {
                 instanceSent = instance;
                 return q();
             };
-            callback();
-        },
+        });
 
-        testBasic(test) {
+        it('basic test', (done) => {
             const hostname = 'myHostname';
             const machineId = 'myMachineId';
             const hostMac = 'myMacAddress';
@@ -802,60 +788,59 @@ module.exports = {
                 }
             );
 
-            test.expect(4);
             bigIp.onboard.revokeLicenseViaBigIq('host', 'user', 'password', poolName)
                 .then(() => {
-                    test.strictEqual(poolNameSent, poolName);
-                    test.strictEqual(instanceSent.hostname, hostname);
-                    test.strictEqual(instanceSent.machineId, machineId);
-                    test.strictEqual(instanceSent.macAddress, hostMac);
+                    assert.strictEqual(poolNameSent, poolName);
+                    assert.strictEqual(instanceSent.hostname, hostname);
+                    assert.strictEqual(instanceSent.machineId, machineId);
+                    assert.strictEqual(instanceSent.macAddress, hostMac);
                 })
                 .catch((err) => {
-                    test.ok(false, err);
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testFailure(test) {
+        it('failure test', (done) => {
             const errorMessage = 'this is my error';
             BigIq.prototype.revokeLicense = () => {
                 return q.reject(new Error(errorMessage));
             };
             bigIp.onboard.revokeLicenseViaBigIq('host', 'user', 'password', 'poolName')
                 .then(() => {
-                    test.ok(false, 'Revoke should have thrown');
+                    assert.ok(false, 'Revoke should have thrown');
                 })
                 .catch((err) => {
-                    test.notStrictEqual(err.message.indexOf(errorMessage), -1);
+                    assert.notStrictEqual(err.message.indexOf(errorMessage), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testPassword: {
-        testNonRoot(test) {
+    describe('password test', () => {
+        it('non root test', (done) => {
             const user = 'someuser';
             const newPassword = 'abc123';
 
             bigIp.onboard.password(user, newPassword)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'modify');
-                    test.strictEqual(icontrolMock.lastCall.path, `/tm/auth/user/${user}`);
-                    test.strictEqual(icontrolMock.lastCall.body.password, newPassword);
+                    assert.strictEqual(icontrolMock.lastCall.method, 'modify');
+                    assert.strictEqual(icontrolMock.lastCall.path, `/tm/auth/user/${user}`);
+                    assert.strictEqual(icontrolMock.lastCall.body.password, newPassword);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRoot(test) {
+        it('root test', (done) => {
             const user = 'root';
             const newPassword = 'abc123';
             const oldPassword = 'def456';
@@ -870,34 +855,34 @@ module.exports = {
 
             bigIp.onboard.password(user, newPassword, oldPassword)
                 .then(() => {
-                    test.strictEqual(passedNewPassword, newPassword);
-                    test.strictEqual(passedOldPassword, oldPassword);
+                    assert.strictEqual(passedNewPassword, newPassword);
+                    assert.strictEqual(passedOldPassword, oldPassword);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCurrentUser(test) {
+        it('current user test', (done) => {
             const user = 'user';
             const newPassword = 'abc123';
 
             bigIp.onboard.password(user, newPassword)
                 .then(() => {
-                    test.strictEqual(bigIp.password, newPassword);
+                    assert.strictEqual(bigIp.password, newPassword);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testFailure(test) {
+        it('failure test', (done) => {
             const user = 'someuser';
             const newPassword = 'abc123';
 
@@ -905,19 +890,19 @@ module.exports = {
 
             bigIp.onboard.password(user, newPassword, null, util.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Should have failed');
+                    assert.ok(false, 'Should have failed');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testSetRootPassword: {
-        setUp(callback) {
+    describe('set root password test', () => {
+        beforeEach(() => {
             util.runShellCommand = function runTmshCommand() {
                 shellCommand = arguments[0];
                 return q();
@@ -931,77 +916,77 @@ module.exports = {
                 '/shared/authn/root',
                 sharedAuthnRootResponse
             );
+        });
 
-            callback();
-        },
-
-        tearDown(callback) {
+        afterEach(() => {
             shellCommand = undefined;
-            callback();
-        },
+        });
 
-        testNoOldRootPassword(test) {
+        it('no old root password test', (done) => {
             bigIp.onboard.setRootPassword('rootPassword', undefined, { enableRoot: true })
                 .then(() => {
-                    test.deepEqual(
+                    assert.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         { value: 'false' }
                     );
-                    test.strictEqual(
+                    assert.strictEqual(
                         shellCommand,
                         'echo -e "randombytes\nrandombytes" | passwd root'
                     );
-                    test.deepEqual(
+                    assert.deepEqual(
                         icontrolMock.getRequest('create', '/shared/authn/root'),
                         { oldPassword: 'randombytes', newPassword: 'rootPassword' }
                     );
-                }).catch((err) => {
-                    test.ok(false, err);
+                })
+                .catch((err) => {
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testOldRootPassword(test) {
+        it('old root password test', (done) => {
             bigIp.onboard.setRootPassword('rootPassword', 'myOldPassword', { enableRoot: true })
                 .then(() => {
-                    test.deepEqual(
+                    assert.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         { value: 'false' }
                     );
-                    test.strictEqual(shellCommand, undefined);
-                    test.deepEqual(
+                    assert.strictEqual(shellCommand, undefined);
+                    assert.deepEqual(
                         icontrolMock.getRequest('create', '/shared/authn/root'),
                         { oldPassword: 'myOldPassword', newPassword: 'rootPassword' }
                     );
-                }).catch((err) => {
-                    test.ok(false, err);
+                })
+                .catch((err) => {
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNotEnablingRoot(test) {
+        it('not enabling root test', (done) => {
             bigIp.onboard.setRootPassword('rootPassword', undefined, { enableRoot: false })
                 .then(() => {
-                    test.ok(true);
-                    test.strictEqual(
+                    assert.ok(true);
+                    assert.strictEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         undefined
                     );
-                }).catch((err) => {
-                    test.ok(false, err);
+                })
+                .catch((err) => {
+                    assert.ok(false, err);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testProvision: {
-        setUp(callback) {
+    describe('provision test', () => {
+        beforeEach(() => {
             const TRANSACTION_PATH = '/tm/transaction/';
             const TRANSACTION_ID = '1234';
 
@@ -1039,11 +1024,9 @@ module.exports = {
                     }
                 }
             );
+        });
 
-            callback();
-        },
-
-        testBasic(test) {
+        it('basic test', (done) => {
             const provisionSettings = {
                 mod1: 'level2',
                 mod2: 'level2'
@@ -1066,7 +1049,7 @@ module.exports = {
 
             bigIp.onboard.provision(provisionSettings)
                 .then(() => {
-                    test.deepEqual(
+                    assert.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
                         {
                             level: 'level2'
@@ -1074,14 +1057,14 @@ module.exports = {
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNotProvisionable(test) {
+        it('not provisionable test', (done) => {
             const provisionSettings = {
                 foo: 'bar'
             };
@@ -1099,18 +1082,18 @@ module.exports = {
 
             bigIp.onboard.provision(provisionSettings, util.NO_RETRY)
                 .then(() => {
-                    test.ok(false, 'Should have thrown as not provisionable.');
+                    assert.ok(false, 'Should have thrown as not provisionable.');
                 })
                 .catch((err) => {
-                    test.notEqual(err.message.indexOf('foo'), -1);
-                    test.notEqual(err.message.indexOf('not provisionable'), -1);
+                    assert.notEqual(err.message.indexOf('foo'), -1);
+                    assert.notEqual(err.message.indexOf('not provisionable'), -1);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNoActiveCheck(test) {
+        it('no active check test', (done) => {
             const provisionSettings = {
                 mod1: 'level2'
             };
@@ -1146,7 +1129,7 @@ module.exports = {
 
             bigIp.onboard.provision(provisionSettings, { checkActive: false })
                 .then(() => {
-                    test.deepEqual(
+                    assert.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
                         {
                             level: 'level2'
@@ -1154,16 +1137,16 @@ module.exports = {
                     );
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testSslPort: {
-        setUp(callback) {
+    describe('ssl port test', () => {
+        beforeEach(() => {
             icontrolMock.when(
                 'list',
                 '/tm/net/self-allow',
@@ -1173,55 +1156,54 @@ module.exports = {
                     ]
                 }
             );
-            callback();
-        },
+        });
 
-        testBasic(test) {
+        it('basic test', (done) => {
             const portToAdd = 456;
             bigIp.onboard.sslPort(portToAdd, null, true)
                 .then(() => {
                     const httpdRequest = icontrolMock.getRequest('modify', '/tm/sys/httpd');
-                    test.strictEqual(httpdRequest.sslPort, portToAdd);
+                    assert.strictEqual(httpdRequest.sslPort, portToAdd);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testNotInDefaults(test) {
+        it('not in defaults test', (done) => {
             const portToAdd = 456;
             bigIp.onboard.sslPort(portToAdd, null, true)
                 .then(() => {
                     const newDefaults = icontrolMock.getRequest('modify', '/tm/net/self-allow').defaults;
-                    test.notStrictEqual(newDefaults.indexOf(`tcp:${portToAdd}`), -1);
-                    test.notStrictEqual(newDefaults.indexOf('tcp:123'), -1);
+                    assert.notStrictEqual(newDefaults.indexOf(`tcp:${portToAdd}`), -1);
+                    assert.notStrictEqual(newDefaults.indexOf('tcp:123'), -1);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testAlreadyInDefaults(test) {
+        it('already in defaults test', (done) => {
             const portToAdd = 123;
             bigIp.onboard.sslPort(portToAdd, null, true)
                 .then(() => {
-                    test.strictEqual(icontrolMock.lastCall.method, 'list');
+                    assert.strictEqual(icontrolMock.lastCall.method, 'list');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRemove443(test) {
+        it('remove 443 test', (done) => {
             const portToAdd = 456;
 
             icontrolMock.when(
@@ -1237,17 +1219,17 @@ module.exports = {
             bigIp.onboard.sslPort(portToAdd, null, true)
                 .then(() => {
                     const newDefaults = icontrolMock.getRequest('modify', '/tm/net/self-allow').defaults;
-                    test.strictEqual(newDefaults.indexOf('tcp:443'), -1);
+                    assert.strictEqual(newDefaults.indexOf('tcp:443'), -1);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCatchUnknownError8(test) {
+        it('catch unknown error 8 test', (done) => {
             icontrolMock.fail(
                 'modify',
                 '/tm/net/self-allow',
@@ -1258,22 +1240,21 @@ module.exports = {
             );
             const portToAdd = 443;
 
-            test.expect(2);
             bigIp.onboard.sslPort(portToAdd, null, true)
                 .then((response) => {
                     const httpdRequest = icontrolMock.getRequest('modify', '/tm/sys/httpd');
-                    test.strictEqual(httpdRequest.sslPort, portToAdd);
-                    test.strictEqual(response, `Unable to add port "${portToAdd}" to self allow defaults`);
+                    assert.strictEqual(httpdRequest.sslPort, portToAdd);
+                    assert.strictEqual(response, `Unable to add port "${portToAdd}" to self allow defaults`);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testRejectErrors(test) {
+        it('reject errors test', (done) => {
             const message = '"defaults" invalid entry "tcp:invalidPort", invalid port';
             icontrolMock.fail(
                 'modify',
@@ -1286,19 +1267,19 @@ module.exports = {
 
             bigIp.onboard.sslPort(443, null, true)
                 .then(() => {
-                    test.ok(false);
+                    assert.ok(false);
                 })
                 .catch((err) => {
-                    test.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        }
-    },
+        });
+    });
 
-    testUpdateUser: {
-        setUp(callback) {
+    describe('update user test', () => {
+        beforeEach(() => {
             bigIpInit = BigIp.prototype.init;
 
             // Overwrite init because otherwise the real init creates
@@ -1308,16 +1289,13 @@ module.exports = {
                 optionsSent = options;
                 return q();
             };
+        });
 
-            callback();
-        },
-
-        tearDown(callback) {
+        afterEach(() => {
             BigIp.prototype.init = bigIpInit;
-            callback();
-        },
+        });
 
-        testCreate(test) {
+        it('create test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/auth/user',
@@ -1330,19 +1308,19 @@ module.exports = {
             bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
                 .then(() => {
                     const userParams = icontrolMock.getRequest('create', '/tm/auth/user');
-                    test.strictEqual(userParams.name, 'myUser');
-                    test.strictEqual(userParams.password, 'myPass');
-                    test.strictEqual(userParams['partition-access']['all-partitions'].role, 'myRole');
+                    assert.strictEqual(userParams.name, 'myUser');
+                    assert.strictEqual(userParams.password, 'myPass');
+                    assert.strictEqual(userParams['partition-access']['all-partitions'].role, 'myRole');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCreateOnBigIq(test) {
+        it('create on bigiq test', (done) => {
             icontrolMock.when(
                 'list',
                 '/shared/authz/users',
@@ -1358,19 +1336,19 @@ module.exports = {
             bigIp.onboard.updateUser('myUser', 'myPass', 'myRole')
                 .then(() => {
                     const userParams = icontrolMock.getRequest('create', '/shared/authz/users');
-                    test.strictEqual(userParams.name, 'myUser');
-                    test.strictEqual(userParams.password, 'myPass');
-                    test.strictEqual(userParams['partition-access']['all-partitions'].role, 'myRole');
+                    assert.strictEqual(userParams.name, 'myUser');
+                    assert.strictEqual(userParams.password, 'myPass');
+                    assert.strictEqual(userParams['partition-access']['all-partitions'].role, 'myRole');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCreateNoExistingUsers(test) {
+        it('create no existing users test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/auth/user',
@@ -1379,20 +1357,20 @@ module.exports = {
             bigIp.onboard.updateUser('myUser', 'myPass', 'myRole', 'myShell')
                 .then(() => {
                     const userParams = icontrolMock.getRequest('create', '/tm/auth/user');
-                    test.strictEqual(userParams.name, 'myUser');
-                    test.strictEqual(userParams.password, 'myPass');
-                    test.strictEqual(userParams.shell, 'myShell');
-                    test.strictEqual(userParams['partition-access']['all-partitions'].role, 'myRole');
+                    assert.strictEqual(userParams.name, 'myUser');
+                    assert.strictEqual(userParams.password, 'myPass');
+                    assert.strictEqual(userParams.shell, 'myShell');
+                    assert.strictEqual(userParams['partition-access']['all-partitions'].role, 'myRole');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testCreateNoRole(test) {
+        it('create no role test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/auth/user',
@@ -1404,17 +1382,17 @@ module.exports = {
             );
             bigIp.onboard.updateUser('myUser', 'myPass')
                 .then(() => {
-                    test.ok(false, 'Should have thrown that we are creating with no role.');
+                    assert.ok(false, 'Should have thrown that we are creating with no role.');
                 })
                 .catch(() => {
-                    test.ok(true);
+                    assert.ok(true);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testUpdate(test) {
+        it('update test', (done) => {
             icontrolMock.when(
                 'list',
                 '/tm/auth/user',
@@ -1427,20 +1405,20 @@ module.exports = {
             bigIp.onboard.updateUser('myUser', 'myPass', 'myRole', 'bash')
                 .then(() => {
                     const userParams = icontrolMock.getRequest('modify', '/tm/auth/user/myUser');
-                    test.strictEqual(userParams.name, undefined);
-                    test.strictEqual(userParams.password, 'myPass');
-                    test.strictEqual(userParams['partition-access'], undefined);
-                    test.strictEqual(userParams.shell, 'bash');
+                    assert.strictEqual(userParams.name, undefined);
+                    assert.strictEqual(userParams.password, 'myPass');
+                    assert.strictEqual(userParams['partition-access'], undefined);
+                    assert.strictEqual(userParams.shell, 'bash');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testUpdateCurrent(test) {
+        it('update current test', (done) => {
             const init = BigIp.prototype.init;
 
             icontrolMock.when(
@@ -1454,19 +1432,19 @@ module.exports = {
             );
             bigIp.onboard.updateUser('user', 'myPass')
                 .then(() => {
-                    test.strictEqual(passwordSent, 'myPass');
-                    test.strictEqual(optionsSent.port, 443);
+                    assert.strictEqual(passwordSent, 'myPass');
+                    assert.strictEqual(optionsSent.port, 443);
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
                     BigIp.prototype.init = init;
-                    test.done();
+                    done();
                 });
-        },
+        });
 
-        testUpdateWithPasswordUrl(test) {
+        it('update with password url test', (done) => {
             const fsMock = require('fs');
             const realReadFile = fsMock.readFile;
 
@@ -1486,15 +1464,15 @@ module.exports = {
             bigIp.onboard.updateUser('myUser', 'file:///foo/bar', 'myRole', null, { passwordIsUrl: true })
                 .then(() => {
                     const userParams = icontrolMock.getRequest('modify', '/tm/auth/user/myUser');
-                    test.strictEqual(userParams.password, 'myPass');
+                    assert.strictEqual(userParams.password, 'myPass');
                 })
                 .catch((err) => {
-                    test.ok(false, err.message);
+                    assert.ok(false, err.message);
                 })
                 .finally(() => {
                     fsMock.readFile = realReadFile;
-                    test.done();
+                    done();
                 });
-        }
-    }
-};
+        });
+    });
+});

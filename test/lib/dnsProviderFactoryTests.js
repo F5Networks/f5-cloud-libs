@@ -16,22 +16,16 @@
 
 'use strict';
 
+const assert = require('assert');
+
 const dnsProviderFactory = require('../../../f5-cloud-libs').dnsProviderFactory;
 
-module.exports = {
-    testSupported(test) {
-        test.expect(1);
-        test.doesNotThrow(() => {
-            dnsProviderFactory.getDnsProvider('gtm');
-        });
-        test.done();
-    },
+describe('DNS Provider Factory Unit Tests', () => {
+    it('should support gtm', () => {
+        assert(dnsProviderFactory.getDnsProvider('gtm'));
+    });
 
-    testNotSupported(test) {
-        test.expect(1);
-        test.throws(() => {
-            dnsProviderFactory.getDnsProvider('foo');
-        });
-        test.done();
-    }
-};
+    it('should not support foo', () => {
+        assert.throws(() => { dnsProviderFactory.getDnsProvider('foo'); });
+    });
+});

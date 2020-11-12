@@ -18,16 +18,17 @@
 
 const q = require('q');
 const uuid = require('uuid5');
+const assert = require('assert');
 const httpUtil = require('../../../f5-cloud-libs').httpUtil;
 const metricsCollector = require('../../../f5-cloud-libs').metricsCollector;
 
-const eseAnalyticsUrl = 'http://www.example.com/';
+describe('Metrics Collector Unit Tests', () => {
+    const eseAnalyticsUrl = 'http://www.example.com/';
 
-let googleAnalyticsCalledBody = '';
-let eseAnalyticsCalledBody = '';
+    let googleAnalyticsCalledBody = '';
+    let eseAnalyticsCalledBody = '';
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         httpUtil.post = (url, options) => {
             if (url === eseAnalyticsUrl) {
                 eseAnalyticsCalledBody = options.body;
@@ -41,18 +42,14 @@ module.exports = {
                 primaryEndpoint: eseAnalyticsUrl
             });
         };
-
-        callback();
-    },
-
-    tearDown(callback) {
+    });
+    afterEach(() => {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
+    });
 
-    testBasic(test) {
+    it('basic test', (done) => {
         const metrics = {
             customerId: 'myCustomerId',
             action: 'myAction',
@@ -102,21 +99,21 @@ module.exports = {
 
         metricsCollector.upload(metrics)
             .then(() => {
-                test.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
+                assert.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
 
                 // replace with actual timestamp first
                 eseAnalyticsObject.metadata.timestamp = eseAnalyticsCalledBody.metadata.timestamp;
-                test.deepEqual(eseAnalyticsCalledBody, eseAnalyticsObject);
+                assert.deepStrictEqual(eseAnalyticsCalledBody, eseAnalyticsObject);
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testDataTruncated(test) {
+    it('truncated data test', (done) => {
         const metrics = {
             customerId: 'myCustomerId',
             region: '012345678901234567890123456789012345678901234567891'
@@ -131,27 +128,27 @@ module.exports = {
 
         metricsCollector.upload(metrics)
             .then(() => {
-                test.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
+                assert.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
             })
             .catch((err) => {
-                test.ok(false, err);
+                assert.ok(false, err);
             })
             .finally(() => {
-                test.done();
+                done();
             });
-    },
+    });
 
-    testSetLogger: ((test) => {
-        test.doesNotThrow(() => {
+    it('set logger test', (done) => {
+        assert.doesNotThrow(() => {
             metricsCollector.setLogger({});
         });
-        test.done();
-    }),
+        done();
+    });
 
-    testSetLoggerOptions(test) {
-        test.doesNotThrow(() => {
+    it('set logger options', (done) => {
+        assert.doesNotThrow(() => {
             metricsCollector.setLoggerOptions({});
         });
-        test.done();
-    }
-};
+        done();
+    });
+});

@@ -16,16 +16,17 @@
 
 'use strict';
 
-const Module = require('module');
 const path = require('path');
+const assert = require('assert');
+const Module = require('module');
 const cloudProviderFactory = require('../../../f5-cloud-libs').cloudProviderFactory;
 
-let realResolve;
-let constructorCalled;
-let calledPath;
+describe('Cloud Provider Factory Unit Tests', () => {
+    let realResolve;
+    let constructorCalled;
+    let calledPath;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         // eslint-disable-next-line no-underscore-dangle
         realResolve = Module._resolveFilename;
         constructorCalled = false;
@@ -35,16 +36,14 @@ module.exports = {
             calledPath = arguments[0];
             return calledPath;
         };
-        callback();
-    },
+    });
 
-    tearDown(callback) {
+    afterEach(() => {
         // eslint-disable-next-line no-underscore-dangle
         Module._resolveFilename = realResolve;
-        callback();
-    },
+    });
 
-    testSupported: (test) => {
+    it('should only work for supported providers', (done) => {
         const providerName = 'foo';
         const requestedFile = path.normalize(`${__dirname}/../../../f5-cloud-libs-${providerName}/index.js`);
 
@@ -53,7 +52,6 @@ module.exports = {
             return requestedFile;
         };
 
-        test.expect(2);
         require.cache[requestedFile] = {
             exports: {
                 provider: function provider() {
@@ -61,14 +59,12 @@ module.exports = {
                 }
             }
         };
-        test.doesNotThrow(() => {
-            cloudProviderFactory.getCloudProvider(providerName);
-        });
-        test.ok(constructorCalled, 'constructor was not called');
-        test.done();
-    },
+        assert(cloudProviderFactory.getCloudProvider(providerName));
+        assert.ok(constructorCalled, 'constructor was not called');
+        done();
+    });
 
-    testMatchAzureStorage(test) {
+    it('should match azure storage', (done) => {
         const expectedPath = '../../f5-cloud-libs-azure';
         require.cache[expectedPath] = {
             exports: {
@@ -78,19 +74,17 @@ module.exports = {
             }
         };
 
-        test.expect(3);
-        test.doesNotThrow(() => {
-            const matchOptions = {
-                storageUri: 'https://testing.blob.core.windows.net/container/file.text'
-            };
-            cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
-        });
-        test.ok(constructorCalled, 'constructor was not called');
-        test.strictEqual(calledPath, expectedPath);
-        test.done();
-    },
+        const matchOptions = {
+            storageUri: 'https://testing.blob.core.windows.net/container/file.text'
+        };
+        cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
 
-    testMatchAWSStorage(test) {
+        assert.ok(constructorCalled, 'constructor was not called');
+        assert.strictEqual(calledPath, expectedPath);
+        done();
+    });
+
+    it('should match aws storage', (done) => {
         const expectedPath = '../../f5-cloud-libs-aws';
         require.cache[expectedPath] = {
             exports: {
@@ -99,20 +93,17 @@ module.exports = {
                 }
             }
         };
+        const matchOptions = {
+            storageUri: 'arn:::foo:bar/password'
+        };
+        cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
 
-        test.expect(3);
-        test.doesNotThrow(() => {
-            const matchOptions = {
-                storageUri: 'arn:::foo:bar/password'
-            };
-            cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
-        });
-        test.ok(constructorCalled, 'constructor was not called');
-        test.strictEqual(calledPath, expectedPath);
-        test.done();
-    },
+        assert.ok(constructorCalled, 'constructor was not called');
+        assert.strictEqual(calledPath, expectedPath);
+        done();
+    });
 
-    testMatchGCEStorage(test) {
+    it('should match gce storage', (done) => {
         const expectedPath = '../../f5-cloud-libs-gce';
         require.cache[expectedPath] = {
             exports: {
@@ -122,23 +113,20 @@ module.exports = {
             }
         };
 
-        test.expect(3);
-        test.doesNotThrow(() => {
-            const matchOptions = {
-                storageUri: 'gs://myBucket/myFilename'
-            };
-            cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
-        });
-        test.ok(constructorCalled, 'constructor was not called');
-        test.strictEqual(calledPath, expectedPath);
-        test.done();
-    },
+        const matchOptions = {
+            storageUri: 'gs://myBucket/myFilename'
+        };
+        cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
 
-    testNotSupported(test) {
-        test.expect(1);
-        test.throws(() => {
+        assert.ok(constructorCalled, 'constructor was not called');
+        assert.strictEqual(calledPath, expectedPath);
+        done();
+    });
+
+    it('should not work for unsupported cloud providers', (done) => {
+        assert.throws(() => {
             cloudProviderFactory.getCloudProvider('bar');
         });
-        test.done();
-    }
-};
+        done();
+    });
+});

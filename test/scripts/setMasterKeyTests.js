@@ -19,42 +19,42 @@
 /* eslint-disable no-console */
 
 const q = require('q');
+const assert = require('assert');
 const CloudProvider = require('../../lib/cloudProvider');
 const BACKUP = require('../../lib/sharedConstants').BACKUP;
 const util = require('util');
 
-let argv;
-let setMasterKey;
-let BigIp;
-let bigIpMock;
-let fsMock;
-let cloudUtilMock;
-let icontrolMock;
-let providerMock;
-let cloudProviderFactoryMock;
-let existsSync;
-let mkdirSync;
-let writeFile;
-let testOptions;
+describe('onboard tests', () => {
+    let argv;
+    let setMasterKey;
+    let BigIp;
+    let bigIpMock;
+    let fsMock;
+    let cloudUtilMock;
+    let icontrolMock;
+    let providerMock;
+    let cloudProviderFactoryMock;
+    let existsSync;
+    let mkdirSync;
+    let writeFile;
+    let testOptions;
 
-util.inherits(ProviderMock, CloudProvider);
-function ProviderMock() {
-    ProviderMock.super_.call(this);
-    this.functionCalls = {};
-}
+    util.inherits(ProviderMock, CloudProvider);
+    function ProviderMock() {
+        ProviderMock.super_.call(this);
+        this.functionCalls = {};
+    }
 
-ProviderMock.prototype.init = function init() {
-    this.functionCalls.init = arguments;
-    return q();
-};
+    ProviderMock.prototype.init = function init() {
+        this.functionCalls.init = arguments;
+        return q();
+    };
 
-ProviderMock.prototype.getStoredUcs = function getStoredUcs() {
-    return q(true);
-};
+    ProviderMock.prototype.getStoredUcs = function getStoredUcs() {
+        return q(true);
+    };
 
-
-module.exports = {
-    setUp(callback) {
+    beforeEach((done) => {
         console.log = function log() {
         };
         /* eslint-disable global-require */
@@ -96,24 +96,24 @@ module.exports = {
                 bigIpMock.ready = () => {
                     return q();
                 };
-                callback();
+                done();
             });
         existsSync = fsMock.existsSync;
         mkdirSync = fsMock.mkdirSync;
         writeFile = fsMock.wrwriteFile;
         argv = ['node', 'setMasterKey', '--log-level', 'none'];
-    },
+    });
 
-    tearDown(callback) {
+    afterEach(() => {
         fsMock.existsSync = existsSync;
         fsMock.mkdirSync = mkdirSync;
         fsMock.writeFile = writeFile;
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
-    normalExecuteCase(test) {
+    });
+
+    it('normal execute test', (done) => {
         const validationResults = {};
         argv.push(
             '--cloud',
@@ -166,33 +166,32 @@ module.exports = {
         bigIpMock.ready = () => {
             return q();
         };
-        test.expect(11);
         setMasterKey.run(argv, testOptions, () => {})
             .then(() => {
-                test.strictEqual(
+                assert.strictEqual(
                     validationResults.cloudUtilMock.readDataFromFile[0],
                     `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsContent${BACKUP.PRIMARY_KEY_DIR}`
                 );
-                test.strictEqual(validationResults.cloudUtilMock.readDataFromFile[1],
+                assert.strictEqual(validationResults.cloudUtilMock.readDataFromFile[1],
                     `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsContent${BACKUP.UNIT_KEY_DIR}`);
-                test.strictEqual(validationResults.cloudUtilMock.runShellCommand[0],
+                assert.strictEqual(validationResults.cloudUtilMock.runShellCommand[0],
                     'bigstart stop');
-                test.strictEqual(validationResults.cloudUtilMock.runShellCommand[1],
+                assert.strictEqual(validationResults.cloudUtilMock.runShellCommand[1],
                     `tar --warning=no-timestamp -xf ${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/temp.ucs ` +
                     `-C ${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/ucsContent/`);
-                test.strictEqual(validationResults.cloudUtilMock.runShellCommand[2], 'bigstart start');
-                test.strictEqual(validationResults.cloudUtilMock.runShellCommand[3],
+                assert.strictEqual(validationResults.cloudUtilMock.runShellCommand[2], 'bigstart start');
+                assert.strictEqual(validationResults.cloudUtilMock.runShellCommand[3],
                     'bigstart restart dhclient');
-                test.strictEqual(validationResults.fsMock.existsSync[0],
+                assert.strictEqual(validationResults.fsMock.existsSync[0],
                     '/var/log/cloudlibs');
-                test.strictEqual(validationResults.fsMock.mkdirSync[0],
+                assert.strictEqual(validationResults.fsMock.mkdirSync[0],
                     `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}`);
-                test.strictEqual(validationResults.fsMock.mkdirSync[1],
+                assert.strictEqual(validationResults.fsMock.mkdirSync[1],
                     '/shared/tmp/ucs/ucsContent/');
-                test.strictEqual(validationResults.fsMock.writeFile[0].p,
+                assert.strictEqual(validationResults.fsMock.writeFile[0].p,
                     `${BACKUP.UCS_LOCAL_TMP_DIRECTORY}/temp.ucs`);
-                test.strictEqual(true, true);
-                test.done();
+                assert.strictEqual(true, true);
+                done();
             });
-    }
-};
+    });
+});

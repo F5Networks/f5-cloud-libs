@@ -17,22 +17,23 @@
 'use strict';
 
 const q = require('q');
+const assert = require('assert');
 const signals = require('../../lib/signals');
 
-let fsMock;
-let cpMock;
-let ipcMock;
-let utilMock;
-let argv;
-let runScript;
-let realWriteFile;
-let realReadFile;
+describe('onboard tests', () => {
+    let fsMock;
+    let cpMock;
+    let ipcMock;
+    let utilMock;
+    let argv;
+    let runScript;
+    let realWriteFile;
+    let realReadFile;
 
-let functionsCalled;
-let sentSignals;
+    let functionsCalled;
+    let sentSignals;
 
-module.exports = {
-    setUp(callback) {
+    beforeEach(() => {
         /* eslint-disable global-require */
         cpMock = require('child_process');
         fsMock = require('fs');
@@ -93,11 +94,9 @@ module.exports = {
         runScript = require('../../scripts/runScript');
         argv = ['node', 'runScript.js', '--file', 'sleep.sh', '--log-level', 'none',
             '--output', 'sleep.log', '--wait-for', 'ONBOARD_DONE'];
+    });
 
-        callback();
-    },
-
-    tearDown(callback) {
+    afterEach(() => {
         utilMock.removeDirectorySync(ipcMock.signalBasePath);
         fsMock.readFile = realReadFile;
         fsMock.writeFile = realWriteFile;
@@ -105,23 +104,23 @@ module.exports = {
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
-        callback();
-    },
+    });
 
-    testWaitFor(test) {
+    it('wait for test', (done) => {
         sentSignals = [];
 
         ipcMock.send(signals.ONBOARD_DONE);
 
-        test.expect(2);
         runScript.run(argv, () => {
-            test.deepEqual(sentSignals, [signals.ONBOARD_DONE, signals.SCRIPT_RUNNING, signals.SCRIPT_DONE]);
-            test.notStrictEqual(functionsCalled.ipc.once.indexOf(signals.ONBOARD_DONE), -1);
-            test.done();
+            assert.deepEqual(
+                sentSignals, [signals.ONBOARD_DONE, signals.SCRIPT_RUNNING, signals.SCRIPT_DONE]
+            );
+            assert.notStrictEqual(functionsCalled.ipc.once.indexOf(signals.ONBOARD_DONE), -1);
+            done();
         });
-    },
+    });
 
-    testExceptionSignalsError(test) {
+    it('exception signals error test', (done) => {
         sentSignals = [];
 
         ipcMock.send(signals.ONBOARD_DONE);
@@ -130,11 +129,11 @@ module.exports = {
             throw new Error('err');
         };
 
-        test.expect(2);
         runScript.run(argv, () => {
-            test.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
-            test.strictEqual(sentSignals.indexOf(signals.SCRIPT_DONE), -1);
-            test.done();
+            assert.notStrictEqual(sentSignals.indexOf(signals.CLOUD_LIBS_ERROR), -1);
+            assert.strictEqual(sentSignals.indexOf(signals.SCRIPT_DONE), -1);
+            done();
         });
-    }
-};
+    });
+});
+
