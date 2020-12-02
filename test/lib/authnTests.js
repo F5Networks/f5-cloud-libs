@@ -20,6 +20,8 @@ const fs = require('fs');
 const q = require('q');
 const assert = require('assert');
 
+const PRODUCTS = require('../../lib/sharedConstants').PRODUCTS;
+
 describe('authn tests', () => {
     const token = 'my auth token';
     const refreshToken = 'my refresh token';
@@ -273,6 +275,24 @@ describe('authn tests', () => {
             })
             .finally(() => {
                 done();
+            });
+    });
+
+    it('auth provider test', () => {
+        const options = {
+            product: PRODUCTS.BIGIQ,
+            authProvider: 'myAuthProvider'
+        };
+
+        return authn.authenticate('host', 'user', 'password', options)
+            .then(() => {
+                assert.strictEqual(
+                    icontrolMock.getRequest('create', '/shared/authn/login').loginProviderName,
+                    'myAuthProvider'
+                );
+            })
+            .catch((err) => {
+                assert.ok(false, err);
             });
     });
 });

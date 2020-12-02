@@ -32,6 +32,7 @@ describe('bigip onboard tests', () => {
     let bigIpMgmtAddressSent;
     let bigIpMgmtPortSent;
     let bigIqMgmtPortSent;
+    let bigIqAuthProviderSent;
     let initCalled;
     let bigIpInit;
 
@@ -588,6 +589,7 @@ describe('bigip onboard tests', () => {
 
             BigIq.prototype.init = (host, user, password, options) => {
                 bigIqMgmtPortSent = options.port;
+                bigIqAuthProviderSent = options.authProvider;
                 return q();
             };
             BigIq.prototype.icontrol = icontrolMock;
@@ -599,6 +601,7 @@ describe('bigip onboard tests', () => {
                 }
             });
 
+            bigIqAuthProviderSent = '';
             icontrolMock.when('list', '/tm/shared/licensing/registration', {});
         });
 
@@ -639,6 +642,17 @@ describe('bigip onboard tests', () => {
                         }
                     ]
                 );
+            });
+
+            it('passes authProvider', () => {
+                const options = {
+                    authProvider: 'myAuthProvider'
+                };
+
+                return bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', 'cloud', options)
+                    .then(() => {
+                        assert.strictEqual(bigIqAuthProviderSent, 'myAuthProvider');
+                    });
             });
 
             it('gets mgmt address from device info test', (done) => {
@@ -762,7 +776,9 @@ describe('bigip onboard tests', () => {
 
     describe('revoke license via bigiq test', () => {
         beforeEach(() => {
-            BigIq.prototype.init = () => {
+            bigIqAuthProviderSent = '';
+            BigIq.prototype.init = (host, user, password, options) => {
+                bigIqAuthProviderSent = options.authProvider;
                 return q();
             };
             BigIq.prototype.revokeLicense = (poolName, instance) => {
@@ -772,11 +788,15 @@ describe('bigip onboard tests', () => {
             };
         });
 
-        it('basic test', (done) => {
+        it('basic test', () => {
             const hostname = 'myHostname';
             const machineId = 'myMachineId';
             const hostMac = 'myMacAddress';
             const poolName = 'myPoolName';
+
+            const options = {
+                authProvider: 'myAuthProvider'
+            };
 
             icontrolMock.when(
                 'list',
@@ -788,18 +808,13 @@ describe('bigip onboard tests', () => {
                 }
             );
 
-            bigIp.onboard.revokeLicenseViaBigIq('host', 'user', 'password', poolName)
+            return bigIp.onboard.revokeLicenseViaBigIq('host', 'user', 'password', poolName, options)
                 .then(() => {
                     assert.strictEqual(poolNameSent, poolName);
                     assert.strictEqual(instanceSent.hostname, hostname);
                     assert.strictEqual(instanceSent.machineId, machineId);
                     assert.strictEqual(instanceSent.macAddress, hostMac);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(bigIqAuthProviderSent, 'myAuthProvider');
                 });
         });
 

@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.24.0
+* Add support for using a third party auth provider when licensing from BIG-IQ
+
 ## Release 4.23.1
 * Added additional logic to update_autoscale_ucs.py script to account for .1 vs .11 vs .111 when running replace function.
 Previously, script would replace all instances of specified values, including ip values for ltm nodes which was not desired
