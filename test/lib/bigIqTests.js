@@ -127,21 +127,16 @@ describe('bigiq tests', () => {
     });
 
     describe('init test', () => {
-        it('basic test', (done) => {
+        it('basic test', () => {
             const port = 1111;
-            bigIq.init(host, user, password, { port })
+            return bigIq.init(host, user, password, { port, authProvider: 'myAuthProvider' })
                 .then(() => {
                     assert.strictEqual(bigIq.host, host);
                     assert.strictEqual(bigIq.user, user);
                     assert.strictEqual(bigIq.version, bigIqVersion);
                     assert.strictEqual(icontrolMock.password, password);
                     assert.strictEqual(authnOptionsSent.port, port);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(authnOptionsSent.authProvider, 'myAuthProvider');
                 });
         });
 
