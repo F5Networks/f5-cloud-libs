@@ -24,7 +24,7 @@ const CloudProvider = require('../../lib/cloudProvider');
 const BACKUP = require('../../lib/sharedConstants').BACKUP;
 const util = require('util');
 
-describe('onboard tests', () => {
+describe('set master key tests', () => {
     let argv;
     let setMasterKey;
     let BigIp;
