@@ -18,14 +18,16 @@
 
 const q = require('q');
 const assert = require('assert');
+const sinon = require('sinon');
+
+const icontrolMock = require('../testUtil/icontrolMock');
+const authnMock = require('../../../f5-cloud-libs').authn;
+const utilMock = require('../../../f5-cloud-libs').util;
 
 const BigIp = require('../../../f5-cloud-libs').bigIp;
 
 describe('bigip gtm tests', () => {
     let bigIp;
-    let authnMock;
-    let utilMock;
-    let icontrolMock;
 
     const serverName = 'myServer';
     const poolName = 'myPool';
@@ -47,42 +49,31 @@ describe('bigip gtm tests', () => {
     // Our tests cause too many event listeners. Turn off the check.
     process.setMaxListeners(0);
 
-    beforeEach(() => {
+    beforeEach((done) => {
         bigIp = new BigIp();
-        /* eslint-disable global-require */
-        authnMock = require('../../../f5-cloud-libs').authn;
-        icontrolMock = require('../testUtil/icontrolMock');
-        /* eslint-enable global-require */
-        authnMock.authenticate = (host, user, password) => {
+        sinon.stub(authnMock, 'authenticate').callsFake((host, user, password) => {
             icontrolMock.password = password;
             return q.resolve(icontrolMock);
-        };
+        });
 
-        /* eslint-disable global-require */
-        utilMock = require('../../../f5-cloud-libs').util;
-        /* eslint-enable global-require */
-        utilMock.getProduct = () => {
-            return q('BIG-IP');
-        };
+        sinon.stub(utilMock, 'getProduct').resolves('BIG-IP');
 
-        icontrolMock.when(
-            'list',
-            '/shared/identified-devices/config/device-info',
-            {
-                product: 'BIG-IP'
-            }
-        );
         bigIp.ready = () => {
             return q();
         };
         bigIp.init('host', 'user', 'password')
             .then(() => {
                 icontrolMock.reset();
+                done();
             });
     });
 
+    afterEach(() => {
+        sinon.restore();
+    });
+
     describe('update server tests', () => {
-        it('basic test', (done) => {
+        it('basic test', () => {
             const virtualServersWithPort = [];
             virtualServers.forEach((virtualServer) => {
                 virtualServersWithPort.push({
@@ -91,69 +82,45 @@ describe('bigip gtm tests', () => {
                 });
             });
 
-            bigIp.gtm.updateServer(serverName, virtualServers)
+            return bigIp.gtm.updateServer(serverName, virtualServers)
                 .then(() => {
                     const request = icontrolMock.getRequest(
                         'modify', `/tm/gtm/server/~Common~${serverName}`
                     );
                     assert.deepEqual(request.virtualServers, virtualServersWithPort);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
-        it('datacenter test', (done) => {
+        it('datacenter test', () => {
             const datacenter = 'myDatacenter';
-            bigIp.gtm.updateServer(serverName, virtualServers, { datacenter })
+            return bigIp.gtm.updateServer(serverName, virtualServers, { datacenter })
                 .then(() => {
                     const request = icontrolMock.getRequest('modify', `/tm/gtm/server/~Common~${serverName}`);
                     assert.strictEqual(request.datacenter, datacenter);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
-        it('monitor test', (done) => {
+        it('monitor test', () => {
             const monitor = '/myPartition/myMonitor';
-            bigIp.gtm.updateServer(serverName, virtualServers, { monitor })
+            return bigIp.gtm.updateServer(serverName, virtualServers, { monitor })
                 .then(() => {
                     const request = icontrolMock.getRequest('modify', `/tm/gtm/server/~Common~${serverName}`);
                     assert.strictEqual(request.monitor, monitor);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
-        it('partition test', (done) => {
+        it('partition test', () => {
             const partition = 'myPartition';
             bigIp.gtm.setPartition(partition);
-            bigIp.gtm.updateServer(serverName, virtualServers)
+            return bigIp.gtm.updateServer(serverName, virtualServers)
                 .then(() => {
                     const request = icontrolMock.getRequest(
                         'modify', `/tm/gtm/server/~${partition}~${serverName}`
                     );
                     assert.notStrictEqual(request, undefined);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
 
     describe('update pool tests', () => {
-        it('basic test', (done) => {
+        it('basic test', () => {
             const serverWithVirtualServers = [];
             virtualServers.forEach((virtualServer) => {
                 serverWithVirtualServers.push({
@@ -161,61 +128,37 @@ describe('bigip gtm tests', () => {
                 });
             });
 
-            bigIp.gtm.updatePool(poolName, serverName, virtualServers)
+            return bigIp.gtm.updatePool(poolName, serverName, virtualServers)
                 .then(() => {
                     const request = icontrolMock.getRequest('modify', `/tm/gtm/pool/a/~Common~${poolName}`);
                     assert.deepEqual(request.members, serverWithVirtualServers);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
-        it('monitor test', (done) => {
+        it('monitor test', () => {
             const monitor = '/myPartition/myMonitor';
-            bigIp.gtm.updatePool(poolName, serverName, virtualServers, { monitor })
+            return bigIp.gtm.updatePool(poolName, serverName, virtualServers, { monitor })
                 .then(() => {
                     const request = icontrolMock.getRequest('modify', `/tm/gtm/pool/a/~Common~${poolName}`);
                     assert.strictEqual(request.monitor, monitor);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
-        it('load balancing mode test', (done) => {
+        it('load balancing mode test', () => {
             const loadBalancingMode = 'myLoadBalancingMode';
-            bigIp.gtm.updatePool(poolName, serverName, virtualServers, { loadBalancingMode })
+            return bigIp.gtm.updatePool(poolName, serverName, virtualServers, { loadBalancingMode })
                 .then(() => {
                     const request = icontrolMock.getRequest('modify', `/tm/gtm/pool/a/~Common~${poolName}`);
                     assert.strictEqual(request.loadBalancingMode, loadBalancingMode);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
-        it('partition test', (done) => {
+        it('partition test', () => {
             const partition = 'myPartition';
             bigIp.gtm.setPartition(partition);
-            bigIp.gtm.updatePool(poolName, serverName, virtualServers)
+            return bigIp.gtm.updatePool(poolName, serverName, virtualServers)
                 .then(() => {
                     const request = icontrolMock.getRequest(
                         'modify', `/tm/gtm/pool/a/~${partition}~${poolName}`
                     );
                     assert.notStrictEqual(request, undefined);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
