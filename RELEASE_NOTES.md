@@ -1,6 +1,8 @@
 # Release notes
 
 ## Release 4.24.0
+* Add new retry option to util script
+* Update bigip init method to allow passing retry options
 * Add support for using a third party auth provider when licensing from BIG-IQ
 
 ## Release 4.23.1
