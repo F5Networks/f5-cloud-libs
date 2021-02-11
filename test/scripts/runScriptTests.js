@@ -20,7 +20,7 @@ const q = require('q');
 const assert = require('assert');
 const signals = require('../../lib/signals');
 
-describe('onboard tests', () => {
+describe('run script tests', () => {
     let fsMock;
     let cpMock;
     let ipcMock;
