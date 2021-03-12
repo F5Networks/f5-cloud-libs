@@ -258,6 +258,13 @@ describe('bigip tests', () => {
         done();
     });
 
+    it('unimplemented get Stored Object test', (done) => {
+        assert.doesNotThrow(() => {
+            testCloudProvider.deleteStoredObject();
+        });
+        done();
+    });
+
     it('unimplemented store Ucs test', (done) => {
         assert.doesNotThrow(() => {
             testCloudProvider.storeUcs();
