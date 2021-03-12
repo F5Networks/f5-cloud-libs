@@ -42,6 +42,7 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
             const ARGS_FILE_ID = `cluster_${Date.now()}`;
             const KEYS_TO_MASK = ['-p', '--password', '--remote-password'];
             const REQUIRED_OPTIONS = ['host', 'user'];
+            const PRIMARY_CREDENTIALS_FILE = 'credentials/primary';
 
             const OPTIONS_TO_UNDEFINE = [
                 'remotePassword',
@@ -173,6 +174,14 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                     .option(
                         '--remove-from-cluster',
                         'Remove a device from the cluster'
+                    )
+                    .option(
+                        '--delete-remote-primary-creds',
+                        'Delete primary credentials stored in cloud storage'
+                    )
+                    .option(
+                        '--delete-local-creds',
+                        'Delete primary credentials stored locally'
                     )
                     .option(
                         '    --device-group <device_group>',
@@ -486,35 +495,56 @@ const localCryptoUtil = require('../lib/localCryptoUtil');
                         logger.info('Waiting for BIG-IP to be active.');
                         return bigIp.active();
                     })
+                    .then(() => {
+                        if (options.deleteRemotePrimaryCreds && !options.primary) {
+                            return provider.deleteStoredObject(PRIMARY_CREDENTIALS_FILE);
+                        }
+                        return q();
+                    })
+                    .then(() => {
+                        if (options.deleteLocalCreds && options.passwordUrl) {
+                            return util.runShellCommand(`rm ${options.passwordUrl.replace('file:/', '')}`);
+                        }
+                        return q();
+                    })
                     .catch((err) => {
                         let message;
-
-                        if (!err) {
-                            message = 'unknown reason';
-                        } else {
-                            message = err.message;
+                        const promises = [];
+                        if (options.deleteRemotePrimaryCreds && !options.primary) {
+                            promises.push(provider.deleteStoredObject(PRIMARY_CREDENTIALS_FILE));
                         }
-
-                        if (err) {
-                            if (err instanceof ActiveError || err.name === 'ActiveError') {
-                                logger.warn('BIG-IP active check failed.');
-                                rebooting = true;
-                                return util.reboot(bigIp, { signalOnly: !(options.reboot) });
-                            }
+                        if (options.deleteLocalCreds && options.passwordUrl) {
+                            promises.push(util.runShellCommand(
+                                `rm ${options.passwordUrl.replace('file:/', '')}`
+                            ));
                         }
+                        return Promise.all(promises)
+                            .then(() => {
+                                if (!err) {
+                                    message = 'unknown reason';
+                                } else {
+                                    message = err.message;
+                                }
+                                if (err) {
+                                    if (err instanceof ActiveError || err.name === 'ActiveError') {
+                                        logger.warn('BIG-IP active check failed.');
+                                        rebooting = true;
+                                        return util.reboot(bigIp, { signalOnly: !(options.reboot) });
+                                    }
+                                }
 
-                        ipc.send(signals.CLOUD_LIBS_ERROR);
+                                ipc.send(signals.CLOUD_LIBS_ERROR);
 
-                        const error = `Cluster failed: ${message}`;
-                        util.logError(error, loggerOptions);
-                        util.logAndExit(error, 'error', 1);
+                                const error = `Cluster failed: ${message}`;
+                                util.logError(error, loggerOptions);
+                                util.logAndExit(error, 'error', 1);
 
-                        exiting = true;
-                        return q();
+                                exiting = true;
+                                return q();
+                            });
                     })
                     .done((response) => {
                         logger.debug(response);
-
                         if ((!rebooting || !options.reboot) && !exiting) {
                             ipc.send(options.signal || signals.CLUSTER_DONE);
                         }
