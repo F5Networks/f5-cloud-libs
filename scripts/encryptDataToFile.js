@@ -58,7 +58,7 @@ const REG_EXPS = require('../lib/sharedConstants').REG_EXPS;
 
                 // Can't use getCommonOptions here because we don't take host, user, password options
                 options
-                    .version('4.24.0-beta.1')
+                    .version('4.24.0-beta.3')
                     .option(
                         '--background',
                         'Spawn a background process to do the work. If you are running in cloud init, you probably want this option.'

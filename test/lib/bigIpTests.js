@@ -113,6 +113,40 @@ describe('bigip tests', () => {
         });
     });
 
+    describe('list tests', () => {
+        beforeEach(() => {
+            icontrolMock.when(
+                'list',
+                '/tm/ltm/virtual',
+                {
+                    field1: 'myField1',
+                    field2: 'myField2'
+                }
+            );
+        });
+
+        it('should succeeed if all required fields are present', () => {
+            const options = {
+                requiredFields: ['field1', 'field2']
+            };
+            return bigIp.list('/tm/ltm/virtual', null, null, options);
+        });
+
+        it('should fail if missing a required field', () => {
+            utilMock.DEFAULT_RETRY = utilMock.NO_RETRY;
+            const options = {
+                requiredFields: ['field1', 'field2', 'field3']
+            };
+            return bigIp.list('/tm/ltm/virtual', null, null, options)
+                .then(() => {
+                    assert.ok(false, 'should have rejected because of missing field');
+                })
+                .catch((err) => {
+                    assert.notStrictEqual(err.message.indexOf('missing required field'), -1);
+                });
+        });
+    });
+
     describe('active tests', () => {
         it('active test', () => {
             icontrolMock.when(
