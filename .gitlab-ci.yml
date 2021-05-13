@@ -61,6 +61,7 @@ test_audit:
   stage: test
   script:
     # npm audit - uses custom audit processor wrapper
+    - npx npm-force-resolutions
     - npm install
     - npm run audit --production
   tags:
