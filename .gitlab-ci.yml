@@ -62,7 +62,7 @@ test_audit:
   script:
     # npm audit - uses custom audit processor wrapper
     - npm install
-    - npm run audit
+    - npm run audit --production
   tags:
     - cm-official-docker-executor
   except:
