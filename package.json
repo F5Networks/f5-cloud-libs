@@ -1,6 +1,6 @@
 {
   "name": "@f5devcentral/f5-cloud-libs",
-  "version": "4.24.0",
+  "version": "4.25.0",
   "description": "Common library code and scripts for deploying a BIG-IP in a cloud environment",
   "keywords": [
     "f5",
@@ -16,23 +16,7 @@
     "url": "https://github.com/F5Networks/f5-cloud-libs/issues"
   },
   "auditProcessor": {
-    "whitelist": [
-      "1523",
-      "1490",
-      "1500",
-      "1179",
-      "1084",
-      "1013",
-      "1012",
-      "1065",
-      "782",
-      "1325",
-      "1324",
-      "1316",
-      "1300",
-      "1164",
-      "755"
-    ]
+    "whitelist": []
   },
   "license": "Apache-2.0",
   "dependencies": {
@@ -42,10 +26,13 @@
     "winston": "^2.4.4",
     "jmespath": "^0.15.0"
   },
+  "resolutions": {
+    "underscore": "1.12.1"
+  },
   "devDependencies": {
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-mocha": "^8.0.0",
     "esquery": "1.1.0",
     "nyc": "^15.1.0",

@@ -12,6 +12,7 @@ fi
 
 if [[ $1 == '--no-deps' ]]; then
     rm -rf node_modules
+    npx npm-force-resolutions
     npm install --production
 fi
 

@@ -61,8 +61,9 @@ test_audit:
   stage: test
   script:
     # npm audit - uses custom audit processor wrapper
+    - npx npm-force-resolutions
     - npm install
-    - npm run audit
+    - npm run audit --production
   tags:
     - cm-official-docker-executor
   except:
@@ -96,6 +97,7 @@ update_hash:
         - fi
 
 package:
+    image: $DOCKER_URL/node:8
     tags:
         - docker-executor
     stage: package

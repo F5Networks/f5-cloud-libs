@@ -32,7 +32,7 @@ const KEYS = require('../lib/sharedConstants').KEYS;
         run(argv) {
             let passwordPromise;
             options
-                .version('4.24.0')
+                .version('4.25.0')
                 .option(
                     '--length <password_length>',
                     'Length of password. Default 32.',
@@ -46,12 +46,36 @@ const KEYS = require('../lib/sharedConstants').KEYS;
                     '--encrypt',
                     'Encrypt the password before writing to disk. Default false'
                 )
+                .option(
+                    '--include-special-characters',
+                    'Generated password includes at least one special character'
+                )
                 .parse(argv);
 
             assert.equal(Number.isNaN(options.length), false, '--length must be an integer');
-
-            const password =
-                crypto.randomBytes(parseInt(options.length, 10)).toString('base64').substr(0, options.length);
+            const specialCharProbe = ['+', '/', '#', '*', '^', '%', '@'];
+            let password;
+            let flag = false;
+            if (options.includeSpecialCharacters) {
+                while (true) {
+                    password =
+                        crypto.randomBytes(parseInt(options.length, 10))
+                            .toString('base64').substr(0, options.length);
+                    for (let j = 0; j < specialCharProbe.length; j++) {
+                        if (password.indexOf(specialCharProbe[j]) !== -1) {
+                            flag = true;
+                            break;
+                        }
+                    }
+                    if (flag) {
+                        break;
+                    }
+                }
+            } else {
+                password =
+                    crypto.randomBytes(parseInt(options.length, 10))
+                        .toString('base64').substr(0, options.length);
+            }
 
             if (options.encrypt) {
                 passwordPromise = encryptPassword(password);
