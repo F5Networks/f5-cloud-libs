@@ -97,6 +97,7 @@ update_hash:
         - fi
 
 package:
+    image: $DOCKER_URL/node:8
     tags:
         - docker-executor
     stage: package
