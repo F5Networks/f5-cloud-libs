@@ -1,5 +1,8 @@
 # Release notes
-
+## Release 4.25.0
+* Update generate password script to support generating password with special characters.
+* Remove cluster credentials from storage after clustering completes
+* Removed dependency vulnerabilities.
 ## Release 4.24.0
 * Add support for using a third party auth provider when licensing from BIG-IQ
 * Add option to retry for required fields when fetching via iControl REST
