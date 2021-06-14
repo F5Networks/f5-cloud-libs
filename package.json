@@ -1,6 +1,6 @@
 {
   "name": "@f5devcentral/f5-cloud-libs",
-  "version": "4.25.0",
+  "version": "4.25.1",
   "description": "Common library code and scripts for deploying a BIG-IP in a cloud environment",
   "keywords": [
     "f5",
@@ -21,10 +21,10 @@
   "license": "Apache-2.0",
   "dependencies": {
     "commander": "^2.19.0",
+    "jmespath": "^0.15.0",
     "q": "^1.5.1",
     "uuid5": "^1.0.2",
-    "winston": "^2.4.4",
-    "jmespath": "^0.15.0"
+    "winston": "^2.4.5"
   },
   "resolutions": {
     "underscore": "1.12.1"
@@ -35,11 +35,11 @@
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-mocha": "^8.0.0",
     "esquery": "1.1.0",
-    "nyc": "^15.1.0",
-    "jsdoc": "^3.4.3",
+    "jsdoc": "^3.6.7",
     "mocha": "^7.1.1",
-    "why-is-node-running": "^2.2.0",
+    "nyc": "^15.1.0",
     "sinon": "7.5.0",
+    "why-is-node-running": "^2.2.0",
     "yargs": "^15.4.1"
   },
   "mocha": {

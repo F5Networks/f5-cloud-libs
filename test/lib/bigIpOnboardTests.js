@@ -66,6 +66,8 @@ describe('bigip onboard tests', () => {
             return q.resolve(icontrolMock);
         });
 
+        sinon.stub(bigIp, 'getManagementMac').resolves('fa:16:3e:be:5a:45');
+
         util.getProduct = () => {
             return q('BIG-IP');
         };
@@ -674,7 +676,7 @@ describe('bigip onboard tests', () => {
                 {
                     hostname,
                     machineId,
-                    hostMac
+                    hostMac // hostMac not always equal managment MAC address
                 }
             );
 
@@ -683,8 +685,9 @@ describe('bigip onboard tests', () => {
                     assert.strictEqual(poolNameSent, poolName);
                     assert.strictEqual(instanceSent.hostname, hostname);
                     assert.strictEqual(instanceSent.machineId, machineId);
-                    assert.strictEqual(instanceSent.macAddress, hostMac);
                     assert.strictEqual(bigIqAuthProviderSent, 'myAuthProvider');
+                    // test macAddress from getManagementMac()
+                    assert.strictEqual(instanceSent.macAddress, 'fa:16:3e:be:5a:45');
                 });
         });
 
