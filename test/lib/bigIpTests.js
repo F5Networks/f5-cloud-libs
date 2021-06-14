@@ -1496,7 +1496,7 @@ describe('bigip tests', () => {
                 .then(() => {
                     assert.strictEqual(icontrolMock.getRequest('list', '/foo/bar'), null);
                     assert.deepEqual(icontrolMock.getRequest('create', '/bar/foo'), { foo: 'bar' });
-                    assert.deepEqual(icontrolMock.getRequest('modify', 'hello/world', { roger: 'dodger' }));
+                    assert.deepEqual(icontrolMock.getRequest('modify', '/hello/world'), { roger: 'dodger' });
                     assert.deepEqual(icontrolMock.getRequest('delete', '/okie/dokie'), { hello: 'world' });
                     assert.deepEqual(
                         icontrolMock.getRequest('modify', '/tm/transaction/1234'), { state: 'VALIDATING' }
@@ -1541,6 +1541,54 @@ describe('bigip tests', () => {
             return bigIp.transaction()
                 .then(() => {
                     assert.ok(true);
+                });
+        });
+    });
+
+    describe('getManagementMac', () => {
+        it('should return the proper macAddress from the tm/net/interface/mgmt endpoint', () => {
+            const mgmtIp = '10.1.1.2';
+            icontrolMock.when(
+                'list',
+                '/tm/net/interface/mgmt',
+                {
+                    kind: 'tm:net:interface:interfacestate',
+                    name: 'mgmt',
+                    fullPath: 'mgmt',
+                    generation: 229,
+                    selfLink: 'https://localhost/mgmt/tm/net/interface/mgmt?ver=15.1.2.1',
+                    bundle: 'not-supported',
+                    bundleSpeed: 'not-supported',
+                    enabled: true,
+                    flowControl: 'tx-rx',
+                    forceGigabitFiber: 'disabled',
+                    forwardErrorCorrection: 'not-supported',
+                    ifIndex: 32,
+                    linkTrapsEnabled: 'true',
+                    lldpAdmin: 'txonly',
+                    lldpTlvmap: 130943,
+                    macAddress: 'fa:16:3e:be:5a:45',
+                    mediaActive: '100TX-FD',
+                    mediaFixed: 'auto',
+                    mediaSfp: 'auto',
+                    mtu: 1500,
+                    portFwdMode: 'l3',
+                    preferPort: 'sfp',
+                    qinqEthertype: '0x8100',
+                    sflow: {
+                        pollInterval: 0,
+                        pollIntervalGlobal: 'yes'
+                    },
+                    stp: 'enabled',
+                    stpAutoEdgePort: 'enabled',
+                    stpEdgePort: 'true',
+                    stpLinkType: 'auto'
+                }
+            );
+
+            return bigIp.getManagementMac(mgmtIp)
+                .then((response) => {
+                    assert.strictEqual(response, 'fa:16:3e:be:5a:45');
                 });
         });
     });

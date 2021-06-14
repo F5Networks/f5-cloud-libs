@@ -18,6 +18,9 @@
 
 const q = require('q');
 const assert = require('assert');
+const sinon = require('sinon');
+
+const BigIp = require('../../lib/bigIp');
 
 describe('BIGIQ 5.4.0 License Provider Tests', () => {
     const poolName = 'myLicensePool';
@@ -26,6 +29,7 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
 
     let util;
     let BigIqProvider;
+    let bigIp;
     let provider;
     let icontrolMock;
     let BigIq53ProviderMock;
@@ -46,15 +50,22 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
         };
 
         BigIqProvider = require('../../lib/bigIq54LicenseProvider');
-        provider = new BigIqProvider();
-        provider.bigIp = {
-            user: 'user',
-            password: 'password'
-        };
+        /* eslint-enable global-require */
+
+        bigIp = new BigIp();
+        provider = new BigIqProvider(bigIp);
+        provider.bigIp.user = 'user';
+        provider.bigIp.password = 'password';
+
+        sinon.stub(bigIp, 'getManagementMac').resolves('fa:16:3e:be:5a:45');
+    });
+
+    afterEach(() => {
+        sinon.restore();
     });
 
     describe('Constructor Tests', () => {
-        it('should set logger', (done) => {
+        it('should set logger', () => {
             const logger = {
                 a: 1,
                 b: 2
@@ -62,20 +73,19 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
 
             provider = new BigIqProvider({}, { logger });
             assert.deepEqual(provider.logger, logger);
-            done();
         });
 
-        it('should set logger options', (done) => {
+        it('should set logger options', () => {
             const loggerOptions = {
-                a: 1,
-                b: 2
+                id: 'hiThere',
+                logLevel: 'debug',
+                console: false,
+                json: true
             };
 
-            assert.doesNotThrow(() => {
-                // eslint-disable-next-line no-new
-                new BigIqProvider({ loggerOptions });
-            });
-            done();
+            provider = new BigIqProvider(bigIp, { loggerOptions });
+            // This test needs something more, but the options supplied does not seem to change the logger
+            assert.strictEqual(provider.logger.id, null);
         });
     });
 
@@ -109,8 +119,8 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
             };
         });
 
-        it('basic test', (done) => {
-            provider.getUnmanagedDeviceLicense(
+        it('basic test', () => {
+            return provider.getUnmanagedDeviceLicense(
                 icontrolMock,
                 'pool1',
                 'bigIpMgmtAddress',
@@ -119,28 +129,21 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
             )
                 .then(() => {
                     const licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH);
-                    assert.strictEqual(licenseRequest.licensePoolName, 'pool1');
-                })
-                .catch((err) => {
-                    assert.ok(false, err.message);
-                })
-                .finally(() => {
-                    done();
+                    return assert.strictEqual(licenseRequest.licensePoolName, 'pool1');
                 });
         });
 
-        it('get license text failure test', (done) => {
-            const failureReason = 'you have no license text';
+        it('get license text failure test', () => {
             icontrolMock.when(
                 'list',
                 LICENSE_PATH + taskId,
                 {
                     status: 'FAILED',
-                    errorMessage: failureReason
+                    errorMessage: 'you have no license text'
                 }
             );
 
-            provider.getUnmanagedDeviceLicense(
+            return provider.getUnmanagedDeviceLicense(
                 icontrolMock,
                 'pool1',
                 'bigIpMgmtAddress',
@@ -148,25 +151,21 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
                 { cloud: 'cloud' }
             )
                 .then(() => {
-                    assert.ok(false, 'should have thrown license failure');
+                    return assert.ok(false, 'should have thrown license failure');
                 })
                 .catch((err) => {
-                    assert.notStrictEqual(err.message.indexOf(failureReason), -1);
-                })
-                .finally(() => {
-                    done();
+                    return assert.strictEqual(err.message, 'you have no license text');
                 });
         });
 
-        it('install license failure test', (done) => {
-            const failureReason = 'bad license text';
+        it('install license failure test', () => {
             provider.bigIp.onboard = {
                 installLicense() {
-                    return q.reject(new Error(failureReason));
+                    return q.reject(new Error('bad license text'));
                 }
             };
 
-            provider.getUnmanagedDeviceLicense(
+            return provider.getUnmanagedDeviceLicense(
                 icontrolMock,
                 'pool1',
                 'bigIpMgmtAddress',
@@ -174,59 +173,49 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
                 { cloud: 'cloud' }
             )
                 .then(() => {
-                    assert.ok(false, 'should have thrown license failure');
+                    return assert.ok(false, 'should have thrown license failure');
                 })
                 .catch((err) => {
-                    assert.notStrictEqual(err.message.indexOf(failureReason), -1);
-                })
-                .finally(() => {
-                    done();
+                    return assert.strictEqual(err.message, 'bad license text');
                 });
         });
     });
 
     describe('Revoke License Tests', () => {
-        it('basic test', (done) => {
-            const macAddress = '1234';
+        it('basic test', () => {
             const ipAddress = '1.2.3.4';
 
-            provider.revoke(icontrolMock, poolName, { macAddress, mgmtIp: ipAddress })
+            return provider.revoke(
+                icontrolMock,
+                poolName,
+                { macAddress: 'fa:16:3e:be:5a:45', mgmtIp: ipAddress }
+            )
                 .then(() => {
                     const deleteReq = icontrolMock.getRequest('create', LICENSE_PATH);
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         deleteReq,
                         {
                             command: 'revoke',
                             licensePoolName: poolName,
                             address: ipAddress,
                             assignmentType: 'UNREACHABLE',
-                            macAddress
+                            macAddress: 'fa:16:3e:be:5a:45'
                         }
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('no unreachable test', (done) => {
-            const macAddress = '1234';
+        it('no unreachable test', () => {
             const ipAddress = '1.2.3.4';
 
-            provider.revoke(
-                icontrolMock, poolName, { macAddress, mgmtIp: ipAddress }, { noUnreachable: true }
+            return provider.revoke(
+                icontrolMock,
+                poolName,
+                { macAddress: 'fa:16:3e:be:5a:45', mgmtIp: ipAddress },
+                { noUnreachable: true }
             )
                 .then(() => {
                     assert.ok(bigIq53RevokeCalled);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
