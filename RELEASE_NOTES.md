@@ -1,4 +1,6 @@
 # Release notes
+## Release 4.25.1
+* Updated pulling MAC Address from mgmt interface endpoint instead of the host MAC Address.
 ## Release 4.25.0
 * Update generate password script to support generating password with special characters.
 * Remove cluster credentials from storage after clustering completes
