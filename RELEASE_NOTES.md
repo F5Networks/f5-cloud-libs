@@ -1,13 +1,19 @@
 # Release notes
+
+## Release 4.26.0
+* Add BigIp.setHost method
+
 ## Release 4.25.1
 * Updated pulling MAC Address from mgmt interface endpoint instead of the host MAC Address.
 ## Release 4.25.0
 * Update generate password script to support generating password with special characters.
 * Remove cluster credentials from storage after clustering completes
 * Removed dependency vulnerabilities.
+
 ## Release 4.24.0
 * Add support for using a third party auth provider when licensing from BIG-IQ
 * Add option to retry for required fields when fetching via iControl REST
+
 ## Release 4.23.1
 * Added additional logic to update_autoscale_ucs.py script to account for .1 vs .11 vs .111 when running replace function.
 Previously, script would replace all instances of specified values, including ip values for ltm nodes which was not desired
