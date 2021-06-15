@@ -1545,6 +1545,32 @@ describe('bigip tests', () => {
         });
     });
 
+    describe('set host', () => {
+        it('should set host to an ip', () => {
+            return bigIp.setHost('1.2.3.4')
+                .then(() => {
+                    assert.strictEqual(bigIp.host, '1.2.3.4');
+                    assert.strictEqual(bigIp.icontrol.host, '1.2.3.4');
+                });
+        });
+
+        it('should set host to localhost', () => {
+            return bigIp.setHost('localhost')
+                .then(() => {
+                    assert.strictEqual(bigIp.host, 'localhost');
+                    assert.strictEqual(bigIp.icontrol.host, '127.0.0.1');
+                });
+        });
+    });
+
+    it('should set port', () => {
+        return bigIp.setPort(1234)
+            .then(() => {
+                assert.strictEqual(bigIp.port, 1234);
+                assert.strictEqual(bigIp.icontrol.port, 1234);
+            });
+    });
+
     describe('getManagementMac', () => {
         it('should return the proper macAddress from the tm/net/interface/mgmt endpoint', () => {
             const mgmtIp = '10.1.1.2';
