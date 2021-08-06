@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.26.1
+* Add failOnErrorMessages and failOnErrorCodes which are arrays of strings/regexes and integers, respectively. That prevent the retry logic from running. Effectively allowing for an early exit of specific failures.
+
 ## Release 4.26.0
 * Add BigIp.setHost method
 
