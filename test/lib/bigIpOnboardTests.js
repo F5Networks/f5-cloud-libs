@@ -23,42 +23,21 @@ const sinon = require('sinon');
 
 const icontrolMock = require('../testUtil/icontrolMock');
 const authnMock = require('../../../f5-cloud-libs').authn;
+const util = require('../../../f5-cloud-libs').util;
+const cryptoUtil = require('../../../f5-cloud-libs').cryptoUtil;
+const BigIp = require('../../../f5-cloud-libs').bigIp;
+const BigIq = require('../../../f5-cloud-libs').bigIq;
 
 describe('bigip onboard tests', () => {
-    let BigIp;
-    let BigIq;
-    let util;
-    let cryptoUtilMock;
-    let fsExistsSync;
     let bigIp;
-    let bigIpMgmtAddressSent;
-    let bigIpMgmtPortSent;
-    let bigIqMgmtPortSent;
-    let bigIqAuthProviderSent;
-    let initCalled;
-    let bigIpInit;
+    let bigIpRunTaskSpy;
 
-    let poolNameSent;
-    let instanceSent;
-    let passwordSent;
-    let optionsSent;
-
-    let runTaskParams;
-
-    let shellCommand;
     const sharedAuthnRootResponse = {
         generation: 0,
         lastUpdateMicros: 0
     };
 
     beforeEach(() => {
-        /* eslint-disable global-require */
-        util = require('../../../f5-cloud-libs').util;
-        BigIp = require('../../../f5-cloud-libs').bigIp;
-        BigIq = require('../../../f5-cloud-libs').bigIq;
-        cryptoUtilMock = require('../../../f5-cloud-libs').cryptoUtil;
-        /* eslint-disable global-require */
-
         bigIp = new BigIp();
 
         sinon.stub(authnMock, 'authenticate').callsFake((host, user, password) => {
@@ -67,30 +46,20 @@ describe('bigip onboard tests', () => {
         });
 
         sinon.stub(bigIp, 'getManagementMac').resolves('fa:16:3e:be:5a:45');
+        sinon.stub(util, 'getProduct').returns(q('BIG-IP'));
 
-        util.getProduct = () => {
-            return q('BIG-IP');
-        };
+        bigIpRunTaskSpy = sinon.stub(bigIp, 'runTask').returns(q());
+        sinon.stub(bigIp, 'ready').returns(q());
 
-        bigIp.runTask = function runTask() {
-            runTaskParams = arguments;
-            return q();
-        };
-        bigIp.ready = () => {
-            return q();
-        };
         bigIp.init('host', 'user', 'password')
             .then(() => {
-                bigIp.icontrol = icontrolMock;
+                sinon.stub(bigIp, 'icontrol').value(icontrolMock);
                 icontrolMock.reset();
             });
     });
 
     afterEach(() => {
         sinon.restore();
-        Object.keys(require.cache).forEach((key) => {
-            delete require.cache[key];
-        });
     });
 
     describe('db consts tests', () => {
@@ -110,12 +79,7 @@ describe('bigip onboard tests', () => {
 
     describe('install ilx package test', () => {
         beforeEach(() => {
-            fsExistsSync = fs.existsSync;
-            fs.existsSync = function existsSync() { return true; };
-        });
-
-        afterEach(() => {
-            fs.existsSync = fsExistsSync;
+            sinon.stub(fs, 'existsSync').returns(true);
         });
 
         it('file uri test', () => {
@@ -123,8 +87,9 @@ describe('bigip onboard tests', () => {
 
             return bigIp.onboard.installIlxPackage(packageUri)
                 .then(() => {
-                    assert.strictEqual(runTaskParams[0], '/shared/iapp/package-management-tasks');
-                    assert.deepEqual(runTaskParams[1], {
+                    assert.strictEqual(bigIpRunTaskSpy.callCount, 1);
+                    assert.strictEqual(bigIpRunTaskSpy.args[0][0], '/shared/iapp/package-management-tasks');
+                    assert.deepEqual(bigIpRunTaskSpy.args[0][1], {
                         operation: 'INSTALL',
                         packageFilePath: '/dir1/dir2/iapp.rpm'
                     });
@@ -132,9 +97,9 @@ describe('bigip onboard tests', () => {
         });
 
         it('already installed test', () => {
-            bigIp.runTask = function runTask() {
-                return q.reject(new Error('Package f5-appsvcs version 3.5.1-5 is already installed.'));
-            };
+            bigIp.runTask.restore();
+            sinon.stub(bigIp, 'runTask')
+                .returns(q.reject(new Error('Package f5-appsvcs version 3.5.1-5 is already installed.')));
             const packageUri = 'file:///dir1/dir2/iapp.rpm';
 
             return bigIp.onboard.installIlxPackage(packageUri)
@@ -487,6 +452,8 @@ describe('bigip onboard tests', () => {
     });
 
     describe('license via bigiq test', () => {
+        let bigIqInitSpy;
+
         beforeEach(() => {
             icontrolMock.when(
                 'create',
@@ -498,21 +465,10 @@ describe('bigip onboard tests', () => {
                 }
             );
 
-            BigIq.prototype.init = (host, user, password, options) => {
-                bigIqMgmtPortSent = options.port;
-                bigIqAuthProviderSent = options.authProvider;
-                return q();
-            };
+            bigIqInitSpy = sinon.stub(BigIq.prototype, 'init').returns(q());
             BigIq.prototype.icontrol = icontrolMock;
-            BigIq.prototype.bigIp = bigIp;
+            BigIq.prototype.bigip = bigIp;
 
-            Object.defineProperty(BigIq, 'icontrol', {
-                get: function icontrol() {
-                    return icontrolMock;
-                }
-            });
-
-            bigIqAuthProviderSent = '';
             icontrolMock.when('list', '/tm/shared/licensing/registration', {});
         });
 
@@ -529,12 +485,11 @@ describe('bigip onboard tests', () => {
         });
 
         describe('common test', () => {
+            let bigIqLicenseBigIpSpy;
+
             beforeEach(() => {
-                BigIq.prototype.version = '5.0.0';
-                BigIq.prototype.licenseBigIp = (poolName, bigIpMgmtAddress, bigIpMgmtPort) => {
-                    bigIpMgmtAddressSent = bigIpMgmtAddress;
-                    bigIpMgmtPortSent = bigIpMgmtPort;
-                };
+                sinon.stub(BigIq.prototype, 'version').value('5.0.0');
+                bigIqLicenseBigIpSpy = sinon.stub(BigIq.prototype, 'licenseBigIp').returns();
 
                 icontrolMock.when(
                     'list',
@@ -559,7 +514,8 @@ describe('bigip onboard tests', () => {
 
                 return bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1', 'cloud', options)
                     .then(() => {
-                        assert.strictEqual(bigIqAuthProviderSent, 'myAuthProvider');
+                        assert.strictEqual(bigIqInitSpy.callCount, 1);
+                        assert.strictEqual(bigIqInitSpy.args[0][3].authProvider, 'myAuthProvider');
                     });
             });
 
@@ -573,7 +529,8 @@ describe('bigip onboard tests', () => {
                 );
                 return bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'pool1')
                     .then(() => {
-                        assert.strictEqual(bigIpMgmtAddressSent, 'bigIpMgmtAddressDeviceInfo');
+                        assert.strictEqual(bigIqLicenseBigIpSpy.callCount, 1);
+                        assert.strictEqual(bigIqLicenseBigIpSpy.args[0][1], 'bigIpMgmtAddressDeviceInfo');
                     });
             });
 
@@ -582,7 +539,8 @@ describe('bigip onboard tests', () => {
                     'host', 'user', 'password', 'pool1', null, { bigIpMgmtAddress: 'bigIpMgmtAddressOptions' }
                 )
                     .then(() => {
-                        assert.strictEqual(bigIpMgmtAddressSent, 'bigIpMgmtAddressOptions');
+                        assert.strictEqual(bigIqLicenseBigIpSpy.callCount, 1);
+                        assert.strictEqual(bigIqLicenseBigIpSpy.args[0][1], 'bigIpMgmtAddressOptions');
                     });
             });
 
@@ -594,7 +552,8 @@ describe('bigip onboard tests', () => {
                     { bigIpMgmtAddress: 'bigIpMgmtAddress', bigIpMgmtPort: specifiedPort }
                 )
                     .then(() => {
-                        assert.strictEqual(bigIpMgmtPortSent, specifiedPort);
+                        assert.strictEqual(bigIqLicenseBigIpSpy.callCount, 1);
+                        assert.strictEqual(bigIqLicenseBigIpSpy.args[0][2], specifiedPort);
                     });
             });
 
@@ -606,18 +565,13 @@ describe('bigip onboard tests', () => {
                     { bigIpMgmtAddress: 'bigIpMgmtAddress', bigIqMgmtPort: specifiedPort }
                 )
                     .then(() => {
-                        assert.strictEqual(bigIqMgmtPortSent, specifiedPort);
+                        assert.strictEqual(bigIqInitSpy.callCount, 1);
+                        assert.strictEqual(bigIqInitSpy.args[0][3].port, specifiedPort);
                     });
             });
 
             describe('already licensed test', () => {
                 beforeEach(() => {
-                    initCalled = false;
-                    BigIq.prototype.init = () => {
-                        initCalled = true;
-                        return q();
-                    };
-
                     icontrolMock.when(
                         'list',
                         '/tm/shared/licensing/registration',
@@ -630,7 +584,7 @@ describe('bigip onboard tests', () => {
                 it('no overwrite test', () => {
                     return bigIp.onboard.licenseViaBigIq('host', 'user', 'password', 'poolName')
                         .then(() => {
-                            assert.strictEqual(initCalled, false);
+                            assert.strictEqual(bigIqInitSpy.called, false);
                         });
                 });
 
@@ -639,7 +593,7 @@ describe('bigip onboard tests', () => {
                         'host', 'user', 'password', 'poolName', null, { overwrite: true }
                     )
                         .then(() => {
-                            assert.strictEqual(initCalled, true);
+                            assert.strictEqual(bigIqInitSpy.called, true);
                         });
                 });
             });
@@ -647,17 +601,12 @@ describe('bigip onboard tests', () => {
     });
 
     describe('revoke license via bigiq test', () => {
+        let bigIqInitSpy;
+        let bigIqRevokeLicenseSpy;
+
         beforeEach(() => {
-            bigIqAuthProviderSent = '';
-            BigIq.prototype.init = (host, user, password, options) => {
-                bigIqAuthProviderSent = options.authProvider;
-                return q();
-            };
-            BigIq.prototype.revokeLicense = (poolName, instance) => {
-                poolNameSent = poolName;
-                instanceSent = instance;
-                return q();
-            };
+            bigIqInitSpy = sinon.stub(BigIq.prototype, 'init').returns(q());
+            bigIqRevokeLicenseSpy = sinon.stub(BigIq.prototype, 'revokeLicense').returns(q());
         });
 
         it('basic test', () => {
@@ -682,20 +631,21 @@ describe('bigip onboard tests', () => {
 
             return bigIp.onboard.revokeLicenseViaBigIq('host', 'user', 'password', poolName, options)
                 .then(() => {
-                    assert.strictEqual(poolNameSent, poolName);
-                    assert.strictEqual(instanceSent.hostname, hostname);
-                    assert.strictEqual(instanceSent.machineId, machineId);
-                    assert.strictEqual(bigIqAuthProviderSent, 'myAuthProvider');
+                    assert.strictEqual(bigIqRevokeLicenseSpy.callCount, 1);
+                    assert.strictEqual(bigIqRevokeLicenseSpy.args[0][0], poolName);
+                    assert.strictEqual(bigIqRevokeLicenseSpy.args[0][1].hostname, hostname);
+                    assert.strictEqual(bigIqRevokeLicenseSpy.args[0][1].machineId, machineId);
+                    assert.strictEqual(bigIqInitSpy.callCount, 1);
+                    assert.strictEqual(bigIqInitSpy.args[0][3].authProvider, 'myAuthProvider');
                     // test macAddress from getManagementMac()
-                    assert.strictEqual(instanceSent.macAddress, 'fa:16:3e:be:5a:45');
+                    assert.strictEqual(bigIqRevokeLicenseSpy.args[0][1].macAddress, 'fa:16:3e:be:5a:45');
                 });
         });
 
         it('failure test', () => {
             const errorMessage = 'this is my error';
-            BigIq.prototype.revokeLicense = () => {
-                return q.reject(new Error(errorMessage));
-            };
+            BigIq.prototype.revokeLicense.restore();
+            sinon.stub(BigIq.prototype, 'revokeLicense').returns(q.reject(new Error(errorMessage)));
             return bigIp.onboard.revokeLicenseViaBigIq('host', 'user', 'password', 'poolName')
                 .then(() => {
                     assert.ok(false, 'Revoke should have thrown');
@@ -766,24 +716,18 @@ describe('bigip onboard tests', () => {
     });
 
     describe('set root password test', () => {
+        let runShellCommandSpy;
+
         beforeEach(() => {
-            util.runShellCommand = function runTmshCommand() {
-                shellCommand = arguments[0];
-                return q();
-            };
-            cryptoUtilMock.generateRandomBytes = function generateRandomBytes() {
-                return q('randombytes');
-            };
+            runShellCommandSpy = sinon.stub(util, 'runShellCommand').returns(q());
+
+            sinon.stub(cryptoUtil, 'generateRandomBytes').returns(q('randombytes'));
 
             icontrolMock.when(
                 'create',
                 '/shared/authn/root',
                 sharedAuthnRootResponse
             );
-        });
-
-        afterEach(() => {
-            shellCommand = undefined;
         });
 
         it('no old root password test', () => {
@@ -793,8 +737,9 @@ describe('bigip onboard tests', () => {
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         { value: 'false' }
                     );
+                    assert.strictEqual(runShellCommandSpy.callCount, 1);
                     assert.strictEqual(
-                        shellCommand,
+                        runShellCommandSpy.args[0][0],
                         'echo -e "randombytes\nrandombytes" | passwd root'
                     );
                     assert.deepEqual(
@@ -811,7 +756,7 @@ describe('bigip onboard tests', () => {
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         { value: 'false' }
                     );
-                    assert.strictEqual(shellCommand, undefined);
+                    assert.strictEqual(runShellCommandSpy.callCount, 0);
                     assert.deepEqual(
                         icontrolMock.getRequest('create', '/shared/authn/root'),
                         { oldPassword: 'myOldPassword', newPassword: 'rootPassword' }
@@ -832,10 +777,13 @@ describe('bigip onboard tests', () => {
     });
 
     describe('provision test', () => {
-        beforeEach(() => {
-            const TRANSACTION_PATH = '/tm/transaction/';
-            const TRANSACTION_ID = '1234';
+        const TRANSACTION_PATH = '/tm/transaction/';
+        const TRANSACTION_ID = '1234';
 
+        beforeEach(() => {
+            sinon.stub(util, 'callInSerial').callsFake((thisArg, promises) => {
+                return util.callInSerial.wrappedMethod(thisArg, promises, 0);
+            });
             icontrolMock.reset();
             icontrolMock.when(
                 'create',
@@ -974,6 +922,48 @@ describe('bigip onboard tests', () => {
                     );
                 });
         });
+
+        it('transaction test', () => {
+            const provisionSettings = {
+                mod1: 'level2',
+                mod2: 'level2'
+            };
+
+            icontrolMock.when(
+                'list',
+                '/tm/sys/provision/',
+                [
+                    {
+                        name: 'mod1',
+                        level: 'level1'
+                    },
+                    {
+                        name: 'mod2',
+                        level: 'level2'
+                    }
+                ]
+            );
+
+            return bigIp.onboard.provision(provisionSettings, { useTransaction: true })
+                .then(() => {
+                    assert.deepStrictEqual(
+                        icontrolMock.getRequest('create', TRANSACTION_PATH),
+                        {}
+                    );
+                    assert.deepStrictEqual(
+                        icontrolMock.getRequest('modify', `${TRANSACTION_PATH}${TRANSACTION_ID}`),
+                        {
+                            state: 'VALIDATING'
+                        }
+                    );
+                    assert.deepStrictEqual(
+                        icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
+                        {
+                            level: 'level2'
+                        }
+                    );
+                });
+        });
     });
 
     describe('ssl port test', () => {
@@ -1077,20 +1067,12 @@ describe('bigip onboard tests', () => {
     });
 
     describe('update user test', () => {
+        let bigIpInitSpy;
+
         beforeEach(() => {
-            bigIpInit = BigIp.prototype.init;
-
-            // Overwrite init because otherwise the real init creates
+            // Stub init otherwise the real init creates
             // a new iControl and we lose our icontrolMock
-            BigIp.prototype.init = (host, user, password, options) => {
-                passwordSent = password;
-                optionsSent = options;
-                return q();
-            };
-        });
-
-        afterEach(() => {
-            BigIp.prototype.init = bigIpInit;
+            bigIpInitSpy = sinon.stub(BigIp.prototype, 'init').returns(q());
         });
 
         it('create test', () => {
@@ -1190,8 +1172,6 @@ describe('bigip onboard tests', () => {
         });
 
         it('update current test', () => {
-            const init = BigIp.prototype.init;
-
             icontrolMock.when(
                 'list',
                 '/tm/auth/user',
@@ -1203,24 +1183,17 @@ describe('bigip onboard tests', () => {
             );
             return bigIp.onboard.updateUser('user', 'myPass')
                 .then(() => {
-                    assert.strictEqual(passwordSent, 'myPass');
-                    assert.strictEqual(optionsSent.port, 443);
+                    assert.strictEqual(bigIpInitSpy.callCount, 1);
+                    assert.strictEqual(bigIpInitSpy.args[0][2], 'myPass');
+                    assert.strictEqual(bigIpInitSpy.args[0][3].port, 443);
                 })
                 .catch((err) => {
                     assert.ok(false, err.message);
-                })
-                .finally(() => {
-                    BigIp.prototype.init = init;
                 });
         });
 
         it('update with password url test', () => {
-            const fsMock = require('fs');
-            const realReadFile = fsMock.readFile;
-
-            fsMock.readFile = (path, options, cb) => {
-                cb(null, 'myPass');
-            };
+            sinon.stub(fs, 'readFile').yields(null, 'myPass');
 
             icontrolMock.when(
                 'list',
@@ -1244,9 +1217,6 @@ describe('bigip onboard tests', () => {
                 })
                 .catch((err) => {
                     assert.ok(false, err.message);
-                })
-                .finally(() => {
-                    fsMock.readFile = realReadFile;
                 });
         });
     });
