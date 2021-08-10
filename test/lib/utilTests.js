@@ -1650,12 +1650,12 @@ describe('util tests', () => {
         });
     });
 
-    describe('try until test', () => {
+    describe('try until test', function tryUntilTests() {
         beforeEach(() => {
             funcCount = 0;
         });
 
-        it('called once test', (done) => {
+        it('called once test', () => {
             const func = function () {
                 const deferred = q.defer();
                 funcCount += 1;
@@ -1663,14 +1663,13 @@ describe('util tests', () => {
                 return deferred.promise;
             };
 
-            util.tryUntil(this, util.NO_RETRY, func)
+            return util.tryUntil(this, util.NO_RETRY, func)
                 .then(() => {
-                    assert.strictEqual(funcCount, 1);
-                    done();
+                    return assert.strictEqual(funcCount, 1);
                 });
         });
 
-        it('called multiple test', (done) => {
+        it('called multiple test', () => {
             const retries = 3;
 
             const func = function () {
@@ -1687,14 +1686,13 @@ describe('util tests', () => {
                 return deferred.promise;
             };
 
-            util.tryUntil(this, { maxRetries: retries, retryIntervalMs: 10 }, func)
+            return util.tryUntil(this, { maxRetries: retries, retryIntervalMs: 2 }, func)
                 .then(() => {
-                    assert.strictEqual(funcCount, retries);
-                    done();
+                    return assert.strictEqual(funcCount, retries);
                 });
         });
 
-        it('with throw test', (done) => {
+        it('with throw test', () => {
             const retries = 3;
 
             const func = function () {
@@ -1713,33 +1711,29 @@ describe('util tests', () => {
                 return deferred.promise;
             };
 
-            util.tryUntil(this, { maxRetries: retries, retryIntervalMs: 10 }, func)
+            return util.tryUntil(this, { maxRetries: retries, retryIntervalMs: 2 }, func)
                 .then(() => {
-                    assert.strictEqual(funcCount, retries);
-                    done();
+                    return assert.strictEqual(funcCount, retries);
                 });
-        }).timeout(300000);
+        });
 
-        it('not resolved test', (done) => {
+        it('not resolved test', () => {
             const func = function () {
                 const deferred = q.defer();
                 deferred.reject();
                 return deferred.promise;
             };
 
-            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10 }, func)
+            return util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 2 }, func)
                 .then(() => {
-                    assert.ok(false, 'func should never have resolved');
+                    return assert.ok(false, 'func should never have resolved');
                 })
                 .catch(() => {
-                    assert.ok(true);
-                })
-                .finally(() => {
-                    done();
+                    return assert.ok(true);
                 });
-        }).timeout(300000);
+        });
 
-        it('bad request test', (done) => {
+        it('bad request test', () => {
             const errorMessage = 'foo';
             const func = function () {
                 return q.reject(
@@ -1750,19 +1744,16 @@ describe('util tests', () => {
                 );
             };
 
-            util.tryUntil(this, { maxRetries: 90, retryIntervalMs: 10 }, func)
+            return util.tryUntil(this, { maxRetries: 90, retryIntervalMs: 2 }, func)
                 .then(() => {
-                    assert.ok(false, 'func should never have resolved');
+                    return assert.ok(false, 'func should never have resolved');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, errorMessage);
-                })
-                .finally(() => {
-                    done();
+                    return assert.strictEqual(err.message, errorMessage);
                 });
-        }).timeout(300000);
+        });
 
-        it('continue on error test', (done) => {
+        it('continue on error test', () => {
             const func = function () {
                 return q.reject(
                     {
@@ -1772,19 +1763,16 @@ describe('util tests', () => {
                 );
             };
 
-            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10, continueOnError: true }, func)
+            return util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 2, continueOnError: true }, func)
                 .then(() => {
-                    assert.ok(false, 'func should never have resolved');
+                    return assert.ok(false, 'func should never have resolved');
                 })
                 .catch((err) => {
-                    assert.notStrictEqual(err.message.indexOf('max tries'), -1);
-                })
-                .finally(() => {
-                    done();
+                    return assert.notStrictEqual(err.message.indexOf('max tries'), -1);
                 });
-        }).timeout(300000);
+        });
 
-        it('continue on error message is message test', (done) => {
+        it('continue on error message is message test', () => {
             const func = function () {
                 return q.reject(
                     {
@@ -1794,19 +1782,17 @@ describe('util tests', () => {
                 );
             };
 
-            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: 'foo' }, func)
+            return util.tryUntil(this,
+                { maxRetries: 2, retryIntervalMs: 2, continueOnErrorMessage: 'foo' }, func)
                 .then(() => {
-                    assert.ok(false, 'func should never have resolved');
+                    return assert.ok(false, 'func should never have resolved');
                 })
                 .catch((err) => {
-                    assert.notStrictEqual(err.message.indexOf('max tries'), -1);
-                })
-                .finally(() => {
-                    done();
+                    return assert.notStrictEqual(err.message.indexOf('max tries'), -1);
                 });
-        }).timeout(300000);
+        });
 
-        it('continue on error message is message regex test', (done) => {
+        it('continue on error message is message regex test', () => {
             const func = function () {
                 return q.reject(
                     {
@@ -1816,19 +1802,17 @@ describe('util tests', () => {
                 );
             };
 
-            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: /foo/ }, func)
+            return util.tryUntil(this,
+                { maxRetries: 2, retryIntervalMs: 2, continueOnErrorMessage: /foo/ }, func)
                 .then(() => {
-                    assert.ok(false, 'func should never have resolved');
+                    return assert.ok(false, 'func should never have resolved');
                 })
                 .catch((err) => {
-                    assert.notStrictEqual(err.message.indexOf('max tries'), -1);
-                })
-                .finally(() => {
-                    done();
+                    return assert.notStrictEqual(err.message.indexOf('max tries'), -1);
                 });
-        }).timeout(300000);
+        });
 
-        it('continue on error message is not message test', (done) => {
+        it('continue on error message is not message test', () => {
             const func = function () {
                 return q.reject(
                     {
@@ -1838,17 +1822,107 @@ describe('util tests', () => {
                 );
             };
 
-            util.tryUntil(this, { maxRetries: 2, retryIntervalMs: 10, continueOnErrorMessage: 'bar' }, func)
+            return util.tryUntil(this,
+                { maxRetries: 2, retryIntervalMs: 2, continueOnErrorMessage: 'bar' },
+                func)
                 .then(() => {
-                    assert.ok(false, 'func should never have resolved');
+                    return assert.ok(false, 'func should never have resolved');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message.indexOf('max tries'), -1);
-                })
-                .finally(() => {
-                    done();
+                    return assert.strictEqual(err.message.indexOf('max tries'), -1);
                 });
-        }).timeout(300000);
+        });
+
+        describe('failOnErrorX tests', () => {
+            let callCount;
+
+            const func = function () {
+                callCount += 1;
+                switch (callCount) {
+                case 1:
+                    return q.reject({ code: 400, message: 'is foo' });
+                case 2:
+                    return q.reject({ code: 500, message: 'monkeys are breaking things' });
+                default:
+                    return q.resolve({ code: 200, message: 'should have failed' });
+                }
+            };
+
+            beforeEach(() => {
+                callCount = 0;
+            });
+
+            it('should respect the continueOnError, until it hits a failOnErrorMessages', () => {
+                return util.tryUntil(this,
+                    {
+                        maxRetries: 3,
+                        retryIntervalMs: 1,
+                        continueOnError: true,
+                        failOnErrorMessages: ['boo far', 'monkeys are breaking things']
+                    },
+                    func)
+                    .then(() => {
+                        return assert.ok(false, 'func should not have made it to resolution');
+                    })
+                    .catch((err) => {
+                        assert.strictEqual(callCount, 2);
+                        assert.deepStrictEqual(err, { code: 500, message: 'monkeys are breaking things' });
+                    });
+            });
+
+            it('should respect the continueOnError, until it hits a failOnErrorMessages with regex', () => {
+                return util.tryUntil(this,
+                    {
+                        maxRetries: 3,
+                        retryIntervalMs: 1,
+                        continueOnError: true,
+                        failOnErrorMessages: [/oof har/, /king thing/]
+                    },
+                    func)
+                    .then(() => {
+                        return assert.ok(false, 'func should not have made it to resolution');
+                    })
+                    .catch((err) => {
+                        assert.strictEqual(callCount, 2);
+                        assert.deepStrictEqual(err, { code: 500, message: 'monkeys are breaking things' });
+                    });
+            });
+
+            it('should respect the continueOnError, until it hits a failOnErrorCode', () => {
+                return util.tryUntil(this,
+                    {
+                        maxRetries: 3,
+                        retryIntervalMs: 1,
+                        continueOnError: true,
+                        failOnErrorCodes: [200, 500]
+                    },
+                    func)
+                    .then(() => {
+                        return assert.ok(false, 'func should not have made it to resolution');
+                    })
+                    .catch((err) => {
+                        assert.strictEqual(callCount, 2);
+                        assert.deepStrictEqual(err, { code: 500, message: 'monkeys are breaking things' });
+                    });
+            });
+
+            it('should attempt all retries if failOnErrorMessages is empty', () => {
+                return util.tryUntil(this,
+                    {
+                        maxRetries: 3,
+                        retryIntervalMs: 1,
+                        continueOnError: true,
+                        failOnErrorMessages: []
+                    },
+                    func)
+                    .then((result) => {
+                        assert.strictEqual(callCount, 3);
+                        // Note: I realize the expected message is misleading, but it simplifies the
+                        // code to expect the default result from this test's responses.
+                        return assert.deepStrictEqual(result, { code: 200, message: 'should have failed' });
+                    });
+            });
+        });
     });
 
     it('version compare test', (done) => {
