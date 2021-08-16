@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.26.2
+* Fix race condition between createOrModify and MCPD where MCPD first reports an object exists but it has already been deleted.
+
 ## Release 4.26.1
 * Add failOnErrorMessages and failOnErrorCodes which are arrays of strings/regexes and integers, respectively. That prevent the retry logic from running. Effectively allowing for an early exit of specific failures.
 * Add option to provision BIG-IP modules using a transaction
