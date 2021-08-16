@@ -20,6 +20,7 @@ const q = require('q');
 const fs = require('fs');
 const assert = require('assert');
 const childProcessMock = require('child_process');
+const sinon = require('sinon');
 
 describe('bigip tests', () => {
     const realSetTimeout = setTimeout;
@@ -94,6 +95,7 @@ describe('bigip tests', () => {
     });
 
     afterEach(() => {
+        sinon.restore();
         Object.keys(require.cache).forEach((key) => {
             delete require.cache[key];
         });
@@ -350,6 +352,40 @@ describe('bigip tests', () => {
                     .then(() => {
                         assert.strictEqual(icontrolMock.lastCall.method, 'modify');
                         assert.strictEqual(icontrolMock.lastCall.path, '/tm/auth/user/bar');
+                    });
+            });
+        });
+
+        describe('race condition test', () => {
+            let modifyPath;
+            it('should update path if object exists first but then goes away', () => {
+                sinon.stub(icontrolMock, 'modify').onFirstCall().callsFake((path, opts) => {
+                    modifyPath = path;
+                    icontrolMock.recordRequest('list', path, null, opts);
+                    const err = new Error();
+                    err.code = 404;
+                    return Promise.reject(err);
+                });
+
+                sinon.stub(icontrolMock, 'list')
+                    .onFirstCall()
+                    .callsFake((path, opts) => {
+                        icontrolMock.recordRequest('list', path, null, opts);
+                        return Promise.resolve({});
+                    })
+                    .onSecondCall()
+                    .callsFake((path, opts) => {
+                        icontrolMock.recordRequest('list', path, null, opts);
+                        const err = new Error();
+                        err.code = 404;
+                        return Promise.reject(err);
+                    });
+
+                return bigIp.createOrModify('/this/will/go/away', { name: 'bar' }, null, utilMock.SHORT_RETRY)
+                    .then(() => {
+                        assert.strictEqual(modifyPath, '/this/will/go/away/~Common~bar');
+                        assert.strictEqual(icontrolMock.lastCall.method, 'create');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/this/will/go/away');
                     });
             });
         });
