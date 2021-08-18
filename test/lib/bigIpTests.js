@@ -381,7 +381,13 @@ describe('bigip tests', () => {
                         return Promise.reject(err);
                     });
 
-                return bigIp.createOrModify('/this/will/go/away', { name: 'bar' }, null, utilMock.SHORT_RETRY)
+                return bigIp.createOrModify(
+                    '/this/will/go/away',
+                    { name: 'bar' },
+                    null,
+                    utilMock.SHORT_RETRY,
+                    { silent: true }
+                )
                     .then(() => {
                         assert.strictEqual(modifyPath, '/this/will/go/away/~Common~bar');
                         assert.strictEqual(icontrolMock.lastCall.method, 'create');

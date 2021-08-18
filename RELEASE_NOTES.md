@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.26.3
+* Fix bug in createOrModify when silent option is used
+
 ## Release 4.26.2
 * Fix race condition between createOrModify and MCPD where MCPD first reports an object exists but it has already been deleted.
 
