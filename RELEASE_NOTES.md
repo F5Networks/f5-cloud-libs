@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.26.4
+* Expose chargebackTag BIGIQ license tag.
+
 ## Release 4.26.3
 * Fix bug in createOrModify when silent option is used
 

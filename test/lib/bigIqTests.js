@@ -267,6 +267,21 @@ describe('bigiq tests', () => {
                             });
                     });
             });
+
+            it('chargebackTag test', () => {
+                return bigIq.init('host', 'user', 'password')
+                    .then(() => {
+                        return bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { chargebackTag: 'foo-bar' })
+                            .then(() => {
+                                assert.strictEqual(
+                                    apiTypeCalled,
+                                    sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
+                                );
+                                assert.strictEqual(licensingArgs[1], poolName);
+                                assert.strictEqual(licensingArgs[4].chargebackTag, 'foo-bar');
+                            });
+                    });
+            });
         });
     });
 
