@@ -105,8 +105,8 @@ describe('BIGIQ 5.3.0 License Provider Tests', () => {
                     done();
                 });
         });
-        it('options test', (done) => {
-            provider.getUnmanagedDeviceLicense(
+        it('options test', () => {
+            return provider.getUnmanagedDeviceLicense(
                 icontrolMock,
                 'pool1',
                 'bigIpMgmtAddress',
@@ -114,7 +114,8 @@ describe('BIGIQ 5.3.0 License Provider Tests', () => {
                 {
                     skuKeyword1: 'mySku1',
                     skuKeyword2: 'mySku2',
-                    unitOfMeasure: 'myUnitOfMeasure'
+                    unitOfMeasure: 'myUnitOfMeasure',
+                    chargebackTag: 'foo-bar'
                 }
             )
                 .then(() => {
@@ -122,12 +123,7 @@ describe('BIGIQ 5.3.0 License Provider Tests', () => {
                     assert.strictEqual(licenseRequest.skuKeyword1, 'mySku1');
                     assert.strictEqual(licenseRequest.skuKeyword2, 'mySku2');
                     assert.strictEqual(licenseRequest.unitOfMeasure, 'myUnitOfMeasure');
-                })
-                .catch((err) => {
-                    assert.ok(false, err.message);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(licenseRequest.chargebackTag, 'foo-bar');
                 });
         });
 

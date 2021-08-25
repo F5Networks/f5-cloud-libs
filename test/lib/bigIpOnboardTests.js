@@ -570,6 +570,17 @@ describe('bigip onboard tests', () => {
                     });
             });
 
+            it('chargebackTag present test', () => {
+                return bigIp.onboard.licenseViaBigIq(
+                    'host', 'user', 'password', 'pool1', null,
+                    { chargebackTag: 'foo-bar' }
+                )
+                    .then(() => {
+                        assert.strictEqual(bigIqLicenseBigIpSpy.callCount, 1);
+                        assert.strictEqual(bigIqLicenseBigIpSpy.args[0][3].chargebackTag, 'foo-bar');
+                    });
+            });
+
             describe('already licensed test', () => {
                 beforeEach(() => {
                     icontrolMock.when(

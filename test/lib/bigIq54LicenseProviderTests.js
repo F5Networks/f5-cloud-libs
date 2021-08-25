@@ -133,6 +133,29 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
                 });
         });
 
+        it('options test', () => {
+            return provider.getUnmanagedDeviceLicense(
+                icontrolMock,
+                'pool1',
+                'bigIpMgmtAddress',
+                '443',
+                {
+                    cloud: 'cloud',
+                    skuKeyword1: 'mySku1',
+                    skuKeyword2: 'mySku2',
+                    unitOfMeasure: 'myUnitOfMeasure',
+                    chargebackTag: 'foo-bar'
+                }
+            )
+                .then(() => {
+                    const licenseRequest = icontrolMock.getRequest('create', LICENSE_PATH);
+                    assert.strictEqual(licenseRequest.skuKeyword1, 'mySku1');
+                    assert.strictEqual(licenseRequest.skuKeyword2, 'mySku2');
+                    assert.strictEqual(licenseRequest.unitOfMeasure, 'myUnitOfMeasure');
+                    assert.strictEqual(licenseRequest.chargebackTag, 'foo-bar');
+                });
+        });
+
         it('get license text failure test', () => {
             icontrolMock.when(
                 'list',
