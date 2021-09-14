@@ -34,18 +34,16 @@ describe('Metrics Collector Unit Tests', () => {
         done();
     };
 
-    it('set logger', (done) => {
+    it('set logger', () => {
         assert.doesNotThrow(() => {
             ipc.setLogger({});
         });
-        done();
     });
 
-    it('set logger options', (done) => {
+    it('set logger options', () => {
         assert.doesNotThrow(() => {
             ipc.setLoggerOptions({});
         });
-        done();
     });
 
     describe('Test Once', () => {
@@ -128,25 +126,21 @@ describe('Metrics Collector Unit Tests', () => {
             util.removeDirectorySync(ipc.signalBasePath);
         });
 
-        it('basic test', (done) => {
+        it('basic test', () => {
             ipc.send('foo');
             assert.strictEqual(fs.existsSync(`${ipc.signalBasePath}foo`), true);
-            done();
         });
 
-        it('error test', (done) => {
-            const message = 'closeSync error';
+        it('error test', () => {
             fs.closeSync = () => {
-                throw new Error(message);
+                throw new Error('closeSync error');
             };
 
             try {
                 ipc.send('foo');
                 assert.ok(false, 'send should have thrown');
             } catch (err) {
-                assert.strictEqual(err.message, message);
-            } finally {
-                done();
+                assert.strictEqual(err.message, 'closeSync error');
             }
         });
     });
@@ -164,26 +158,23 @@ describe('Metrics Collector Unit Tests', () => {
             util.removeDirectorySync(ipc.signalBasePath);
         });
 
-        it('basic test', (done) => {
+        it('basic test', () => {
             ipc.send('foo');
             assert.strictEqual(fs.existsSync('/tmp/f5-cloud-libs-signals/foo'), true);
             ipc.clearSignals();
             assert.strictEqual(fs.existsSync('/tmp/f5-cloud-libs-signals/foo'), false);
-            done();
         });
-        it('error test', (done) => {
-            const message = 'readdirSync error';
+
+        it('error test', () => {
             fs.readdirSync = () => {
-                throw new Error(message);
+                throw new Error('readdirSync error');
             };
 
             try {
                 ipc.clearSignals();
                 assert.ok(false, 'clearSignals should have thrown');
             } catch (err) {
-                assert.strictEqual(err.message, message);
-            } finally {
-                done();
+                assert.strictEqual(err.message, 'readdirSync error');
             }
         });
     });
@@ -194,6 +185,7 @@ describe('Metrics Collector Unit Tests', () => {
                 fs.rmdirSync(ipc.signalBasePath);
             }
         });
+
         afterEach(() => {
             fs.readdirSync = readdirSync;
             fs.closeSync = closeSync;
@@ -201,18 +193,19 @@ describe('Metrics Collector Unit Tests', () => {
             ipc.clearSignals();
             util.removeDirectorySync(ipc.signalBasePath);
         });
+
         after(() => {
             ipc.clearSignals();
         });
-        it('on send', (done) => {
+
+        it('on send', () => {
             ipc.send('foo');
             assert.strictEqual(fs.existsSync(ipc.signalBasePath), true);
-            done();
         });
-        it('on once', (done) => {
+
+        it('on once', () => {
             ipc.once('foo');
             assert.strictEqual(fs.existsSync(ipc.signalBasePath), true);
-            done();
         });
     });
 });

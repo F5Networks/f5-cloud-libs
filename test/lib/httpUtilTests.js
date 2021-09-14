@@ -67,7 +67,7 @@ describe('httpUtil tests', () => {
                 .then(() => {
                     assert.strictEqual(lastRequest.method, 'GET');
                     assert.strictEqual(lastRequest.url, testUrl);
-                    assert.deepEqual(lastRequest.options, testOptions);
+                    assert.deepStrictEqual(lastRequest.options, testOptions);
                 });
         });
 
@@ -76,7 +76,7 @@ describe('httpUtil tests', () => {
                 .then(() => {
                     assert.strictEqual(lastRequest.method, 'POST');
                     assert.strictEqual(lastRequest.url, testUrl);
-                    assert.deepEqual(lastRequest.options, testOptions);
+                    assert.deepStrictEqual(lastRequest.options, testOptions);
                 });
         });
 
@@ -85,7 +85,7 @@ describe('httpUtil tests', () => {
                 .then(() => {
                     assert.strictEqual(lastRequest.method, 'PATCH');
                     assert.strictEqual(lastRequest.url, testUrl);
-                    assert.deepEqual(lastRequest.options, testOptions);
+                    assert.deepStrictEqual(lastRequest.options, testOptions);
                 });
         });
 
@@ -94,7 +94,7 @@ describe('httpUtil tests', () => {
                 .then(() => {
                     assert.strictEqual(lastRequest.method, 'PUT');
                     assert.strictEqual(lastRequest.url, testUrl);
-                    assert.deepEqual(lastRequest.options, testOptions);
+                    assert.deepStrictEqual(lastRequest.options, testOptions);
                 });
         });
 
@@ -103,7 +103,7 @@ describe('httpUtil tests', () => {
                 .then(() => {
                     assert.strictEqual(lastRequest.method, 'DELETE');
                     assert.strictEqual(lastRequest.url, testUrl);
-                    assert.deepEqual(lastRequest.options, testOptions);
+                    assert.deepStrictEqual(lastRequest.options, testOptions);
                 });
         });
     });
@@ -208,7 +208,7 @@ describe('httpUtil tests', () => {
 
             return httpUtil.request('GET', 'http://www.example.com')
                 .then((data) => {
-                    assert.deepEqual(data, { hello: 'world' });
+                    assert.deepStrictEqual(data, { hello: 'world' });
                 });
         });
 

@@ -77,7 +77,7 @@ describe('gtm dns provider tests', () => {
         gtmDnsProvider.bigIp = bigIpMock;
     });
 
-    it('bigip init test', (done) => {
+    it('bigip init test', () => {
         providerOptions = {
             host: 'myHost',
             user: 'myUser',
@@ -89,7 +89,7 @@ describe('gtm dns provider tests', () => {
             datacenter: 'foo'
         };
 
-        gtmDnsProvider.init(providerOptions)
+        return gtmDnsProvider.init(providerOptions)
             .then(() => {
                 return gtmDnsProvider.update();
             })
@@ -97,17 +97,11 @@ describe('gtm dns provider tests', () => {
                 assert.strictEqual(functionCalls.bigIp.init[0], 'myHost');
                 assert.strictEqual(functionCalls.bigIp.init[1], 'myUser');
                 assert.strictEqual(functionCalls.bigIp.init[2], 'myPassword');
-                assert.deepEqual(functionCalls.bigIp.init[3], {
+                assert.deepStrictEqual(functionCalls.bigIp.init[3], {
                     port: '1234',
                     passwordIsUrl: false,
                     passwordEncrypted: true
                 });
-            })
-            .catch((err) => {
-                assert.ok(false, err);
-            })
-            .finally(() => {
-                done();
             });
     });
 
@@ -130,50 +124,38 @@ describe('gtm dns provider tests', () => {
             };
         });
 
-        it('basic test', (done) => {
-            gtmDnsProvider.init(providerOptions)
+        it('basic test', () => {
+            return gtmDnsProvider.init(providerOptions)
                 .then(() => {
                     return gtmDnsProvider.update(instances);
                 })
                 .then(() => {
                     assert.strictEqual(functionCalls.bigIp.gtm.updateServer[0], 'myServer');
-                    assert.deepEqual(functionCalls.bigIp.gtm.updateServer[1], instances);
+                    assert.deepStrictEqual(functionCalls.bigIp.gtm.updateServer[1], instances);
                     assert.strictEqual(functionCalls.bigIp.gtm.updatePool[0], 'myPool');
                     assert.strictEqual(functionCalls.bigIp.gtm.updatePool[1], 'myServer');
                     assert.strictEqual(functionCalls.bigIp.gtm.updatePool[2], instances);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('data center created test', (done) => {
+        it('data center created test', () => {
             icontrolMock.when('list', '/tm/gtm/datacenter', []);
 
-            gtmDnsProvider.init(providerOptions)
+            return gtmDnsProvider.init(providerOptions)
                 .then(() => {
                     return gtmDnsProvider.update(instances);
                 })
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('create', '/tm/gtm/datacenter'),
                         {
                             name: 'myDatacenter'
                         }
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('data center not created test', (done) => {
+        it('data center not created test', () => {
             icontrolMock.when(
                 'list',
                 '/tm/gtm/datacenter',
@@ -184,7 +166,7 @@ describe('gtm dns provider tests', () => {
                 ]
             );
 
-            gtmDnsProvider.init(providerOptions)
+            return gtmDnsProvider.init(providerOptions)
                 .then(() => {
                     return gtmDnsProvider.update(instances);
                 })
@@ -193,24 +175,18 @@ describe('gtm dns provider tests', () => {
                         icontrolMock.getRequest('create', '/tm/gtm/datacenter'),
                         undefined
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('server created test', (done) => {
+        it('server created test', () => {
             icontrolMock.when('list', '/tm/gtm/server', []);
 
-            gtmDnsProvider.init(providerOptions)
+            return gtmDnsProvider.init(providerOptions)
                 .then(() => {
                     return gtmDnsProvider.update(instances);
                 })
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('create', '/tm/gtm/server'),
                         {
                             name: 'myServer',
@@ -219,16 +195,10 @@ describe('gtm dns provider tests', () => {
                             addresses: ['192.0.2.1']
                         }
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('server created address in use test', (done) => {
+        it('server created address in use test', () => {
             icontrolMock.when(
                 'list',
                 '/tm/gtm/server',
@@ -249,12 +219,12 @@ describe('gtm dns provider tests', () => {
                 ]
             );
 
-            gtmDnsProvider.init(providerOptions)
+            return gtmDnsProvider.init(providerOptions)
                 .then(() => {
                     return gtmDnsProvider.update(instances);
                 })
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('create', '/tm/gtm/server'),
                         {
                             name: 'myServer',
@@ -263,16 +233,10 @@ describe('gtm dns provider tests', () => {
                             addresses: ['192.0.2.4']
                         }
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('server not created test', (done) => {
+        it('server not created test', () => {
             icontrolMock.when(
                 'list',
                 '/tm/gtm/server',
@@ -283,7 +247,7 @@ describe('gtm dns provider tests', () => {
                 ]
             );
 
-            gtmDnsProvider.init(providerOptions)
+            return gtmDnsProvider.init(providerOptions)
                 .then(() => {
                     return gtmDnsProvider.update(instances);
                 })
@@ -292,39 +256,27 @@ describe('gtm dns provider tests', () => {
                         icontrolMock.getRequest('create', '/tm/gtm/server'),
                         undefined
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('pool created test', (done) => {
+        it('pool created test', () => {
             icontrolMock.when('list', '/tm/gtm/pool/a', []);
 
-            gtmDnsProvider.init(providerOptions)
+            return gtmDnsProvider.init(providerOptions)
                 .then(() => {
                     return gtmDnsProvider.update(instances);
                 })
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('create', '/tm/gtm/pool/a'),
                         {
                             name: 'myPool'
                         }
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('pool not created test', (done) => {
+        it('pool not created test', () => {
             icontrolMock.when(
                 'list',
                 '/tm/gtm/pool/a',
@@ -335,7 +287,7 @@ describe('gtm dns provider tests', () => {
                 ]
             );
 
-            gtmDnsProvider.init(providerOptions)
+            return gtmDnsProvider.init(providerOptions)
                 .then(() => {
                     return gtmDnsProvider.update(instances);
                 })
@@ -344,17 +296,11 @@ describe('gtm dns provider tests', () => {
                         icontrolMock.getRequest('create', '/tm/gtm/pool/a'),
                         undefined
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
 
-    it('options test', (done) => {
+    it('options test', () => {
         instances = {
             1: 'one',
             2: 'two'
@@ -373,26 +319,20 @@ describe('gtm dns provider tests', () => {
             partition: 'myPartition'
         };
 
-        gtmDnsProvider.init(providerOptions)
+        return gtmDnsProvider.init(providerOptions)
             .then(() => {
                 return gtmDnsProvider.update(instances);
             })
             .then(() => {
-                assert.deepEqual(functionCalls.bigIp.gtm.updateServer[2], {
+                assert.deepStrictEqual(functionCalls.bigIp.gtm.updateServer[2], {
                     datacenter: 'myDatacenter',
                     monitor: 'myVsMonitor'
                 });
-                assert.deepEqual(functionCalls.bigIp.gtm.updatePool[3], {
+                assert.deepStrictEqual(functionCalls.bigIp.gtm.updatePool[3], {
                     loadBalancingMode: 'myLoadBalancingMode',
                     monitor: 'myPoolMonitor'
                 });
                 assert.strictEqual(functionCalls.bigIp.gtm.setPartition[0], 'myPartition');
-            })
-            .catch((err) => {
-                assert.ok(false, err);
-            })
-            .finally(() => {
-                done();
             });
     });
 });

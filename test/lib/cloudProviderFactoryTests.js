@@ -43,7 +43,7 @@ describe('Cloud Provider Factory Unit Tests', () => {
         Module._resolveFilename = realResolve;
     });
 
-    it('should only work for supported providers', (done) => {
+    it('should only work for supported providers', () => {
         const providerName = 'foo';
         const requestedFile = path.normalize(`${__dirname}/../../../f5-cloud-libs-${providerName}/index.js`);
 
@@ -61,10 +61,9 @@ describe('Cloud Provider Factory Unit Tests', () => {
         };
         assert(cloudProviderFactory.getCloudProvider(providerName));
         assert.ok(constructorCalled, 'constructor was not called');
-        done();
     });
 
-    it('should match azure storage', (done) => {
+    it('should match azure storage', () => {
         const expectedPath = '../../f5-cloud-libs-azure';
         require.cache[expectedPath] = {
             exports: {
@@ -79,12 +78,11 @@ describe('Cloud Provider Factory Unit Tests', () => {
         };
         cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
 
-        assert.ok(constructorCalled, 'constructor was not called');
         assert.strictEqual(calledPath, expectedPath);
-        done();
+        assert.ok(constructorCalled, 'constructor was not called');
     });
 
-    it('should match aws storage', (done) => {
+    it('should match aws storage', () => {
         const expectedPath = '../../f5-cloud-libs-aws';
         require.cache[expectedPath] = {
             exports: {
@@ -98,12 +96,11 @@ describe('Cloud Provider Factory Unit Tests', () => {
         };
         cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
 
-        assert.ok(constructorCalled, 'constructor was not called');
         assert.strictEqual(calledPath, expectedPath);
-        done();
+        assert.ok(constructorCalled, 'constructor was not called');
     });
 
-    it('should match gce storage', (done) => {
+    it('should match gce storage', () => {
         const expectedPath = '../../f5-cloud-libs-gce';
         require.cache[expectedPath] = {
             exports: {
@@ -118,15 +115,13 @@ describe('Cloud Provider Factory Unit Tests', () => {
         };
         cloudProviderFactory.getCloudProvider(null, {}, matchOptions);
 
-        assert.ok(constructorCalled, 'constructor was not called');
         assert.strictEqual(calledPath, expectedPath);
-        done();
+        assert.ok(constructorCalled, 'constructor was not called');
     });
 
-    it('should not work for unsupported cloud providers', (done) => {
+    it('should not work for unsupported cloud providers', () => {
         assert.throws(() => {
             cloudProviderFactory.getCloudProvider('bar');
-        });
-        done();
+        }, /Error: ENOENT: no such file or directory, open '..\/..\/f5-cloud-libs-bar'/);
     });
 });

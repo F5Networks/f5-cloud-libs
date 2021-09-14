@@ -496,7 +496,7 @@ describe('bigip tests', () => {
             return bigIp.createFolder(folderName)
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, 'create');
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.lastCall.body,
                         {
                             name: folderName,
@@ -544,7 +544,7 @@ describe('bigip tests', () => {
             return bigIp.createFolder(folderName, options)
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, 'create');
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.lastCall.body,
                         {
                             name: folderName,
@@ -659,7 +659,8 @@ describe('bigip tests', () => {
 
             return bigIp.installPrivateKey(keyFile, folder, name)
                 .then(() => {
-                    assert.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
+                    assert.deepStrictEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'),
+                        expectedBody);
                     assert.strictEqual(removedFile, keyFile);
                 });
         });
@@ -681,7 +682,8 @@ describe('bigip tests', () => {
 
             return bigIp.installPrivateKey(keyFile, folder, name, { passphrase })
                 .then(() => {
-                    assert.deepEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'), expectedBody);
+                    assert.deepStrictEqual(icontrolMock.getRequest('create', '/tm/sys/crypto/key'),
+                        expectedBody);
                     assert.strictEqual(removedFile, keyFile);
                 });
         });
@@ -721,7 +723,7 @@ describe('bigip tests', () => {
 
             return bigIp.getPrivateKeyMetadata(privateKeyFolder, privateKeyName)
                 .then((response) => {
-                    assert.deepEqual(response, sslKey);
+                    assert.deepStrictEqual(response, sslKey);
                 });
         });
 
@@ -740,7 +742,7 @@ describe('bigip tests', () => {
 
             return bigIp.getPrivateKeyMetadata(privateKeyFolder, `${privateKeyName}.key`)
                 .then((response) => {
-                    assert.deepEqual(response, sslKey);
+                    assert.deepStrictEqual(response, sslKey);
                 });
         });
     });
@@ -810,7 +812,7 @@ describe('bigip tests', () => {
         it('basic test', () => {
             return bigIp.loadUcs('/tmp/foo')
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('replace', `${UCS_TASK_PATH}/1234`),
                         { _taskState: 'VALIDATING' }
                     );
@@ -821,7 +823,7 @@ describe('bigip tests', () => {
             return bigIp.loadUcs('/tmp/foo', { foo: 'bar', hello: 'world' })
                 .then(() => {
                     const command = icontrolMock.getRequest('create', UCS_TASK_PATH);
-                    assert.deepEqual(command.options, [{ foo: 'bar' }, { hello: 'world' }]);
+                    assert.deepStrictEqual(command.options, [{ foo: 'bar' }, { hello: 'world' }]);
                 });
         });
 
@@ -856,9 +858,6 @@ describe('bigip tests', () => {
                     .then(() => {
                         assert.strictEqual(tmshCommandCalled.startsWith('modify auth user'), true);
                         assert.strictEqual(dataWritten, encryptedPassword);
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
                     });
             });
 
@@ -870,9 +869,6 @@ describe('bigip tests', () => {
                 return bigIp.loadUcs('/tmp/foo', undefined, { initLocalKeys: true, restoreUser: true })
                     .then(() => {
                         assert.strictEqual(tmshCommandCalled, undefined);
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
                     });
             });
         });
@@ -901,9 +897,8 @@ describe('bigip tests', () => {
         });
 
         it('mcp never ready test', () => {
-            const message = 'mcp is not ready';
             bigIp.ready = function ready() {
-                return q.reject(new Error(message));
+                return q.reject(new Error('mcp is not ready'));
             };
 
             return bigIp.loadUcs('/tmp/foo', undefined, undefined, utilMock.NO_RETRY)
@@ -911,35 +906,32 @@ describe('bigip tests', () => {
                     assert.ok(false, 'Should have thrown mcp not ready');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, message);
+                    assert.strictEqual(err.message, 'mcp is not ready');
                 });
         });
 
         describe('password url tests', () => {
             it('basic test', () => {
-                const password = 'myPassword';
                 const passwordFile = '/tmp/passwordFromUrlTest';
                 const passwordUrl = `file://${passwordFile}`;
 
-                fs.writeFileSync(passwordFile, password);
+                fs.writeFileSync(passwordFile, 'myPassword');
 
                 return bigIp.init('host', 'user', passwordUrl, { passwordIsUrl: true })
                     .then(() => {
                         bigIp.icontrol = icontrolMock;
                         bigIp.password = '';
-                        bigIp.loadUcs('/tmp/foo')
-                            .then(() => {
-                                assert.strictEqual(bigIp.password, password);
-                            })
-                            .finally(() => {
-                                fs.unlinkSync(passwordFile);
-                            });
+                        return bigIp.loadUcs('/tmp/foo');
+                    })
+                    .then(() => {
+                        assert.strictEqual(bigIp.password, 'myPassword');
+                    })
+                    .finally(() => {
+                        fs.unlinkSync(passwordFile);
                     });
             });
 
             it('get data from url error test', () => {
-                const message = 'getDataFromUrl error';
-
                 const password = 'myPassword';
                 const passwordFile = '/tmp/passwordFromUrlTest';
                 const passwordUrl = `file://${passwordFile}`;
@@ -949,37 +941,35 @@ describe('bigip tests', () => {
                 return bigIp.init('host', 'user', passwordUrl, { passwordIsUrl: true })
                     .then(() => {
                         utilMock.getDataFromUrl = function getDataFromUrl() {
-                            return q.reject(new Error(message));
+                            return q.reject(new Error('getDataFromUrl error'));
                         };
 
                         bigIp.icontrol = icontrolMock;
                         bigIp.password = '';
-                        bigIp.loadUcs('/tmp/foo')
-                            .then(() => {
-                                assert.ok(false, 'should have thrown getDataFromUrl error');
-                            })
-                            .catch((err) => {
-                                assert.strictEqual(err.message, message);
-                            })
-                            .finally(() => {
-                                fs.unlinkSync(passwordFile);
-                            });
+                        return bigIp.loadUcs('/tmp/foo');
+                    })
+                    .then(() => {
+                        assert.ok(false, 'should have thrown getDataFromUrl error');
+                    })
+                    .catch((err) => {
+                        assert.strictEqual(err.message, 'getDataFromUrl error');
+                    })
+                    .finally(() => {
+                        fs.unlinkSync(passwordFile);
                     });
             });
 
             it('decrypt password error test', () => {
-                const message = 'encrypt password error';
-
                 const password = 'myPassword';
                 const passwordFile = '/tmp/passwordFromUrlTest';
                 const passwordUrl = `file://${passwordFile}`;
 
                 fs.writeFileSync(passwordFile, password);
 
-                bigIp.init('host', 'user', passwordUrl, { passwordIsUrl: true })
+                return bigIp.init('host', 'user', passwordUrl, { passwordIsUrl: true })
                     .then(() => {
                         cryptoUtilMock.encrypt = function encrypt() {
-                            return q.reject(new Error(message));
+                            return q.reject(new Error('encrypt password error'));
                         };
                         localKeyUtilMock.generateAndInstallKeyPair = function generateAndInstallKeyPair() {
                             return q();
@@ -988,16 +978,16 @@ describe('bigip tests', () => {
                         bigIp.initOptions.passwordEncrypted = true;
                         bigIp.icontrol = icontrolMock;
                         bigIp.password = '';
-                        return bigIp.loadUcs('/tmp/foo', {}, { initLocalKeys: true })
-                            .then(() => {
-                                assert.ok(false, 'should have thrown getDataFromUrl error');
-                            })
-                            .catch((err) => {
-                                assert.strictEqual(err.message, message);
-                            })
-                            .finally(() => {
-                                fs.unlinkSync(passwordFile);
-                            });
+                        return bigIp.loadUcs('/tmp/foo', {}, { initLocalKeys: true });
+                    })
+                    .then(() => {
+                        assert.ok(false, 'should have thrown getDataFromUrl error');
+                    })
+                    .catch((err) => {
+                        assert.strictEqual(err.message, 'encrypt password error');
+                    })
+                    .finally(() => {
+                        fs.unlinkSync(passwordFile);
                     });
             });
         });
@@ -1380,8 +1370,8 @@ describe('bigip tests', () => {
             const commandBody = { foo: 'bar', hello: 'world' };
             return bigIp.runTask(DUMMY_TASK_PATH, commandBody)
                 .then(() => {
-                    assert.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
-                    assert.deepEqual(
+                    assert.deepStrictEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('replace', `${DUMMY_TASK_PATH}/1234`),
                         { _taskState: 'VALIDATING' }
                     );
@@ -1396,7 +1386,7 @@ describe('bigip tests', () => {
             const options = { idAttribute: 'id', validate: false, statusAttribute: 'status' };
             return bigIp.runTask(DUMMY_TASK_PATH, commandBody, options)
                 .then(() => {
-                    assert.deepEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
+                    assert.deepStrictEqual(icontrolMock.getRequest('create', DUMMY_TASK_PATH), commandBody);
                 });
         });
 
@@ -1469,7 +1459,7 @@ describe('bigip tests', () => {
         it('basic test', () => {
             return bigIp.saveUcs('foo')
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('replace', `${UCS_TASK_PATH}/1234`),
                         { _taskState: 'VALIDATING' }
                     );
@@ -1537,10 +1527,12 @@ describe('bigip tests', () => {
             return bigIp.transaction(commands)
                 .then(() => {
                     assert.strictEqual(icontrolMock.getRequest('list', '/foo/bar'), null);
-                    assert.deepEqual(icontrolMock.getRequest('create', '/bar/foo'), { foo: 'bar' });
-                    assert.deepEqual(icontrolMock.getRequest('modify', '/hello/world'), { roger: 'dodger' });
-                    assert.deepEqual(icontrolMock.getRequest('delete', '/okie/dokie'), { hello: 'world' });
-                    assert.deepEqual(
+                    assert.deepStrictEqual(icontrolMock.getRequest('create', '/bar/foo'), { foo: 'bar' });
+                    assert.deepStrictEqual(icontrolMock.getRequest('modify', '/hello/world'),
+                        { roger: 'dodger' });
+                    assert.deepStrictEqual(icontrolMock.getRequest('delete', '/okie/dokie'),
+                        { hello: 'world' });
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('modify', '/tm/transaction/1234'), { state: 'VALIDATING' }
                     );
                 });

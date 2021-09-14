@@ -129,7 +129,7 @@ describe('bigip cluster tests', () => {
                     assert.strictEqual(
                         icontrolMock.lastCall.path, `/tm/cm/device-group/~Common~${deviceGroup}/devices`
                     );
-                    assert.deepEqual(icontrolMock.lastCall.body, { name: localHostname });
+                    assert.deepStrictEqual(icontrolMock.lastCall.body, { name: localHostname });
                 });
         });
 
@@ -207,7 +207,7 @@ describe('bigip cluster tests', () => {
     });
 
     describe('create trust group test', () => {
-        it('already exists with device in group test', (done) => {
+        it('already exists with device in group test', () => {
             const devices = ['someDevice'];
 
             icontrolMock.when(
@@ -230,18 +230,12 @@ describe('bigip cluster tests', () => {
                 ]
             );
 
-            bigIp.cluster.createDeviceGroup(deviceGroup, 'sync-only', devices)
+            return bigIp.cluster.createDeviceGroup(deviceGroup, 'sync-only', devices)
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, 'list');
                     assert.strictEqual(
                         icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}/devices`
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err.message);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
@@ -342,7 +336,7 @@ describe('bigip cluster tests', () => {
 
             return bigIp.cluster.createDeviceGroup(name, type, device)
                 .then(() => {
-                    assert.deepEqual(icontrolMock.lastCall.body.devices, [device]);
+                    assert.deepStrictEqual(icontrolMock.lastCall.body.devices, [device]);
                 });
         });
 
@@ -416,7 +410,7 @@ describe('bigip cluster tests', () => {
 
             return bigIp.cluster.createDeviceGroup(deviceGroup, type, devices, options)
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('modify', `/tm/cm/device-group/${deviceGroup}`),
                         {
                             autoSync: 'enabled',
@@ -456,7 +450,7 @@ describe('bigip cluster tests', () => {
 
             return bigIp.cluster.deleteDeviceGroup('abc')
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('modify', '/tm/cm/device-group/abc'), { devices: [] }
                     );
                 });
@@ -479,7 +473,7 @@ describe('bigip cluster tests', () => {
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, 'modify');
                     assert.strictEqual(icontrolMock.lastCall.path, `/tm/cm/device/~Common~${localHostname}`);
-                    assert.deepEqual(icontrolMock.lastCall.body, { configsyncIp: ip });
+                    assert.deepStrictEqual(icontrolMock.lastCall.body, { configsyncIp: ip });
                 });
         });
 
@@ -981,7 +975,7 @@ describe('bigip cluster tests', () => {
                         icontrolMock.getRequest(
                             'modify', `/tm/cm/device-group/datasync-global-dg/devices/${localHostname}`
                         );
-                    assert.deepEqual(syncRequest, { 'set-sync-leader': true });
+                    assert.deepStrictEqual(syncRequest, { 'set-sync-leader': true });
                 });
         });
 
@@ -1309,7 +1303,7 @@ describe('bigip cluster tests', () => {
                     const removeFromTrustRequest =
                         icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
 
-                    assert.deepEqual(modifyFromDeviceGroupRequest.devices, [device2]);
+                    assert.deepStrictEqual(modifyFromDeviceGroupRequest.devices, [device2]);
                     assert.strictEqual(removeFromTrustRequest.deviceName, device1);
                 });
         });
@@ -1351,7 +1345,7 @@ describe('bigip cluster tests', () => {
                     let removeFromTrustRequest =
                         icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
 
-                    assert.deepEqual(modifyFromDeviceGroupRequest.devices, []);
+                    assert.deepStrictEqual(modifyFromDeviceGroupRequest.devices, []);
                     assert.strictEqual(removeFromTrustRequest.deviceName, device1);
                     removeFromTrustRequest = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
                     assert.strictEqual(removeFromTrustRequest.deviceName, device2);
@@ -1381,7 +1375,7 @@ describe('bigip cluster tests', () => {
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, 'modify');
                     assert.strictEqual(icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}`);
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.lastCall.body,
                         {
                             devices: [device2]
@@ -1415,7 +1409,7 @@ describe('bigip cluster tests', () => {
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, 'modify');
                     assert.strictEqual(icontrolMock.lastCall.path, `/tm/cm/device-group/${deviceGroup}`);
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.lastCall.body,
                         {
                             devices: [keepMe]
@@ -1476,7 +1470,7 @@ describe('bigip cluster tests', () => {
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, ('modify'));
                     assert.strictEqual(icontrolMock.lastCall.path, '/tm/cm/device-group/abc');
-                    assert.deepEqual(icontrolMock.lastCall.body, { devices: [] });
+                    assert.deepStrictEqual(icontrolMock.lastCall.body, { devices: [] });
                 });
         });
         it('device trust group test', () => {
@@ -1529,7 +1523,7 @@ describe('bigip cluster tests', () => {
             return bigIp.cluster.removeFromTrust(['device1', 'device2'])
                 .then(() => {
                     let request = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         request,
                         {
                             command: 'run',
@@ -1539,7 +1533,7 @@ describe('bigip cluster tests', () => {
                         }
                     );
                     request = icontrolMock.getRequest('create', '/tm/cm/remove-from-trust');
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         request,
                         {
                             command: 'run',

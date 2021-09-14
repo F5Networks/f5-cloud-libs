@@ -158,7 +158,7 @@ describe('util tests', () => {
     });
 
     describe('command line parsing tests', () => {
-        it('collect test', (done) => {
+        it('collect test', () => {
             const container = [];
             let input = 'foobar';
             util.collect(input, container);
@@ -167,36 +167,33 @@ describe('util tests', () => {
             assert.strictEqual(container.length, 2);
             assert.notStrictEqual(container.indexOf('foobar'), -1);
             assert.notStrictEqual(container.indexOf('hello world'), -1);
-            done();
         });
 
-        it('csv test', (done) => {
-            assert.deepEqual(util.csv('1,2,3', []), [['1', '2', '3']]);
-            assert.deepEqual(util.csv('1, 2, 3 ', []), [['1', '2', '3']]);
-            assert.deepEqual(util.csv('1, 2, 3', [['4', '5', '6']]), [['4', '5', '6'], ['1', '2', '3']]);
-
-            done();
+        it('csv test', () => {
+            assert.deepStrictEqual(util.csv('1,2,3', []), [['1', '2', '3']]);
+            assert.deepStrictEqual(util.csv('1, 2, 3 ', []), [['1', '2', '3']]);
+            assert.deepStrictEqual(util.csv('1, 2, 3', [['4', '5', '6']]),
+                [['4', '5', '6'], ['1', '2', '3']]);
         });
 
-        it('map test', (done) => {
+        it('map test', () => {
             let container = {};
             let input = 'foo:bar, hello:world';
             util.map(input, container);
-            assert.deepEqual(container, { foo: 'bar', hello: 'world' });
+            assert.deepStrictEqual(container, { foo: 'bar', hello: 'world' });
             input = 'fooz:bazz';
             util.map(input, container);
-            assert.deepEqual(container, { foo: 'bar', hello: 'world', fooz: 'bazz' });
+            assert.deepStrictEqual(container, { foo: 'bar', hello: 'world', fooz: 'bazz' });
             input = 'hello:goodbye';
             util.map(input, container);
-            assert.deepEqual(container, { foo: 'bar', hello: 'goodbye', fooz: 'bazz' });
+            assert.deepStrictEqual(container, { foo: 'bar', hello: 'goodbye', fooz: 'bazz' });
             input = 'key1:value1,key2:true,key3:false';
             container = {};
             util.map(input, container);
-            assert.deepEqual(container, { key1: 'value1', key2: true, key3: false });
-            done();
+            assert.deepStrictEqual(container, { key1: 'value1', key2: true, key3: false });
         });
 
-        it('map array test', (done) => {
+        it('map array test', () => {
             const container = [];
             let input = 'foo:bar, hello:world';
             util.mapArray(input, container);
@@ -205,10 +202,9 @@ describe('util tests', () => {
             assert.strictEqual(container[0].foo, 'bar');
             assert.strictEqual(container[0].hello, 'world');
             assert.strictEqual(container[1].fooz, 'bazz');
-            done();
         });
 
-        it('pair test', (done) => {
+        it('pair test', () => {
             const container = {};
             let input = 'foo:bar';
             util.pair(input, container);
@@ -216,11 +212,10 @@ describe('util tests', () => {
             util.pair(input, container);
             assert.strictEqual(container.foo, 'bar');
             assert.strictEqual(container.hello, 'world');
-            done();
         });
     });
 
-    it('lower case keys test', (done) => {
+    it('lower case keys test', () => {
         const nestedObject = {
             First: 'vaLUe',
             secOND: 'Another',
@@ -233,7 +228,7 @@ describe('util tests', () => {
         };
         const asString = 'a string, not object';
 
-        assert.deepEqual(util.lowerCaseKeys(nestedObject),
+        assert.deepStrictEqual(util.lowerCaseKeys(nestedObject),
             {
                 first: 'vaLUe',
                 second: 'Another',
@@ -245,10 +240,9 @@ describe('util tests', () => {
                 }
             });
         assert.strictEqual(util.lowerCaseKeys(asString), asString);
-        done();
     });
 
-    it('delete args test', (done) => {
+    it('delete args test', () => {
         const id = 'foo';
         let deletedPath;
 
@@ -258,12 +252,10 @@ describe('util tests', () => {
         };
         util.deleteArgs(id);
         assert.strictEqual(deletedPath, '/tmp/rebootScripts/foo.sh');
-        done();
     });
 
-    it('ip to number test', (done) => {
+    it('ip to number test', () => {
         assert.strictEqual(util.ipToNumber('10.11.12.13'), 168496141);
-        done();
     });
 
     describe('write data to file tests', () => {
@@ -275,7 +267,7 @@ describe('util tests', () => {
             };
         });
 
-        it('does not exist test', (done) => {
+        it('does not exist test', () => {
             const fileToWrite = '/tmp/foo/bar';
             const dataToWrite = {
                 hello: 'world'
@@ -283,63 +275,46 @@ describe('util tests', () => {
 
             fs.existsSync = function existsSync() { return false; };
 
-            util.writeDataToFile(dataToWrite, fileToWrite)
+            return util.writeDataToFile(dataToWrite, fileToWrite)
                 .then(() => {
-                    assert.strictEqual(fileNameWritten, fileToWrite);
-                    assert.deepEqual(dataWritten, dataToWrite);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(fileNameWritten, '/tmp/foo/bar');
+                    assert.deepStrictEqual(dataWritten, dataToWrite);
                 });
         });
 
-        it('exists test', (done) => {
+        it('exists test', () => {
             fs.existsSync = function existsSync() { return true; };
             fs.unlinkSync = function unlinkSync() {
                 unlinkSyncCalled = true;
             };
             unlinkSyncCalled = false;
 
-            util.writeDataToFile('foo', 'bar')
+            return util.writeDataToFile('foo', 'bar')
                 .then(() => {
                     assert.ok(unlinkSyncCalled);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('error test', (done) => {
-            const message = 'foo foo';
+        it('error test', () => {
             fs.writeFile = function writeFile(file, data, options, cb) {
-                cb(new Error(message));
+                cb(new Error('foo foo'));
             };
 
-            util.writeDataToFile('foo', 'bar')
+            return util.writeDataToFile('foo', 'bar')
                 .then(() => {
                     assert.ok(false, 'should have thrown fs error');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, message);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message, 'foo foo');
                 });
         });
     });
 
     describe('read data from file tests', () => {
-        it('basic test', (done) => {
+        it('basic test', () => {
             const dataToRead = {
                 foo: 'bar'
             };
-            const fileToRead = '/tmp/hello/world';
             let fileRead;
 
             fs.readFile = function readFile(file, cb) {
@@ -347,43 +322,31 @@ describe('util tests', () => {
                 cb(null, dataToRead);
             };
 
-            util.readDataFromFile(fileToRead)
+            return util.readDataFromFile('/tmp/hello/world')
                 .then((dataRead) => {
-                    assert.strictEqual(fileRead, fileToRead);
-                    assert.deepEqual(dataRead, dataToRead);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(fileRead, '/tmp/hello/world');
+                    assert.deepStrictEqual(dataRead, dataToRead);
                 });
         });
 
-        it('error test', (done) => {
-            const message = 'file error';
-
+        it('error test', () => {
             fs.readFile = function readFile(file, cb) {
-                cb(new Error(message));
+                cb(new Error('file error'));
             };
 
-            util.readDataFromFile()
+            return util.readDataFromFile()
                 .then(() => {
                     assert.ok(false, 'should have thrown file read error');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, message);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message, 'file error');
                 });
         });
     });
 
     describe('write data to url tests', () => {
-        it('basic test', (done) => {
-            const fileToWrite = '/tmp/foo';
-            const fileUrl = `file://${fileToWrite}`;
+        it('basic test', () => {
+            const fileUrl = 'file:///tmp/foo';
             const dataToWrite = {
                 foo: 'bar'
             };
@@ -394,64 +357,46 @@ describe('util tests', () => {
                 cb(null);
             };
 
-            util.writeDataToUrl(dataToWrite, fileUrl)
+            return util.writeDataToUrl(dataToWrite, fileUrl)
                 .then(() => {
-                    assert.strictEqual(fileNameWritten, fileToWrite);
-                    assert.deepEqual(dataWritten, dataToWrite);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(fileNameWritten, '/tmp/foo');
+                    assert.deepStrictEqual(dataWritten, dataToWrite);
                 });
         });
 
-        it('bad url test', (done) => {
+        it('bad url test', () => {
             const fileUrl = {};
 
-            util.writeDataToUrl('foo', fileUrl)
+            return util.writeDataToUrl('foo', fileUrl)
                 .then(() => {
                     assert.ok(false, 'should have thrown bad url');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('must be a string'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('non file url test', (done) => {
-            const fileUrl = 'http://www.example.com';
-
-            util.writeDataToUrl('foo', fileUrl)
+        it('non file url test', () => {
+            return util.writeDataToUrl('foo', 'http://www.example.com')
                 .then(() => {
                     assert.ok(false, 'should have thrown bad url');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('Only file URLs'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('write error test', (done) => {
-            const message = 'bad write';
+        it('write error test', () => {
             fs.writeFile = function writeFile(file, data, options, cb) {
-                cb(new Error(message));
+                cb(new Error('bad write'));
             };
 
-            util.writeDataToUrl('foo', 'file:///tmp/foo')
+            return util.writeDataToUrl('foo', 'file:///tmp/foo')
                 .then(() => {
                     assert.ok(false, 'should have thrown bad url');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, message);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message, 'bad write');
                 });
         });
     });
@@ -493,42 +438,31 @@ describe('util tests', () => {
             http.get = httpGet;
         });
 
-        it('basic test', (done) => {
-            util.download('http://www.example.com')
+        it('basic test', () => {
+            return util.download('http://www.example.com')
                 .then(() => {
                     assert.ok(dataWritten, 'No data written');
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('bad protocol test', (done) => {
-            util.download('file:///tmp')
+        it('bad protocol test', () => {
+            return util.download('file:///tmp')
                 .then(() => {
                     assert.ok(false, 'should have thrown bad protocol');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('Unhandled protocol'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('http error test', (done) => {
-            const message = 'http get error';
-
+        it('http error test', () => {
             Object.keys(require.cache).forEach((key) => {
                 delete require.cache[key];
             });
 
             httpMock = require('../testUtil/httpMock');
             httpMock.reset();
-            httpMock.setError(message);
+            httpMock.setError('http get error');
 
             require.cache.http = {
                 exports: httpMock
@@ -536,28 +470,23 @@ describe('util tests', () => {
 
             util = require('../../../f5-cloud-libs').util;
 
-            util.download('http://www.example.com/foo')
+            return util.download('http://www.example.com/foo')
                 .then(() => {
                     assert.ok(false, 'should have thrown http error');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, message);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message, 'http get error');
                 });
         });
 
-        it('http error file written test', (done) => {
-            const message = 'http get error';
-
+        it('http error file written test', () => {
             Object.keys(require.cache).forEach((key) => {
                 delete require.cache[key];
             });
 
             httpMock = require('../testUtil/httpMock');
             httpMock.reset();
-            httpMock.setError(message);
+            httpMock.setError('http get error');
 
             require.cache.http = {
                 exports: httpMock
@@ -570,20 +499,17 @@ describe('util tests', () => {
             };
             fs.unlink = function unlink() { };
 
-            util.download('http://www.example.com/foo')
+            return util.download('http://www.example.com/foo')
                 .then(() => {
                     assert.ok(false, 'should have thrown http error');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, message);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message, 'http get error');
                 });
         });
     });
 
-    it('remove directory sync test', (done) => {
+    it('remove directory sync test', () => {
         const os = require('os');
         const sep = require('path').sep;
         const tmpDirBase = os.tmpdir();
@@ -603,11 +529,10 @@ describe('util tests', () => {
 
         util.removeDirectorySync(tmpDir);
         assert.strictEqual(fs.existsSync(tmpDir), false);
-        done();
     });
 
     describe('read data tests', () => {
-        it('read data with cloud provider uri test', (done) => {
+        it('read data with cloud provider uri test', () => {
             providerMock.init = () => {
                 return q();
             };
@@ -621,75 +546,47 @@ describe('util tests', () => {
             };
             const s3Arn = 'arn:::foo:bar/password';
 
-            util.readData(s3Arn, true)
+            return util.readData(s3Arn, true)
                 .then((readPassword) => {
-                    assert.deepEqual(functionsCalled.providerMock.getDataFromUri, s3Arn);
+                    assert.deepStrictEqual(functionsCalled.providerMock.getDataFromUri, s3Arn);
                     assert.strictEqual(readPassword, 'password');
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('calls get data from url test', (done) => {
-            const password = 'foobar';
+        it('calls get data from url test', () => {
             const passwordFile = '/tmp/mypass';
 
-            fs.writeFileSync(passwordFile, password, { encoding: 'ascii' });
+            fs.writeFileSync(passwordFile, 'foobar', { encoding: 'ascii' });
 
             cloudProviderFactoryMock.getCloudProvider = () => {
                 throw new Error('Unavailable cloud provider');
             };
 
-            util.readData(`file://${passwordFile}`, true)
+            return util.readData(`file://${passwordFile}`, true)
                 .then((readPassword) => {
-                    assert.strictEqual(readPassword, password);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
+                    assert.strictEqual(readPassword, 'foobar');
                     fs.unlinkSync(passwordFile);
-                    done();
                 });
         });
 
-        it('reads plain data test', (done) => {
-            const password = 'foobar';
-
-            util.readData(password, false)
+        it('reads plain data test', () => {
+            return util.readData('foobar', false)
                 .then((readPassword) => {
-                    assert.strictEqual(readPassword, password);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(readPassword, 'foobar');
                 });
         });
     });
 
     describe('get data from url tests', () => {
-        it('file test', (done) => {
-            const password = 'foobar';
+        it('file test', () => {
             const passwordFile = '/tmp/mypass';
 
-            fs.writeFileSync(passwordFile, password, { encoding: 'ascii' });
+            fs.writeFileSync(passwordFile, 'foobar', { encoding: 'ascii' });
 
-            util.getDataFromUrl(`file://${passwordFile}`)
+            return util.getDataFromUrl(`file://${passwordFile}`)
                 .then((readPassword) => {
-                    assert.strictEqual(readPassword, password);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
+                    assert.strictEqual(readPassword, 'foobar');
                     fs.unlinkSync(passwordFile);
-                    done();
                 });
         });
 
@@ -709,177 +606,127 @@ describe('util tests', () => {
                 util = require('../../../f5-cloud-libs').util;
             });
 
-            it('basic test', (done) => {
-                const password = 'foobar';
+            it('basic test', () => {
+                httpMock.setResponse('foobar');
 
-                httpMock.setResponse(password);
-
-                util.getDataFromUrl('http://www.example.com')
+                return util.getDataFromUrl('http://www.example.com')
                     .then((readPassword) => {
                         assert.strictEqual(httpMock.lastRequest.path, '/');
-                        assert.strictEqual(readPassword, password);
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
-                    })
-                    .finally(() => {
-                        done();
+                        assert.strictEqual(readPassword, 'foobar');
                     });
             });
 
-            it('path and options test', (done) => {
+            it('path and options test', () => {
                 const path = '/foo/bar';
                 const options = {
                     headers: { headerName: 'headerValue' },
                     rejectUnauthorized: false
                 };
 
-                util.getDataFromUrl(`http://www.example.com${path}`, options)
+                return util.getDataFromUrl(`http://www.example.com${path}`, options)
                     .then(() => {
                         assert.strictEqual(httpMock.lastRequest.path, path);
-                        assert.deepEqual(httpMock.lastRequest.headers, options.headers);
-                        assert.strictEqual(
-                            httpMock.lastRequest.rejectUnauthorized,
-                            options.rejectUnauthorized
-                        );
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
-                    })
-                    .finally(() => {
-                        done();
+                        assert.deepStrictEqual(httpMock.lastRequest.headers, options.headers);
+                        assert.strictEqual(httpMock.lastRequest.rejectUnauthorized, false);
                     });
             });
 
-            it('query test', (done) => {
+            it('query test', () => {
                 const query = '?hello=world&alpha=beta';
 
-                util.getDataFromUrl(`http://www.example.com${query}`)
+                return util.getDataFromUrl(`http://www.example.com${query}`)
                     .then(() => {
                         assert.strictEqual(httpMock.lastRequest.path, `/${query}`);
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
-                    })
-                    .finally(() => {
-                        done();
                     });
             });
 
-            it('json test', (done) => {
+            it('json test', () => {
                 const response = { foo: 'bar', hello: 'world' };
 
                 httpMock.setResponse(response, { 'content-type': 'application/json' });
 
-                util.getDataFromUrl('http://www.example.com')
+                return util.getDataFromUrl('http://www.example.com')
                     .then((data) => {
-                        assert.deepEqual(data, response);
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
-                    })
-                    .finally(() => {
-                        done();
+                        assert.deepStrictEqual(data, response);
                     });
             });
 
-            it('bad json test', (done) => {
-                const response = 'foobar';
+            it('bad json test', () => {
+                httpMock.setResponse('foobar', { 'content-type': 'application/json' });
 
-                httpMock.setResponse(response, { 'content-type': 'application/json' });
-
-                util.getDataFromUrl('http://www.example.com')
+                return util.getDataFromUrl('http://www.example.com')
                     .then(() => {
                         assert.ok(false, 'Should have thrown bad json');
                     })
-                    .catch(() => {
-                        assert.ok(true);
-                    })
-                    .finally(() => {
-                        done();
+                    .catch((err) => {
+                        assert.ok(/Unexpected token o/.test(err.message));
                     });
             });
 
-            it('bad status test', (done) => {
+            it('bad status test', () => {
                 const status = 400;
 
                 httpMock.setResponse('foo', {}, status);
 
-                util.getDataFromUrl('http://www.example.com')
+                return util.getDataFromUrl('http://www.example.com')
                     .then(() => {
                         assert.ok(false, 'Should have been a bad status');
                     })
                     .catch((err) => {
-                        assert.notStrictEqual(err.message.indexOf(400), -1);
-                    })
-                    .finally(() => {
-                        done();
+                        assert.strictEqual(err.message,
+                            'http://www.example.com returned with status code 400');
                     });
             });
 
-            it('http error test', (done) => {
-                const message = 'http error occurred';
-                httpMock.setError(message);
+            it('http error test', () => {
+                httpMock.setError('http error occurred');
 
-                util.getDataFromUrl('http://www.example.com')
+                return util.getDataFromUrl('http://www.example.com')
                     .then(() => {
                         assert.ok(false, 'Should have thrown an error');
                     })
                     .catch((err) => {
-                        assert.strictEqual(err.message, message);
-                    })
-                    .finally(() => {
-                        done();
+                        assert.strictEqual(err.message, 'http error occurred');
                     });
             });
 
-            it('http throw test', (done) => {
-                const message = 'http get threw';
+            it('http throw test', () => {
                 httpMock.get = function get() {
-                    throw new Error(message);
+                    throw new Error('http get threw');
                 };
 
-                util.getDataFromUrl('http://www.example.com')
+                return util.getDataFromUrl('http://www.example.com')
                     .then(() => {
                         assert.ok(false, 'Should have thrown an error');
                     })
                     .catch((err) => {
-                        assert.strictEqual(err.message, message);
-                    })
-                    .finally(() => {
-                        done();
+                        assert.strictEqual(err.message, 'http get threw');
                     });
             });
         });
 
-        it('Unsupported url test', (done) => {
-            util.getDataFromUrl('ftp://www.foo.com')
+        it('Unsupported url test', () => {
+            return util.getDataFromUrl('ftp://www.foo.com')
                 .then(() => {
                     assert.ok(false, 'Unsupported URL should have failed');
                 })
                 .catch((err) => {
-                    assert.notStrictEqual(err.message.indexOf('URLs are currently supported'), -1);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message,
+                        'Only file, http, and https URLs are currently supported.');
                 });
         });
 
-        it('read file error test', (done) => {
-            const message = 'read file error';
+        it('read file error test', () => {
             fs.readFile = function readFile(file, options, cb) {
-                cb(new Error(message));
+                cb(new Error('read file error'));
             };
 
-            util.getDataFromUrl('file:///foo/bar')
+            return util.getDataFromUrl('file:///foo/bar')
                 .then(() => {
                     assert.ok(false, 'should have thrown read file error');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, message);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message, 'read file error');
                 });
         });
     });
@@ -895,7 +742,7 @@ describe('util tests', () => {
             childProcess.exec = childProcessExec;
         });
 
-        it('basic test', (done) => {
+        it('basic test', () => {
             childProcess.exec = function exec(command, cb) {
                 if (command.endsWith('.sh')) {
                     execCalled = true;
@@ -905,27 +752,21 @@ describe('util tests', () => {
 
             util.localReady();
             assert.strictEqual(execCalled, true);
-            done();
         });
 
-        it('error test', (done) => {
-            const message = 'process exec error';
-
+        it('error test', () => {
             childProcess.exec = function exec(command, cb) {
                 if (command.endsWith('.sh')) {
-                    cb(new Error(message));
+                    cb(new Error('process exec error'));
                 }
             };
 
-            util.localReady()
+            return util.localReady()
                 .then(() => {
                     assert.ok(false, 'should have thrown process exec error');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, message);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message, 'process exec error');
                 });
         });
     });
@@ -949,15 +790,14 @@ describe('util tests', () => {
             setTimeout = realSetTimeout; // eslint-disable-line no-global-assign
         });
 
-        it('basic test', (done) => {
+        it('basic test', () => {
             logger = Logger.getLogger({ console: true });
 
             util.logAndExit();
             assert.strictEqual(exitCalled, true);
-            done();
         });
 
-        it('log to file test', (done) => {
+        it('log to file test', () => {
             logger = Logger.getLogger({ console: false, fileName: LOGFILE });
             logger.transports.file.on('flush', () => {
                 return q();
@@ -965,11 +805,10 @@ describe('util tests', () => {
 
             util.logAndExit();
             assert.strictEqual(exitCalled, true);
-            done();
         });
     });
 
-    it('log error test', (done) => {
+    it('log error test', () => {
         const loggerOptions = {
             fileName: '/tmp/network.log',
             module
@@ -991,7 +830,6 @@ describe('util tests', () => {
         assert.strictEqual(loggerReceivedOptions.fileName, '/tmp/cloudLibsError.log');
         assert.strictEqual(loggerReceivedOptions.verboseLabel, true);
         assert.strictEqual(errorMessage, loggerReceivedMessage);
-        done();
     });
 
     describe('run in background and exit test', () => {
@@ -1015,15 +853,14 @@ describe('util tests', () => {
             childProcess.spawn = childProcessSpawn;
         });
 
-        it('basic test', (done) => {
+        it('basic test', () => {
             util.runInBackgroundAndExit(process);
             assert.ok(spawnCalled, 'child_process.spawn() was not called');
             assert.ok(unrefCalled, 'child.unref() was not called');
             assert.ok(exitCalled, 'process.exit() was not called');
-            done();
         });
 
-        it('too many args test', (done) => {
+        it('too many args test', () => {
             const processArgv = process.argv;
             const argvMock = [];
 
@@ -1039,10 +876,9 @@ describe('util tests', () => {
             assert.ok(exitCalled, 'process.exit() was not called');
 
             process.argv = processArgv;
-            done();
         });
 
-        it('background removed test', (done) => {
+        it('background removed test', () => {
             const processArgv = process.argv;
             const argvMock = ['node', '--foo', '--background'];
 
@@ -1054,10 +890,9 @@ describe('util tests', () => {
             assert.strictEqual(calledArgs.indexOf('--background'), -1);
 
             process.argv = processArgv;
-            done();
         });
 
-        it('output added test', (done) => {
+        it('output added test', () => {
             const processArgv = process.argv;
             const argvMock = ['node'];
             const logFile = 'myLogFile';
@@ -1071,7 +906,6 @@ describe('util tests', () => {
             assert.notStrictEqual(calledArgs.indexOf(logFile), -1);
 
             process.argv = processArgv;
-            done();
         });
     });
 
@@ -1105,110 +939,80 @@ describe('util tests', () => {
             bigIpMock.rebootCalled = false;
         });
 
-        it('basic test', (done) => {
-            util.reboot(bigIpMock)
+        it('basic test', () => {
+            return util.reboot(bigIpMock)
                 .then(() => {
                     startupScripts.forEach((script) => {
                         assert.notStrictEqual(writtenCommands.indexOf(script), -1);
                         assert.strictEqual(bigIpMock.rebootCalled, true);
                     });
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('signal only test', (done) => {
-            util.reboot(bigIpMock, { signalOnly: true })
+        it('signal only test', () => {
+            return util.reboot(bigIpMock, { signalOnly: true })
                 .then(() => {
                     startupScripts.forEach((script) => {
                         assert.notStrictEqual(writtenCommands.indexOf(script), -1);
                         assert.strictEqual(bigIpMock.rebootCalled, false);
                     });
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('missing startup dir test', (done) => {
+        it('missing startup dir test', () => {
             fs.existsSync = function existsSync() {
                 return false;
             };
 
-            util.reboot(bigIpMock)
+            return util.reboot(bigIpMock)
                 .then(() => {
                     assert.strictEqual(writtenCommands, undefined);
                     assert.strictEqual(bigIpMock.rebootCalled, true);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('read file error test', (done) => {
+        it('read file error test', () => {
             fs.readFileSync = function readFileSync() {
-                throw new Error();
+                throw new Error('this error');
             };
 
-            util.reboot(bigIpMock)
+            return util.reboot(bigIpMock)
                 .then(() => {
                     assert.ok(false, 'fs.readFileSync should have thrown');
                 })
-                .catch(() => {
-                    assert.ok(true);
-                })
-                .finally(() => {
-                    done();
+                .catch((err) => {
+                    assert.strictEqual(err.message, 'this error');
                 });
         });
 
-        it('read dir error test', (done) => {
+        it('read dir error test', () => {
             fs.readdirSync = function readdirSync() {
-                throw new Error();
+                throw new Error('this error');
             };
 
-            util.reboot(bigIpMock)
+            return util.reboot(bigIpMock)
                 .then(() => {
                     assert.ok(false, 'fs.readdirSync should have thrown');
                 })
-                .catch(() => {
-                    assert.ok(true);
-                })
-                .finally(() => {
-                    done();
+                .catch((err) => {
+                    assert.strictEqual(err.message, 'this error');
                 });
         });
 
-        it('write file sync error test', (done) => {
+        it('write file sync error test', () => {
             fs.writeFileSync = function writeFileSync() {
-                throw new Error();
+                throw new Error('this error');
             };
 
-            util.reboot(bigIpMock)
+            return util.reboot(bigIpMock)
                 .then(() => {
                     assert.ok(true);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
 
     describe('get args to strip during forced reboot test', () => {
-        it('basic test', (done) => {
+        it('basic test', () => {
             const options = commander
                 .version('1.0')
                 .option(
@@ -1224,7 +1028,6 @@ describe('util tests', () => {
             // check --db|-d in args to strip
             assert.notStrictEqual(ARGS_TO_STRIP.indexOf('--db'), -1);
             assert.notStrictEqual(ARGS_TO_STRIP.indexOf('-d'), -1);
-            done();
         });
     });
 
@@ -1248,52 +1051,34 @@ describe('util tests', () => {
             }
         });
 
-        it('basic test', (done) => {
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+        it('basic test', () => {
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
                 .then(() => {
                     const savedArgs = getSavedArgs();
                     assert.notStrictEqual(savedArgs.indexOf('--one'), -1);
                     assert.notStrictEqual(savedArgs.indexOf('--two abc'), -1);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('strip args with param test', (done) => {
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE, ['--one'])
+        it('strip args with param test', () => {
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE, ['--one'])
                 .then(() => {
                     const savedArgs = getSavedArgs();
                     assert.strictEqual(savedArgs.indexOf('--one'), -1);
                     assert.notStrictEqual(savedArgs.indexOf('--two abc'), -1);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('strip args without param test', (done) => {
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE, ['--two'])
+        it('strip args without param test', () => {
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE, ['--two'])
                 .then(() => {
                     const savedArgs = getSavedArgs();
                     assert.notStrictEqual(savedArgs.indexOf('--one'), -1);
                     assert.strictEqual(savedArgs.indexOf('abc'), -1);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('dir created test', (done) => {
+        it('dir created test', () => {
             fs.stat = function stat(dir, cb) {
                 cb({ code: 'ENOENT' });
             };
@@ -1302,28 +1087,24 @@ describe('util tests', () => {
                 createdDir = dirName;
             };
 
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
                 .then(() => {
                     assert.strictEqual(createdDir, '/tmp/rebootScripts/');
-                    done();
                 });
         });
 
-        it('dir create error test', (done) => {
+        it('dir create error test', () => {
             fs.stat = function stat(dir, cb) {
                 cb({ code: 'FOOBAR' });
             };
 
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
                 .then(() => {
                     assert.ok(true);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('mkdir race condition test', (done) => {
+        it('mkdir race condition test', () => {
             function EexistError() {
                 this.code = 'EEXIST';
             }
@@ -1338,20 +1119,14 @@ describe('util tests', () => {
                 throw new EexistError();
             };
 
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
                 .then(() => {
                     const savedArgs = getSavedArgs();
                     assert.notStrictEqual(savedArgs.indexOf('--one'), -1);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('mkdir race condition fail test', (done) => {
+        it('mkdir race condition fail test', () => {
             fs.stat = function stat(dir, cb) {
                 cb({ code: 'ENOENT' });
             };
@@ -1361,71 +1136,47 @@ describe('util tests', () => {
                 throw new Error();
             };
 
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
                 .then(() => {
                     assert.ok(true);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('stat throws test', (done) => {
+        it('stat throws test', () => {
             fs.stat = function stat() {
                 throw new Error('fsStat threw');
             };
 
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
                 .then(() => {
                     assert.ok(true);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('open throws test', (done) => {
+        it('open throws test', () => {
             fs.open = function open() {
                 throw new Error('fsOpen threw');
             };
 
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
                 .then(() => {
                     assert.ok(true);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('write sync throws test', (done) => {
+        it('write sync throws test', () => {
             fs.writeSync = function writeSync() {
                 throw new Error('fsWriteSync threw');
             };
 
-            util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
+            return util.saveArgs(argv, UTIL_ARGS_TEST_FILE)
                 .then(() => {
                     assert.ok(true);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
 
-    it('parse tmsh response test', (done) => {
+    it('parse tmsh response test', () => {
         const tmshResponse = `sys crypto key garrett.key {
             key-size 3072
             key-type rsa-private
@@ -1433,27 +1184,20 @@ describe('util tests', () => {
         }`;
         const response = util.parseTmshResponse(tmshResponse);
         assert.strictEqual(response['security-type'], 'password');
-        done();
     });
 
     describe('get product test', () => {
-        it('has product string test', (done) => {
+        it('has product string test', () => {
             util.getProductString = function getProductString() {
                 return q('BIG-IQ');
             };
-            util.getProduct()
+            return util.getProduct()
                 .then((response) => {
                     assert.strictEqual(response, 'BIG-IQ');
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('empty product string test', (done) => {
+        it('empty product string test', () => {
             util.getProductString = function getProductString() {
                 return q('');
             };
@@ -1463,102 +1207,81 @@ describe('util tests', () => {
                 };
                 return q('BIG-IP');
             };
-            util.getProduct()
+            return util.getProduct()
                 .then((response) => {
                     assert.strictEqual(response, 'BIG-IP');
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('fail to get product string test', (done) => {
+        it('fail to get product string test', () => {
             util.getProductString = function getProductString() {
                 return q.reject('failed');
             };
-            util.getProduct()
+
+            return util.getProduct()
                 .then((response) => {
                     assert.ok(false, response);
                 })
                 .catch((err) => {
                     assert.strictEqual(err, 'failed');
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('container test', (done) => {
+        it('container test', () => {
             fs.stat = function stat(dir, cb) {
                 cb({ code: 'ENOENT' });
             };
 
-            util.getProduct()
+            return util.getProduct()
                 .then((response) => {
                     assert.strictEqual(response, 'CONTAINER');
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('fail to run fs stat test', (done) => {
+        it('fail to run fs stat test', () => {
             fs.stat = function stat(dir, cb) {
                 cb({ message: 'failed', code: 'FOO' });
             };
-            util.getProduct()
+
+            return util.getProduct()
                 .then((response) => {
                     assert.ok(false, response);
                 })
                 .catch((err) => {
                     assert.strictEqual(err.message, 'failed');
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('fail to run tmsh command test', (done) => {
+        it('fail to run tmsh command test', () => {
             util.runTmshCommand = function runTmshCommand() {
                 return q.reject('failed');
             };
             util.getProductString = function getProductString() {
                 return q('');
             };
-            util.getProduct()
+
+            return util.getProduct()
                 .then((response) => {
                     assert.ok(false, response);
                 })
                 .catch((err) => {
                     assert.strictEqual(err, 'failed');
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
 
     describe('get process execution time with pid test', () => {
-        it('no command provided test', (done) => {
-            util.getProcessExecutionTimeWithPid()
+        it('no command provided test', () => {
+            return util.getProcessExecutionTimeWithPid()
                 .then((response) => {
                     assert.ok(false, response);
                 })
                 .catch((err) => {
                     assert.strictEqual(err.message, 'grep command is required');
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('shell command format test', (done) => {
+        it('shell command format test', () => {
             let passedCommand;
             util.runShellCommand = function runShellCommand(shellCommand) {
                 passedCommand = shellCommand;
@@ -1567,34 +1290,25 @@ describe('util tests', () => {
 
             const grepCommand = 'grep autoscale.js';
             const cmd = `/bin/ps -eo pid,etime,cmd --sort=-time | ${grepCommand} | awk '{ print $1"-"$2 }'`;
-            util.getProcessExecutionTimeWithPid(grepCommand)
+            return util.getProcessExecutionTimeWithPid(grepCommand)
                 .then(() => {
                     assert.strictEqual(passedCommand, cmd);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
 
     describe('terminate process by id test', () => {
-        it('no command provided test', (done) => {
-            util.terminateProcessById()
+        it('no command provided test', () => {
+            return util.terminateProcessById()
                 .then((response) => {
                     assert.ok(false, response);
                 })
                 .catch((err) => {
                     assert.strictEqual(err.message, 'pid is required for process termination');
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('shell command format test', (done) => {
+        it('shell command format test', () => {
             let passedCommand;
             util.runShellCommand = function runShellCommand(shellCommand) {
                 passedCommand = shellCommand;
@@ -1602,34 +1316,26 @@ describe('util tests', () => {
             };
 
             const pid = '111';
-            util.terminateProcessById(pid)
+
+            return util.terminateProcessById(pid)
                 .then(() => {
                     assert.strictEqual(passedCommand, `/bin/kill -9 ${pid}`);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
 
     describe('process count test', () => {
-        it('no command provided test', (done) => {
-            util.getProcessCount()
+        it('no command provided test', () => {
+            return util.getProcessCount()
                 .then((response) => {
                     assert.ok(false, response);
                 })
                 .catch((err) => {
                     assert.strictEqual(err.message, 'grep command is required');
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('shell command format test', (done) => {
+        it('shell command format test', () => {
             let passedCommand;
             util.runShellCommand = function runShellCommand(shellCommand) {
                 passedCommand = shellCommand;
@@ -1637,15 +1343,9 @@ describe('util tests', () => {
             };
 
             const grepCommand = 'grep autoscale.js';
-            util.getProcessCount(grepCommand)
+            return util.getProcessCount(grepCommand)
                 .then(() => {
                     assert.strictEqual(passedCommand, `/bin/ps -eo pid,cmd | ${grepCommand} | wc -l`);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
@@ -1925,7 +1625,7 @@ describe('util tests', () => {
         });
     });
 
-    it('version compare test', (done) => {
+    it('version compare test', () => {
         assert.strictEqual(util.versionCompare('1.7.1', '1.7.10'), -1);
         assert.strictEqual(util.versionCompare('1.7.10', '1.7.1'), 1);
         assert.strictEqual(util.versionCompare('1.7.2', '1.7.10'), -1);
@@ -1962,7 +1662,5 @@ describe('util tests', () => {
 
         assert.strictEqual(util.versionCompare('12.0.0-1', '12.0.0-a1'), 1);
         assert.strictEqual(util.versionCompare('12.0.0-a1', '12.0.0-1'), -1);
-
-        done();
     });
 });

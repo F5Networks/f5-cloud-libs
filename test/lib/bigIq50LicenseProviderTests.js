@@ -47,19 +47,18 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
     });
 
     describe('Constructor Tests', () => {
-        it('should set logger', (done) => {
+        it('should set logger', () => {
             const logger = {
                 a: 1,
                 b: 2
             };
 
             provider = new BigIqProvider({}, { logger });
-            assert.deepEqual(provider.logger, logger);
-            done();
+            assert.deepStrictEqual(provider.logger, logger);
         });
     });
 
-    it('should set logger options', (done) => {
+    it('should set logger options', () => {
         const loggerOptions = {
             a: 1,
             b: 2
@@ -68,7 +67,6 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
         assert.doesNotThrow(() => {
             new BigIqProvider({ loggerOptions }); // eslint-disable-line no-new
         });
-        done();
     });
 
     describe('Get Unmanaged Device License Tests', () => {
@@ -89,45 +87,39 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
             );
         });
 
-        it('empty pools test', (done) => {
+        it('empty pools test', () => {
             icontrolMock.when(
                 'list',
                 '/cm/shared/licensing/pools/?$select=uuid,name',
                 []
             );
 
-            provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
+            return provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
                 .then(() => {
                     assert.ok(false, 'Should have thrown empty pools.');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('No license pool'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('bad pool response test', (done) => {
+        it('bad pool response test', () => {
             icontrolMock.when(
                 'list',
                 '/cm/shared/licensing/pools/?$select=uuid,name',
                 {}
             );
 
-            provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
+            return provider.getUnmanagedDeviceLicense(icontrolMock, 'foo')
                 .then(() => {
                     assert.ok(false, 'Should have thrown no pools.');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('Error getting license pools'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('license immediately test', (done) => {
+        it('license immediately test', () => {
             icontrolMock.when(
                 'create',
                 '/cm/shared/licensing/pools/1/members',
@@ -135,9 +127,9 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
                     state: 'LICENSED'
                 }
             );
-            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
+            return provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress', '443')
                 .then(() => {
-                    assert.deepEqual(icontrolMock.getRequest(
+                    assert.deepStrictEqual(icontrolMock.getRequest(
                         'create',
                         '/cm/shared/licensing/pools/1/members'
                     ),
@@ -146,16 +138,10 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
                         username: 'user',
                         password: 'password'
                     });
-                })
-                .catch((err) => {
-                    assert.ok(false, err.message);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('licensed later test', (done) => {
+        it('licensed later test', () => {
             licenseUuid = '123456';
 
             icontrolMock.when(
@@ -174,22 +160,16 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
                 }
             );
 
-            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress')
+            return provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress')
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, 'list');
                     assert.strictEqual(
                         icontrolMock.lastCall.path, `/cm/shared/licensing/pools/1/members/${licenseUuid}`
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err.message);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('license failure test', (done) => {
+        it('license failure test', () => {
             licenseUuid = '123456';
             provider.getLicenseTimeout = () => { return util.SHORT_RETRY; };
 
@@ -202,15 +182,12 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
                 }
             );
 
-            provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress')
+            return provider.getUnmanagedDeviceLicense(icontrolMock, 'pool1', 'bigIpMgmtAddress')
                 .then(() => {
                     assert.ok(false, 'should have thrown license failure');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('Giving up'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
@@ -258,13 +235,13 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
             icontrolMock.when('delete', `${LICENSE_PATH}${poolUuid}/members/${licenseUuid}`, {});
         });
 
-        it('basic test', (done) => {
-            provider.revoke(icontrolMock, poolName, { hostname: bigIpHostname })
+        it('basic test', () => {
+            return provider.revoke(icontrolMock, poolName, { hostname: bigIpHostname })
                 .then(() => {
                     const request = icontrolMock.getRequest(
                         'delete', `${LICENSE_PATH}${poolUuid}/members/${licenseUuid}`
                     );
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         request,
                         {
                             username: 'user',
@@ -272,16 +249,10 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
                             uuid: licenseUuid
                         }
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('license not found test', (done) => {
+        it('license not found test', () => {
             icontrolMock.when(
                 'list',
                 `${LICENSE_PATH}${poolUuid}/members/`,
@@ -297,15 +268,12 @@ describe('BIGIQ 5.0.0 License Provider Tests', () => {
                 ]
             );
 
-            provider.revoke(icontrolMock, poolName, { hostname: bigIpHostname })
+            return provider.revoke(icontrolMock, poolName, { hostname: bigIpHostname })
                 .then(() => {
                     assert.ok(false, 'should have thrown no license');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('no license found'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });

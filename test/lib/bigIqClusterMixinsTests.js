@@ -76,7 +76,7 @@ describe('bigiq cluster mixins tests', () => {
             bigIqClusterMixins.waitForPeered = bigIqClusterMixinsWaitForPeered;
         });
 
-        it('add secondary success test', (done) => {
+        it('add secondary success test', () => {
             icontrolMock.when(
                 'list',
                 '/shared/ssh-trust-setup?ipAddress=1.2.3.4',
@@ -99,49 +99,39 @@ describe('bigiq cluster mixins tests', () => {
                 addPeerTaskResponse
             );
 
-            bigIqClusterMixins.addSecondary('1.2.3.4', 'admin', 'password', 'rootPassword', { bigIp })
+            return bigIqClusterMixins.addSecondary('1.2.3.4', 'admin', 'password', 'rootPassword', { bigIp })
                 .then(() => {
-                    assert.deepEqual(addPeerTaskResponse, waitForPeeredParams);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.deepStrictEqual(addPeerTaskResponse, waitForPeeredParams);
                 });
         });
     });
 
     describe('wait functions tests', () => {
-        it('wait for peered test', (done) => {
-            const listResponse = {
-                step: 'ADD_TO_HA_GROUP',
-                progress: 'Adding Peer to BIG-IQ Device Group',
-                status: 'FINISHED'
-            };
+        it('wait for peered test', () => {
             bigIp.list = () => {
-                return q(listResponse);
+                return q({
+                    step: 'ADD_TO_HA_GROUP',
+                    progress: 'Adding Peer to BIG-IQ Device Group',
+                    status: 'FINISHED'
+                });
             };
 
-            bigIqClusterMixins.waitForPeered('task1')
+            return bigIqClusterMixins.waitForPeered('task1')
                 .then((response) => {
-                    assert.deepEqual(response, listResponse);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.deepStrictEqual(response, {
+                        step: 'ADD_TO_HA_GROUP',
+                        progress: 'Adding Peer to BIG-IQ Device Group',
+                        status: 'FINISHED'
+                    });
                 });
         });
 
-        it('wait for peered failed test', (done) => {
-            const errorMessage =
-                'Authentication Failure to host 18.235.136.32. Please check the credentials provided.';
+        it('wait for peered failed test', () => {
             const listResponse = {
                 step: 'ADD_TO_HA_GROUP',
                 progress: 'Adding Peer to BIG-IQ Device Group',
-                errorMessage,
+                errorMessage: 'Authentication Failure to host 18.235.136.32.' /
+                    'Please check the credentials provided.',
                 status: 'FAILED'
             };
             bigIp.list = () => {
@@ -153,15 +143,14 @@ describe('bigiq cluster mixins tests', () => {
                     assert.ok(false, 'Should have thrown authentication failure');
                 })
                 .catch((err) => {
-                    assert.strictEqual(err.message, errorMessage);
-                    assert.strictEqual(err.code, 400);
-                })
-                .finally(() => {
-                    done();
+                    assert.strictEqual(err.message,
+                        'Authen1tication Failure to host 18.235.136.32. Please check the credentials' /
+                            'provided.');
+                    assert.strictEqual(err.code, 401);
                 });
         });
 
-        it('wait for peered ready test', (done) => {
+        it('wait for peered ready test', () => {
             const listResponse = {
                 discoveryAddress: '1.2.3.4',
                 generation: 2,
@@ -180,10 +169,10 @@ describe('bigiq cluster mixins tests', () => {
                     result: 'true'
                 }
             );
-            bigIqClusterMixins.waitForPeerReady(bigIp, '1.2.3.4', 'user', 'password1')
+            return bigIqClusterMixins.waitForPeerReady(bigIp, '1.2.3.4', 'user', 'password1')
                 .then((response) => {
-                    assert.deepEqual(listResponse, response);
-                    assert.deepEqual(
+                    assert.deepStrictEqual(listResponse, response);
+                    assert.deepStrictEqual(
                         passedInitParams,
                         [
                             '1.2.3.4',
@@ -192,16 +181,10 @@ describe('bigiq cluster mixins tests', () => {
                             { port: 443, passwordIsUrl: false, passwordEncrypted: false }
                         ]
                     );
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('wait for peered ready not ready test', (done) => {
+        it('wait for peered ready not ready test', () => {
             const listResponse = {
                 name: 'systemauth.disablerootlogin',
                 value: 'true'
@@ -210,7 +193,7 @@ describe('bigiq cluster mixins tests', () => {
                 return q(listResponse);
             };
 
-            bigIqClusterMixins.waitForPeerReady(
+            return bigIqClusterMixins.waitForPeerReady(
                 bigIp,
                 '1.2.3.4',
                 'user',
@@ -226,9 +209,6 @@ describe('bigiq cluster mixins tests', () => {
                         // eslint-disable-next-line max-len
                         'tryUntil: max tries reached: Failover peer not ready for peering. Root not yet enabled on peer'
                     );
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
