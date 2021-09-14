@@ -89,7 +89,7 @@ describe('bigip onboard tests', () => {
                 .then(() => {
                     assert.strictEqual(bigIpRunTaskSpy.callCount, 1);
                     assert.strictEqual(bigIpRunTaskSpy.args[0][0], '/shared/iapp/package-management-tasks');
-                    assert.deepEqual(bigIpRunTaskSpy.args[0][1], {
+                    assert.deepStrictEqual(bigIpRunTaskSpy.args[0][1], {
                         operation: 'INSTALL',
                         packageFilePath: '/dir1/dir2/iapp.rpm'
                     });
@@ -124,7 +124,7 @@ describe('bigip onboard tests', () => {
                 .then(() => {
                     assert.strictEqual(icontrolMock.lastCall.method, 'modify');
                     assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/global-settings');
-                    assert.deepEqual(icontrolMock.lastCall.body, globalSettings);
+                    assert.deepStrictEqual(icontrolMock.lastCall.body, globalSettings);
                 });
         });
 
@@ -152,7 +152,7 @@ describe('bigip onboard tests', () => {
                         'modify', '/tm/sys/global-settings'
                     );
                     const deviceRequest = icontrolMock.getRequest('create', '/tm/cm/device');
-                    assert.deepEqual(globalSettingsRequest, { foo: 'bar' });
+                    assert.deepStrictEqual(globalSettingsRequest, { foo: 'bar' });
                     assert.strictEqual(deviceRequest.target, newHostname);
                 });
         });
@@ -180,7 +180,7 @@ describe('bigip onboard tests', () => {
 
             return bigIp.onboard.hostname(newHostname)
                 .then(() => {
-                    assert.deepEqual(icontrolMock.getRequest(
+                    assert.deepStrictEqual(icontrolMock.getRequest(
                         'create',
                         '/tm/cm/device'
                     ), {
@@ -188,7 +188,7 @@ describe('bigip onboard tests', () => {
                         name: oldHostname,
                         target: newHostname
                     });
-                    assert.deepEqual(icontrolMock.getRequest(
+                    assert.deepStrictEqual(icontrolMock.getRequest(
                         'modify',
                         '/tm/sys/global-settings'
                     ), {
@@ -439,7 +439,7 @@ describe('bigip onboard tests', () => {
                 .then(() => {
                     const licenseRequest = icontrolMock.getRequest('create', '/tm/sys/license');
                     assert.strictEqual(licenseRequest.command, 'install');
-                    assert.deepEqual(licenseRequest.addOnKeys, addOnKeys);
+                    assert.deepStrictEqual(licenseRequest.addOnKeys, addOnKeys);
                 });
         });
 
@@ -744,7 +744,7 @@ describe('bigip onboard tests', () => {
         it('no old root password test', () => {
             return bigIp.onboard.setRootPassword('rootPassword', undefined, { enableRoot: true })
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         { value: 'false' }
                     );
@@ -753,7 +753,7 @@ describe('bigip onboard tests', () => {
                         runShellCommandSpy.args[0][0],
                         'echo -e "randombytes\nrandombytes" | passwd root'
                     );
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('create', '/shared/authn/root'),
                         { oldPassword: 'randombytes', newPassword: 'rootPassword' }
                     );
@@ -763,12 +763,12 @@ describe('bigip onboard tests', () => {
         it('old root password test', () => {
             return bigIp.onboard.setRootPassword('rootPassword', 'myOldPassword', { enableRoot: true })
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/db/systemauth.disablerootlogin'),
                         { value: 'false' }
                     );
                     assert.strictEqual(runShellCommandSpy.callCount, 0);
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('create', '/shared/authn/root'),
                         { oldPassword: 'myOldPassword', newPassword: 'rootPassword' }
                     );
@@ -854,7 +854,7 @@ describe('bigip onboard tests', () => {
 
             return bigIp.onboard.provision(provisionSettings)
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
                         {
                             level: 'level2'
@@ -925,7 +925,7 @@ describe('bigip onboard tests', () => {
 
             return bigIp.onboard.provision(provisionSettings, { checkActive: false })
                 .then(() => {
-                    assert.deepEqual(
+                    assert.deepStrictEqual(
                         icontrolMock.getRequest('modify', '/tm/sys/provision/mod1'),
                         {
                             level: 'level2'

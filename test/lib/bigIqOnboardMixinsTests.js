@@ -74,7 +74,7 @@ describe('bigiq onboard mixins tests', () => {
                 );
             });
 
-            it('status ready test', (done) => {
+            it('status ready test', () => {
                 icontrolMock.when(
                     'list',
                     '/cm/check/license/ready',
@@ -83,9 +83,9 @@ describe('bigiq onboard mixins tests', () => {
                     }
                 );
 
-                bigIqOnboardMixins.createLicensePool('mypool', '1234')
+                return bigIqOnboardMixins.createLicensePool('mypool', '1234')
                     .then(() => {
-                        assert.deepEqual(icontrolMock.getRequest(
+                        assert.deepStrictEqual(icontrolMock.getRequest(
                             'create',
                             '/cm/device/licensing/pool/initial-activation'
                         ),
@@ -103,15 +103,9 @@ describe('bigiq onboard mixins tests', () => {
                             icontrolMock.getNumRequests('list', '/cm/check/license/ready'),
                             1
                         );
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
-                    })
-                    .finally(() => {
-                        done();
                     });
             });
-            it('state licensed test', (done) => {
+            it('state licensed test', () => {
                 icontrolMock.when(
                     'list',
                     '/cm/check/license/ready',
@@ -120,7 +114,7 @@ describe('bigiq onboard mixins tests', () => {
                     }
                 );
 
-                bigIqOnboardMixins.createLicensePool('mypool', '1234')
+                return bigIqOnboardMixins.createLicensePool('mypool', '1234')
                     .then(() => {
                         assert.strictEqual(
                             icontrolMock.getNumRequests('list',
@@ -131,18 +125,12 @@ describe('bigiq onboard mixins tests', () => {
                             icontrolMock.getNumRequests('list', '/cm/check/license/ready'),
                             1
                         );
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
-                    })
-                    .finally(() => {
-                        done();
                     });
             });
         });
 
         describe('create reg key pool test', () => {
-            it('basic test', (done) => {
+            it('basic test', () => {
                 const poolUuid = '998877';
 
                 icontrolMock.when(
@@ -178,9 +166,9 @@ describe('bigiq onboard mixins tests', () => {
                     }
                 );
 
-                bigIqOnboardMixins.createRegKeyPool('mypool', ['1234'])
+                return bigIqOnboardMixins.createRegKeyPool('mypool', ['1234'])
                     .then(() => {
-                        assert.deepEqual(icontrolMock.getRequest(
+                        assert.deepStrictEqual(icontrolMock.getRequest(
                             'create',
                             `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings`
                         ),
@@ -194,19 +182,13 @@ describe('bigiq onboard mixins tests', () => {
                                 `/cm/device/licensing/pool/regkey/licenses/${poolUuid}/offerings/${regKey1}`),
                             3
                         );
-                    })
-                    .catch((err) => {
-                        assert.ok(false, err);
-                    })
-                    .finally(() => {
-                        done();
                     });
             });
         });
     });
 
     describe('is primary key set test', () => {
-        it('is set test', (done) => {
+        it('is set test', () => {
             icontrolMock.when(
                 'list',
                 '/cm/shared/secure-storage/primarykey',
@@ -215,19 +197,13 @@ describe('bigiq onboard mixins tests', () => {
                 }
             );
 
-            bigIqOnboardMixins.isPrimaryKeySet()
+            return bigIqOnboardMixins.isPrimaryKeySet()
                 .then((isSet) => {
                     assert.ok(isSet);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('is not set test', (done) => {
+        it('is not set test', () => {
             icontrolMock.when(
                 'list',
                 '/cm/shared/secure-storage/primarykey',
@@ -236,47 +212,30 @@ describe('bigiq onboard mixins tests', () => {
                 }
             );
 
-            bigIqOnboardMixins.isPrimaryKeySet()
+            return bigIqOnboardMixins.isPrimaryKeySet()
                 .then((isSet) => {
                     assert.ok(!isSet);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
 
-    it('set primary passphrase test', (done) => {
+    it('set primary passphrase test', () => {
         const passphrase = 'my passphrase';
 
-        bigIqOnboardMixins.setPrimaryPassphrase(passphrase)
+        return bigIqOnboardMixins.setPrimaryPassphrase(passphrase)
             .then(() => {
                 const passphraseRequest =
                     icontrolMock.getRequest('create', '/cm/shared/secure-storage/primarykey');
                 assert.strictEqual(passphraseRequest.passphrase, passphrase);
-            })
-            .catch((err) => {
-                assert.ok(false, err);
-            })
-            .finally(() => {
-                done();
             });
     });
-    it('set random primary passphrase test', (done) => {
-        bigIqOnboardMixins.setRandomPrimaryPassphrase()
+
+    it('set random primary passphrase test', () => {
+        return bigIqOnboardMixins.setRandomPrimaryPassphrase()
             .then(() => {
                 const passphraseRequest =
                     icontrolMock.getRequest('create', '/cm/shared/secure-storage/primarykey');
                 assert.ok(passphraseRequest.passphrase);
-            })
-            .catch((err) => {
-                assert.ok(false, err);
-            })
-            .finally(() => {
-                done();
             });
     });
 });

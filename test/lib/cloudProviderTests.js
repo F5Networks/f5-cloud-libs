@@ -49,68 +49,60 @@ describe('bigip tests', () => {
         });
     });
 
-    it('logger test', (done) => {
+    it('logger test', () => {
         const logger = {
             a: 1,
             b: 2
         };
         testCloudProvider = new TestCloudProvider({ logger });
-        assert.deepEqual(testCloudProvider.logger, logger);
-        done();
+        assert.deepStrictEqual(testCloudProvider.logger, logger);
     });
 
-    it('cl options test', (done) => {
+    it('cl options test', () => {
         const clOptions = {
             foo: 'bar',
             hello: 'world'
         };
 
         testCloudProvider = new TestCloudProvider({ clOptions });
-        assert.deepEqual(testCloudProvider.clOptions, clOptions);
-        done();
+        assert.deepStrictEqual(testCloudProvider.clOptions, clOptions);
     });
 
-    it('init test', (done) => {
-        testCloudProvider.init()
+    it('init test', () => {
+        return testCloudProvider.init()
             .then(() => {
                 assert.ok(true);
-                done();
             });
     });
 
-    it('unimplemented bigip ready test', (done) => {
+    it('unimplemented bigip ready test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.bigIpReady();
         });
-        done();
     });
 
-    it('unimplemented get data from uri test', (done) => {
+    it('unimplemented get data from uri test', () => {
         assert.throws(() => {
             testCloudProvider.getDataFromUri();
-        });
-        done();
+        }, /Error: Unimplemented abstract method CloudProvider.getDataFromUri/);
     });
 
-    it('unimplemented get instance id test', (done) => {
+    it('unimplemented get instance id test', () => {
         assert.throws(() => {
             testCloudProvider.getInstanceId();
-        });
-        done();
+        }, /Error: Unimplemented abstract method CloudProvider.getInstanceId/);
     });
 
-    it('unimplemented get instances test', (done) => {
+    it('unimplemented get instances test', () => {
         assert.throws(() => {
             testCloudProvider.getInstances();
-        });
-        done();
+        }, /Error: Unimplemented abstract method CloudProvider.getInstances/);
     });
 
-    it('unimplemented elect primary test', (done) => {
+    it('unimplemented elect primary test', () => {
         assert.throws(() => {
             testCloudProvider.electPrimary();
-        });
-        done();
+        }, /Error: Unimplemented abstract method CloudProvider.electPrimary/);
     });
 
     describe('unimplemented get primary credentials tests', () => {
@@ -118,27 +110,25 @@ describe('bigip tests', () => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
         });
 
-        it('messaging not supported test', (done) => {
+        it('messaging not supported test', () => {
             assert.throws(() => {
                 testCloudProvider.getPrimaryCredentials();
-            });
-            done();
+            }, /Error: Unimplemented abstract method CloudProvider.getPrimaryCredentials/);
         });
 
-        it('messaging supported test', (done) => {
+        it('messaging supported test', () => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
-            assert.doesNotThrow(() => {
-                testCloudProvider.getPrimaryCredentials();
-            });
-            done();
+            return testCloudProvider.getPrimaryCredentials()
+                .then((results) => {
+                    assert.strictEqual(results, true);
+                });
         });
     });
 
-    it('unimplemented get primary status test', (done) => {
-        assert.doesNotThrow(() => {
+    it('unimplemented get primary status test', () => {
+        return assert.doesNotThrow(() => {
             testCloudProvider.getPrimaryStatus();
         });
-        done();
     });
 
     describe('unimplemented get primary credentials tests', () => {
@@ -146,28 +136,29 @@ describe('bigip tests', () => {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = false;
         });
 
-        it('encryption supported test', (done) => {
+        it('encryption supported test', () => {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = true;
             assert.throws(() => {
                 testCloudProvider.getPublicKey();
-            });
-            done();
+            }, /Error: Unimplemented abstract method CloudProvider.getPublicKey/);
         });
 
-        it('encryption not supported test', (done) => {
-            assert.doesNotThrow(() => {
-                testCloudProvider.getPublicKey();
-            });
-            done();
+        it('encryption not supported test', () => {
+            // What is this testing?
+            return testCloudProvider.getPublicKey()
+                .then((res) => {
+                    assert.strictEqual(res, true);
+                });
         });
     });
 
     describe('unimplemented get public key tests', () => {
-        it('encryption not supported test', (done) => {
-            assert.doesNotThrow(() => {
-                testCloudProvider.getPublicKey();
-            });
-            done();
+        it('encryption not supported test', () => {
+            // What is this testing?
+            return testCloudProvider.getPublicKey()
+                .then((res) => {
+                    assert.strictEqual(res, true);
+                });
         });
     });
 
@@ -176,23 +167,20 @@ describe('bigip tests', () => {
             testCloudProvider.features = {};
         });
 
-        it('has feature test', (done) => {
+        it('has feature test', () => {
             testCloudProvider.features.FOO = true;
             assert.strictEqual(testCloudProvider.hasFeature('FOO'), true);
-            done();
         });
 
-        it('does not have feature test', (done) => {
+        it('does not have feature test', () => {
             assert.strictEqual(testCloudProvider.hasFeature('FOO'), false);
-            done();
         });
     });
 
-    it('unimplemented put primary credentials test', (done) => {
-        assert.doesNotThrow(() => {
+    it('unimplemented put primary credentials test', () => {
+        return assert.doesNotThrow(() => {
             testCloudProvider.putPrimaryCredentials();
         });
-        done();
     });
 
     describe('unimplemented put public key tests', () => {
@@ -200,83 +188,74 @@ describe('bigip tests', () => {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = false;
         });
 
-        it('encryption supported test', (done) => {
+        it('encryption supported test', () => {
             testCloudProvider.features[CloudProvider.FEATURE_ENCRYPTION] = true;
             assert.throws(() => {
                 testCloudProvider.putPublicKey();
-            });
-            done();
+            }, /Error: Unimplemented abstract method CloudProvider.putPublicKey/);
         });
 
-        it('encryption not supported test', (done) => {
-            assert.doesNotThrow(() => {
-                testCloudProvider.putPublicKey();
-            });
-            done();
+        it('encryption not supported test', () => {
+            return testCloudProvider.putPublicKey()
+                .then((res) => {
+                    assert.strictEqual(res, true);
+                });
         });
     });
 
-    it('unimplemented get nics by tag test', (done) => {
+    it('unimplemented get nics by tag test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.getNicsByTag();
         });
-        done();
     });
 
-    it('unimplemented get vms by tag test', (done) => {
+    it('unimplemented get vms by tag test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.getVmsByTag();
         });
-        done();
     });
 
-    it('unimplemented is valid primary test', (done) => {
-        assert.doesNotThrow(() => {
-            testCloudProvider.isValidPrimary();
-        });
-        done();
+    it('unimplemented is valid primary test', () => {
+        return testCloudProvider.isValidPrimary()
+            .then((r) => {
+                assert.strictEqual(r, true);
+            });
     });
 
-    it('unimplemented primary elected test', (done) => {
+    it('unimplemented primary elected test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.primaryElected();
         });
-        done();
     });
 
-    it('unimplemented primary invalidated test', (done) => {
+    it('unimplemented primary invalidated test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.primaryInvalidated();
         });
-        done();
     });
 
-    it('unimplemented get Stored Ucs test', (done) => {
+    it('unimplemented get Stored Ucs test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.getStoredUcs();
         });
-        done();
     });
 
-    it('unimplemented get Stored Object test', (done) => {
+    it('unimplemented get Stored Object test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.deleteStoredObject();
         });
-        done();
     });
 
-    it('unimplemented store Ucs test', (done) => {
+    it('unimplemented store Ucs test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.storeUcs();
         });
-        done();
     });
 
-    it('unimplemented put Instance test', (done) => {
+    it('unimplemented put Instance test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.putInstance();
         });
-        done();
     });
 
     describe('unimplemented send message tests', () => {
@@ -284,19 +263,17 @@ describe('bigip tests', () => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
         });
 
-        it('messaging not supported test', (done) => {
+        it('messaging not supported test', () => {
             assert.doesNotThrow(() => {
                 testCloudProvider.sendMessage();
             });
-            done();
         });
 
-        it('messaging supported test', (done) => {
+        it('messaging supported test', () => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
             assert.throws(() => {
                 testCloudProvider.sendMessage();
-            });
-            done();
+            }, /Error: Unimplemented abstract method CloudProvider.sendMessage/);
         });
     });
 
@@ -305,60 +282,55 @@ describe('bigip tests', () => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = false;
         });
 
-        it('messaging not supported test', (done) => {
-            assert.doesNotThrow(() => {
-                testCloudProvider.getMessages();
-            });
-            done();
+        it('messaging not supported test', () => {
+            return testCloudProvider.getMessages()
+                .then((r) => {
+                    assert.strictEqual(r, true);
+                });
         });
 
-        it('messaging supported test', (done) => {
+        it('messaging supported test', () => {
             testCloudProvider.features[CloudProvider.FEATURE_MESSAGING] = true;
             assert.throws(() => {
                 testCloudProvider.getMessages();
+            }, /Error: Unimplemented abstract method CloudProvider.getMessages/);
+        });
+    });
+
+    it('unimplemented sync complete test', () => {
+        return testCloudProvider.syncComplete()
+            .then((r) => {
+                assert.strictEqual(r, true);
             });
-            done();
-        });
     });
 
-    it('unimplemented sync complete test', (done) => {
-        assert.doesNotThrow(() => {
-            testCloudProvider.syncComplete();
-        });
-        done();
-    });
-
-    it('unimplemented get nodes by uri test', (done) => {
+    it('unimplemented get nodes by uri test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.getNodesFromUri();
         });
-        done();
     });
 
-    it('unimplemented get nodes by resource id test', (done) => {
+    it('unimplemented get nodes by resource id test', () => {
         assert.doesNotThrow(() => {
             testCloudProvider.getNodesByResourceId();
         });
-        done();
     });
 
     describe('is instance expired tests', () => {
-        it('expired test', (done) => {
+        it('expired test', () => {
             const instance = {
                 lastUpdate: new Date(1970, 1, 1)
             };
 
             assert.strictEqual(testCloudProvider.isInstanceExpired(instance), true);
-            done();
         });
 
-        it('not expired test', (done) => {
+        it('not expired test', () => {
             const instance = {
                 lastUpdate: new Date()
             };
 
             assert.strictEqual(testCloudProvider.isInstanceExpired(instance), false);
-            done();
         });
     });
 
@@ -380,7 +352,7 @@ describe('bigip tests', () => {
             poolCalled = undefined;
         });
 
-        it('basic test', (done) => {
+        it('basic test', () => {
             const instances = [
                 {
                     hostname: 'host1'
@@ -396,20 +368,14 @@ describe('bigip tests', () => {
                 licensePoolName: licensePool
             };
 
-            testCloudProvider.revokeLicenses(instances, {})
+            return testCloudProvider.revokeLicenses(instances, {})
                 .then(() => {
-                    assert.strictEqual(poolCalled, licensePool);
+                    assert.strictEqual(poolCalled, 'myLicensePool');
                     assert.strictEqual(instancesCalled.length, instances.length);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('no license pool test', (done) => {
+        it('no license pool test', () => {
             const instances = [
                 {
                     hostname: 'host1'
@@ -421,20 +387,14 @@ describe('bigip tests', () => {
 
             testCloudProvider.clOptions = {};
 
-            testCloudProvider.revokeLicenses(instances, {})
+            return testCloudProvider.revokeLicenses(instances, {})
                 .then(() => {
                     assert.strictEqual(poolCalled, undefined);
                     assert.strictEqual(instancesCalled.length, 0);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('revoke fail test', (done) => {
+        it('revoke fail test', () => {
             const instances = [
                 {
                     hostname: 'host1'
@@ -454,15 +414,12 @@ describe('bigip tests', () => {
                 return q.reject(new Error('foo'));
             };
 
-            testCloudProvider.revokeLicenses(instances, {})
+            return testCloudProvider.revokeLicenses(instances, {})
                 .then(() => {
                     assert.ok(false, 'Revoke should have thrown');
                 })
-                .catch(() => {
-                    assert.ok(true);
-                })
-                .finally(() => {
-                    done();
+                .catch((err) => {
+                    assert.strictEqual(err.message, 'foo');
                 });
         });
     });

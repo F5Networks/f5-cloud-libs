@@ -187,7 +187,7 @@ describe('generic Node Provider tests', () => {
     function mockGetDataFromUrl(urlResponse) {
         utilMock.getDataFromUrl = function getDataFromUrl(url, options) {
             assert.strictEqual(url, targetUrl);
-            assert.deepEqual(options, targetOptions);
+            assert.deepStrictEqual(options, targetOptions);
             return q(urlResponse);
         };
     }
@@ -200,19 +200,18 @@ describe('generic Node Provider tests', () => {
         utilMock.getDataFromUrl = origGetDataFromUrl;
     });
 
-    it('logger test', (done) => {
+    it('logger test', () => {
         const logger = {
             a: 1,
             b: 2
         };
         testProvider = new GenericNodeProvider({ logger });
-        assert.deepEqual(testProvider.logger, logger);
-        done();
+        assert.deepStrictEqual(testProvider.logger, logger);
     });
 
     describe('init test', () => {
-        it('missing provider options test', (done) => {
-            testProvider.init()
+        it('missing provider options test', () => {
+            return testProvider.init()
                 .then(() => {
                     assert.ok(false, 'should have thrown missing required provider options');
                 })
@@ -228,189 +227,138 @@ describe('generic Node Provider tests', () => {
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('ProviderOptions.propertyPathIpPrivate '
                         + 'required'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('init success test', (done) => {
-            testProvider.init(providerOptions, initOptions)
+        it('init success test', () => {
+            return testProvider.init(providerOptions, initOptions)
                 .then(() => {
                     assert.ok(true);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('provider options test', (done) => {
-            testProvider.init(providerOptions)
+        it('provider options test', () => {
+            return testProvider.init(providerOptions)
                 .then(() => {
-                    assert.deepEqual(testProvider.providerOptions, providerOptions);
-                    assert.deepEqual(testProvider.propertyPaths, {
+                    assert.deepStrictEqual(testProvider.providerOptions, providerOptions);
+                    assert.deepStrictEqual(testProvider.propertyPaths, {
                         propertyPathId: ['node', 'uuid'],
                         propertyPathIpPrivate: ['node', 'ips', '0'],
                         propertyPathIpPublic: ['node', 'ips', '1']
                     });
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('property path no ip test', (done) => {
+        it('property path no ip test', () => {
             const optsNoPublic = JSON.parse(JSON.stringify(providerOptions));
             delete optsNoPublic.propertyPathIpPublic;
-            testProvider.init(optsNoPublic)
+            return testProvider.init(optsNoPublic)
                 .then(() => {
-                    assert.deepEqual(testProvider.providerOptions, optsNoPublic);
-                    assert.deepEqual(testProvider.propertyPaths, {
+                    assert.deepStrictEqual(testProvider.providerOptions, optsNoPublic);
+                    assert.deepStrictEqual(testProvider.propertyPaths, {
                         propertyPathId: ['node', 'uuid'],
                         propertyPathIpPrivate: ['node', 'ips', '0'],
                         propertyPathIpPublic: []
                     });
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('init option test', (done) => {
-            testProvider.init(providerOptions, initOptions)
+        it('init option test', () => {
+            return testProvider.init(providerOptions, initOptions)
                 .then(() => {
-                    assert.deepEqual(testProvider.initOptions, initOptions);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                    assert.deepStrictEqual(testProvider.initOptions, initOptions);
                 });
         });
     });
 
     describe('get nodes from uri test', () => {
-        it('bad json string response test', (done) => {
+        it('bad json string response test', () => {
             mockGetDataFromUrl('foo');
 
-            testProvider.getNodesFromUri(targetUrl, targetOptions)
+            return testProvider.getNodesFromUri(targetUrl, targetOptions)
                 .then(() => {
                     assert.ok(false, 'should have thrown bad response data');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('Data must parse to a JSON array'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('bad json array response test', (done) => {
+        it('bad json array response test', () => {
             mockGetDataFromUrl({});
 
-            testProvider.getNodesFromUri(targetUrl, targetOptions)
+            return testProvider.getNodesFromUri(targetUrl, targetOptions)
                 .then(() => {
                     assert.ok(false, 'should have thrown bad response data');
                 })
                 .catch((err) => {
                     assert.notStrictEqual(err.message.indexOf('Data must be a JSON array'), -1);
-                })
-                .finally(() => {
-                    done();
                 });
         });
 
-        it('no nodes test', (done) => {
+        it('no nodes test', () => {
             mockGetDataFromUrl(JSON.stringify([{ foo: 'bar' }]));
 
-            testProvider.init(providerOptions)
+            return testProvider.init(providerOptions)
                 .then(() => {
-                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
-                        .then((results) => {
-                            assert.deepEqual(results, []);
-                        });
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions);
                 })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                .then((results) => {
+                    assert.deepStrictEqual(results, []);
                 });
         });
 
-        it('json string nodes test', (done) => {
+        it('json string nodes test', () => {
             mockGetDataFromUrl(JSON.stringify(responseNodeData));
 
-            testProvider.init(providerOptions)
+            return testProvider.init(providerOptions)
                 .then(() => {
-                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
-                        .then((results) => {
-                            assert.deepEqual(results, [
-                                {
-                                    id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
-                                    ip: {
-                                        public: '10.10.0.10',
-                                        private: '192.168.0.140'
-                                    }
-                                },
-                                {
-                                    id: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
-                                    ip: {
-                                        public: '11.11.0.11',
-                                        private: '192.168.0.141'
-                                    }
-                                }
-                            ]);
-                        });
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions);
                 })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                .then((results) => {
+                    assert.deepStrictEqual(results, [
+                        {
+                            id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
+                            ip: {
+                                public: '10.10.0.10',
+                                private: '192.168.0.140'
+                            }
+                        },
+                        {
+                            id: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
+                            ip: {
+                                public: '11.11.0.11',
+                                private: '192.168.0.141'
+                            }
+                        }
+                    ]);
                 });
         });
 
-        it('json array nodes test', (done) => {
+        it('json array nodes test', () => {
             mockGetDataFromUrl(responseNodeData);
 
-            testProvider.init(providerOptions)
+            return testProvider.init(providerOptions)
                 .then(() => {
-                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
-                        .then((results) => {
-                            assert.deepEqual(results, [
-                                {
-                                    id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
-                                    ip: {
-                                        public: '10.10.0.10X',
-                                        private: '192.168.0.140'
-                                    }
-                                },
-                                {
-                                    id: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
-                                    ip: {
-                                        public: '11.11.0.11',
-                                        private: '192.168.0.141'
-                                    }
-                                }
-                            ]);
-                        });
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions);
                 })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                .then((results) => {
+                    assert.deepStrictEqual(results, [
+                        {
+                            id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
+                            ip: {
+                                public: '10.10.0.10',
+                                private: '192.168.0.140'
+                            }
+                        },
+                        {
+                            id: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
+                            ip: {
+                                public: '11.11.0.11',
+                                private: '192.168.0.141'
+                            }
+                        }
+                    ]);
                 });
         });
 
@@ -419,28 +367,25 @@ describe('generic Node Provider tests', () => {
 
             return testProvider.init(providerJmesPathOptions)
                 .then(() => {
-                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
-                        .then((results) => {
-                            assert.deepEqual(results, [
-                                {
-                                    id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
-                                    ip: {
-                                        public: '10.10.0.10',
-                                        private: '192.168.0.140'
-                                    }
-                                },
-                                {
-                                    id: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
-                                    ip: {
-                                        public: '11.11.0.11',
-                                        private: '192.168.0.141'
-                                    }
-                                }
-                            ]);
-                        });
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions);
                 })
-                .catch((err) => {
-                    assert.ok(false, err);
+                .then((results) => {
+                    assert.deepStrictEqual(results, [
+                        {
+                            id: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
+                            ip: {
+                                public: '10.10.0.10',
+                                private: '192.168.0.140'
+                            }
+                        },
+                        {
+                            id: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
+                            ip: {
+                                public: '11.11.0.11',
+                                private: '192.168.0.141'
+                            }
+                        }
+                    ]);
                 });
         });
 
@@ -451,11 +396,7 @@ describe('generic Node Provider tests', () => {
                     return testProvider.getNodesFromUri(targetUrl, targetOptions);
                 })
                 .then((results) => {
-                    assert.deepEqual(results, [
-                    ]);
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
+                    assert.deepStrictEqual(results, []);
                 });
         });
 
@@ -464,81 +405,72 @@ describe('generic Node Provider tests', () => {
 
             return testProvider.init(providerJmesPathOptions2)
                 .then(() => {
-                    return testProvider.getNodesFromUri(targetUrl, targetOptions)
-                        .then((results) => {
-                            assert.deepEqual(results, [
-                                {
-                                    id: '192.168.128.1',
-                                    ip: { private: '192.168.128.1', public: '192.168.128.1' },
-                                    port: 443
-                                },
-                                {
-                                    id: '192.168.128.2',
-                                    ip: { private: '192.168.128.2', public: '192.168.128.2' },
-                                    port: 443
-                                },
-                                {
-                                    id: '192.168.128.3',
-                                    ip: { private: '192.168.128.3', public: '192.168.128.3' },
-                                    port: 443
-                                }
-                            ]);
-                        });
+                    return testProvider.getNodesFromUri(targetUrl, targetOptions);
                 })
-                .catch((err) => {
-                    assert.ok(false, err);
+                .then((results) => {
+                    assert.deepStrictEqual(results, [
+                        {
+                            id: '192.168.128.1',
+                            ip: { private: '192.168.128.1', public: '192.168.128.1' },
+                            port: 443
+                        },
+                        {
+                            id: '192.168.128.2',
+                            ip: { private: '192.168.128.2', public: '192.168.128.2' },
+                            port: 443
+                        },
+                        {
+                            id: '192.168.128.3',
+                            ip: { private: '192.168.128.3', public: '192.168.128.3' },
+                            port: 443
+                        }
+                    ]);
                 });
         });
 
-        it('top level json test', (done) => {
+        it('top level json test', () => {
             mockGetDataFromUrl(responseNodeData);
 
             const provOptsCopy = Object.assign(providerOptions, { propertyPathId: '' });
-            testProvider.init(provOptsCopy)
+            return testProvider.init(provOptsCopy)
                 .then(() => {
-                    return testProvider.getNodesFromUri('https://example.com', targetOptions)
-                        .then((results) => {
-                            assert.deepEqual(results, [
-                                {
-                                    id: {
-                                        foo: 'bar',
-                                        node: {
-                                            uuid: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
-                                            ips: [
-                                                '192.168.0.140',
-                                                '10.10.0.10'
-                                            ]
-                                        }
-                                    },
-                                    ip: {
-                                        public: '10.10.0.10',
-                                        private: '192.168.0.140'
-                                    }
-                                },
-                                {
-                                    id: {
-                                        hello: 'world',
-                                        node: {
-                                            uuid: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
-                                            ips: [
-                                                '192.168.0.141',
-                                                '11.11.0.11'
-                                            ]
-                                        }
-                                    },
-                                    ip: {
-                                        public: '11.11.0.11',
-                                        private: '192.168.0.141'
-                                    }
+                    return testProvider.getNodesFromUri('https://example.com', targetOptions);
+                })
+                .then((results) => {
+                    assert.deepStrictEqual(results, [
+                        {
+                            id: {
+                                foo: 'bar',
+                                node: {
+                                    uuid: 'b10b5485-d6f1-47c2-9153-831dda8e1467',
+                                    ips: [
+                                        '192.168.0.140',
+                                        '10.10.0.10'
+                                    ]
                                 }
-                            ]);
-                        });
-                })
-                .catch((err) => {
-                    assert.ok(false, err);
-                })
-                .finally(() => {
-                    done();
+                            },
+                            ip: {
+                                public: '10.10.0.10',
+                                private: '192.168.0.140'
+                            }
+                        },
+                        {
+                            id: {
+                                hello: 'world',
+                                node: {
+                                    uuid: '4cd3e814-09b1-4ea6-88f5-9524d45c1eda',
+                                    ips: [
+                                        '192.168.0.141',
+                                        '11.11.0.11'
+                                    ]
+                                }
+                            },
+                            ip: {
+                                public: '11.11.0.11',
+                                private: '192.168.0.141'
+                            }
+                        }
+                    ]);
                 });
         });
     });

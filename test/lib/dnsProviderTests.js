@@ -36,17 +36,13 @@ describe('DNS Provider Unit Tests', () => {
     });
 
 
-    it('should init', (done) => {
-        testDnsProvider.init()
-            .then(() => {
-                done();
-            });
+    it('should init', () => {
+        return testDnsProvider.init();
     });
 
-    it('should fail for update', (done) => {
+    it('should fail for update', () => {
         assert.throws(() => {
             testDnsProvider.update();
-        });
-        done();
+        }, /Error: Unimplemented abstract method DnsProvider.update/);
     });
 });
