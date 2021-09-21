@@ -33,7 +33,7 @@ module.exports = {
 
         /* eslint-disable max-len */
         return options
-            .version('4.25.1')
+            .version('4.26.5')
             .option(
                 '--host <ip_address>',
                 'Device management IP to which to send commands.'

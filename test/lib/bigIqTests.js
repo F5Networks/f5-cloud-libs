@@ -101,18 +101,17 @@ describe('bigiq tests', () => {
     });
 
     describe('constructor test', () => {
-        it('set logger test', (done) => {
+        it('set logger test', () => {
             const logger = {
                 a: 1,
                 b: 2
             };
 
             bigIq = new BigIq({ logger });
-            assert.deepEqual(bigIq.logger, logger);
-            done();
+            assert.deepStrictEqual(bigIq.logger, logger);
         });
 
-        it('set logger options test', (done) => {
+        it('set logger options test', () => {
             const loggerOptions = {
                 a: 1,
                 b: 2
@@ -122,7 +121,6 @@ describe('bigiq tests', () => {
                 // eslint-disable-next-line no-new
                 new BigIq({ loggerOptions });
             });
-            done();
         });
     });
 
@@ -140,20 +138,17 @@ describe('bigiq tests', () => {
                 });
         });
 
-        it('get version error test', (done) => {
+        it('get version error test', () => {
             icontrolMock.fail('list',
                 '/shared/resolver/device-groups/cm-shared-all-big-iqs/devices?$select=version');
 
             utilMock.MEDIUM_RETRY = { maxRetries: 1, retryIntervalMs: 10 };
-            bigIq.init(host, user, password)
+            return bigIq.init(host, user, password)
                 .then(() => {
                     assert.ok(false, 'should have thrown init error');
                 })
                 .catch(() => {
                     assert.ok(true);
-                })
-                .finally(() => {
-                    done();
                 });
         });
     });
@@ -184,102 +179,79 @@ describe('bigiq tests', () => {
         });
 
         describe('by version test', () => {
-            it('basic test', (done) => {
-                bigIq.init('host', 'user', 'password')
+            it('basic test', () => {
+                return bigIq.init('host', 'user', 'password')
                     .then(() => {
-                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
-                            .then(() => {
-                                assert.strictEqual(gotByVersion, true);
-                                assert.strictEqual(licensingArgs[1], poolName);
-                            })
-                            .catch(() => {
-                                assert.ok(false, 'licensing by version failed');
-                            })
-                            .finally(() => {
-                                done();
-                            });
+                        return bigIq.licenseBigIp(poolName, '1.2.3.4', '8888');
+                    })
+                    .then(() => {
+                        assert.strictEqual(gotByVersion, true);
+                        assert.strictEqual(licensingArgs[1], 'mypool');
                     });
             });
 
-            it('bad version test', (done) => {
+            it('bad version test', () => {
                 bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
                     throw new Error('get by version failed');
                 };
 
-                bigIq.init('host', 'user', 'password')
+                return bigIq.init('host', 'user', 'password')
                     .then(() => {
-                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888')
-                            .then(() => {
-                                assert.ok(false, 'getByVersion should have thrown');
-                            })
-                            .catch((err) => {
-                                assert.strictEqual(err.message, 'get by version failed');
-                            })
-                            .finally(() => {
-                                done();
-                            });
+                        return bigIq.licenseBigIp(poolName, '1.2.3.4', '8888');
+                    })
+                    .then(() => {
+                        assert.ok(false, 'getByVersion should have thrown');
+                    })
+                    .catch((err) => {
+                        assert.strictEqual(err.message, 'get by version failed');
                     });
             });
         });
 
         describe('by type test', () => {
-            it('reachable test', (done) => {
-                bigIq.init('host', 'user', 'password')
+            it('reachable test', () => {
+                return bigIq.init('host', 'user', 'password')
                     .then(() => {
-                        bigIq.licenseBigIp(
+                        return bigIq.licenseBigIp(
                             poolName,
                             '1.2.3.4',
                             '8888',
                             { autoApiType: true, noUnreachable: true }
-                        )
-                            .then(() => {
-                                test.strictEqual(
-                                    apiTypeCalled,
-                                    sharedConstants.LICENSE_API_TYPES.UTILITY
-                                );
-                                test.strictEqual(licensingArgs[1], poolName);
-                            })
-                            .catch(() => {
-                                assert.ok(false, 'licensing by type failed');
-                            })
-                            .finally(() => {
-                                done();
-                            });
+                        );
+                    })
+                    .then(() => {
+                        assert.strictEqual(apiTypeCalled,
+                            sharedConstants.LICENSE_API_TYPES.UTILITY);
+                        assert.strictEqual(licensingArgs[1], 'mypool');
                     });
             });
 
-            it('unreachable test', (done) => {
-                bigIq.init('host', 'user', 'password')
+            it('unreachable test', () => {
+                return bigIq.init('host', 'user', 'password')
                     .then(() => {
-                        bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true })
-                            .then(() => {
-                                assert.strictEqual(
-                                    apiTypeCalled,
-                                    sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
-                                );
-                                assert.strictEqual(licensingArgs[1], poolName);
-                            })
-                            .catch(() => {
-                                assert.ok(false, 'licensing by type failed');
-                            })
-                            .finally(() => {
-                                done();
-                            });
+                        return bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { autoApiType: true });
+                    })
+                    .then(() => {
+                        assert.strictEqual(
+                            apiTypeCalled,
+                            sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
+                        );
+                        assert.strictEqual(licensingArgs[1], 'mypool');
                     });
             });
 
             it('chargebackTag test', () => {
                 return bigIq.init('host', 'user', 'password')
                     .then(() => {
-                        return bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { chargebackTag: 'foo-bar' })
-                            .then(() => {
-                                assert.strictEqual(
-                                    apiTypeCalled,
-                                    sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
-                                );
-                                assert.strictEqual(licensingArgs[1], poolName);
-                                assert.strictEqual(licensingArgs[4].chargebackTag, 'foo-bar');
-                            });
+                        return bigIq.licenseBigIp(poolName, '1.2.3.4', '8888', { chargebackTag: 'foo-bar' });
+                    })
+                    .then(() => {
+                        assert.strictEqual(
+                            apiTypeCalled,
+                            sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
+                        );
+                        assert.strictEqual(licensingArgs[1], poolName);
+                        assert.strictEqual(licensingArgs[4].chargebackTag, 'foo-bar');
                     });
             });
         });
@@ -290,7 +262,7 @@ describe('bigiq tests', () => {
             revokeCalled = false;
         });
 
-        it('basic test', (done) => {
+        it('basic test', () => {
             bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
                 return {
                     revoke() {
@@ -300,38 +272,29 @@ describe('bigiq tests', () => {
                 };
             };
 
-            bigIq.init('host', 'user', 'password')
+            return bigIq.init('host', 'user', 'password')
                 .then(() => {
-                    bigIq.revokeLicense()
-                        .then(() => {
-                            assert.strictEqual(revokeCalled, true);
-                        })
-                        .catch(() => {
-                            assert.ok(false, 'reovoke failed');
-                        })
-                        .finally(() => {
-                            done();
-                        });
+                    return bigIq.revokeLicense();
+                })
+                .then(() => {
+                    assert.strictEqual(revokeCalled, true);
                 });
         });
 
-        it('bad version test', (done) => {
+        it('bad version test', () => {
             bigIqLicenseProviderFactoryMock.getLicenseProviderByVersion = function a() {
                 throw new Error('get by version failed');
             };
 
-            bigIq.init('host', 'user', 'password')
+            return bigIq.init('host', 'user', 'password')
                 .then(() => {
-                    bigIq.revokeLicense()
-                        .then(() => {
-                            assert.ok(false, 'getByVersion should have thrown');
-                        })
-                        .catch((err) => {
-                            assert.strictEqual(err.message, 'get by version failed');
-                        })
-                        .finally(() => {
-                            done();
-                        });
+                    return bigIq.revokeLicense();
+                })
+                .then(() => {
+                    assert.ok(false, 'getByVersion should have thrown');
+                })
+                .catch((err) => {
+                    assert.strictEqual(err.message, 'get by version failed');
                 });
         });
     });

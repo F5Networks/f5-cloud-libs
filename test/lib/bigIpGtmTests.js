@@ -87,7 +87,7 @@ describe('bigip gtm tests', () => {
                     const request = icontrolMock.getRequest(
                         'modify', `/tm/gtm/server/~Common~${serverName}`
                     );
-                    assert.deepEqual(request.virtualServers, virtualServersWithPort);
+                    assert.deepStrictEqual(request.virtualServers, virtualServersWithPort);
                 });
         });
         it('datacenter test', () => {
@@ -131,7 +131,7 @@ describe('bigip gtm tests', () => {
             return bigIp.gtm.updatePool(poolName, serverName, virtualServers)
                 .then(() => {
                     const request = icontrolMock.getRequest('modify', `/tm/gtm/pool/a/~Common~${poolName}`);
-                    assert.deepEqual(request.members, serverWithVirtualServers);
+                    assert.deepStrictEqual(request.members, serverWithVirtualServers);
                 });
         });
         it('monitor test', () => {

@@ -40,40 +40,34 @@ describe('BIGIQ License Provider Factory Unit Tests', () => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByVersion('5.4.0');
             assert.strictEqual(provider.constructor.name, 'BigIq54LicenseProvider');
         });
-        it('should not work for pre 5.0.0', (done) => {
+        it('should not work for pre 5.0.0', () => {
             try {
                 bigIqLicenseProviderFactory.getLicenseProviderByVersion('4.9.0');
                 assert.ok(false, 'pre 5.2 should have thrown');
             } catch (err) {
                 assert.ok(true);
-            } finally {
-                done();
             }
         });
     });
     describe('Tests by type', () => {
-        it('should work when type set to utility', (done) => {
+        it('should work when type set to utility', () => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByType(
                 sharedConstants.LICENSE_API_TYPES.UTILITY
             );
             assert.strictEqual(provider.constructor.name, 'BigIq53LicenseProvider');
-            done();
         });
-        it('should work when type set to utility unreachable', (done) => {
+        it('should work when type set to utility unreachable', () => {
             const provider = bigIqLicenseProviderFactory.getLicenseProviderByType(
                 sharedConstants.LICENSE_API_TYPES.UTILITY_UNREACHABLE
             );
             assert.strictEqual(provider.constructor.name, 'BigIq54LicenseProvider');
-            done();
         });
-        it('should fail for bad type', (done) => {
+        it('should fail for bad type', () => {
             try {
                 bigIqLicenseProviderFactory.getLicenseProviderByType('foo');
                 assert.ok(false, 'bad api type should have thrown');
             } catch (err) {
                 assert.ok(true);
-            } finally {
-                done();
             }
         });
     });

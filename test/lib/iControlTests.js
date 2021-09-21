@@ -30,21 +30,16 @@ describe('iControl tests', () => {
         httpMock.reset();
     });
 
-    it('auth token test', (done) => {
+    it('auth token test', () => {
         iControl = new IControl({ authToken: 'foofoofoo' });
         iControl.https = httpMock;
-        iControl.list('somepath')
+        return iControl.list('somepath')
             .then(() => {
                 assert.strictEqual(httpMock.lastRequest.headers['X-F5-Auth-Token'], 'foofoofoo');
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
             });
     });
-    it('auth token wrong ip test', (done) => {
+
+    it('auth token wrong ip test', () => {
         const user = 'admin';
         const password = 'secret';
         const badTokenResponse = `Tokens are only valid to be used by the client of which they were issued.
@@ -58,117 +53,79 @@ Token is valid for 1.2.3.4 and received from 6.7.8.9.`;
             401
         );
 
-        iControl.list('/wrong/client/ip')
+        return iControl.list('/wrong/client/ip')
             .then((data) => {
-                assert.deepEqual(data, { message: 'Success' });
+                assert.deepStrictEqual(data, { message: 'Success' });
                 assert.strictEqual(httpMock.lastRequest.auth, `${user}:${password}`);
                 assert.strictEqual(httpMock.lastRequest.headers['X-F5-Auth-Token'], undefined);
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
             });
     });
-    it('bad json response test', (done) => {
+
+    it('bad json response test', () => {
         httpMock.setResponse('badjson', { 'Content-Type': 'application/json' });
-        iControl.list('somepath')
+        return iControl.list('somepath')
             .then(() => {
                 assert.ok(false, 'should have thrown bad json');
             })
             .catch((err) => {
-                assert.notStrictEqual(err.indexOf('Unable to parse JSON'), -1);
-            })
-            .finally(() => {
-                done();
+                assert.notStrictEqual(err.message.indexOf('Unable to parse JSON'), -1);
             });
     });
-    it('empty response test', (done) => {
+
+    it('empty response test', () => {
         httpMock.setResponse('', { 'Content-Type': 'application/json' });
-        iControl.list('somepath')
+        return iControl.list('somepath')
             .then((response) => {
-                assert.deepEqual(response, {});
-            })
-            .catch((err) => {
-                assert.ok(false, err);
-            })
-            .finally(() => {
-                done();
+                assert.deepStrictEqual(response, {});
             });
     });
-    it('bad status code test', (done) => {
-        const errorCode = 300;
-        httpMock.setResponse({ foo: 'bar' }, { 'Content-Type': 'application/json' }, errorCode);
-        iControl.list('somepath')
+
+    it('bad status code test', () => {
+        httpMock.setResponse({ foo: 'bar' }, { 'Content-Type': 'application/json' }, 300);
+        return iControl.list('somepath')
             .then(() => {
                 assert.ok(false, 'should have thrown bad status code');
             })
             .catch((err) => {
-                assert.strictEqual(err.code, errorCode);
-            })
-            .finally(() => {
-                done();
+                assert.strictEqual(err.code, 300);
             });
     });
-    it('create test', (done) => {
+
+    it('create test', () => {
         const body = { foo: 'bar' };
-        iControl.create('somepath', body)
+        return iControl.create('somepath', body)
             .then(() => {
-                assert.deepEqual(httpMock.lastRequest.method, 'POST');
-                assert.deepEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
+                assert.deepStrictEqual(httpMock.lastRequest.method, 'POST');
+                assert.deepStrictEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
             });
     });
-    it('delete test', (done) => {
-        iControl.delete('somepath')
+
+    it('delete test', () => {
+        return iControl.delete('somepath')
             .then(() => {
-                assert.deepEqual(httpMock.lastRequest.method, 'DELETE');
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
+                assert.deepStrictEqual(httpMock.lastRequest.method, 'DELETE');
             });
     });
-    it('list test', (done) => {
+
+    it('list test', () => {
         const expectedResponse = 'foo';
         httpMock.setResponse(expectedResponse);
-        iControl.list('somepath')
+        return iControl.list('somepath')
             .then((response) => {
                 assert.strictEqual(response, expectedResponse);
-                assert.deepEqual(httpMock.lastRequest.method, 'GET');
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
+                assert.deepStrictEqual(httpMock.lastRequest.method, 'GET');
             });
     });
-    it('list json test', (done) => {
-        const expectedResponse = {
-            foo: 'bar'
-        };
-        httpMock.setResponse(expectedResponse, { 'Content-Type': 'application/json' });
-        iControl.list('somepath')
+
+    it('list json test', () => {
+        httpMock.setResponse({ foo: 'bar' }, { 'Content-Type': 'application/json' });
+        return iControl.list('somepath')
             .then((response) => {
-                assert.deepEqual(response, expectedResponse);
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
+                assert.deepStrictEqual(response, { foo: 'bar' });
             });
     });
-    it('list items test', (done) => {
+
+    it('list items test', () => {
         const items = [
             {
                 one: 1,
@@ -181,105 +138,75 @@ Token is valid for 1.2.3.4 and received from 6.7.8.9.`;
         };
 
         httpMock.setResponse(expectedResponse, { 'Content-Type': 'application/json' });
-        iControl.list('somepath')
+        return iControl.list('somepath')
             .then((response) => {
-                assert.deepEqual(response, items);
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
+                assert.deepStrictEqual(response, items);
             });
     });
-    it('header content type test', (done) => {
+
+    it('header content type test', () => {
         const contentType = 'foo/bar';
         const headers = {
             'Content-type': contentType
         };
 
         iControl.list('somepath', { headers });
-        assert.deepEqual(httpMock.lastRequest.headers['Content-Type'], contentType);
-        done();
+        assert.deepStrictEqual(httpMock.lastRequest.headers['Content-Type'], contentType);
     });
-    it('header other test', (done) => {
+
+    it('header other test', () => {
         const headers = {
             foo: 'bar'
         };
 
         iControl.list('somepath', { headers });
-        assert.deepEqual(httpMock.lastRequest.headers.foo, headers.foo);
-        done();
+        assert.deepStrictEqual(httpMock.lastRequest.headers.foo, headers.foo);
     });
-    it('modify test', (done) => {
+
+    it('modify test', () => {
         const body = { foo: 'bar' };
-        iControl.modify('somepath', body)
+        return iControl.modify('somepath', body)
             .then(() => {
-                assert.deepEqual(httpMock.lastRequest.method, 'PATCH');
-                assert.deepEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
+                assert.deepStrictEqual(httpMock.lastRequest.method, 'PATCH');
+                assert.deepStrictEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
             });
     });
-    it('replace test', (done) => {
+
+    it('replace test', () => {
         const body = { foo: 'bar' };
-        iControl.replace('somepath', body)
+        return iControl.replace('somepath', body)
             .then(() => {
-                assert.deepEqual(httpMock.lastRequest.method, 'PUT');
-                assert.deepEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
+                assert.deepStrictEqual(httpMock.lastRequest.method, 'PUT');
+                assert.deepStrictEqual(httpMock.clientRequest.data, JSON.stringify({ foo: 'bar' }));
             });
     });
-    it('no wait test', (done) => {
-        const expectedResponse = 'foo';
-        httpMock.setResponse(expectedResponse);
-        iControl.list('somepath', { noWait: true })
+
+    it('no wait test', () => {
+        httpMock.setResponse('foo');
+        return iControl.list('somepath', { noWait: true })
             .then((response) => {
                 assert.strictEqual(response, undefined);
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
             });
     });
-    it('error test', (done) => {
-        const message = 'http error';
-        httpMock.setError(message);
-        iControl.list('somepath')
+
+    it('error test', () => {
+        httpMock.setError('http error');
+        return iControl.list('somepath')
             .then(() => {
                 assert.ok(false, 'should have thrown an error');
             })
             .catch((err) => {
-                assert.strictEqual(err.message, message);
-            })
-            .finally(() => {
-                done();
+                assert.strictEqual(err.message, 'http error');
             });
     });
-    it('local auth test', (done) => {
+
+    it('local auth test', () => {
         iControl = new IControl({ host: 'localhost', port: 8100 });
         iControl.http = httpMock;
-        iControl.list('somepath')
+        return iControl.list('somepath')
             .then(() => {
                 // testing that /mgmt is not prefixed
                 assert.strictEqual(httpMock.lastRequest.path, 'somepath');
-            })
-            .catch((err) => {
-                assert.ok(false, err.message);
-            })
-            .finally(() => {
-                done();
             });
     });
 });

@@ -55,8 +55,6 @@ describe('set master key tests', () => {
     };
 
     beforeEach((done) => {
-        console.log = function log() {
-        };
         /* eslint-disable global-require */
         setMasterKey = require('../../scripts/setMasterKey');
         BigIp = require('../../lib/bigIp');

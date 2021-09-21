@@ -72,7 +72,7 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
             };
 
             provider = new BigIqProvider({}, { logger });
-            assert.deepEqual(provider.logger, logger);
+            assert.deepStrictEqual(provider.logger, logger);
         });
 
         it('should set logger options', () => {
@@ -243,8 +243,7 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
         });
     });
 
-    it('get license timeout test', (done) => {
-        assert.deepEqual(provider.getLicenseTimeout(), { maxRetries: 40, retryIntervalMs: 5000 });
-        done();
+    it('get license timeout test', () => {
+        assert.deepStrictEqual(provider.getLicenseTimeout(), { maxRetries: 40, retryIntervalMs: 5000 });
     });
 });

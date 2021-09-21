@@ -49,7 +49,7 @@ describe('Metrics Collector Unit Tests', () => {
         });
     });
 
-    it('basic test', (done) => {
+    it('basic test', () => {
         const metrics = {
             customerId: 'myCustomerId',
             action: 'myAction',
@@ -62,20 +62,20 @@ describe('Metrics Collector Unit Tests', () => {
             licenseType: 'myLicenseType',
             cloudLibsVersion: 'myCloudLibsVersion'
         };
-        const googleAnalyticsString = `&v=1\
-&t=event&ec=run\
-&tid=UA-47575237-11\
-&cid=${uuid(metrics.customerId)}\
-&aiid=${uuid(metrics.customerId)}\
-&ea=${metrics.action}\
-&an=${metrics.templateName}\
-&aid=${metrics.deploymentId}\
-&av=${metrics.templateVersion}\
-&cn=${metrics.cloudName}\
-&cm=${metrics.region}\
-&cs=${metrics.bigIpVersion}\
-&ck=${metrics.licenseType}\
-&ds=${metrics.cloudLibsVersion}`;
+        const googleAnalyticsString = '&v=1' +
+            '&t=event&ec=run' +
+            '&tid=UA-47575237-11' +
+            `&cid=${uuid(metrics.customerId)}` +
+            `&aiid=${uuid(metrics.customerId)}` +
+            `&ea=${metrics.action}` +
+            `&an=${metrics.templateName}` +
+            `&aid=${metrics.deploymentId}` +
+            `&av=${metrics.templateVersion}` +
+            `&cn=${metrics.cloudName}` +
+            `&cm=${metrics.region}` +
+            `&cs=${metrics.bigIpVersion}` +
+            `&ck=${metrics.licenseType}` +
+            `&ds=${metrics.cloudLibsVersion}`;
         const eseAnalyticsObject = {
             metadata: {
                 service: 'cloud_templates',
@@ -97,58 +97,44 @@ describe('Metrics Collector Unit Tests', () => {
             }
         };
 
-        metricsCollector.upload(metrics)
+        return metricsCollector.upload(metrics)
             .then(() => {
                 assert.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
 
                 // replace with actual timestamp first
                 eseAnalyticsObject.metadata.timestamp = eseAnalyticsCalledBody.metadata.timestamp;
                 assert.deepStrictEqual(eseAnalyticsCalledBody, eseAnalyticsObject);
-            })
-            .catch((err) => {
-                assert.ok(false, err);
-            })
-            .finally(() => {
-                done();
             });
     });
 
-    it('truncated data test', (done) => {
+    it('truncated data test', () => {
         const metrics = {
             customerId: 'myCustomerId',
             region: '012345678901234567890123456789012345678901234567891'
         };
-        const googleAnalyticsString = `&v=1\
-&t=event&ec=run\
-&tid=UA-47575237-11\
-&cid=${uuid(metrics.customerId)}\
-&aiid=${uuid(metrics.customerId)}\
-&ea=unknown\
-&cm=01234567890123456789012345678901234567890123456789`;
+        const googleAnalyticsString = '&v=1' +
+            '&t=event&ec=run' +
+            '&tid=UA-47575237-11' +
+            `&cid=${uuid(metrics.customerId)}` +
+            `&aiid=${uuid(metrics.customerId)}` +
+            '&ea=unknown' +
+            '&cm=01234567890123456789012345678901234567890123456789';
 
-        metricsCollector.upload(metrics)
+        return metricsCollector.upload(metrics)
             .then(() => {
                 assert.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
-            })
-            .catch((err) => {
-                assert.ok(false, err);
-            })
-            .finally(() => {
-                done();
             });
     });
 
-    it('set logger test', (done) => {
+    it('set logger test', () => {
         assert.doesNotThrow(() => {
             metricsCollector.setLogger({});
         });
-        done();
     });
 
-    it('set logger options', (done) => {
+    it('set logger options', () => {
         assert.doesNotThrow(() => {
             metricsCollector.setLoggerOptions({});
         });
-        done();
     });
 });
