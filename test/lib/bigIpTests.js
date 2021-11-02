@@ -267,6 +267,14 @@ describe('bigip tests', () => {
                     });
             });
 
+            it('should replace slashes in the name with ~', () => {
+                return bigIp.createOrModify('/tm/sys/foo', { name: 'foo/bar' })
+                    .then(() => {
+                        assert.strictEqual(icontrolMock.lastCall.method, 'modify');
+                        assert.strictEqual(icontrolMock.lastCall.path, '/tm/sys/foo/~Common~foo~bar');
+                    });
+            });
+
             it('delete test', () => {
                 icontrolMock.when('delete', '/tm/sys/foo/bar', {});
 
