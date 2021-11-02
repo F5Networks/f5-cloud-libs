@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.26.6
+* Replace slashes in names with tilde's when modifying objects
+
 ## Release 4.26.4
 * Expose chargebackTag BIGIQ license tag.
 
