@@ -45,7 +45,6 @@ describe('bigip onboard tests', () => {
             return q.resolve(icontrolMock);
         });
 
-        sinon.stub(bigIp, 'getManagementMac').resolves('fa:16:3e:be:5a:45');
         sinon.stub(util, 'getProduct').returns(q('BIG-IP'));
 
         bigIpRunTaskSpy = sinon.stub(bigIp, 'runTask').returns(q());
@@ -623,7 +622,6 @@ describe('bigip onboard tests', () => {
         it('basic test', () => {
             const hostname = 'myHostname';
             const machineId = 'myMachineId';
-            const hostMac = 'myMacAddress';
             const poolName = 'myPoolName';
 
             const options = {
@@ -635,8 +633,7 @@ describe('bigip onboard tests', () => {
                 '/shared/identified-devices/config/device-info',
                 {
                     hostname,
-                    machineId,
-                    hostMac // hostMac not always equal managment MAC address
+                    machineId
                 }
             );
 
@@ -648,8 +645,6 @@ describe('bigip onboard tests', () => {
                     assert.strictEqual(bigIqRevokeLicenseSpy.args[0][1].machineId, machineId);
                     assert.strictEqual(bigIqInitSpy.callCount, 1);
                     assert.strictEqual(bigIqInitSpy.args[0][3].authProvider, 'myAuthProvider');
-                    // test macAddress from getManagementMac()
-                    assert.strictEqual(bigIqRevokeLicenseSpy.args[0][1].macAddress, 'fa:16:3e:be:5a:45');
                 });
         });
 

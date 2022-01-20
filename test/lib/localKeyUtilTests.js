@@ -21,7 +21,7 @@ const fsMock = require('fs');
 const assert = require('assert');
 const sinon = require('sinon');
 
-describe('local crypto util tests', () => {
+describe('local key util tests', () => {
     const realWriteFile = fsMock.writeFile;
 
     const passphrase = 'abc123';
@@ -147,7 +147,7 @@ describe('local crypto util tests', () => {
                 privateKeyName
             )
                 .then(() => {
-                    assert.ifError(keyPairGenerated);
+                    assert.strictEqual(keyPairGenerated, false);
                 });
         });
 
@@ -199,7 +199,7 @@ describe('local crypto util tests', () => {
                 privateKeyName
             )
                 .then(() => {
-                    assert.ifError(dirCreated);
+                    assert.strictEqual(dirCreated, false);
                 });
         });
 
@@ -268,7 +268,7 @@ describe('local crypto util tests', () => {
                 privateKeyName
             )
                 .then(() => {
-                    assert.ifError(bigIpFolderCreated);
+                    assert.strictEqual(bigIpFolderCreated, false);
                 });
         });
 

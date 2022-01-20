@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.26.7
+* Revert 'Updated pulling MAC Address from mgmt interface endpoint instead of the host MAC Address.' from 4.25.1
+
 ## Release 4.26.6
 * Replace slashes in names with tilde's when modifying objects
 
@@ -21,6 +24,7 @@
 
 ## Release 4.25.1
 * Updated pulling MAC Address from mgmt interface endpoint instead of the host MAC Address.
+
 ## Release 4.25.0
 * Update generate password script to support generating password with special characters.
 * Remove cluster credentials from storage after clustering completes
