@@ -18,7 +18,6 @@
 
 const q = require('q');
 const assert = require('assert');
-const sinon = require('sinon');
 
 const BigIp = require('../../lib/bigIp');
 
@@ -56,12 +55,6 @@ describe('BIGIQ 5.4.0 License Provider Tests', () => {
         provider = new BigIqProvider(bigIp);
         provider.bigIp.user = 'user';
         provider.bigIp.password = 'password';
-
-        sinon.stub(bigIp, 'getManagementMac').resolves('fa:16:3e:be:5a:45');
-    });
-
-    afterEach(() => {
-        sinon.restore();
     });
 
     describe('Constructor Tests', () => {
