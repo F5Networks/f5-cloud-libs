@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.26.8
+* Updated path-parse libary to v1.0.7
+
 ## Release 4.26.7
 * Revert 'Updated pulling MAC Address from mgmt interface endpoint instead of the host MAC Address.' from 4.25.1
 
