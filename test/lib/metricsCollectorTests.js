@@ -17,24 +17,17 @@
 'use strict';
 
 const q = require('q');
-const uuid = require('uuid5');
 const assert = require('assert');
 const httpUtil = require('../../../f5-cloud-libs').httpUtil;
 const metricsCollector = require('../../../f5-cloud-libs').metricsCollector;
 
 describe('Metrics Collector Unit Tests', () => {
     const eseAnalyticsUrl = 'http://www.example.com/';
-
-    let googleAnalyticsCalledBody = '';
     let eseAnalyticsCalledBody = '';
 
     beforeEach(() => {
         httpUtil.post = (url, options) => {
-            if (url === eseAnalyticsUrl) {
-                eseAnalyticsCalledBody = options.body;
-            } else {
-                googleAnalyticsCalledBody = options.body;
-            }
+            eseAnalyticsCalledBody = options.body;
         };
         // eslint-disable-next-line no-unused-vars
         httpUtil.get = (url, options) => {
@@ -62,20 +55,6 @@ describe('Metrics Collector Unit Tests', () => {
             licenseType: 'myLicenseType',
             cloudLibsVersion: 'myCloudLibsVersion'
         };
-        const googleAnalyticsString = '&v=1' +
-            '&t=event&ec=run' +
-            '&tid=UA-47575237-11' +
-            `&cid=${uuid(metrics.customerId)}` +
-            `&aiid=${uuid(metrics.customerId)}` +
-            `&ea=${metrics.action}` +
-            `&an=${metrics.templateName}` +
-            `&aid=${metrics.deploymentId}` +
-            `&av=${metrics.templateVersion}` +
-            `&cn=${metrics.cloudName}` +
-            `&cm=${metrics.region}` +
-            `&cs=${metrics.bigIpVersion}` +
-            `&ck=${metrics.licenseType}` +
-            `&ds=${metrics.cloudLibsVersion}`;
         const eseAnalyticsObject = {
             metadata: {
                 service: 'cloud_templates',
@@ -99,30 +78,9 @@ describe('Metrics Collector Unit Tests', () => {
 
         return metricsCollector.upload(metrics)
             .then(() => {
-                assert.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
-
                 // replace with actual timestamp first
                 eseAnalyticsObject.metadata.timestamp = eseAnalyticsCalledBody.metadata.timestamp;
                 assert.deepStrictEqual(eseAnalyticsCalledBody, eseAnalyticsObject);
-            });
-    });
-
-    it('truncated data test', () => {
-        const metrics = {
-            customerId: 'myCustomerId',
-            region: '012345678901234567890123456789012345678901234567891'
-        };
-        const googleAnalyticsString = '&v=1' +
-            '&t=event&ec=run' +
-            '&tid=UA-47575237-11' +
-            `&cid=${uuid(metrics.customerId)}` +
-            `&aiid=${uuid(metrics.customerId)}` +
-            '&ea=unknown' +
-            '&cm=01234567890123456789012345678901234567890123456789';
-
-        return metricsCollector.upload(metrics)
-            .then(() => {
-                assert.strictEqual(googleAnalyticsCalledBody, googleAnalyticsString);
             });
     });
 
