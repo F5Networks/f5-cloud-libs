@@ -24,11 +24,12 @@
     "jmespath": "^0.15.0",
     "q": "^1.5.1",
     "uuid5": "^1.0.2",
-    "winston": "^2.4.6"
+    "winston": "^2.4.5"
   },
   "resolutions": {
     "underscore": "1.12.1",
-    "path-parse": "1.0.7"
+    "path-parse": "1.0.7",
+    "async": "2.6.4"
   },
   "devDependencies": {
     "eslint": "^4.19.1",
