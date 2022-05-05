@@ -24,7 +24,7 @@
     "jmespath": "^0.15.0",
     "q": "^1.5.1",
     "uuid5": "^1.0.2",
-    "winston": "^2.4.5"
+    "winston": "^2.4.6"
   },
   "resolutions": {
     "underscore": "1.12.1",
