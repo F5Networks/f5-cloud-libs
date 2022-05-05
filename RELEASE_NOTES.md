@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.26.9
+* Removed Google Analytics from usage metrics providers
+* Updated async libary to v2.6.4
 ## Release 4.26.8
 * Updated path-parse libary to v1.0.7
 
