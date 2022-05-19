@@ -38,6 +38,8 @@
 * Removed dependency vulnerabilities.
 
 ## Release 4.24.0
+* Add new retry option to util script
+* Update bigip init method to allow passing retry options
 * Add support for using a third party auth provider when licensing from BIG-IQ
 * Add option to retry for required fields when fetching via iControl REST
 
