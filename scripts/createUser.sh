@@ -105,11 +105,11 @@ fi
 if [[ -n "$ACTUAL_PASSWORD" ]]; then
     PASSWORD=$(echo "$ACTUAL_PASSWORD" | $SED -e $'s:[!\'"%{};/|#\x20\\\\]:\\\\&:g')
 
-    if [[ "$USERNAME" == admin ]]; then
-        $TMSH modify /auth user "$USERNAME" password "$PASSWORD"
-    else
+    if [[ "$USERNAME" != admin ]]; then
         $TMSH create auth user "$USERNAME" password "$PASSWORD" shell bash partition-access replace-all-with { all-partitions { role admin } }
     fi
+
+    $TMSH modify /auth user "$USERNAME" password "$PASSWORD"
 else
     echo Could not retrieve password
     exit 1
