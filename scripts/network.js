@@ -70,7 +70,7 @@ const cryptoUtil = require('../lib/cryptoUtil');
 
                 // Can't use getCommonOptions here because of the special reboot handling
                 options
-                    .version('4.27.0')
+                    .version('4.27.1')
                     .option(
                         '--host <ip_address>',
                         'BIG-IP management IP to which to send commands.'
