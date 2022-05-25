@@ -1257,8 +1257,8 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
                     // Get a random user name to use
                     return cryptoUtil.generateRandomBytes(TEMP_USER_NAME_LENGHTH, 'hex');
                 })
-                .then((respomse) => {
-                    tempUser = respomse;
+                .then((response) => {
+                    tempUser = response;
 
                     // Get a random password for the user
                     return cryptoUtil.generateRandomBytes(TEMP_USER_PASSWORD_LENGTH, 'base64');
@@ -1268,6 +1268,10 @@ const BACKUP = require('../lib/sharedConstants').BACKUP;
 
                     // Create the temp user account
                     return bigIp.onboard.updateUser(tempUser, tempPassword, 'admin');
+                })
+                .then(() => {
+                    // Update the temp user account password
+                    return bigIp.onboard.password(tempUser, tempPassword, tempPassword);
                 })
                 .then(() => {
                     logger.debug('Sending message to join cluster.');

@@ -1,5 +1,11 @@
 # Release notes
 
+## Release 4.27.1
+* Updated autoscale.js and createRandomUser function to reset password on temporary account creation
+
+## Release 4.27.0
+* Updated createUser.sh script to reset password on account creation
+
 ## Release 4.26.9
 * Removed Google Analytics from usage metrics providers
 * Updated async libary to v2.6.4
@@ -38,6 +44,8 @@
 * Removed dependency vulnerabilities.
 
 ## Release 4.24.0
+* Add new retry option to util script
+* Update bigip init method to allow passing retry options
 * Add support for using a third party auth provider when licensing from BIG-IQ
 * Add option to retry for required fields when fetching via iControl REST
 
