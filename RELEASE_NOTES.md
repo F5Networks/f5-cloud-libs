@@ -1,7 +1,7 @@
 # Release notes
 
 ## Release 4.27.1
-* Updated autoscale.js script to reset password on temporary account creation
+* Updated autoscale.js  and createRandomUser function to reset password on temporary account creation
 
 ## Release 4.27.0
 * Updated createUser.sh script to reset password on account creation
