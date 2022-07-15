@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.28.0
+* Updated tryUntil to allow for a new shortRetryOnError to allow us to try less on specified error codes
+
 ## Release 4.27.1
 * Updated autoscale.js and createRandomUser function to reset password on temporary account creation
 
