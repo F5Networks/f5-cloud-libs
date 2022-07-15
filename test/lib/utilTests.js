@@ -1623,6 +1623,107 @@ describe('util tests', () => {
                     });
             });
         });
+
+        describe('shortRetryOnError', () => {
+            const retryOptions = {
+                maxRetries: 20,
+                retryIntervalMs: 1,
+                continueOnError: true,
+                shortRetryOnError: {
+                    codes: [401],
+                    retryOptions: {
+                        maxRetries: 2,
+                        retryIntervalMs: 1
+                    }
+                }
+            };
+
+            it('should use shortRetryOnError when specified code happens', () => {
+                const func = function () {
+                    funcCount += 1;
+                    return q.reject({ code: 401, message: '401 Unauthorized' });
+                };
+
+                return util.tryUntil(this, retryOptions, func)
+                    .then(() => {
+                        return assert.ok(false, 'func should not have made it to resolution');
+                    })
+                    .catch((err) => {
+                        assert.deepStrictEqual(
+                            err,
+                            {
+                                code: 401,
+                                message: 'tryUntil: max tries reached: 401 Unauthorized',
+                                name: ''
+                            }
+                        );
+                        assert.strictEqual(funcCount, 4);
+                    });
+            });
+
+            it('should resume retries when shortRetryOnError.codes is no longer encountered', () => {
+                const func = function () {
+                    funcCount += 1;
+                    switch (funcCount) {
+                    case 1:
+                        return q.reject({ code: 401, message: '401 Unauthorized' });
+                    case 2:
+                        return q.reject({ code: 401, message: '401 Unauthorized' });
+                    default:
+                        return q.reject({ code: 500, message: 'Not a 401' });
+                    }
+                };
+
+                return util.tryUntil(this, retryOptions, func)
+                    .then(() => {
+                        return assert.ok(false, 'func should not have made it to resolution');
+                    })
+                    .catch((err) => {
+                        assert.deepStrictEqual(
+                            err,
+                            {
+                                code: 500,
+                                message: 'tryUntil: max tries reached: Not a 401',
+                                name: ''
+                            }
+                        );
+                        assert.strictEqual(funcCount, 24);
+                    });
+            });
+
+            it('should handle multiple codes in shortRetryOnError', () => {
+                retryOptions.shortRetryOnError.codes = [401, 404];
+                const func = function () {
+                    funcCount += 1;
+                    switch (funcCount) {
+                    case 1:
+                        return q.reject({ code: 401, message: '401 Unauthorized' });
+                    case 2:
+                        return q.reject({ code: 401, message: '401 Unauthorized' });
+                    case 3:
+                        return q.reject({ code: 400, message: 'Not in shortRetryOnError.codes' });
+                    default:
+                        return q.reject({ code: 404, message: 'Not a 401' });
+                    }
+                };
+
+                return util.tryUntil(this, retryOptions, func)
+                    .then(() => {
+                        return assert.ok(false, 'func should not have made it to resolution');
+                    })
+                    .catch((err) => {
+                        assert.deepStrictEqual(
+                            err,
+                            {
+                                code: 404,
+                                message: 'tryUntil: max tries reached: Not a 401',
+                                name: ''
+                            }
+                        );
+                        assert.strictEqual(funcCount, 7);
+                    });
+            });
+        });
     });
 
     it('version compare test', () => {
