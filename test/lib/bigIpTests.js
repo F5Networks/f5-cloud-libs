@@ -43,6 +43,7 @@ describe('bigip tests', () => {
 
     const UCS_TASK_PATH = '/tm/task/sys/ucs';
     const DUMMY_TASK_PATH = '/foo/task/bar';
+    const UCS_LOG_PATH = '/tm/sys/log/ltm/stats/';
 
     const privateKeyFolder = 'aFolder';
     const privateKeyName = 'aKey';
@@ -883,6 +884,7 @@ describe('bigip tests', () => {
 
         it('failed test', () => {
             icontrolMock.when('list', `${UCS_TASK_PATH}/1234`, { _taskState: 'FAILED' });
+            utilMock.DEFAULT_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
             return bigIp.loadUcs('foo')
                 .then(() => {
                     assert.ok(false, 'Should not have completed');
@@ -915,6 +917,44 @@ describe('bigip tests', () => {
                 })
                 .catch((err) => {
                     assert.strictEqual(err.message, 'mcp is not ready');
+                });
+        });
+
+        it('lost task ID successful test', () => {
+            bigIp.runTask = function runTask() {
+                return q.reject(new Error('Task not found'));
+            };
+            icontrolMock.when('list', UCS_LOG_PATH, {
+                apiRawValues: {
+                    apiAnonymous: 'UCS installation success'
+                }
+            });
+            utilMock.DEFAULT_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
+            return bigIp.loadUcs('foo')
+                .then(() => {
+                    assert.ok(true, 'Should have completed');
+                })
+                .catch(() => {
+                    assert.ok(false);
+                });
+        });
+
+        it('lost task ID failed test', () => {
+            bigIp.runTask = function runTask() {
+                return q.reject(new Error('Task not found'));
+            };
+            icontrolMock.when('list', UCS_LOG_PATH, {
+                apiRawValues: {
+                    apiAnonymous: 'UCS installation failed'
+                }
+            });
+            utilMock.DEFAULT_RETRY = { maxRetries: 0, retryIntervalMs: 0 };
+            return bigIp.loadUcs('foo')
+                .then(() => {
+                    assert.ok(false, 'Should not have completed');
+                })
+                .catch(() => {
+                    assert.ok(true);
                 });
         });
 
