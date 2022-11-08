@@ -57,5 +57,6 @@ proc script::run {} {
             exit 1
         }
     }
+    script-signature GsVIYeMGD0BTbQRz8EcaAKOU/17mi4gft8YyE/Zi7m7MqMT9RkU6gabG6sI8xc1+W0qZo4AT6ykv/GXgAbJcbBAZtk58QFcX3Lm9W8s12b27wAWjvHh8E4JIH8iuyFvdfhxBTmRRvR3egL79+RVqbMP0m4kAzJrp0DJlv0soNhu0fMGAo9tE/anEl0EnsboY5rzt+zuaNAM9dZeP7yEaUuqOAyt5qLVSucM7Sb/ZCshq9f8U1QSMHY8AtgX9DHm78JWAFEI+GXh0v+zLszezEGg0kF0WprLUe06kLnWqdRXFcwChzdHrdRhuwthgrTAzDtwWJYQcaDM20kdDXDkr0A==
     signing-key /Common/f5-irule
 }
