@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.28.1
+* Updated bigIp provider to check logs for successful UCS restore when REST task ID is lost
+
 ## Release 4.28.0
 * Updated tryUntil to allow for a new shortRetryOnError to allow us to try less on specified error codes
 
