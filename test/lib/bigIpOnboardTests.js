@@ -365,9 +365,36 @@ describe('bigip onboard tests', () => {
                 });
         });
 
-        it('overwrite test', () => {
+        it('overwrite test with non-identical keys', () => {
             const oldRegKey = '1234-5678-ABCD-EFGH';
             const newRegKey = 'ABCD-EFGH-1234-5678';
+
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {
+                    registrationKey: oldRegKey
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: 'New license installed'
+                }
+            );
+
+            return bigIp.onboard.license({ registrationKey: newRegKey, overwrite: true })
+                .then(() => {
+                    const licenseRequest = icontrolMock.getRequest('create', '/tm/sys/license');
+                    assert.strictEqual(licenseRequest.command, 'install');
+                    assert.strictEqual(licenseRequest.registrationKey, newRegKey);
+                });
+        });
+
+        it('overwrite test with identical keys', () => {
+            const oldRegKey = '1234-5678-ABCD-EFGH';
+            const newRegKey = '1234-5678-ABCD-EFGH';
 
             icontrolMock.when(
                 'list',
@@ -446,6 +473,34 @@ describe('bigip onboard tests', () => {
             return bigIp.onboard.license()
                 .then((response) => {
                     assert.notStrictEqual(response.indexOf('No registration key'), -1);
+                });
+        });
+
+        it('should install if the license is revoked on the BIG-IP', () => {
+            const oldRegKey = '1234-5678-ABCD-EFGH';
+            const newRegKey = '1234-5678-ABCD-EFGH';
+
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {
+                    registrationKey: oldRegKey,
+                    usage: 'Revoked License'
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: 'New license installed'
+                }
+            );
+
+            return bigIp.onboard.license({ registrationKey: newRegKey })
+                .then(() => {
+                    const licenseRequest = icontrolMock.getRequest('create', '/tm/sys/license');
+                    assert.strictEqual(licenseRequest.command, 'install');
+                    assert.strictEqual(licenseRequest.registrationKey, newRegKey);
                 });
         });
     });
