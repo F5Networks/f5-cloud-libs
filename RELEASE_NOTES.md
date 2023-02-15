@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.28.2
+* Updated overwrite boolean to relicense the BIG-IP if enabled, regardless of additional context. Additionally, will relicense the BIG-IP if License usage equals "Revoked License".
+
 ## Release 4.28.1
 * Updated bigIp provider to check logs for successful UCS restore when REST task ID is lost
 
