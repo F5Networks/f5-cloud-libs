@@ -1,5 +1,8 @@
 # Release notes
 
+## Release 4.29.0
+* Added support for revoking BIG-IP license
+
 ## Release 4.28.2
 * Updated overwrite boolean to relicense the BIG-IP if enabled, regardless of additional context. Additionally, will relicense the BIG-IP if License usage equals "Revoked License".
 
