@@ -665,6 +665,90 @@ describe('bigip onboard tests', () => {
         });
     });
 
+    describe('revoke license test', () => {
+        beforeEach(() => {
+            icontrolMock.when(
+                'create',
+                '/tm/sys/config',
+                {}
+            );
+        });
+
+        it('should revoke licensed BIG-IP', () => {
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {
+                    registrationKey: '1234-5678-ABCD-EFGH'
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: 'New license installed'
+                }
+            );
+            return bigIp.onboard.revokeLicense()
+                .then(() => {
+                    assert.strictEqual(
+                        icontrolMock.getRequest('create', '/tm/sys/license').command, 'revoke'
+                    );
+                });
+        });
+
+        it('should skip revoking license if no license', () => {
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {}
+            );
+            return bigIp.onboard.revokeLicense()
+                .then((response) => {
+                    assert.strictEqual(response, 'No license to revoke. Skipping.');
+                });
+        });
+
+        it('should skip revoking license if already revoked', () => {
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {
+                    registrationKey: '1234-5678-ABCD-EFGH',
+                    usage: 'Revoked License'
+                }
+            );
+            return bigIp.onboard.revokeLicense()
+                .then((response) => {
+                    assert.strictEqual(response, 'License is already revoked. Skipping.');
+                });
+        });
+
+        it('should error on revoke failure', () => {
+            icontrolMock.when(
+                'list',
+                '/tm/shared/licensing/registration',
+                {
+                    registrationKey: '1234-5678-ABCD-EFGH'
+                }
+            );
+            icontrolMock.when(
+                'create',
+                '/tm/sys/license',
+                {
+                    commandResult: 'Failed to revoke'
+                }
+            );
+            return bigIp.onboard.revokeLicense(util.NO_RETRY)
+                .then(() => {
+                    assert.ok(false, 'Should have failed with revoke failure');
+                })
+                .catch((err) => {
+                    assert.strictEqual(err.message, 'tryUntil: max tries reached: Failed to revoke');
+                });
+        });
+    });
+
     describe('revoke license via bigiq test', () => {
         let bigIqInitSpy;
         let bigIqRevokeLicenseSpy;
