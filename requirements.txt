@@ -5,7 +5,7 @@ pytest==4.3.1
 pytest-mock==1.10.4
 pytest-cov==2.6.1
 pylint==2.5.2 ; python_version > '3.0'
-safety==1.8.5
+safety==1.9.0
 
 # unittest.mock built in to python 3.3+
 mock==2.0.0 ; python_version < '3.3'
